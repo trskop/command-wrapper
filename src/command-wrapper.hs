@@ -25,27 +25,27 @@ import System.Environment.Executable (splitExecutablePath)
 
 type E a = a -> a
 
-constructSubsystemEnv :: FilePath -> FilePath -> E [(String, String)]
-constructSubsystemEnv wrapperName rootDir = foldl (.) id
+constructSubcommandEnv :: FilePath -> FilePath -> E [(String, String)]
+constructSubcommandEnv wrapperName rootDir = foldl (.) id
     [ (("CMD_WRAPPER_ROOT", rootDir) :)
     , (("CMD_WRAPPER_NAME", wrapperName) :)
     , (("CMD_WRAPPER_CONFIG", "/dev/null") :)
     ]
 
-findSubsystem :: [FilePath] -> FilePath -> IO (Maybe FilePath)
-findSubsystem = (fmap listToMaybe .) . findFilesWith isExecutable
+findSubcommand :: [FilePath] -> FilePath -> IO (Maybe FilePath)
+findSubcommand = (fmap listToMaybe .) . findFilesWith isExecutable
   where
     isExecutable = fmap executable . getPermissions
 
-execSubsystem :: FilePath -> FilePath -> FilePath -> [String] -> [(String, String)] -> IO ()
-execSubsystem wrapperName rootDir subsystem args env = do
-    exe <- findSubsystem [rootDir </> "lib"] subsystem
+execSubcommand :: FilePath -> FilePath -> FilePath -> [String] -> [(String, String)] -> IO ()
+execSubcommand wrapperName rootDir subcommand args env = do
+    exe <- findSubcommand [rootDir </> "lib"] subcommand
     case exe of
-        Nothing -> subsystemNotFoundError
+        Nothing -> subcommandNotFoundError
         Just exe' -> executeFile exe' False args
-            . Just $ constructSubsystemEnv wrapperName rootDir env
+            . Just $ constructSubcommandEnv wrapperName rootDir env
   where
-    subsystemNotFoundError = exitFailure
+    subcommandNotFoundError = exitFailure
 
 main :: IO ()
 main = do
@@ -55,6 +55,6 @@ main = do
     env <- getEnvironment
 
     case args of
-        subsystem : subsystemArgs ->
-            execSubsystem progAlias progPath subsystem subsystemArgs env
+        subcommand : subcommandArgs ->
+            execSubcommand progAlias progPath subcommand subcommandArgs env
         [] -> exitFailure
