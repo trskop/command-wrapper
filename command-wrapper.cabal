@@ -1,0 +1,28 @@
+name:                   command-wrapper
+version:                0.1.0.0
+synopsis:
+  Command wrapper for building modular toolsets with uniform UI
+-- description:
+homepage:               https://github.com/trskop/command-wrapper
+license:                BSD3
+license-file:           LICENSE
+author:                 Peter Trško
+maintainer:             peter.trsko@gmail.com
+-- copyright:
+category:               Tools
+build-type:             Simple
+cabal-version:          >=1.8
+
+
+executable command-wrapper
+  hs-source-dirs:       src
+  main-is:              command-wrapper.hs
+  -- other-modules:
+  build-depends:
+      base ==4.6.*
+
+    , directory >= 1.2.1.0
+    , filepath
+    , unix
+
+    , executable-path
