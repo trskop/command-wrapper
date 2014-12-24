@@ -1,11 +1,9 @@
-Command Wrapper
-===============
+# Command Wrapper
 
 [![BSD3 License](http://img.shields.io/badge/license-BSD3-brightgreen.svg)][tl;dr Legal: BSD3]
 
 
-Description
------------
+## Description
 
 Some command line applications with a lot of commands try to avoid poluting
 `$PATH` with all of them. One of the approaches to this is to have one top
@@ -21,6 +19,23 @@ In general such toolset top level command has syntax like this:
 This package provides universal top-level command, that can be named as
 required, and API for subcommands. Subcommands may be written in any language,
 they just need to be executable files that respect the subcommand API.
+
+
+## Internal Subcommands
+
+
+### `help`
+
+Usage:
+
+    TOOLSET_COMMAND [GLOBAL_OPTIONS] help [HELP_OPTIONS] [SUBCOMMAND]
+
+
+### `config`
+
+Usage:
+
+    TOOLSET_COMMAND [GLOBAL_OPTIONS] config [CONFIG_OPTIONS] [name [value]]
 
 
 
