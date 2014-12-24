@@ -46,3 +46,7 @@ executable command-wrapper
     ghc-options:        -fwarn-tabs
   if flag(pedantic)
     ghc-options:        -Werror
+
+source-repository head
+  type:                 git
+  location:             git://github.com/trskop/command-wrapper.git
