@@ -24,14 +24,14 @@ they just need to be executable files that respect the subcommand API.
 ## Internal Subcommands
 
 
-### `help`
+### help
 
 Usage:
 
     TOOLSET_COMMAND [GLOBAL_OPTIONS] help [HELP_OPTIONS] [SUBCOMMAND]
 
 
-### `config`
+### config
 
 Usage:
 
