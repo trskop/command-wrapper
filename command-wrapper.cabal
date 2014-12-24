@@ -4,25 +4,32 @@ synopsis:
   Command wrapper for building modular toolsets with uniform UI
 -- description:
 homepage:               https://github.com/trskop/command-wrapper
+bug-reports:            https://github.com/trskop/command-wrapper/issues
 license:                BSD3
 license-file:           LICENSE
 author:                 Peter Trško
 maintainer:             peter.trsko@gmail.com
--- copyright:
+copyright:              (c) 2014, Peter Trško
 category:               Tools
 build-type:             Simple
 cabal-version:          >=1.8
+
+extra-source-files:
+    README.md
 
 
 executable command-wrapper
   hs-source-dirs:       src
   main-is:              command-wrapper.hs
-  -- other-modules:
-  build-depends:
-      base >=4.6 && <4.8
 
+  -- other-modules:
+
+  build-depends:
+    -- {{{ Distributed as part of GHC or Haskell Platform ---------------------
+      base >=4.6 && <4.8
     , directory >= 1.2.1.0
     , filepath
     , unix
+    -- }}} Distributed as part of GHC or Haskell Platform ---------------------
 
     , executable-path
