@@ -19,7 +19,7 @@ executable command-wrapper
   main-is:              command-wrapper.hs
   -- other-modules:
   build-depends:
-      base ==4.6.*
+      base >=4.6 && <4.8
 
     , directory >= 1.2.1.0
     , filepath
