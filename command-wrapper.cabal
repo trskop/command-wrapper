@@ -17,6 +17,11 @@ cabal-version:          >=1.8
 extra-source-files:
     README.md
 
+flag pedantic
+  description:
+    Pass additional warning flags including -Werror to GHC during compilation.
+  default:              False
+  manual:               True
 
 executable command-wrapper
   hs-source-dirs:       src
@@ -33,3 +38,9 @@ executable command-wrapper
     -- }}} Distributed as part of GHC or Haskell Platform ---------------------
 
     , executable-path
+
+  ghc-options:          -Wall
+  if impl(ghc >= 6.8)
+    ghc-options:        -fwarn-tabs
+  if flag(pedantic)
+    ghc-options:        -Werror
