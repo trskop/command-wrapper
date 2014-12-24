@@ -1,5 +1,11 @@
+Command Wrapper
+===============
+
+[![BSD3 License](http://img.shields.io/badge/license-BSD3-brightgreen.svg)][tl;dr Legal: BSD3]
+
+
 Description
-===========
+-----------
 
 Some command line applications with a lot of commands try to avoid poluting
 `$PATH` with all of them. One of the approaches to this is to have one top
@@ -15,3 +21,9 @@ In general such toolset top level command has syntax like this:
 This package provides universal top-level command, that can be named as
 required, and API for subcommands. Subcommands may be written in any language,
 they just need to be executable files that respect the subcommand API.
+
+
+
+[tl;dr Legal: BSD3]:
+  https://tldrlegal.com/license/bsd-3-clause-license-%28revised%29
+  "BSD 3-Clause License (Revised)"
