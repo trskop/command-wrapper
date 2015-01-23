@@ -39,6 +39,31 @@ Usage:
     TOOLSET_COMMAND [GLOBAL_OPTIONS] config [CONFIG_OPTIONS] [name [value]]
 
 
+## Directory Layout
+
+````
+${prefix}/
+`-- command-wrapper/
+    |-- bin/
+    |   |-- command-wrapper
+    |   `-- ${alias} -> command-wrapper
+    |-- etc/
+    |   |-- command-wrapper.json
+    |   |-- ${alias}.json
+    |   `-- ${alias}-${plugin}.json
+    |-- lib/
+    |   `-- *.so
+    |-- libexec/
+    |   `-- ${alias}-${plugin}
+    `-- share/
+        `-- man/
+            `-- man1
+                |-- command-wrapper.1{,.gz}
+                |-- ${alias}.1{,.gz}
+                `-- ${alias}-${plugin}.1{,.gz}
+````
+
+
 
 [Haskell.org]:
   http://www.haskell.org
