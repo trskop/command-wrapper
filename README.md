@@ -27,40 +27,75 @@ they just need to be executable files that respect the subcommand API.
 
 ### help
 
+```
 Usage:
 
     TOOLSET_COMMAND [GLOBAL_OPTIONS] help [HELP_OPTIONS] [SUBCOMMAND]
+```
 
 
 ### config
 
+TODO: Not currently implemented.
+
+```
 Usage:
 
     TOOLSET_COMMAND [GLOBAL_OPTIONS] config [CONFIG_OPTIONS] [name [value]]
+```
+
+
+## Install
+
+Install `command-wrapper`:
+
+```Bash
+git clone https://github.com/trskop/command-wrapper.git ~/.local/src/trskop/command-wrapper
+stack --stack-yaml="${HOME}/.local/src/trskop/command-wrapper/stack.yaml" install
+mkdir ~/.config/command-wrapper
+cp ~/.local/src/trskop/command-wrapper/example/default.dhall ~/.config/command-wrapper/
+```
+
+Define new toolset:
+
+```Bash
+toolset='INSERT_COMMAND_NAME_HERE'
+ln -s ../.local/bin/command-wrapper ~/bin/"${toolset}"
+mkdir ~/.config/"${toolset}" ~/.local/lib/"${toolset}"
+cp ~/.local/src/trskop/command-wrapper/example/default.dhall ~/.config/command-wrapper/
+dhall > ~/.config/"${toolset}"/default.dhall <<< '~/.local/src/trskop/command-wrapper/example/make-default.dhall (env:toolset as Text)'
+```
 
 
 ## Directory Layout
 
 ````
-${prefix}/
-`-- command-wrapper/
-    |-- bin/
-    |   |-- command-wrapper
-    |   `-- ${alias} -> command-wrapper
-    |-- etc/
-    |   |-- command-wrapper.json
-    |   |-- ${alias}.json
-    |   `-- ${alias}-${plugin}.json
-    |-- lib/
-    |   `-- *.so
-    |-- libexec/
-    |   `-- ${alias}-${plugin}
-    `-- share/
-        `-- man/
-            `-- man1
-                |-- command-wrapper.1{,.gz}
-                |-- ${alias}.1{,.gz}
-                `-- ${alias}-${plugin}.1{,.gz}
+~/
+├── .config/
+│   ├── ...
+│   ├── command-wrapper/
+│   │   ├── default.dhall
+│   │   ├── ...
+│   │   └── command-wrapper-${subcommand0}.dhall
+│   └── ${prefix}/
+│       ├── default.dhall
+│       ├── ...
+│       └── ${prefix}-${subcommand1}.dhall
+├── .local/
+│   ├── ...
+│   ├── lib/
+│   │   ├── ...
+│   │   ├── command-wrapper/
+│   │   │   ├── ...
+│   │   │   └── command-wrapper-${subcommand0}
+│   │   └── ${prefix}/
+│   │       ├── ...
+│   │       └── ${prefix}-${subcommand1}
+│   └── bin/
+│       ├── ...
+│       └── command-wrapper
+└── bin/
+    └── ${prefix} --> ../.local/bin/command-wrapper
 ````
 
 

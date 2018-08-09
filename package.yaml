@@ -1,0 +1,45 @@
+name: &this command-wrapper
+version: 0.1.0.0
+synopsis: |
+  Command wrapper for building modular toolsets with uniform UI
+description: |
+  Command wrapper for building modular toolsets with uniform UI
+github: trskop/command-wrapper
+license: BSD3
+license-file: LICENSE
+author: Peter Trško
+maintainer: peter.trsko@gmail.com
+copyright: (c) 2014, 2018 Peter Trško
+category: Tools
+
+extra-source-files:
+  - README.md
+
+dependencies:
+  - base
+  - dhall
+  - directory
+  - endo
+  - executable-path
+  - filepath
+  - host-and-port
+  - mainplate
+  - mtl
+  - optparse-applicative
+  - projectroot
+  - text
+  - unix
+  - unordered-containers
+  - verbosity
+
+ghc-options: -Wall
+
+library:
+  source-dirs: src
+
+executables:
+  *this:
+    source-dirs: app
+    main: Main.hs
+    dependencies:
+      - *this
