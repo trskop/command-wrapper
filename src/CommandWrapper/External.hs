@@ -19,9 +19,12 @@ module CommandWrapper.External
     )
   where
 
+import Control.Applicative (pure)
 import Control.Monad ((>>=))
 import Data.Bool (Bool(False))
 import Data.Functor ((<$>))
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NonEmpty (toList)
 import Data.Maybe (Maybe(Just, Nothing), listToMaybe)
 import Data.Semigroup ((<>))
 import Data.String (String)
@@ -39,33 +42,49 @@ import qualified CommandWrapper.Config as Global (Config(Config, searchPath))
 
 type Command = Mainplate.ExternalCommand
 
-run :: String -> Command -> Global.Config -> IO ()
-run appName (Mainplate.ExternalCommand command arguments) =
-    executeCommand (appName <> "-") command arguments
+run :: NonEmpty String -> Command -> Global.Config -> IO ()
+run appNames (Mainplate.ExternalCommand command arguments) =
+    executeCommand ((<> "-") <$> appNames) command arguments
 
-executeCommand :: String -> String -> [String] -> Global.Config -> IO a
-executeCommand prefix subcommand arguments config =
-    findSubcommandExecutable command config >>= \case
+executeCommand
+    :: NonEmpty String
+    -> String
+    -> [String]
+    -> Global.Config
+    -> IO a
+executeCommand prefixes subcommand arguments config =
+    findSubcommandExecutable commands config >>= \case
         Nothing ->
             die unableToFindExecutableError
 
-        Just executable -> do
+        Just executable -> -- do
 --          print ("Trying to execute", executable)
             executeFile executable False arguments Nothing
-                `onException` die unableToExecuteError
+                `onException` die (unableToExecuteError executable)
   where
-    command = prefix <> subcommand
+    commands = (<> subcommand) <$> prefixes
 
     unableToFindExecutableError =
-        subcommand <> ": '" <> command
-        <> "': Unable to find suitable executable"
+        "Error: " <> subcommand
+        <> ": Unable to find suitable executable for this subcommand"
 
-    unableToExecuteError =
-        subcommand <> ": '" <> command
-        <> "': Unable to execute external subcommand"
+    unableToExecuteError executable =
+        "Error: " <> subcommand
+        <> ": Unable to execute external subcommand executable: '"
+        <> executable <> "'"
 
-findSubcommandExecutable :: String -> Global.Config -> IO (Maybe FilePath)
-findSubcommandExecutable subcommand Global.Config{Global.searchPath} = do
-    searchPath' <- (searchPath <>) <$> getSearchPath
---  print ("Search path", searchPath')
-    listToMaybe <$> findExecutablesInDirectories searchPath' subcommand
+findSubcommandExecutable :: NonEmpty String -> Global.Config -> IO (Maybe FilePath)
+findSubcommandExecutable subcommands Global.Config{Global.searchPath} =
+    loop (NonEmpty.toList subcommands)
+  where
+    loop = \case
+        [] -> pure Nothing
+        subcommand : untriedSubcommands ->
+            findSubcommandExecutable' subcommand >>= \case
+                r@(Just _) -> pure r
+                Nothing -> loop untriedSubcommands
+
+    findSubcommandExecutable' subcommand = do
+        searchPath' <- (searchPath <>) <$> getSearchPath
+--      print ("Search path", searchPath')
+        listToMaybe <$> findExecutablesInDirectories searchPath' subcommand

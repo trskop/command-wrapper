@@ -32,7 +32,8 @@ import Prelude (error)
 import Control.Applicative (pure)
 import Data.Foldable (traverse_)
 import Data.Function (($), (.), const)
-import Data.Functor (Functor)
+import Data.Functor (Functor, (<$>))
+import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Monoid (Endo(Endo), mempty)
 import Data.Semigroup ((<>))
 import Data.String (String, unlines)
@@ -48,10 +49,10 @@ data Command
     = HelpCmommand [String]
     | ConfigCommand [String]
 
-run :: String -> Command -> Global.Config -> IO ()
-run appName = \case
-    HelpCmommand options -> help appName options
-    ConfigCommand options -> config appName options
+run :: NonEmpty String -> Command -> Global.Config -> IO ()
+run appNames = \case
+    HelpCmommand options -> help appNames options
+    ConfigCommand options -> config appNames options
 
 runMain
     :: Functor mode
@@ -71,8 +72,8 @@ data HelpMode a
     | SubcommandHelp String a
   deriving Functor
 
-help :: String -> [String] -> Global.Config -> IO ()
-help appName options globalConfig =
+help :: NonEmpty String -> [String] -> Global.Config -> IO ()
+help appNames options globalConfig =
     runMain parseOptions defaults $ \case
         MainHelp Global.Config{Global.extraHelpMessage} -> do
             putStr helpMsg
@@ -80,7 +81,8 @@ help appName options globalConfig =
 
         SubcommandHelp subcommand cfg ->
             -- TODO: Resolve possible aliases for subcommand.
-            External.executeCommand (appName <> "-") subcommand ["--help"] cfg
+            External.executeCommand ((<> "-") <$> appNames) subcommand
+                ["--help"] cfg
   where
     defaults = Mainplate.applySimpleDefaults (MainHelp globalConfig)
 
@@ -91,6 +93,8 @@ help appName options globalConfig =
         _ -> error "Too many arguments"
 
     switchTo = pure . Endo . const
+
+    appName :| _ = appNames
 
     helpMsg = unlines
         [ "Usage:"
@@ -108,8 +112,8 @@ newtype ConfigMode a
     = InitConfig a
   deriving Functor
 
-config :: String -> [String] -> Global.Config -> IO ()
-config _appName _options globalConfig =
+config :: NonEmpty String -> [String] -> Global.Config -> IO ()
+config _appNames _options globalConfig =
     runMain parseOptions defaults $ \case
         InitConfig _ -> pure ()
   where

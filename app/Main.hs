@@ -17,9 +17,10 @@ module Main (main)
 import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=))
 import Data.Either (Either(Right), either)
-import Data.Eq ((/=))
+import Data.Eq ((/=), (==))
 import Data.Function (($), (.), flip, id)
 import Data.Functor ((<$>))
+import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Semigroup ((<>))
 import Data.Monoid (Endo(Endo, appEndo), mempty)
 import Data.String (String)
@@ -64,8 +65,11 @@ main = do
                  else pure id
             )
 
+    -- More specific name has priority, i.e. user defined toolset has
+    -- preference from generic 'command-wrapper' commands.
+    let names = usedName :| (if exeName == usedName then [] else [exeName])
     Mainplate.runExtensibleAppWith (parseOptions config) readConfig
-        (defaults config) (External.run usedName) (Internal.run usedName)
+        (defaults config) (External.run names) (Internal.run names)
   where
     parseOptions config =
         Options.parseCommandWrapper Options.defaultPrefs optionsParser
@@ -78,7 +82,7 @@ main = do
         configExists <- doesFileExist configFile
 --      print (if configExists then "Reading" else "No such file", configFile)
         if configExists
-            then do
+            then
                 Global.Config.read configFile >>= either die (pure . flip (<>))
             else
                 pure id
