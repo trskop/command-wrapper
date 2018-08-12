@@ -17,10 +17,9 @@ module Main (main)
 import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=))
 import Data.Either (Either(Right), either)
-import Data.Eq ((/=), (==))
+import Data.Eq ((/=))
 import Data.Function (($), (.), flip, id)
 import Data.Functor ((<$>))
-import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Semigroup ((<>))
 import Data.Monoid (Endo(Endo, appEndo), mempty)
 import Data.String (String)
@@ -38,7 +37,7 @@ import System.FilePath ((</>))
 
 import qualified CommandWrapper.Config as Global (Config)
 import qualified CommandWrapper.Config as Global.Config (Config(..), def, read)
-import CommandWrapper.Environment (AppNames(..), appNames)
+import CommandWrapper.Environment (AppNames(..), getAppNames)
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
 import qualified CommandWrapper.Options as Options
@@ -56,8 +55,10 @@ defaults config (Endo f) =
 
 main :: IO ()
 main = do
-    AppNames{exeName, usedName} <- appNames
+    appNames@AppNames{exeName, usedName} <- getAppNames
 
+    -- TODO: This code can be simplified and generalised by mapping over a list
+    --       of names under which command-wrapper is known at the moment.
     config <- (\f g -> g (f Global.Config.def))
         <$> readGlobalConfig exeName
         <*> ( if exeName /= usedName
@@ -65,11 +66,8 @@ main = do
                  else pure id
             )
 
-    -- More specific name has priority, i.e. user defined toolset has
-    -- preference from generic 'command-wrapper' commands.
-    let names = usedName :| (if exeName == usedName then [] else [exeName])
     Mainplate.runExtensibleAppWith (parseOptions config) readConfig
-        (defaults config) (External.run names) (Internal.run names)
+        (defaults config) (External.run appNames) (Internal.run appNames)
   where
     parseOptions config =
         Options.parseCommandWrapper Options.defaultPrefs optionsParser

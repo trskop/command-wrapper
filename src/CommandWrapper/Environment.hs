@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 -- |
 -- Module:      CommandWrapper.Environment
@@ -22,18 +23,21 @@ module CommandWrapper.Environment
     -- * Environment Builder
     , EnvVars(..)
     , Params(..)
-    , envVars
+    , mkEnvVars
+    , getEnv
+    , commandWrapperEnv
 
     -- * Environment Parser
     , ParseEnv(..)
     , ParseEnvError(..)
     , parseEnv
+    , parseEnvIO
     , askVar
     , askOptionalVar
 
     -- * Application Names
     , AppNames(..)
-    , appNames
+    , getAppNames
     )
   where
 
@@ -41,6 +45,7 @@ import Prelude
 
 import Control.Applicative -- (Alternative, Applicative, pure)
 import Control.Monad (Monad, MonadPlus, (>>=))
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Fail (MonadFail(fail))
 import Data.Either (Either)
 import Data.Function (($), (.), const)
@@ -48,16 +53,17 @@ import Data.Functor (Functor, (<&>))
 import Data.Functor.Identity (Identity(Identity))
 import Data.String (String)
 import Data.Semigroup (Semigroup((<>)))
+import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe, maybe)
 import Data.Monoid (Monoid(mempty))
-import System.Environment (getProgName)
+import System.Environment (getEnvironment, getProgName)
 import System.IO (FilePath)
 import Text.Show (Show)
 
 import Control.Monad.Reader (ReaderT(ReaderT))
 import Control.Monad.Except (Except, ExceptT(ExceptT), MonadError, throwError)
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
+import qualified Data.HashMap.Strict as HashMap (fromList, lookup, toList)
 import System.Environment.Executable (ScriptPath(..), getScriptPath)
 import System.FilePath (takeFileName)
 
@@ -76,23 +82,27 @@ instance Semigroup EnvVars where
         f prefix <> g prefix
 
 instance Monoid EnvVars where
-    mempty = EnvVars $ const mempty
+    mempty = EnvVars (const mempty)
 
 data Params = Params
-    { projectRoot :: FilePath
-    , exePath :: FilePath
+    { exePath :: FilePath
     , name :: FilePath
     , config :: FilePath
     }
 
-envVars :: Params -> EnvVars
-envVars Params{..} = EnvVars $ \prefix ->
+mkEnvVars :: Params -> EnvVars
+mkEnvVars Params{..} = EnvVars $ \prefix ->
     HashMap.fromList
       [ (prefix <> "_EXE", exePath)
-      , (prefix <> "_PROJECT_ROOT", projectRoot)
       , (prefix <> "_NAME", name)
       , (prefix <> "_CONFIG", config)
       ]
+
+getEnv :: MonadIO io => io EnvVars
+getEnv = EnvVars . const . HashMap.fromList <$>  liftIO getEnvironment
+
+commandWrapperEnv :: EnvVars -> [(EnvVarName, EnvVarValue)]
+commandWrapperEnv (EnvVars mkEnv) = HashMap.toList (mkEnv "COMMAND_WRAPPER")
 
 -- }}} Environment Builder ----------------------------------------------------
 
@@ -146,6 +156,17 @@ parseEnv env (ParseEnv (ReaderT f)) =
     case f env of
         ExceptT (Identity r) -> r
 
+-- | Variant of 'parseEnvIO' that populates the environment by reading process
+-- environment variables.
+parseEnvIO
+    :: MonadIO io
+    => (forall void. ParseEnvError -> io void)
+    -> ParseEnv a
+    -> io a
+parseEnvIO onError parser = do
+    env <- HashMap.fromList <$> liftIO getEnvironment
+    either onError pure (parseEnv env parser)
+
 -- }}} Environment Parser -----------------------------------------------------
 
 -- {{{ Application Names ------------------------------------------------------
@@ -154,19 +175,37 @@ data AppNames = AppNames
     { exePath :: FilePath
     , exeName :: String
     , usedName :: String
+    , names :: NonEmpty String
     }
 
-appNames :: IO AppNames
-appNames = do
+getAppNames :: IO AppNames
+getAppNames = do
     usedName <- getProgName
     getScriptPath <&> \case
         Executable exePath ->
-            AppNames{exePath, exeName = takeFileName exePath, usedName}
+            appNamesWithExePath usedName exePath
 
         RunGHC exePath ->
-            AppNames{exePath, exeName = takeFileName exePath, usedName}
+            appNamesWithExePath usedName exePath
 
         Interactive ->
-            AppNames{exePath = "", exeName = "", usedName}
+            AppNames
+                { exePath = ""
+                , exeName = ""
+                , usedName
+                , names = usedName :| []
+                }
+  where
+    appNamesWithExePath usedName exePath =
+        let exeName = takeFileName exePath
+        in AppNames
+            { exePath
+            , exeName
+            , usedName
+
+            -- More specific name has priority, i.e. user defined toolset has
+            -- preference from generic 'command-wrapper' commands.
+            , names = usedName :| if exeName == usedName then [] else [exeName]
+            }
 
 -- }}} Application Names ------------------------------------------------------

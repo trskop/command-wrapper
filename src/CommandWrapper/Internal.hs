@@ -14,54 +14,64 @@
 --
 -- TODO: Module description.
 module CommandWrapper.Internal
-    ( Command(..)
+    (
+    -- * Internal Commands
+      Command(..)
     , run
+    , command
 
-    , runMain
-
+    -- ** Help Command
     , HelpMode(..)
     , help
 
+    -- ** Config Command
     , ConfigMode(..)
     , config
+
+    -- * Generic Functions
+    , runMain
     )
   where
-
-import Prelude (error)
 
 import Control.Applicative (pure)
 import Data.Foldable (traverse_)
 import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<$>))
-import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Monoid (Endo(Endo), mempty)
+import Data.Functor (Functor)
+import Data.Maybe (Maybe(..), isJust)
+import Data.Monoid (Endo(Endo))
 import Data.Semigroup ((<>))
 import Data.String (String, unlines)
+import System.Exit (die)
 import System.IO (IO, putStr, putStrLn)
 
 import qualified Mainplate (applySimpleDefaults, noConfigToRead, runAppWith)
 
 import qualified CommandWrapper.Config as Global (Config(..))
+import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External (executeCommand)
+import CommandWrapper.Options.Alias (applyAlias)
 
 
 data Command
     = HelpCmommand [String]
     | ConfigCommand [String]
 
-run :: NonEmpty String -> Command -> Global.Config -> IO ()
+command
+    :: String
+    -- ^ Subcommand name.
+    -> [String]
+    -- ^ Subcommand arguments.
+    -> Maybe Command
+    -- ^ Return 'Nothing' if subcommand is not an internal command.
+command = \case
+    "help" -> Just . HelpCmommand
+    "config" -> Just . ConfigCommand
+    _ -> const Nothing
+
+run :: AppNames -> Command -> Global.Config -> IO ()
 run appNames = \case
     HelpCmommand options -> help appNames options
     ConfigCommand options -> config appNames options
-
-runMain
-    :: Functor mode
-    => IO (Endo (mode config))
-    -> (Endo (mode config) -> IO (mode config))
-    -> (mode config -> IO ())
-    -> IO ()
-runMain parseOptions =
-    Mainplate.runAppWith parseOptions (pure . Mainplate.noConfigToRead)
 
 -- {{{ Help Command -----------------------------------------------------------
 
@@ -72,36 +82,47 @@ data HelpMode a
     | SubcommandHelp String a
   deriving Functor
 
-help :: NonEmpty String -> [String] -> Global.Config -> IO ()
-help appNames options globalConfig =
+help :: AppNames -> [String] -> Global.Config -> IO ()
+help appNames@AppNames{usedName} options globalConfig =
     runMain parseOptions defaults $ \case
         MainHelp Global.Config{Global.extraHelpMessage} -> do
             putStr helpMsg
             traverse_ putStrLn extraHelpMessage
 
         SubcommandHelp subcommand cfg ->
-            -- TODO: Resolve possible aliases for subcommand.
-            External.executeCommand ((<> "-") <$> appNames) subcommand
-                ["--help"] cfg
+            External.executeCommand appNames subcommand ["--help"] cfg
   where
     defaults = Mainplate.applySimpleDefaults (MainHelp globalConfig)
 
     parseOptions :: IO (Endo (HelpMode Global.Config))
     parseOptions = case options of
-        [] -> switchTo (MainHelp globalConfig)
-        [subcommand] -> switchTo (SubcommandHelp subcommand globalConfig)
-        _ -> error "Too many arguments"
+        [] ->
+            switchTo (MainHelp globalConfig)
+
+        [subcmd] ->
+            let (subcmd', _) =
+                    applyAlias (Global.aliases globalConfig) subcmd []
+            in switchTo
+                $ if isJust (command subcmd' [])
+                    then
+                        -- TODO: We should have more detailed help for internal
+                        -- commands.
+                        MainHelp globalConfig
+                    else
+                        SubcommandHelp subcmd' globalConfig
+
+        _ : arg : _ ->
+            die ("Error: '" <> arg <> "': Too many arguments")
 
     switchTo = pure . Endo . const
-
-    appName :| _ = appNames
 
     helpMsg = unlines
         [ "Usage:"
         , ""
-        , "  " <> appName <> " [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]"
-        , "  " <> appName <> " help [SUBCOMMAND]"
-        , "  " <> appName <> " {-h|--help}"
+        , "  " <> usedName <> " [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]"
+        , "  " <> usedName <> " config [SUBCOMMAND]"
+        , "  " <> usedName <> " help [SUBCOMMAND]"
+        , "  " <> usedName <> " {-h|--help}"
         ]
 
 -- }}} Help Command -----------------------------------------------------------
@@ -112,7 +133,7 @@ newtype ConfigMode a
     = InitConfig a
   deriving Functor
 
-config :: NonEmpty String -> [String] -> Global.Config -> IO ()
+config :: AppNames -> [String] -> Global.Config -> IO ()
 config _appNames _options globalConfig =
     runMain parseOptions defaults $ \case
         InitConfig _ -> pure ()
@@ -120,6 +141,22 @@ config _appNames _options globalConfig =
     defaults = Mainplate.applySimpleDefaults (InitConfig globalConfig)
 
     parseOptions :: IO (Endo (ConfigMode Global.Config))
-    parseOptions = pure mempty
+    parseOptions = die "Error: config: Subcommand not yet implemented."
 
 -- }}} Config Command ---------------------------------------------------------
+
+-- {{{ Generic Functions ------------------------------------------------------
+
+-- | Simplified version of 'Mainplate.runAppWith' that assumes that we don't
+-- need to parse any additional configuration file. This should be true for
+-- internal commands.
+runMain
+    :: Functor mode
+    => IO (Endo (mode config))
+    -> (Endo (mode config) -> IO (mode config))
+    -> (mode config -> IO ())
+    -> IO ()
+runMain parseOptions =
+    Mainplate.runAppWith parseOptions (pure . Mainplate.noConfigToRead)
+
+-- }}} ------------------------------------------------------------------------

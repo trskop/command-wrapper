@@ -75,21 +75,20 @@ parseCommandWrapper parserPrefs parserInfo getAliases =
             -- redesigned at some point.
             cmd : args ->
                 Endo $ case applyAlias aliases cmd args of
-                    ("help", cmd' : args') ->
-                        let (cmd'', args'') = applyAlias aliases cmd' args'
-                        in \case
-                            Mainplate.Internal _ config ->
-                                helpCommand (cmd'' : args'') config
-
-                            Mainplate.External _ config ->
-                                helpCommand (cmd'' : args'') config
-
-                    ("help", []) -> \case
+                    -- TODO: Refactor to use 'Internal.command'.
+                    ("help", args') -> \case
                         Mainplate.Internal _ config ->
-                            helpCommand [] config
+                            helpCommand args' config
 
                         Mainplate.External _ config ->
-                            helpCommand [] config
+                            helpCommand args' config
+
+                    ("config", args') -> \case
+                        Mainplate.Internal _ config ->
+                            configCommand args' config
+
+                        Mainplate.External _ config ->
+                            configCommand args' config
 
                     (cmd', args') -> \case
                         Mainplate.Internal _ config ->
@@ -98,8 +97,8 @@ parseCommandWrapper parserPrefs parserInfo getAliases =
                         Mainplate.External _ config ->
                             externalCommand cmd' args' config
   where
-    helpCommand =
-        Mainplate.Internal . Internal.HelpCmommand
+    helpCommand = Mainplate.Internal . Internal.HelpCmommand
+    configCommand = Mainplate.Internal . Internal.ConfigCommand
 
     externalCommand executable options =
         Mainplate.External Mainplate.ExternalCommand{..}
