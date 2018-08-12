@@ -43,3 +43,10 @@ executables:
     main: Main.hs
     dependencies:
       - *this
+
+  command-wrapper-skel:
+    source-dirs: app-skel
+    main: Main.hs
+    dependencies:
+      - *this
+      - turtle
