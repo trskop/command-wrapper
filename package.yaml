@@ -50,3 +50,4 @@ executables:
     dependencies:
       - *this
       - turtle
+      - case-insensitive
