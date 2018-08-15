@@ -28,6 +28,7 @@ import Control.Exception (onException)
 import Control.Monad (unless)
 import Data.Functor (void)
 import Data.Maybe (isJust)
+import Data.Semigroup (Semigroup(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
 import System.Exit (die)
@@ -38,6 +39,7 @@ import qualified Dhall (Interpret, auto, inputFile)
 import System.Posix.Process (executeFile)
 import Turtle
     ( Line
+    , Parser
     , Shell
     , cd
     , echo
@@ -47,6 +49,7 @@ import Turtle
     , lineToText
     , options
     , select
+    , switch
     , sh
     , testdir
     , unsafeTextToLine
@@ -72,7 +75,7 @@ instance Dhall.Interpret Config
 
 main :: IO ()
 main = do
-    (_wrapperName, configFile, tmux) <- Environment.parseEnvIO (die . show) $ do
+    (_, configFile, inTmuxSession) <- Environment.parseEnvIO (die . show) $ do
         void (Environment.askVar "COMMAND_WRAPPER_EXE")
             <|> failInvalidCommandWrapperEnvironment
 
@@ -82,21 +85,58 @@ main = do
             <*> (isJust <$> Environment.askOptionalVar "TMUX")
 
 
-    options description (pure ())
+    strategy <- options description parseOptions
     Config{..} <- Dhall.inputFile Dhall.auto configFile
+    action <- evalStrategy shell inTmuxSession strategy
 
     sh $ do
-        line <- inproc menuTool [] $ select (unsafeTextToLine <$> directories)
-        executeAction line
-            $ if tmux
-                  then RunTmux
-                  else RunShell shell
+        dir <- inproc menuTool [] $ select (unsafeTextToLine <$> directories)
+        executeAction dir action
   where
     description =
         "Change directory by selecting one from preselected list"
 
     failInvalidCommandWrapperEnvironment =
         fail "This command must be executed as part of some command-wrapper environment"
+
+data Strategy
+    = Auto
+    | ShellOnly
+    | TmuxOnly
+
+instance Semigroup Strategy where
+    Auto <> x    = x
+    x    <> Auto = x
+    _    <> x    = x
+
+evalStrategy :: Text -> Bool -> Strategy -> IO Action
+evalStrategy shell inTmuxSession = \case
+    Auto
+      | inTmuxSession -> pure RunTmux
+      | otherwise     -> pure (RunShell shell)
+
+    ShellOnly -> pure (RunShell shell)
+
+    TmuxOnly
+      | inTmuxSession -> pure RunTmux
+      | otherwise     ->
+        die "Error: Not in a Tmux session and '--tmux' was specified."
+
+parseOptions :: Parser Strategy
+parseOptions =
+    go  <$> shellSwitch
+        <*> tmuxSwitch
+  where
+    go runShell noRunShell =
+        (if runShell then ShellOnly else Auto)
+        <> (if noRunShell then TmuxOnly else Auto)
+
+    shellSwitch =
+        switch "shell" 's' "Execute a subshell even if in a Tmux session."
+
+    tmuxSwitch =
+        switch "tmux" 't'
+            "Execute a new Tmux window, or fail if not in Tmux session."
 
 data Action
     = RunShell Text
@@ -119,7 +159,10 @@ executeAction directory = \case
     directoryStr = Text.unpack (lineToText directory)
 
     executeCommand command arguments = do
-        echo $ "+ : " <> fromString command <> " " <> fromString (show arguments)
+        echo $ "+ : " <> showCommand command arguments
+
         liftIO $ executeFile command True arguments Nothing
             `onException`
                 die ("Error: '" <> command <> "': Failed to execute.")
+
+    showCommand cmd args = fromString cmd <> " " <> fromString (show args)
