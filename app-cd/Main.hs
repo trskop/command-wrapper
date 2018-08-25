@@ -27,6 +27,7 @@ import Control.Applicative ((<|>))
 import Control.Exception (onException)
 import Control.Monad (unless)
 import Data.Functor (void)
+import qualified Data.List as List (nub)
 import Data.Maybe (isJust)
 import Data.Semigroup (Semigroup(..))
 import Data.String (fromString)
@@ -90,7 +91,7 @@ main = do
     action <- evalStrategy shell inTmuxSession strategy
 
     sh $ do
-        dir <- inproc menuTool [] $ select (unsafeTextToLine <$> directories)
+        dir <- inproc menuTool [] $ select (unsafeTextToLine <$> List.nub directories)
         executeAction dir action
   where
     description =
