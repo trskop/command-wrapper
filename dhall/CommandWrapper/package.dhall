@@ -3,5 +3,6 @@ let commandWrapper =
       , mkDefaultConfig = ./default.dhall
       , mkCdConfig = ./cd.dhall
       , mkSkelConfig = ./skel.dhall
+      , command = ./command.dhall
       }
 in  commandWrapper
