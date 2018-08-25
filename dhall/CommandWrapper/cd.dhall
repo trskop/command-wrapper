@@ -2,6 +2,9 @@
     CommandWrapper = ./Type/package.dhall
 
 in let
+    terminalEmulator = ./terminal-emulator.dhall
+
+in let
     mkCd =
         λ ( context
               : { home : Text
@@ -23,6 +26,8 @@ in let
           -- Some systems may not have Bash in default search path. Consider
           -- using absolute file path instead.
           , shell = "bash"
+
+          , terminalEmulator = terminalEmulator.urxvt.inDirectory
           }
 
 in  mkCd

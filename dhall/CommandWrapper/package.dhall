@@ -4,5 +4,6 @@ let commandWrapper =
       , mkCdConfig = ./cd.dhall
       , mkSkelConfig = ./skel.dhall
       , command = ./command.dhall
+      , terminalEmulator = ./terminal-emulator.dhall
       }
 in  commandWrapper

@@ -1,8 +1,12 @@
   let
+    Command = ./Command.dhall
+
+in let
     CdConfig =
       { directories : List Text
       , menuTool : Text
       , shell : Text
+      , terminalEmulator : ∀(directory : Text) → Command
       }
 
 in let

@@ -69,10 +69,19 @@ data Config = Config
     { directories :: [Text]
     , menuTool :: Text
     , shell :: Text
+    , terminalEmulator :: Text -> TerminalEmulator
+    }
+  deriving (Generic)
+
+instance Dhall.Interpret Config
+
+data TerminalEmulator = TerminalEmulator
+    { command :: Text
+    , arguments :: [Text]
     }
   deriving (Generic, Show)
 
-instance Dhall.Interpret Config
+instance Dhall.Interpret TerminalEmulator
 
 main :: IO ()
 main = do
@@ -88,7 +97,7 @@ main = do
 
     strategy <- options description parseOptions
     Config{..} <- Dhall.inputFile Dhall.auto configFile
-    action <- evalStrategy shell inTmuxSession strategy
+    action <- evalStrategy terminalEmulator shell inTmuxSession strategy
 
     sh $ do
         dir <- inproc menuTool [] $ select (unsafeTextToLine <$> List.nub directories)
@@ -104,14 +113,20 @@ data Strategy
     = Auto
     | ShellOnly
     | TmuxOnly
+    | TerminalEmulatorOnly
 
 instance Semigroup Strategy where
     Auto <> x    = x
     x    <> Auto = x
     _    <> x    = x
 
-evalStrategy :: Text -> Bool -> Strategy -> IO Action
-evalStrategy shell inTmuxSession = \case
+evalStrategy
+    :: (Text -> TerminalEmulator)
+    -> Text
+    -> Bool
+    -> Strategy
+    -> IO Action
+evalStrategy term shell inTmuxSession = \case
     Auto
       | inTmuxSession -> pure RunTmux
       | otherwise     -> pure (RunShell shell)
@@ -123,25 +138,34 @@ evalStrategy shell inTmuxSession = \case
       | otherwise     ->
         die "Error: Not in a Tmux session and '--tmux' was specified."
 
+    TerminalEmulatorOnly -> pure (RunTerminalEmulator term)
+
 parseOptions :: Parser Strategy
 parseOptions =
     go  <$> shellSwitch
         <*> tmuxSwitch
+        <*> terminalEmulator
   where
-    go runShell noRunShell =
+    go runShell noRunShell runTerminalEmulator =
         (if runShell then ShellOnly else Auto)
         <> (if noRunShell then TmuxOnly else Auto)
+        <> (if runTerminalEmulator then TerminalEmulatorOnly else Auto)
 
     shellSwitch =
         switch "shell" 's' "Execute a subshell even if in a Tmux session."
 
     tmuxSwitch =
         switch "tmux" 't'
-            "Execute a new Tmux window, or fail if not in Tmux session."
+            "Create a new Tmux window, or fail if not in Tmux session."
+
+    terminalEmulator =
+        switch "terminal" 'e'
+            "Open a new terminal emulator window."
 
 data Action
     = RunShell Text
     | RunTmux
+    | RunTerminalEmulator (Text -> TerminalEmulator)
 
 executeAction :: Line -> Action -> Shell ()
 executeAction directory = \case
@@ -155,9 +179,18 @@ executeAction directory = \case
         unless exists . liftIO
             $ die ("Error: '" <> directoryStr <> "': Directory doesn' exist.")
         executeCommand "tmux" ["new-window", "-c", directoryStr]
+
+    RunTerminalEmulator term -> do
+        exists <- testdir directoryPath
+        unless exists . liftIO
+            $ die ("Error: '" <> directoryStr <> "': Directory doesn' exist.")
+
+        let TerminalEmulator{..} = term directoryText
+        executeCommand (Text.unpack command) (Text.unpack <$> arguments)
   where
     directoryPath = fromText (lineToText directory)
-    directoryStr = Text.unpack (lineToText directory)
+    directoryText = lineToText directory
+    directoryStr = Text.unpack directoryText
 
     executeCommand command arguments = do
         echo $ "+ : " <> showCommand command arguments
