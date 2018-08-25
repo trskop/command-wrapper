@@ -43,10 +43,11 @@ module CommandWrapper.Environment
 
 import Prelude
 
-import Control.Applicative -- (Alternative, Applicative, pure)
+import Control.Applicative (Alternative, Applicative, pure)
 import Control.Monad (Monad, MonadPlus, (>>=))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Fail (MonadFail(fail))
+import qualified Data.Char as Char (toLower)
 import Data.Either (Either)
 import Data.Function (($), (.), const)
 import Data.Functor (Functor, (<&>))
@@ -58,12 +59,13 @@ import Data.Maybe (Maybe, maybe)
 import Data.Monoid (Monoid(mempty))
 import System.Environment (getEnvironment, getProgName)
 import System.IO (FilePath)
-import Text.Show (Show)
+import Text.Show (Show, show)
 
 import Control.Monad.Reader (ReaderT(ReaderT))
 import Control.Monad.Except (Except, ExceptT(ExceptT), MonadError, throwError)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup, toList)
+import Data.Verbosity (Verbosity)
 import System.Environment.Executable (ScriptPath(..), getScriptPath)
 import System.FilePath (takeFileName)
 
@@ -88,6 +90,7 @@ data Params = Params
     { exePath :: FilePath
     , name :: FilePath
     , config :: FilePath
+    , verbosity :: Verbosity
     }
 
 mkEnvVars :: Params -> EnvVars
@@ -96,6 +99,7 @@ mkEnvVars Params{..} = EnvVars $ \prefix ->
       [ (prefix <> "_EXE", exePath)
       , (prefix <> "_NAME", name)
       , (prefix <> "_CONFIG", config)
+      , (prefix <> "_VERBOSITY", Char.toLower <$> show verbosity)
       ]
 
 getEnv :: MonadIO io => io EnvVars

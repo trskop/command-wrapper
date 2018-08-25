@@ -22,6 +22,7 @@ dependencies:
   - endo
   - executable-path
   - filepath
+  - generic-lens
   - host-and-port
   - mainplate
   - mtl
@@ -30,7 +31,7 @@ dependencies:
   - text
   - unix
   - unordered-containers
-  - verbosity
+  - verbosity >=0.3
 
 ghc-options: -Wall
 

@@ -31,6 +31,11 @@ import GHC.Generics (Generic)
 import System.IO (FilePath, IO)
 import Text.Show (show)
 
+import Data.Verbosity (Verbosity)
+import qualified Data.Verbosity as Verbosity (Verbosity(..))
+import Data.Verbosity.Class (HasVerbosity)
+import qualified Data.Verbosity.Class (HasVerbosity(verbosity))
+import Data.Generics.Product.Typed (typed)
 import qualified Dhall (Interpret, InvalidType, auto, inputFile)
 import qualified Dhall.Parser as Dhall (ParseError, Src)
 import qualified Dhall.TypeCheck as Dhall (TypeError, X)
@@ -42,10 +47,14 @@ data Config = Config
     { aliases :: [Options.Alias]
     , searchPath :: [FilePath]
     , extraHelpMessage :: Maybe String
+    , verbosity :: Verbosity
     }
   deriving (Generic)
 
 instance Dhall.Interpret Config
+
+instance HasVerbosity Config where
+    verbosity = typed
 
 instance Semigroup Config where
     c1 <> c2 = Config
@@ -53,10 +62,11 @@ instance Semigroup Config where
         , searchPath = ((<>) `on` searchPath) c2 c1
             -- Reverse order, more specific search path comes first.
         , extraHelpMessage = ((<>) `on` extraHelpMessage) c1 c2
+        , verbosity = verbosity c1
         }
 
 def :: Config
-def = Config [] [] Nothing
+def = Config [] [] Nothing Verbosity.Normal
 
 read :: FilePath -> IO (Either String Config)
 read = catchDhallExceptions . Dhall.inputFile Dhall.auto
