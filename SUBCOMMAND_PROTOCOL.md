@@ -54,17 +54,20 @@ are available to it:
 ## Configuration File
 
 Subcommand may require a configuration file. If it does require one then it
-must use the one provided in `COMMAND_WRAPPER_CONFIG`, which is always in Dhall
-format. Subcommand must not use any other configuration file, with the notable
-exception of it's dependencies, e.g. DNS resolution uses `/etc/resolv.conf`.
-However, if it's possible then temporary configuration file should be generated
-and passed to the dependency explicitly.
+must use the one provided in `COMMAND_WRAPPER_CONFIG`, which is always in
+[Dhall](https://github.com/dhall-lang/dhall-lang#readme) format. Subcommand
+must not use any other configuration file, with the notable exception of it's
+dependencies, e.g. DNS resolution uses `/etc/resolv.conf`.  However, if it's
+possible then temporary configuration file should be generated and passed to
+the dependency explicitly.
 
 When this is respected by the subcommand then CommandWrapper has full control
 over subcommand configuration and command line arguments that are passed to it.
 This way it can guarantee consistent UI.
 
 **TODO:** CommandWrapper should provide `dhall` subcommand so that e.g. Bash
-subcommands do not have to rely on Dhall tools to be installed separately. This
-would also allow tools that want to use JSON format to generate a temporary
-file created from the Dhall configuration file.
+subcommands do not have to rely on
+[Dhall](https://github.com/dhall-lang/dhall-lang#readme) tools to be installed
+separately. This would also allow tools that want to use JSON format to
+generate a temporary file created from the
+[Dhall](https://github.com/dhall-lang/dhall-lang#readme) configuration file.
