@@ -9,11 +9,13 @@ license: BSD3
 license-file: LICENSE
 author: Peter Trško
 maintainer: peter.trsko@gmail.com
-copyright: (c) 2014, 2018 Peter Trško
+copyright: (c) 2014-2018 Peter Trško
 category: Tools
 
 extra-source-files:
   - README.md
+  - dhall/CommandWrapper/*.dhall
+  - dhall/CommandWrapper/Type/*.dhall
 
 dependencies:
   - base
