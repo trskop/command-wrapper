@@ -51,19 +51,17 @@ Install `command-wrapper`:
 
 ```Bash
 git clone https://github.com/trskop/command-wrapper.git ~/.local/src/trskop/command-wrapper
-stack --stack-yaml="${HOME}/.local/src/trskop/command-wrapper/stack.yaml" install
+mkdir -p ~/.local/lib/command-wrapper
+stack --stack-yaml="${HOME}/.local/src/trskop/command-wrapper/stack.yaml" --local-bin-path="${HOME}/.local/lib/command-wrapper" install
 mkdir ~/.config/command-wrapper
-cp ~/.local/src/trskop/command-wrapper/example/default.dhall ~/.config/command-wrapper/
 ```
 
 Define new toolset:
 
 ```Bash
 toolset='INSERT_COMMAND_NAME_HERE'
-ln -s ../.local/bin/command-wrapper ~/bin/"${toolset}"
+ln -s ../.local/lib/command-wrapper/command-wrapper ~/bin/"${toolset}"
 mkdir ~/.config/"${toolset}" ~/.local/lib/"${toolset}"
-cp ~/.local/src/trskop/command-wrapper/example/default.dhall ~/.config/command-wrapper/
-dhall > ~/.config/"${toolset}"/default.dhall <<< '~/.local/src/trskop/command-wrapper/example/make-default.dhall (env:toolset as Text)'
 ```
 
 
@@ -75,27 +73,29 @@ dhall > ~/.config/"${toolset}"/default.dhall <<< '~/.local/src/trskop/command-wr
 │   ├── ...
 │   ├── command-wrapper/
 │   │   ├── default.dhall
+│   │   ├── command-wrapper-${subcommand0}.dhall
 │   │   ├── ...
-│   │   └── command-wrapper-${subcommand0}.dhall
-│   └── ${prefix}/
+│   │   └── command-wrapper-${subcommandN}.dhall
+│   └── ${toolset}/
 │       ├── default.dhall
+│       ├── ${toolset}-${toolsetSubcommand0}.dhall
 │       ├── ...
-│       └── ${prefix}-${subcommand1}.dhall
+│       └── ${toolset}-${toolsetSubcommand0}.dhall
 ├── .local/
 │   ├── ...
-│   ├── lib/
-│   │   ├── ...
-│   │   ├── command-wrapper/
-│   │   │   ├── ...
-│   │   │   └── command-wrapper-${subcommand0}
-│   │   └── ${prefix}/
-│   │       ├── ...
-│   │       └── ${prefix}-${subcommand1}
-│   └── bin/
+│   └── lib/
 │       ├── ...
-│       └── command-wrapper
+│       ├── command-wrapper/
+│       │   ├── command-wrapper
+│       │   ├── command-wrapper-${subcommand0}
+│       │   ├── ...
+│       │   └── command-wrapper-${subcommandN}
+│       └── ${toolset}/
+│           ├── ${toolset}-${toolsetSubcommand0}
+│           ├── ...
+│           └── ${toolset}-${toolsetSubcommandN}
 └── bin/
-    └── ${prefix} --> ../.local/bin/command-wrapper
+    └── ${toolset} --> ../.local/bin/command-wrapper
 ````
 
 
