@@ -2,4 +2,4 @@ let Command =
       { command : Text
       , arguments : List Text
       }
-in  Command
+in  Command : Type

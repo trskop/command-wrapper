@@ -5,12 +5,17 @@ in let
     verbosity = https://raw.githubusercontent.com/trskop/verbosity/master/dhall/Verbosity/package.dhall
 
 in let
-    -- TODO: Move to types
-    SubcommandAlias =
-      { alias : Text
-      , command : Text
-      , arguments : List Text
-      }
+    helpMessage = ''
+
+Internal Subcommands:
+
+  help     (aliases: h, hlp)
+
+External Subcommands:
+
+  cd
+  skel
+''
 
 in let
     mkDefault =
@@ -32,16 +37,13 @@ in let
                 , command = "help"
                 , arguments = [] : List Text
                 }
-              ] : List SubcommandAlias
+              ] : List CommandWrapper.SubcommandAlias
 
           , searchPath =
               [ "${context.home}/.local/lib/command-wrapper"
               ] : List Text
 
-          , extraHelpMessage =
-              [ "\nInternal Subcommands:\n\n  help     (aliases: h, hlp)\n"
-              ] : Optional Text
-
+          , extraHelpMessage = [ helpMessage ]: Optional Text
           , verbosity = verbosity.normal
           }
 

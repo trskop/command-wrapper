@@ -10,6 +10,7 @@ in let
 in let
     CommandWrapper =
       { Command = ./Command.dhall
+      , SubcommandAlias = ./SubcommandAlias.dhall
       , TerminalEmulator = ./TerminalEmulator.dhall
       , Verbosity = https://raw.githubusercontent.com/trskop/verbosity/master/dhall/Verbosity.dhall
 

@@ -7,4 +7,4 @@ in let
       , inDirectory : ∀(directory : Text) → Command
       }
 
-in  TerminalEmulator
+in  TerminalEmulator : Type
