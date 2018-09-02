@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
@@ -57,6 +58,7 @@ import Data.Semigroup (Semigroup((<>)))
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe, maybe)
 import Data.Monoid (Monoid(mempty))
+import GHC.Generics (Generic)
 import System.Environment (getEnvironment, getProgName)
 import System.IO (FilePath)
 import Text.Show (Show, show)
@@ -78,6 +80,7 @@ type EnvVarValue = String
 newtype EnvVars = EnvVars
     { getEnvVars :: String -> HashMap EnvVarName EnvVarValue
     }
+  deriving (Generic)
 
 instance Semigroup EnvVars where
     EnvVars f <> EnvVars g = EnvVars $ \prefix ->
@@ -92,6 +95,7 @@ data Params = Params
     , config :: FilePath
     , verbosity :: Verbosity
     }
+  deriving (Generic, Show)
 
 mkEnvVars :: Params -> EnvVars
 mkEnvVars Params{..} = EnvVars $ \prefix ->
@@ -117,7 +121,7 @@ data ParseEnvError
     | MissingEnvVarError EnvVarName
     | ErrorMessage String
     | UnknownError
-  deriving (Show)
+  deriving (Generic, Show)
 
 instance Semigroup ParseEnvError where
     e <> UnknownError = e
@@ -181,6 +185,7 @@ data AppNames = AppNames
     , usedName :: String
     , names :: NonEmpty String
     }
+  deriving (Generic, Show)
 
 getAppNames :: IO AppNames
 getAppNames = do

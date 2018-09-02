@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -41,8 +42,10 @@ import Data.Maybe (Maybe(..), isJust)
 import Data.Monoid (Endo(Endo))
 import Data.Semigroup ((<>))
 import Data.String (String, unlines)
+import GHC.Generics (Generic)
 import System.Exit (die)
 import System.IO (IO, putStr, putStrLn)
+import Text.Show (Show)
 
 import qualified Mainplate (applySimpleDefaults, noConfigToRead, runAppWith)
 
@@ -55,6 +58,7 @@ import CommandWrapper.Options.Alias (applyAlias)
 data Command
     = HelpCmommand [String]
     | ConfigCommand [String]
+  deriving (Generic, Show)
 
 command
     :: String
@@ -80,7 +84,7 @@ run appNames = \case
 data HelpMode a
     = MainHelp a
     | SubcommandHelp String a
-  deriving Functor
+  deriving (Functor, Generic, Show)
 
 help :: AppNames -> [String] -> Global.Config -> IO ()
 help appNames@AppNames{usedName} options globalConfig =
@@ -131,7 +135,7 @@ help appNames@AppNames{usedName} options globalConfig =
 
 newtype ConfigMode a
     = InitConfig a
-  deriving Functor
+  deriving (Functor, Generic, Show)
 
 config :: AppNames -> [String] -> Global.Config -> IO ()
 config _appNames _options globalConfig =

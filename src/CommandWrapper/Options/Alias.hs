@@ -24,6 +24,7 @@ import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid ((<>))
 import Data.String (String)
 import GHC.Generics (Generic)
+import Text.Show (Show)
 
 import qualified Dhall
 
@@ -33,7 +34,7 @@ data Alias = Alias
     , command :: String
     , arguments :: [String]
     }
-  deriving (Generic)
+  deriving (Generic, Show)
 
 instance Dhall.Interpret Alias
 

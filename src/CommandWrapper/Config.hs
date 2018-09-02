@@ -29,7 +29,7 @@ import Data.Semigroup (Semigroup((<>)))
 import Data.String (String)
 import GHC.Generics (Generic)
 import System.IO (FilePath, IO)
-import Text.Show (show)
+import Text.Show (Show, show)
 
 import Data.Verbosity (Verbosity)
 import qualified Data.Verbosity as Verbosity (Verbosity(..))
@@ -49,7 +49,7 @@ data Config = Config
     , extraHelpMessage :: Maybe String
     , verbosity :: Verbosity
     }
-  deriving (Generic)
+  deriving (Generic, Show)
 
 instance Dhall.Interpret Config
 
