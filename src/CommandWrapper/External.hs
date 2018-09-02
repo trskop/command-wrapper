@@ -35,7 +35,7 @@ import Control.Exception (onException)
 import System.Exit (die)
 import System.IO (FilePath, IO{-, print-})
 
-import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
+--import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 import qualified Mainplate (ExternalCommand(..))
 import System.Directory
     ( XdgDirectory(XdgConfig)
@@ -45,7 +45,9 @@ import System.Directory
 import System.FilePath ((</>), (<.>), getSearchPath)
 import System.Posix.Process (executeFile)
 
-import qualified CommandWrapper.Config as Global (Config(Config, searchPath))
+import qualified CommandWrapper.Config as Global
+    ( Config(Config, searchPath, verbosity)
+    )
 import qualified CommandWrapper.Environment as Environment -- (Params{-(Params)-})
 
 
@@ -94,7 +96,7 @@ executeCommand appNames subcommand arguments globalConfig =
             { exePath
             , name = usedName
             , config
-            , verbosity = Verbosity.Normal
+            , verbosity = Global.verbosity globalConfig
             }
 
     unableToFindExecutableError =

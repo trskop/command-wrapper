@@ -1,9 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE NamedFieldPuns #-}
+-- {-# LANGUAGE TypeApplications #-}
 -- |
 -- Module:       Main
 -- Description:  TODO: Module description.
--- Copyright:    (c) 2014 Peter Trsko
+-- Copyright:    (c) 2014-2018 Peter Trsko
 -- License:      BSD3
 --
 -- Maintainer:   peter.trsko@gmail.com
@@ -14,12 +15,12 @@
 module Main (main)
   where
 
-import Control.Applicative ((<*>), pure)
+import Control.Applicative ((<*>), many, optional, pure)
 import Control.Monad ((>>=))
 import Data.Either (Either(Right), either)
 import Data.Eq ((/=))
 import Data.Function (($), (.), flip, id)
-import Data.Functor ((<$>))
+import Data.Functor -- ((<$>))
 import Data.Semigroup ((<>))
 import Data.Monoid (Endo(Endo, appEndo), mempty)
 import Data.String (String)
@@ -27,6 +28,8 @@ import System.Exit (die)
 import System.IO (IO{-, print-})
 
 import qualified Options.Applicative as Options
+import qualified Options.Applicative.Standard as Options
+import Data.Monoid.Endo.Fold (foldEndo)
 import qualified Mainplate.Extensible as Mainplate -- (runExtensibleAppWith)
 import System.Directory
     ( XdgDirectory(XdgConfig)
@@ -73,7 +76,13 @@ main = do
         Options.parseCommandWrapper Options.defaultPrefs optionsParser
             $ pure . Global.Config.aliases . (`appEndo` config)
 
-    optionsParser = Options.info (pure mempty) Options.fullDesc
+    optionsParser = Options.info verbosityOptions Options.fullDesc
+
+    verbosityOptions :: Options.Parser (Endo Global.Config)
+    verbosityOptions = foldEndo
+        <$> many Options.incrementVerbosityFlag
+        <*> optional Options.verbosityOption
+        <*> Options.silentFlag
 
     readGlobalConfig baseName = do
         configFile <- getXdgDirectory XdgConfig (baseName </> "default.dhall")
