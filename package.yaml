@@ -19,7 +19,7 @@ extra-source-files:
 
 dependencies:
   - base
-  - dhall
+  - dhall >=1.16
   - directory
   - endo
   - executable-path
