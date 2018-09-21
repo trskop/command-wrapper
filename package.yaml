@@ -61,3 +61,11 @@ executables:
       - *this
       - turtle
       - case-insensitive
+
+  command-wrapper-exec:
+    source-dirs: app-exec
+    main: Main.hs
+    dependencies:
+      - *this
+      - turtle
+      - case-insensitive
