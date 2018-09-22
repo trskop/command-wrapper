@@ -25,6 +25,7 @@ module Main (main)
 
 import Control.Exception (onException)
 import Control.Monad (unless)
+import Data.Foldable (for_)
 import qualified Data.List as List (nub)
 import Data.Maybe (isJust)
 import Data.Semigroup (Semigroup(..))
@@ -32,7 +33,7 @@ import Data.String (fromString)
 import GHC.Generics (Generic)
 import System.Exit (die)
 
-import Data.Text (Text)
+import Data.Text (Text, isPrefixOf)
 import qualified Data.Text as Text (unpack)
 import qualified Dhall (Interpret, auto, inputFile)
 import System.Posix.Process (executeFile)
@@ -42,6 +43,7 @@ import Turtle
     , Shell
     , cd
     , echo
+    , env
     , fromText
     , inproc
     , liftIO
@@ -52,6 +54,7 @@ import Turtle
     , sh
     , testdir
     , unsafeTextToLine
+    , unset
     )
 
 import qualified CommandWrapper.Environment as Environment
@@ -92,6 +95,13 @@ main = do
     sh $ do
         dir <- inproc menuTool []
             $ select (unsafeTextToLine <$> List.nub directories)
+
+        environment <- env
+        for_ environment $ \(name, _) ->
+            if "COMMAND_WRAPPER_" `isPrefixOf` name
+                then unset name
+                else pure ()
+
         executeAction dir action
   where
     description =
