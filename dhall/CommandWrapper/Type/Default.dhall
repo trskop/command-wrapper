@@ -1,5 +1,5 @@
    let
-    Verbosity = https://raw.githubusercontent.com/trskop/verbosity/master/dhall/Verbosity.dhall
+    Verbosity = ./Verbosity.dhall
 
 in let
     DefaultConfig =

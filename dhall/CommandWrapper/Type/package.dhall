@@ -8,11 +8,14 @@ in let
     Skel = ./Skel.dhall
 
 in let
+    Exec = ./Exec.dhall
+
+in let
     CommandWrapper =
       { Command = ./Command.dhall
       , SubcommandAlias = ./SubcommandAlias.dhall
       , TerminalEmulator = ./TerminalEmulator.dhall
-      , Verbosity = https://raw.githubusercontent.com/trskop/verbosity/master/dhall/Verbosity.dhall
+      , Verbosity = ./Verbosity.dhall
 
       -- Toolset default (main/global) configuration
       , DefaultConfig = Default.Config
@@ -28,5 +31,10 @@ in let
       -- Configuration for `cd` subcommand
       , CdConfig = Cd.Config
       , CdMkConfig = Cd.MkConfig
+
+      -- Configuration for `exec` subcommand
+      , EnvironmentVariable = Exec.EnvironmentVariable
+      , ExecCommand = Exec.Command
+      , ExecNamedCommand = Exec.NamedCommand
       }
 in  CommandWrapper

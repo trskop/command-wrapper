@@ -23,10 +23,8 @@
 module Main (main)
   where
 
-import Control.Applicative ((<|>))
 import Control.Exception (onException)
 import Control.Monad (unless)
-import Data.Functor (void)
 import qualified Data.List as List (nub)
 import Data.Maybe (isJust)
 import Data.Semigroup (Semigroup(..))
@@ -85,29 +83,25 @@ instance Dhall.Interpret TerminalEmulator
 
 main :: IO ()
 main = do
-    (_, configFile, inTmuxSession) <- Environment.parseEnvIO (die . show) $ do
-        void (Environment.askVar "COMMAND_WRAPPER_EXE")
-            <|> failInvalidCommandWrapperEnvironment
-
-        (,,)
-            <$> Environment.askVar "COMMAND_WRAPPER_NAME"
-            <*> Environment.askVar "COMMAND_WRAPPER_CONFIG"
-            <*> (isJust <$> Environment.askOptionalVar "TMUX")
-
+    (Environment.Params{config = configFile}, inTmuxSession) <- getEnvironment
 
     strategy <- options description parseOptions
     Config{..} <- Dhall.inputFile Dhall.auto configFile
     action <- evalStrategy terminalEmulator shell inTmuxSession strategy
 
     sh $ do
-        dir <- inproc menuTool [] $ select (unsafeTextToLine <$> List.nub directories)
+        dir <- inproc menuTool []
+            $ select (unsafeTextToLine <$> List.nub directories)
         executeAction dir action
   where
     description =
         "Change directory by selecting one from preselected list"
 
-    failInvalidCommandWrapperEnvironment =
-        fail "This command must be executed as part of some command-wrapper environment"
+getEnvironment :: IO (Environment.Params, Bool)
+getEnvironment = Environment.parseEnvIO (die . show)
+    $ (,)
+        <$> Environment.askParams
+        <*> (isJust <$> Environment.askOptionalVar "TMUX")
 
 data Strategy
     = Auto

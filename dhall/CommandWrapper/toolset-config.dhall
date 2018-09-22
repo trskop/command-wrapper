@@ -2,7 +2,7 @@
     CommandWrapper = ./Type/package.dhall
 
 in let
-    verbosity = https://raw.githubusercontent.com/trskop/verbosity/master/dhall/Verbosity/package.dhall
+    verbosity = ./verbosity.dhall
 
 in let
     optionalFold = https://raw.githubusercontent.com/dhall-lang/dhall-haskell/master/Prelude/Optional/fold

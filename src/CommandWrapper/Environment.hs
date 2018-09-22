@@ -33,6 +33,7 @@ module CommandWrapper.Environment
     , ParseEnvError(..)
     , parseEnv
     , parseEnvIO
+    , askParams
     , askVar
     , askOptionalVar
 
@@ -42,16 +43,15 @@ module CommandWrapper.Environment
     )
   where
 
-import Prelude
-
-import Control.Applicative (Alternative, Applicative, pure)
+import Control.Applicative (Alternative, Applicative, (<*>), pure)
 import Control.Monad (Monad, MonadPlus, (>>=))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Fail (MonadFail(fail))
 import qualified Data.Char as Char (toLower)
-import Data.Either (Either)
+import Data.Either (Either, either)
+import Data.Eq ((==))
 import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<&>))
+import Data.Functor (Functor, (<$>), (<&>))
 import Data.Functor.Identity (Identity(Identity))
 import Data.String (String)
 import Data.Semigroup (Semigroup((<>)))
@@ -60,14 +60,16 @@ import Data.Maybe (Maybe, maybe)
 import Data.Monoid (Monoid(mempty))
 import GHC.Generics (Generic)
 import System.Environment (getEnvironment, getProgName)
-import System.IO (FilePath)
+import System.IO (FilePath, IO)
 import Text.Show (Show, show)
 
 import Control.Monad.Reader (ReaderT(ReaderT))
 import Control.Monad.Except (Except, ExceptT(ExceptT), MonadError, throwError)
+import qualified Data.CaseInsensitive as CaseInsensitive (mk)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup, toList)
 import Data.Verbosity (Verbosity)
+import qualified Data.Verbosity as Verbosity (parse)
 import System.Environment.Executable (ScriptPath(..), getScriptPath)
 import System.FilePath (takeFileName)
 
@@ -174,6 +176,25 @@ parseEnvIO
 parseEnvIO onError parser = do
     env <- HashMap.fromList <$> liftIO getEnvironment
     either onError pure (parseEnv env parser)
+
+askParams :: ParseEnv Params
+askParams = Params
+    <$> askVar "COMMAND_WRAPPER_EXE"
+    <*> askVar "COMMAND_WRAPPER_NAME"
+    <*> askVar "COMMAND_WRAPPER_CONFIG"
+    <*> askVerbosityVar "COMMAND_WRAPPER_VERBOSITY"
+  where
+    askVerbosityVar name = askVar name >>= parseAsVerbosity name
+
+    parseAsVerbosity :: EnvVarName -> EnvVarValue -> ParseEnv Verbosity
+    parseAsVerbosity name value =
+        maybe (unableToParseVerbosity name value) pure
+        . Verbosity.parse
+        $ CaseInsensitive.mk value
+
+    unableToParseVerbosity :: forall a. EnvVarName -> EnvVarValue -> ParseEnv a
+    unableToParseVerbosity name s = throwError
+        $ ParseEnvError name ("'" <> s <> "': Unable to parse as verbosity.")
 
 -- }}} Environment Parser -----------------------------------------------------
 

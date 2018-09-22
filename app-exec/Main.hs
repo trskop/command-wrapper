@@ -23,22 +23,32 @@
 module Main (main)
   where
 
-import Control.Applicative ((<|>))
-import Data.Functor (void)
+import qualified Data.List as List (find)
+import Data.String (fromString)
 import GHC.Generics (Generic)
+import System.Environment (getArgs)
 import System.Exit (die)
 
 import Data.Text (Text)
 import qualified Dhall (Interpret, auto, inputFile)
 import Data.Verbosity (Verbosity)
-import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
+import qualified Options.Applicative as Options
+    ( defaultPrefs
+    , execParserPure
+    , fullDesc
+    , handleParseResult
+    , helper
+    , info
+    , progDesc
+    )
 import qualified Turtle
 
 import qualified CommandWrapper.Environment as Environment
+import qualified CommandWrapper.Options as Options (splitArguments)
 
 
 newtype Config = Config
-    { commands :: Verbosity -> [NamedCommand]
+    { commands :: [NamedCommand]
     }
   deriving (Generic)
 
@@ -46,9 +56,9 @@ instance Dhall.Interpret Config
 
 data NamedCommand = NamedCommand
     { name :: Text
-    , command :: Command
+    , command :: Verbosity -> [Text] -> Command
     }
-  deriving (Generic, Show)
+  deriving (Generic)
 
 instance Dhall.Interpret NamedCommand
 
@@ -71,26 +81,45 @@ instance Dhall.Interpret Command
 
 main :: IO ()
 main = do
-    (configFile, _verbosity) <- Environment.parseEnvIO (die . show) $ do
-        void (Environment.askVar "COMMAND_WRAPPER_EXE")
-            <|> failInvalidCommandWrapperEnvironment
+    Environment.Params{config = configFile, verbosity} <- parseEnv
 
-        void (Environment.askVar "COMMAND_WRAPPER_NAME")
-            <|> failInvalidCommandWrapperEnvironment
-
-        (,) <$> Environment.askVar "COMMAND_WRAPPER_CONFIG"
-            <*> Environment.askVar "COMMAND_WRAPPER_VERBOSITY"
+    (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
 
     Config{commands} <- Dhall.inputFile Dhall.auto configFile
-    () <- Turtle.options description parseOptions
+    Options.handleParseResult
+        $ Options.execParserPure
+            Options.defaultPrefs
+            (Options.info (Options.helper <*> parseOptions) description)
+            options
 
-    print (commands Verbosity.Normal)
+    case fromString <$> commandAndItsArguments of
+        [] ->
+            die "COMMAND: Missing argument."
+
+        name : arguments ->
+            executeCommand commands name verbosity arguments
   where
-    description =
-        "Execute a command with predefined environment and command line options"
+    description = mconcat
+        [ Options.fullDesc
+        , Options.progDesc "Execute a command with predefined environment and\
+            \command line options"
+        ]
 
-    failInvalidCommandWrapperEnvironment =
-        fail "This command must be executed as part of some command-wrapper environment"
+executeCommand :: [NamedCommand] -> Text -> Verbosity -> [Text] -> IO ()
+executeCommand commands expectedName verbosity arguments =
+    getCommand >>= print
+  where
+    getCommand :: IO Command
+    getCommand =
+        case List.find (\NamedCommand{name} -> name == expectedName) commands of
+            Nothing ->
+                die (show expectedName <> ": Unknown COMMAND.")
+
+            Just NamedCommand{command} ->
+                pure (command verbosity arguments)
+
+parseEnv :: IO Environment.Params
+parseEnv = Environment.parseEnvIO (die . show) Environment.askParams
 
 parseOptions :: Turtle.Parser ()
 parseOptions = pure ()

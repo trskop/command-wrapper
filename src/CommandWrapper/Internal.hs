@@ -133,14 +133,18 @@ help appNames@AppNames{usedName} options globalConfig =
 
 -- {{{ Config Command ---------------------------------------------------------
 
-newtype ConfigMode a
+data ConfigMode a
     = InitConfig a
+    | ConfigLib a
+    | Dhall a
   deriving (Functor, Generic, Show)
 
 config :: AppNames -> [String] -> Global.Config -> IO ()
 config _appNames _options globalConfig =
     runMain parseOptions defaults $ \case
         InitConfig _ -> pure ()
+        ConfigLib _ -> pure ()
+        Dhall _ -> pure ()
   where
     defaults = Mainplate.applySimpleDefaults (InitConfig globalConfig)
 

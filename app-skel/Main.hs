@@ -24,9 +24,8 @@
 module Main (main)
   where
 
-import Control.Applicative ((<|>), optional)
+import Control.Applicative (optional)
 import Control.Monad (when)
-import Data.Functor (void)
 import Data.Maybe (fromMaybe)
 import Data.String (fromString)
 import GHC.Generics (Generic)
@@ -76,13 +75,7 @@ instance Dhall.Interpret Template
 
 main :: IO ()
 main = do
-    (wrapperName, configFile) <- Environment.parseEnvIO (die . show) $ do
-        void (Environment.askVar "COMMAND_WRAPPER_EXE")
-            <|> failInvalidCommandWrapperEnvironment
-
-        (,) <$> Environment.askVar "COMMAND_WRAPPER_NAME"
-            <*> Environment.askVar "COMMAND_WRAPPER_CONFIG"
-
+    Environment.Params{name = wrapperName, config = configFile} <- parseEnv
     mkConfig <- Dhall.inputFile Dhall.auto configFile
     (subcommandName, possiblyLanguage) <- Turtle.options description parseOptions
 
@@ -106,9 +99,6 @@ main = do
     defaultSubcommandDescription :: Text
     defaultSubcommandDescription = "TODO: Describe me!"
 
-    failInvalidCommandWrapperEnvironment =
-        fail "This command must be executed as part of some command-wrapper environment"
-
 generateSkeleton :: FilePath -> Template -> IO FilePath
 generateSkeleton defaultTarget Template{executable, targetFile, template} = do
     let destFile = fromMaybe defaultTarget targetFile
@@ -121,6 +111,9 @@ generateSkeleton defaultTarget Template{executable, targetFile, template} = do
         setPermissions destFile (perms{Directory.executable = True})
 
     pure destFile
+
+parseEnv :: IO Environment.Params
+parseEnv = Environment.parseEnvIO (die . show) Environment.askParams
 
 parseOptions :: Turtle.Parser (String, Maybe Language)
 parseOptions =

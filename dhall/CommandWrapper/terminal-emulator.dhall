@@ -1,8 +1,8 @@
   let
-    CommandWrapper = https://github.com/trskop/command-wrapper/raw/master/dhall/CommandWrapper/Type/package.dhall
+    CommandWrapper = ./Type/package.dhall
 
 in let
-    command = https://github.com/trskop/command-wrapper/raw/master/dhall/CommandWrapper/command.dhall
+    command = ./command.dhall
 
 in let
     urxvt = command.simple "urxvt"
