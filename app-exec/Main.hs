@@ -1,11 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
---{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
---{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
---{-# LANGUAGE TypeApplications #-}
 -- |
 -- Module:      Main
 -- Description: CommandWrapper subcommand for executing commands with a
@@ -23,17 +21,21 @@
 module Main (main)
   where
 
-import qualified Data.List as List (find)
+import Data.Functor ((<&>))
+import qualified Data.List as List (filter, find, isPrefixOf)
+import Data.Monoid (Endo(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
-import System.Environment (getArgs)
+import System.Environment (getArgs, getEnvironment)
 import System.Exit (die)
 
+import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
 import qualified Dhall (Interpret, auto, inputFile)
 import Data.Verbosity (Verbosity)
 import qualified Options.Applicative as Options
-    ( defaultPrefs
+    ( Parser
+    , defaultPrefs
     , execParserPure
     , fullDesc
     , handleParseResult
@@ -41,7 +43,7 @@ import qualified Options.Applicative as Options
     , info
     , progDesc
     )
-import qualified Turtle
+import qualified System.Posix as Posix (executeFile)
 
 import qualified CommandWrapper.Environment as Environment
 import qualified CommandWrapper.Options as Options (splitArguments)
@@ -74,6 +76,10 @@ data Command = Command
     { command :: FilePath
     , arguments :: [String]
     , environment :: [EnvironmentVariable]
+    -- ^ List of variables to be added to current environment before executing
+    -- command.
+    , searchPath :: Bool
+    -- ^ Search @PATH@ when looking for 'command'?
     }
   deriving (Generic, Show)
 
@@ -97,7 +103,7 @@ main = do
             die "COMMAND: Missing argument."
 
         name : arguments ->
-            executeCommand commands name verbosity arguments
+            getCommand commands name verbosity arguments >>= executeCommand
   where
     description = mconcat
         [ Options.fullDesc
@@ -105,23 +111,39 @@ main = do
             \command line options"
         ]
 
-executeCommand :: [NamedCommand] -> Text -> Verbosity -> [Text] -> IO ()
-executeCommand commands expectedName verbosity arguments =
-    getCommand >>= print
-  where
-    getCommand :: IO Command
-    getCommand =
-        case List.find (\NamedCommand{name} -> name == expectedName) commands of
-            Nothing ->
-                die (show expectedName <> ": Unknown COMMAND.")
+getCommand :: [NamedCommand] -> Text -> Verbosity -> [Text] -> IO Command
+getCommand commands expectedName verbosity arguments =
+    case List.find (\NamedCommand{name} -> name == expectedName) commands of
+        Nothing ->
+            die (show expectedName <> ": Unknown COMMAND.")
 
-            Just NamedCommand{command} ->
-                pure (command verbosity arguments)
+        Just NamedCommand{command} ->
+            pure (command verbosity arguments)
+
+executeCommand :: Command -> IO ()
+executeCommand Command{..} =
+    mkEnv environment >>= Posix.executeFile command searchPath arguments . Just
+  where
+    mkEnv :: [EnvironmentVariable] -> IO [(String, String)]
+    mkEnv additionalVars = getEnvironment <&> \env ->
+        Map.toList (removeCommandwrapperVars env <> additionalVars')
+      where
+        additionalVars' =
+            Map.fromList
+                $ additionalVars <&> \EnvironmentVariable{name, value} ->
+                    (name, value)
+
+        removeCommandwrapperVars env =
+            foldMap (Endo . Map.delete) commandWrapperVars
+                `appEndo` Map.fromList env
+          where
+            commandWrapperVars =
+                List.filter ("COMMAND_WRAPPER_" `List.isPrefixOf`) (fst <$> env)
 
 parseEnv :: IO Environment.Params
 parseEnv = Environment.parseEnvIO (die . show) Environment.askParams
 
-parseOptions :: Turtle.Parser ()
+parseOptions :: Options.Parser ()
 parseOptions = pure ()
 
 -- TODO:

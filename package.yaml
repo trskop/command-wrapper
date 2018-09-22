@@ -67,4 +67,4 @@ executables:
     main: Main.hs
     dependencies:
       - *this
-      - turtle
+      - containers
