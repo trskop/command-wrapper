@@ -14,6 +14,7 @@ Internal Subcommands:
 External Subcommands:
 
   cd
+  exec
   skel
 ''
 
