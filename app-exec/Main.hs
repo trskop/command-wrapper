@@ -21,6 +21,7 @@
 module Main (main)
   where
 
+import Control.Applicative ((<|>))
 import Data.Functor ((<&>))
 import qualified Data.List as List (filter, find, isPrefixOf)
 import Data.Monoid (Endo(..))
@@ -155,6 +156,7 @@ parseEnv = Environment.parseEnvIO (die . show) Environment.askParams
 parseOptions :: Options.Parser (Bool -> Bool)
 parseOptions =
     Options.flag' (const True) (Options.short 'l' <> Options.long "ls")
+    <|> pure id
 
 -- TODO:
 --
