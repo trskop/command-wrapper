@@ -44,10 +44,12 @@ import Turtle
     , cd
     , echo
     , env
+    , export
     , fromText
     , inproc
     , liftIO
     , lineToText
+    , need
     , options
     , select
     , switch
@@ -176,6 +178,11 @@ executeAction directory = \case
     RunShell shell -> do
         echo ("+ : cd " <> directory)
         cd directoryPath
+
+        -- TODO: Make this configurable.
+        prefix <- need "PS1_PREFIX"
+        export "PS1_PREFIX" (maybe "⟩" (<> "⟩") prefix)
+
         executeCommand (Text.unpack shell) []
 
     RunTmux -> do
