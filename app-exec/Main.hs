@@ -31,17 +31,21 @@ import System.Exit (die)
 
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
+import qualified Data.Text.IO as Text (putStrLn)
 import qualified Dhall (Interpret, auto, inputFile)
 import Data.Verbosity (Verbosity)
 import qualified Options.Applicative as Options
     ( Parser
     , defaultPrefs
     , execParserPure
+    , flag'
     , fullDesc
     , handleParseResult
     , helper
     , info
+    , long
     , progDesc
+    , short
     )
 import qualified System.Posix as Posix (executeFile)
 
@@ -92,18 +96,23 @@ main = do
     (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
 
     Config{commands} <- Dhall.inputFile Dhall.auto configFile
-    Options.handleParseResult
+    listCommands <- fmap ($ False) . Options.handleParseResult
         $ Options.execParserPure
             Options.defaultPrefs
             (Options.info (Options.helper <*> parseOptions) description)
             options
 
-    case fromString <$> commandAndItsArguments of
-        [] ->
-            die "COMMAND: Missing argument."
+    if listCommands
+        then
+            mapM_ (Text.putStrLn . (name :: NamedCommand -> Text)) commands
+        else
+            case fromString <$> commandAndItsArguments of
+                [] ->
+                    die "COMMAND: Missing argument."
 
-        name : arguments ->
-            getCommand commands name verbosity arguments >>= executeCommand
+                name : arguments ->
+                    getCommand commands name verbosity arguments
+                    >>= executeCommand
   where
     description = mconcat
         [ Options.fullDesc
@@ -143,8 +152,9 @@ executeCommand Command{..} =
 parseEnv :: IO Environment.Params
 parseEnv = Environment.parseEnvIO (die . show) Environment.askParams
 
-parseOptions :: Options.Parser ()
-parseOptions = pure ()
+parseOptions :: Options.Parser (Bool -> Bool)
+parseOptions =
+    Options.flag' (const True) (Options.short 'l' <> Options.long "ls")
 
 -- TODO:
 --
