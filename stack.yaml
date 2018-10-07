@@ -1,17 +1,17 @@
 # For advanced use and comprehensive documentation of the format, please see:
 # https://docs.haskellstack.org/en/stable/yaml_configuration/
 
-resolver: lts-12.10
+resolver: lts-12.11
 
 packages:
   - '.'
   - location:
       git: https://github.com/trskop/host-and-port.git
-      commit: 9ae3210a901bebf62858d7e23f57f39d8bab2a12
+      commit: f8a9f1ae1a410ad12969f9c5ea0810de45d9b2bc
     extra-dep: True
   - location:
       git: https://github.com/trskop/mainplate.git
-      commit: b41eed947ed02cfadf85667fd846f3a5bfe82e77
+      commit: f70d6cea0a01df90715affcfa733227f48b184f1
     extra-dep: True
   - location:
       git: https://github.com/trskop/verbosity.git
