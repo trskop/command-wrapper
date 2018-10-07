@@ -29,11 +29,13 @@ module CommandWrapper.Options
 
     -- ** Helper Functions
     , splitArguments
+    , execParserPure
     )
   where
 
 import Control.Applicative (pure)
 import Data.Bool ((&&))
+import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
 import Data.Functor (Functor, (<$>), fmap)
 import Data.Function (($), (.))
@@ -48,9 +50,12 @@ import qualified Mainplate (Command(..), ExternalCommand(..))
 import qualified Options.Applicative as Options
     ( ParserInfo
     , ParserPrefs
+    , ParserResult(Failure, Success)
     , handleParseResult
-    , execParserPure
+    , parserFailure
     )
+import qualified Options.Applicative.Common as Options (runParserInfo)
+import qualified Options.Applicative.Internal as Options (runP)
 
 import qualified CommandWrapper.External as External (Command)
 import qualified CommandWrapper.Internal as Internal (Command(..))
@@ -113,7 +118,7 @@ parse parserPrefs parserInfo parseArguments = do
     (globalOptions, arguments) <- splitArguments <$> getArgs
 
     updateConfigEndo@(Endo updateConfig) <- Options.handleParseResult
-        $ Options.execParserPure parserPrefs parserInfo globalOptions
+        $ execParserPure parserPrefs parserInfo globalOptions
 
     Endo updateCommand <- parseArguments updateConfigEndo arguments
 
@@ -142,3 +147,21 @@ splitArguments args =
             (globalOptions, subcommandAndItsArguments)
 
         args' -> args'
+
+-- | Variant of 'Options.Applicative.execParserPure' that doesn't provide shell
+-- completion.
+execParserPure
+    :: Options.ParserPrefs
+    -- ^ Global preferences for this parser
+    -> Options.ParserInfo a
+    -- ^ Description of the program to run
+    -> [String]
+    -- ^ Program arguments
+    -> Options.ParserResult a
+execParserPure pprefs pinfo args =
+  case Options.runP (Options.runParserInfo pinfo args) pprefs of
+    (Right r, _) ->
+        Options.Success r
+
+    (Left err, ctx) ->
+        Options.Failure (Options.parserFailure pprefs pinfo err ctx)
