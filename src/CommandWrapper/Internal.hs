@@ -39,9 +39,10 @@ module CommandWrapper.Internal
   where
 
 import Control.Applicative (pure)
-import Data.Foldable (traverse_)
+import Data.Foldable (mapM_, traverse_)
 import Data.Function (($), (.), const)
-import Data.Functor (Functor)
+import Data.Functor (Functor, (<$>))
+import qualified Data.List as List (nub)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Monoid (Endo(Endo))
 import Data.Semigroup ((<>))
@@ -55,8 +56,11 @@ import qualified Mainplate (applySimpleDefaults, noConfigToRead, runAppWith)
 
 import qualified CommandWrapper.Config as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
-import qualified CommandWrapper.External as External (executeCommand)
-import CommandWrapper.Options.Alias (applyAlias)
+import qualified CommandWrapper.External as External
+    ( executeCommand
+    , findSubcommands
+    )
+import CommandWrapper.Options.Alias (Alias(alias), applyAlias)
 
 
 data Command
@@ -166,13 +170,24 @@ config _appNames _options globalConfig =
 data Shell = Bash
   deriving (Generic, Show)
 
+data WhatArgumentsToList = Subcommands
+  deriving (Generic, Show)
+    -- TODO: Extend this data type to be able to list various combinations of
+    -- following groups:
+    --
+    -- * External subcommands
+    -- * Internal subcommands
+    -- * Aliases
+    -- * Global options
+
 data CompletionMode a
     = CompletionMode a
-    | GenerateCompletionScript Shell a
+    | GenerateCompletionScriptMode Shell a
+    | ListArgumentsMode WhatArgumentsToList a
   deriving (Functor, Generic, Show)
 
 completion :: AppNames -> [String] -> Global.Config -> IO ()
-completion _appNames _options globalConfig =
+completion appNames _options globalConfig =
     runMain parseOptions defaults $ \case
         -- TODO:
         --
@@ -198,12 +213,21 @@ completion _appNames _options globalConfig =
         --
         -- * By default it should be printed to `stdout`, but we should support
         --   writting it into a file without needing to redirect `stdout`.
-        GenerateCompletionScript _shell _config -> pure ()
+        GenerateCompletionScriptMode _shell _config -> pure ()
+
+        ListArgumentsMode whatToList cfg -> case whatToList of
+            Subcommands -> do
+                let aliases = alias <$> Global.aliases cfg
+                    internalCommands = ["help", "config", "completion"]
+                cmds <- External.findSubcommands appNames cfg
+                mapM_ putStrLn (List.nub $ aliases <> internalCommands <> cmds)
   where
     defaults = Mainplate.applySimpleDefaults (CompletionMode globalConfig)
 
     parseOptions :: IO (Endo (CompletionMode Global.Config))
-    parseOptions = die "Error: completion: Subcommand not yet implemented."
+    parseOptions =
+        -- TODO: Temporary hack to make this subcommand somewhat useful.
+        pure . Endo $ const (ListArgumentsMode Subcommands globalConfig)
 
 -- }}} Completion Command -----------------------------------------------------
 
