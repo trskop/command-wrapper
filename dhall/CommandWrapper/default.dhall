@@ -16,6 +16,7 @@ External Subcommands:
   cd
   exec
   skel
+  completion
 ''
 
 in let

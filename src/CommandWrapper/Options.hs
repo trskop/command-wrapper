@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE RecordWildCards #-}
+--{-# LANGUAGE RecordWildCards #-}
 -- |
 -- Module:      CommandWrapper.Options
 -- Description: TODO: Module synopsis
@@ -34,18 +34,19 @@ module CommandWrapper.Options
   where
 
 import Control.Applicative (pure)
-import Data.Bool ((&&))
+import Data.Bool ((&&), otherwise)
 import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
 import Data.Functor (Functor, (<$>), fmap)
 import Data.Function (($), (.))
 import qualified Data.List as List (span)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (Maybe(Just), listToMaybe)
 import Data.Monoid (Endo(Endo), mempty)
 import Data.String (String)
 import System.Environment (getArgs)
 import System.IO (IO)
 
+import Data.Monoid.Endo (E)
 import qualified Mainplate (Command(..), ExternalCommand(..))
 import qualified Options.Applicative as Options
     ( ParserInfo
@@ -58,7 +59,7 @@ import qualified Options.Applicative.Common as Options (runParserInfo)
 import qualified Options.Applicative.Internal as Options (runP)
 
 import qualified CommandWrapper.External as External (Command)
-import qualified CommandWrapper.Internal as Internal (Command(..))
+import qualified CommandWrapper.Internal as Internal (Command(..), command)
 import CommandWrapper.Options.Alias (Alias(..), applyAlias)
 
 
@@ -76,37 +77,27 @@ parseCommandWrapper parserPrefs parserInfo getAliases =
             [] ->
                 mempty
 
-            -- This is a very naive implementation and it will have to be
-            -- redesigned at some point.
             cmd : args ->
-                Endo $ case applyAlias aliases cmd args of
-                    -- TODO: Refactor to use 'Internal.command'.
-                    ("help", args') -> \case
-                        Mainplate.Internal _ config ->
-                            helpCommand args' config
-
-                        Mainplate.External _ config ->
-                            helpCommand args' config
-
-                    ("config", args') -> \case
-                        Mainplate.Internal _ config ->
-                            configCommand args' config
-
-                        Mainplate.External _ config ->
-                            configCommand args' config
-
-                    (cmd', args') -> \case
-                        Mainplate.Internal _ config ->
-                            externalCommand cmd' args' config
-
-                        Mainplate.External _ config ->
-                            externalCommand cmd' args' config
+                Endo (parseCommand aliases cmd args)
   where
-    helpCommand = Mainplate.Internal . Internal.HelpCmommand
-    configCommand = Mainplate.Internal . Internal.ConfigCommand
+    parseCommand aliases cmd args =
+        -- This is a very naive implementation and it will have to be
+        -- redesigned at some point.
+        case applyAlias aliases cmd args of
+            (commandName, options)
+              | Just command' <- Internal.command commandName options ->
+                    switchTo Mainplate.Internal command'
 
-    externalCommand executable options =
-        Mainplate.External Mainplate.ExternalCommand{..}
+              | otherwise ->
+                    switchTo Mainplate.External Mainplate.ExternalCommand
+                        { Mainplate.executable = commandName
+                        , Mainplate.options
+                        }
+
+    switchTo :: (cmd -> config -> Command config) -> cmd -> E (Command config)
+    switchTo constructor newCmd = constructor newCmd . \case
+        Mainplate.Internal _oldCmd config -> config
+        Mainplate.External _oldCmd config -> config
 
 parse
     :: Functor mode

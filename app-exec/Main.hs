@@ -160,8 +160,11 @@ parseOptions =
 
 -- TODO:
 --
---   * Remove COMMAND_WRAPPER_* variables from environment before executing the
---     command.
+-- * Allow alternatives, i.e. have a list of commands for one `NAME` and the
+--   first one that is available is used.
+--
+-- * Implement command-line completion, when available in `command-wrapper`
+--   itself.
 
 -- Usage:
 --

@@ -5,7 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 -- |
 -- Module:      CommandWrapper.Internal
--- Description: TODO: Module synopsis
+-- Description: Internal commands supported by CommandWrapper
 -- Copyright:   (c) 2018 Peter Trško
 -- License:     BSD3
 --
@@ -13,7 +13,7 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Internal commands supported by CommandWrapper.
 module CommandWrapper.Internal
     (
     -- * Internal Commands
@@ -28,6 +28,10 @@ module CommandWrapper.Internal
     -- ** Config Command
     , ConfigMode(..)
     , config
+
+    -- ** Completion Command
+    , CompletionMode(..)
+    , completion
 
     -- * Generic Functions
     , runMain
@@ -58,8 +62,10 @@ import CommandWrapper.Options.Alias (applyAlias)
 data Command
     = HelpCmommand [String]
     | ConfigCommand [String]
+    | CompletionCommand [String]
   deriving (Generic, Show)
 
+-- | Smart constructor for 'Command'.
 command
     :: String
     -- ^ Subcommand name.
@@ -70,12 +76,14 @@ command
 command = \case
     "help" -> Just . HelpCmommand
     "config" -> Just . ConfigCommand
+    "completion" -> Just . CompletionCommand
     _ -> const Nothing
 
 run :: AppNames -> Command -> Global.Config -> IO ()
 run appNames = \case
     HelpCmommand options -> help appNames options
     ConfigCommand options -> config appNames options
+    CompletionCommand options -> completion appNames options
 
 -- {{{ Help Command -----------------------------------------------------------
 
@@ -152,6 +160,52 @@ config _appNames _options globalConfig =
     parseOptions = die "Error: config: Subcommand not yet implemented."
 
 -- }}} Config Command ---------------------------------------------------------
+
+-- {{{ Completion Command -----------------------------------------------------
+
+data Shell = Bash
+  deriving (Generic, Show)
+
+data CompletionMode a
+    = CompletionMode a
+    | GenerateCompletionScript Shell a
+  deriving (Functor, Generic, Show)
+
+completion :: AppNames -> [String] -> Global.Config -> IO ()
+completion _appNames _options globalConfig =
+    runMain parseOptions defaults $ \case
+        -- TODO:
+        --
+        -- * This subcommand will need access to global parser definition to
+        --   provide completion for global options.
+        --
+        -- * When completing subcommand names we need to find possible
+        --   completions in:
+        --
+        --     - All possible external and internal subcommands.
+        --     - All aliases defined by `command-wrapper` and `TOOLSET` (if not
+        --       invoking `command-wrapper` directly).
+        --
+        -- * When completing option/argument of a subcommand we need to execute
+        --   the subcommand with bash completion options passed to it. This
+        --   will require us to extend `SUBCOMMAND_PROTOCOL.md`. Should we rely
+        --   on `optparse-applicative` for this?
+        CompletionMode _config -> pure ()
+
+        -- TODO:
+        --
+        -- * Completion script should be configurable.
+        --
+        -- * By default it should be printed to `stdout`, but we should support
+        --   writting it into a file without needing to redirect `stdout`.
+        GenerateCompletionScript _shell _config -> pure ()
+  where
+    defaults = Mainplate.applySimpleDefaults (CompletionMode globalConfig)
+
+    parseOptions :: IO (Endo (CompletionMode Global.Config))
+    parseOptions = die "Error: completion: Subcommand not yet implemented."
+
+-- }}} Completion Command -----------------------------------------------------
 
 -- {{{ Generic Functions ------------------------------------------------------
 
