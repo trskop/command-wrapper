@@ -22,6 +22,7 @@ module Main (main)
   where
 
 import Control.Applicative ((<|>))
+import Data.Foldable (for_)
 import Data.Functor ((<&>))
 import qualified Data.List as List (filter, find, isPrefixOf)
 import Data.Monoid (Endo(..))
@@ -48,6 +49,7 @@ import qualified Options.Applicative as Options
     , progDesc
     , short
     )
+import System.Directory (setCurrentDirectory)
 import qualified System.Posix as Posix (executeFile)
 
 import qualified CommandWrapper.Environment as Environment
@@ -85,6 +87,7 @@ data Command = Command
     -- command.
     , searchPath :: Bool
     -- ^ Search @PATH@ when looking for 'command'?
+    , workingDirectory :: Maybe FilePath
     }
   deriving (Generic, Show)
 
@@ -131,7 +134,8 @@ getCommand commands expectedName verbosity arguments =
             pure (command verbosity arguments)
 
 executeCommand :: Command -> IO ()
-executeCommand Command{..} =
+executeCommand Command{..} = do
+    for_ workingDirectory setCurrentDirectory
     mkEnv environment >>= Posix.executeFile command searchPath arguments . Just
   where
     mkEnv :: [EnvironmentVariable] -> IO [(String, String)]
