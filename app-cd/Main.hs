@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 -- |
 -- Module:      Main
 -- Description: CommandWrapper subcommand for changing directory by selecting
@@ -32,6 +33,7 @@ import Data.Semigroup (Semigroup(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
 import System.Exit (die)
+import Text.Read (readMaybe)
 
 import Data.Text (Text, isPrefixOf)
 import qualified Data.Text as Text (unpack)
@@ -67,6 +69,7 @@ import qualified CommandWrapper.Environment as Environment
 --   * Support for glob patterns in configuration? Would be useful for
 --     something like `~/Devel/*`, which would list all the immediate
 --     subdirectories of ~/Devel
+--   * Option for going back to the value of `CD_DIRECTORY`.
 
 data Config = Config
     { directories :: [Text]
@@ -179,16 +182,16 @@ executeAction directory = \case
         echo ("+ : cd " <> directory)
         cd directoryPath
 
-        -- TODO: Make this configurable.
-        prefix <- need "PS1_PREFIX"
-        export "PS1_PREFIX" (maybe "⟩" (<> "⟩") prefix)
-
+        exportEnvVariables (incrementLevel <$> need "CD_LEVEL")
         executeCommand (Text.unpack shell) []
 
     RunTmux -> do
         exists <- testdir directoryPath
         unless exists . liftIO
             $ die ("Error: '" <> directoryStr <> "': Directory doesn' exist.")
+
+        -- TODO: Find out how to define pass `CD_LEVEL` and `CD_DIRECTORY` to a
+        -- Tmux window.
         executeCommand "tmux" ["new-window", "-c", directoryStr]
 
     RunTerminalEmulator term -> do
@@ -197,9 +200,10 @@ executeAction directory = \case
             $ die ("Error: '" <> directoryStr <> "': Directory doesn' exist.")
 
         let TerminalEmulator{..} = term directoryText
+        exportEnvVariables (pure "0")
         executeCommand (Text.unpack command) (Text.unpack <$> arguments)
   where
-    directoryPath = fromText (lineToText directory)
+    directoryPath = fromText directoryText
     directoryText = lineToText directory
     directoryStr = Text.unpack directoryText
 
@@ -211,3 +215,18 @@ executeAction directory = \case
                 die ("Error: '" <> command <> "': Failed to execute.")
 
     showCommand cmd args = fromString cmd <> " " <> fromString (show args)
+
+    -- TODO:
+    --
+    -- * Make names of these environment variables configurable.
+    -- * Consider also having another variable that will contain a stack of
+    --   directories for nested `TOOLSET cd` invocations.
+    exportEnvVariables :: Shell Text -> Shell ()
+    exportEnvVariables getCdLevel = do
+        getCdLevel >>= export "CD_LEVEL"
+        export "CD_DIRECTORY" directoryText
+
+    incrementLevel :: Maybe Text -> Text
+    incrementLevel =
+        maybe "1" (fromString . show . (+1))
+        . (>>= readMaybe @Word . Text.unpack)
