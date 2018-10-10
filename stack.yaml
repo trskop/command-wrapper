@@ -15,7 +15,7 @@ packages:
     extra-dep: True
   - location:
       git: https://github.com/trskop/verbosity.git
-      commit: 5e3f323a630978d511526e5f871e2bfbd37892dd
+      commit: 2739b6bdf2bc7ed7d8c938d794e96341a37f2d2b
     extra-dep: True
 
 extra-deps:
