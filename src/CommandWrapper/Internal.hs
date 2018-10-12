@@ -156,6 +156,43 @@ config _appNames _options globalConfig =
     runMain parseOptions defaults $ \case
         InitConfig _ -> pure ()
         ConfigLib _ -> pure ()
+
+        -- TODO:
+        --
+        -- * Merge in functionality of: `dhall`, `dhall-json`, `dhall-bash`,
+        --   and `dhall-text`
+        -- * Provide functionality for shell variables that transforms:
+        --
+        --     ```
+        --     { name = "FOO"
+        --     , value = "foo"
+        --     }
+        --     ```
+        --
+        --     Into:
+        --
+        --     ```
+        --     export FOO=foo
+        --     ```
+        --
+        --     It should also support transorming:
+        --
+        --     ```
+        --     [ { name = "FOO"
+        --       , value = "foo"
+        --       }
+        --     , { name = "BAR"
+        --       , value = "bar"
+        --       }
+        --     ]
+        --     ```
+        --
+        --     Into:
+        --
+        --     ```
+        --     export FOO=foo
+        --     export FOO=bar
+        --     ```
         Dhall _ -> pure ()
   where
     defaults = Mainplate.applySimpleDefaults (InitConfig globalConfig)
