@@ -32,7 +32,7 @@ import Data.Functor ((<$>), (<&>), fmap)
 import qualified Data.List as List (drop, isPrefixOf, nub)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty (toList)
-import Data.Maybe (Maybe(Just, Nothing), catMaybes, listToMaybe)
+import Data.Maybe (Maybe(Just, Nothing), catMaybes, fromMaybe, listToMaybe)
 import Data.Semigroup ((<>))
 import Data.String (String)
 import Data.Traversable (mapM)
@@ -55,7 +55,7 @@ import qualified System.FilePath as FilePath (getSearchPath)
 import System.Posix.Process (executeFile)
 
 import qualified CommandWrapper.Config as Global
-    ( Config(Config, searchPath, verbosity)
+    ( Config(Config, colourOutput, searchPath, verbosity)
     )
 import qualified CommandWrapper.Environment as Environment
     ( AppNames(AppNames, exePath, names, usedName)
@@ -115,7 +115,8 @@ executeCommand appNames subcommand arguments globalConfig =
             , name = usedName
             , config
             , verbosity = Global.verbosity globalConfig
-            , colour = ColourOutput.Auto
+            , colour =
+                fromMaybe ColourOutput.Auto (Global.colourOutput globalConfig)
             }
 
     unableToFindExecutableError =
