@@ -153,7 +153,8 @@ help appNames@AppNames{usedName} options globalConfig =
         , "  -s, --silent           Silent mode. Suppress normal diagnostic or\
           \ result output."
         , "  --colo[u]r=WHEN        Set WHEN colourised output should be \
-          \ produced. Possible values of WHEN are 'always', 'auto', and 'no'."
+          \ produced. Possible values of WHEN are 'always', 'auto', and\
+          \ 'never'."
         , "  --no-colo[u]r          Same as '--colour=no'."
         ]
 

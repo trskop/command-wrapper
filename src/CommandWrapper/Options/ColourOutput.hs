@@ -53,15 +53,15 @@ data ColourOutput
     -- can be useful when, for example, piping output to a pager.
     | Auto
     -- ^ Use colourised output when the output is a terminal that supports it.
-    | No
-    -- ^ Never use colourised output.
+    | Never
+    -- ^ Never produce colourised output.
   deriving (Generic, Show)
 
 instance Dhall.Inject ColourOutput
 instance Dhall.Interpret ColourOutput
 
 -- | Check for presence of @NO_COLOR@ environment variable. If present, then
--- set `ColourOutput` value to `No`, otherwise keep it as it was.
+-- set `ColourOutput` value to `Never`, otherwise keep it as it was.
 --
 -- @NO_COLOR@ einvironment variable is an informal standard which is available
 -- online at <https://no-color.org>.
@@ -74,7 +74,7 @@ instance Dhall.Interpret ColourOutput
 -- > > when present (regardless of its value), prevents the addition of ANSI
 -- > > color.
 noColorEnvVar :: ParseEnv (E ColourOutput)
-noColorEnvVar = maybe id (\_ _ -> No) <$> askOptionalVar "NO_COLOR"
+noColorEnvVar = maybe id (\_ _ -> Never) <$> askOptionalVar "NO_COLOR"
 
 -- | Does specified terminal support colours?
 terminalSupportsColours :: Terminal -> Bool
@@ -94,9 +94,9 @@ noColorFlag :: Options.Parser (E ColourOutput)
 noColorFlag = noColourFlag' "no-color"
 
 noColourFlag' :: String ->  Options.Parser (E ColourOutput)
-noColourFlag' name = Options.flag id (const No) $ mconcat
+noColourFlag' name = Options.flag id (const Never) $ mconcat
     [ Options.long name
-    , Options.help "Never use colourised output."
+    , Options.help "Never use colourised output. Same as '--colour=never'."
     ]
 
 colourOption :: Options.Parser (E ColourOutput)
@@ -109,7 +109,7 @@ colourOption' :: String -> Options.Parser (E ColourOutput)
 colourOption' name = Options.option parse' $ mconcat
     [ Options.long name
     , Options.help "Specify if and when colourised output should be used.\
-        \Possible values are 'always', 'auto', and 'no'."
+        \Possible values are 'always', 'auto', and 'never'."
     , Options.metavar "WHEN"
     ]
   where
@@ -119,5 +119,5 @@ parse :: (IsString s, Eq s) => s -> Maybe ColourOutput
 parse = \case
     "always" -> Just Always
     "auto" -> Just Auto
-    "no" -> Just No
+    "never" -> Just Never
     _ -> Nothing

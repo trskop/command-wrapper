@@ -19,7 +19,7 @@ function verbosityToNum() {
 #
 # Arguments:
 #
-#   WHEN_TO_USE_COLOURS is one of 'always', 'auto', and 'no'.
+#   WHEN_TO_USE_COLOURS is one of 'always', 'auto', and 'never'.
 #
 # Exit code:
 #
@@ -40,7 +40,7 @@ function useColours() {
     case "${when}" in
       'always') return 0;;
       'auto')   terminalSupportsColours;;
-      'no')     return 1;;
+      'never')  return 1;;
       *)        terminalSupportsColours;;
     esac
 }
