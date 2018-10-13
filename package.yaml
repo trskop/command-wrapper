@@ -20,7 +20,8 @@ extra-source-files:
 dependencies:
   - base
   - case-insensitive
-  - dhall >=1.16
+  - comonad
+  - dhall >=1.17
   - directory
   - endo
   - executable-path

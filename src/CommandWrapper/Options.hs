@@ -37,15 +37,16 @@ import Control.Applicative (pure)
 import Data.Bool ((&&), otherwise)
 import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
-import Data.Functor (Functor, (<$>), fmap)
+import Data.Functor (Functor, (<$>))
 import Data.Function (($), (.))
 import qualified Data.List as List (span)
 import Data.Maybe (Maybe(Just), listToMaybe)
-import Data.Monoid (Endo(Endo), mempty)
+import Data.Monoid (Endo(Endo), (<>), mempty)
 import Data.String (String)
 import System.Environment (getArgs)
 import System.IO (IO)
 
+import Control.Comonad (Comonad, extract)
 import Data.Monoid.Endo (E)
 import qualified Mainplate (Command(..), ExternalCommand(..))
 import qualified Options.Applicative as Options
@@ -61,17 +62,18 @@ import qualified Options.Applicative.Internal as Options (runP)
 import qualified CommandWrapper.External as External (Command)
 import qualified CommandWrapper.Internal as Internal (Command(..), command)
 import CommandWrapper.Options.Alias (Alias(..), applyAlias)
+import CommandWrapper.Options.GlobalMode (GlobalMode(..), runGlobalMode)
 
 
 type Command = Mainplate.Command External.Command Internal.Command
 
 parseCommandWrapper
     :: Options.ParserPrefs
-    -> Options.ParserInfo (Endo config)
+    -> Options.ParserInfo (GlobalMode (Endo config))
     -> (Endo config -> IO [Alias])
     -> IO (Endo (Command config))
 parseCommandWrapper parserPrefs parserInfo getAliases =
-    parse parserPrefs parserInfo $ \updateConfig arguments -> do
+    parse parserPrefs parserInfo runGlobalMode' $ \updateConfig arguments -> do
         aliases <- getAliases updateConfig
         pure $ case arguments of
             [] ->
@@ -99,21 +101,32 @@ parseCommandWrapper parserPrefs parserInfo getAliases =
         Mainplate.Internal _oldCmd config -> config
         Mainplate.External _oldCmd config -> config
 
+    runGlobalMode' :: GlobalMode (Endo config) -> Endo (Command config)
+    runGlobalMode' = runGlobalMode $ \(Endo f) -> Endo $ \case
+        Mainplate.Internal _oldCmd config ->
+            Mainplate.Internal (Internal.HelpCmommand []) (f config)
+
+        Mainplate.External _oldCmd config ->
+            Mainplate.Internal (Internal.HelpCmommand []) (f config)
+
 parse
-    :: Functor mode
+    :: (Functor mode, Comonad globalMode)
     => Options.ParserPrefs
-    -> Options.ParserInfo (Endo config)
+    -> Options.ParserInfo (globalMode (Endo config))
+    -> (forall a. globalMode (Endo a) -> Endo (mode a))
     -> (forall a. Endo config -> [String] -> IO (Endo (mode a)))
     -> IO (Endo (mode config))
-parse parserPrefs parserInfo parseArguments = do
+parse parserPrefs parserInfo fromGlobalMode parseArguments = do
     (globalOptions, arguments) <- splitArguments <$> getArgs
 
-    updateConfigEndo@(Endo updateConfig) <- Options.handleParseResult
-        $ execParserPure parserPrefs parserInfo globalOptions
+    globalMode <- Options.handleParseResult (execParserPure' globalOptions)
 
-    Endo updateCommand <- parseArguments updateConfigEndo arguments
+    let updateConfig = extract globalMode
+    updateCommand <- parseArguments updateConfig arguments
 
-    pure $ Endo (fmap updateConfig . updateCommand)
+    pure $ fromGlobalMode globalMode <> updateCommand
+  where
+    execParserPure' = execParserPure parserPrefs parserInfo
 
 -- | Split arguments into global options and the rest.
 --

@@ -22,7 +22,7 @@ import Data.Eq ((/=))
 import Data.Function (($), (.), flip, id)
 import Data.Functor -- ((<$>))
 import Data.Semigroup ((<>))
-import Data.Monoid (Endo(Endo, appEndo), mempty)
+import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
 import Data.String (String)
 import System.Exit (die)
 import System.IO (IO{-, print-})
@@ -30,7 +30,10 @@ import System.IO (IO{-, print-})
 import qualified Options.Applicative as Options
 import qualified Options.Applicative.Standard as Options
 import Data.Monoid.Endo.Fold (foldEndo)
-import qualified Mainplate.Extensible as Mainplate -- (runExtensibleAppWith)
+import qualified Mainplate.Extensible as Mainplate
+    ( Command(Internal)
+    , runExtensibleAppWith
+    )
 import System.Directory
     ( XdgDirectory(XdgConfig)
     , doesFileExist
@@ -44,6 +47,7 @@ import CommandWrapper.Environment (AppNames(..), getAppNames)
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
 import qualified CommandWrapper.Options as Options
+import qualified CommandWrapper.Options.GlobalMode as Options
 
 
 readConfig :: Options.Command a -> IO (Either String (Endo Global.Config))
@@ -72,18 +76,6 @@ main = do
     Mainplate.runExtensibleAppWith (parseOptions config) readConfig
         (defaults config) (External.run appNames) (Internal.run appNames)
   where
-    parseOptions config =
-        Options.parseCommandWrapper Options.defaultPrefs optionsParser
-            $ pure . Global.Config.aliases . (`appEndo` config)
-
-    optionsParser = Options.info verbosityOptions Options.fullDesc
-
-    verbosityOptions :: Options.Parser (Endo Global.Config)
-    verbosityOptions = foldEndo
-        <$> many Options.incrementVerbosityFlag
-        <*> optional Options.verbosityOption
-        <*> Options.silentFlag
-
     readGlobalConfig baseName = do
         configFile <- getXdgDirectory XdgConfig (baseName </> "default.dhall")
         configExists <- doesFileExist configFile
@@ -93,3 +85,32 @@ main = do
                 Global.Config.read configFile >>= either die (pure . flip (<>))
             else
                 pure id
+
+parseOptions :: Global.Config -> IO (Endo (Options.Command Global.Config))
+parseOptions config =
+    Options.parseCommandWrapper Options.defaultPrefs parserInfo
+        $ pure . Global.Config.aliases . (`appEndo` config)
+  where
+    parserInfo :: Options.ParserInfo (Options.GlobalMode (Endo Global.Config))
+    parserInfo =
+        Options.info globalOptions Options.fullDesc
+
+globalOptions :: Options.Parser (Options.GlobalMode (Endo Global.Config))
+globalOptions = withHelpOptions <*> verbosityOptions
+
+withHelpOptions
+    :: Options.Parser
+        ( Endo Global.Config -> Options.GlobalMode (Endo Global.Config)
+        )
+withHelpOptions =
+    Options.flag Options.PreserveMode Options.HelpMode $ mconcat
+        [ Options.short 'h'
+        , Options.long "help"
+        , Options.help "Print this help message and exit."
+        ]
+
+verbosityOptions :: Options.Parser (Endo Global.Config)
+verbosityOptions = foldEndo
+    <$> many Options.incrementVerbosityFlag
+    <*> optional Options.verbosityOption
+    <*> Options.silentFlag
