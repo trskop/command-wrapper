@@ -5,6 +5,9 @@ in let
     Verbosity = ./Verbosity.dhall
 
 in let
+    ColourOutput = ./ColourOutput.dhall
+
+in let
     EnvironmentVariable =
       { name : Text
       , value : Text
@@ -22,6 +25,7 @@ in let
       { name : Text
       , command :
           ∀ (verbosity : Verbosity)
+        → ∀ (colourOutput : ColourOutput)
         → ∀ (arguments : List Text)
         → ExecCommand
       }

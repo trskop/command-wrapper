@@ -2,6 +2,9 @@
     Verbosity = ./Verbosity.dhall
 
 in let
+    ColourOutput = ./ColourOutput.dhall
+
+in let
     DefaultConfig =
       { aliases
           : List
@@ -12,6 +15,7 @@ in let
       , searchPath : List Text
       , extraHelpMessage : Optional Text
       , verbosity : Verbosity
+      , colourOutput : ColourOutput
       }
 
 in let

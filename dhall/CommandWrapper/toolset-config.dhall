@@ -5,7 +5,7 @@ in let
     verbosity = ./verbosity.dhall
 
 in let
-    optionalFold = https://raw.githubusercontent.com/dhall-lang/dhall-haskell/master/Prelude/Optional/fold
+    colourOutput = ./colour-output.dhall
 
 in let
     mkToolsetConfig =
@@ -28,12 +28,13 @@ in let
           , extraHelpMessage = [] : Optional Text
 
           , verbosity = verbosity.normal
+          , colourOutput = colourOutput.auto
           }
 
 in let
     mkPrefix =
       λ(optionalText : Optional Text)
-      → optionalFold Text optionalText Text
+      → Optional/fold Text optionalText Text
           (λ(t : Text) → "${t}\n") ""
 
 in let
@@ -51,6 +52,7 @@ in let
             ] : Optional Text
         , searchPath = defaults.searchPath
         , verbosity = defaults.verbosity
+        , colourOutput = defaults.colourOutput
         }
 
 in  { mkConfig = mkToolsetConfig

@@ -1,5 +1,6 @@
 let commandWrapper =
       { verbosity = ./verbosity.dhall
+      , colourOutput = ./colour-output.dhall
       , mkDefaultConfig = ./default.dhall
       , mkCdConfig = ./cd.dhall
       , mkSkelConfig = ./skel.dhall

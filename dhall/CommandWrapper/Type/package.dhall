@@ -16,6 +16,7 @@ in let
       , SubcommandAlias = ./SubcommandAlias.dhall
       , TerminalEmulator = ./TerminalEmulator.dhall
       , Verbosity = ./Verbosity.dhall
+      , ColourOutput = ./ColourOutput.dhall
 
       -- Toolset default (main/global) configuration
       , DefaultConfig = Default.Config

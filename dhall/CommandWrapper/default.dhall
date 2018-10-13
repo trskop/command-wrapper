@@ -5,6 +5,9 @@ in let
     verbosity = ./verbosity.dhall
 
 in let
+    colourOutput = ./colour-output.dhall
+
+in let
     helpMessage = ''
 
 Internal Subcommands:
@@ -47,6 +50,7 @@ in let
 
           , extraHelpMessage = [ helpMessage ]: Optional Text
           , verbosity = verbosity.normal
+          , colourOutput = colourOutput.auto
           }
 
 in  mkDefault

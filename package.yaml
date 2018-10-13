@@ -36,6 +36,7 @@ dependencies:
   - unix
   - unordered-containers
   - verbosity >=0.3
+  - terminfo
 
 ghc-options: -Wall
 

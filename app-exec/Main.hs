@@ -54,6 +54,7 @@ import qualified System.Posix as Posix (executeFile)
 
 import qualified CommandWrapper.Environment as Environment
 import qualified CommandWrapper.Options as Options (splitArguments)
+import CommandWrapper.Options.ColourOutput (ColourOutput)
 
 
 newtype Config = Config
@@ -65,7 +66,7 @@ instance Dhall.Interpret Config
 
 data NamedCommand = NamedCommand
     { name :: Text
-    , command :: Verbosity -> [Text] -> Command
+    , command :: Verbosity -> ColourOutput -> [Text] -> Command
     }
   deriving (Generic)
 
@@ -95,7 +96,7 @@ instance Dhall.Interpret Command
 
 main :: IO ()
 main = do
-    Environment.Params{config = configFile, verbosity} <- parseEnv
+    Environment.Params{config = configFile, verbosity, colour} <- parseEnv
 
     (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
 
@@ -115,7 +116,7 @@ main = do
                     die "COMMAND: Missing argument."
 
                 name : arguments ->
-                    getCommand commands name verbosity arguments
+                    getCommand commands name verbosity colour arguments
                     >>= executeCommand
   where
     description = mconcat
@@ -124,14 +125,20 @@ main = do
             \command line options"
         ]
 
-getCommand :: [NamedCommand] -> Text -> Verbosity -> [Text] -> IO Command
-getCommand commands expectedName verbosity arguments =
+getCommand
+    :: [NamedCommand]
+    -> Text
+    -> Verbosity
+    -> ColourOutput
+    -> [Text]
+    -> IO Command
+getCommand commands expectedName verbosity colourOutput arguments =
     case List.find (\NamedCommand{name} -> name == expectedName) commands of
         Nothing ->
             die (show expectedName <> ": Unknown COMMAND.")
 
         Just NamedCommand{command} ->
-            pure (command verbosity arguments)
+            pure (command verbosity colourOutput arguments)
 
 executeCommand :: Command -> IO ()
 executeCommand Command{..} = do

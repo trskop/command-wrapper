@@ -29,6 +29,7 @@ import System.IO (IO{-, print-})
 
 import qualified Options.Applicative as Options
 import qualified Options.Applicative.Standard as Options
+import Data.Monoid.Endo (E, mapEndo)
 import Data.Monoid.Endo.Fold (foldEndo)
 import qualified Mainplate.Extensible as Mainplate
     ( Command(Internal)
@@ -41,12 +42,14 @@ import System.Directory
     )
 import System.FilePath ((</>))
 
-import qualified CommandWrapper.Config as Global (Config)
+import qualified CommandWrapper.Config as Global (Config(Config))
 import qualified CommandWrapper.Config as Global.Config (Config(..), def, read)
 import CommandWrapper.Environment (AppNames(..), getAppNames)
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
 import qualified CommandWrapper.Options as Options
+import CommandWrapper.Options.ColourOutput (ColourOutput)
+import qualified CommandWrapper.Options.ColourOutput as ColourOutput (options)
 import qualified CommandWrapper.Options.GlobalMode as Options
 
 
@@ -96,21 +99,31 @@ parseOptions config =
         Options.info globalOptions Options.fullDesc
 
 globalOptions :: Options.Parser (Options.GlobalMode (Endo Global.Config))
-globalOptions = withHelpOptions <*> verbosityOptions
+globalOptions = withHelpOptions
+    <*> ( foldEndo
+            <$> verbosityOptions
+            <*> colourOptions
+        )
 
 withHelpOptions
     :: Options.Parser
         ( Endo Global.Config -> Options.GlobalMode (Endo Global.Config)
         )
-withHelpOptions =
-    Options.flag Options.PreserveMode Options.HelpMode $ mconcat
-        [ Options.short 'h'
-        , Options.long "help"
-        , Options.help "Print this help message and exit."
-        ]
+withHelpOptions = Options.flag Options.PreserveMode Options.HelpMode $ mconcat
+    [ Options.short 'h'
+    , Options.long "help"
+    , Options.help "Print this help message and exit."
+    ]
 
 verbosityOptions :: Options.Parser (Endo Global.Config)
 verbosityOptions = foldEndo
     <$> many Options.incrementVerbosityFlag
     <*> optional Options.verbosityOption
     <*> Options.silentFlag
+
+colourOptions :: Options.Parser (Endo Global.Config)
+colourOptions = mapEndo modifyConfig <$> ColourOutput.options
+  where
+    modifyConfig :: E ColourOutput -> E Global.Config
+    modifyConfig f config@Global.Config{Global.Config.colourOutput} =
+        config{Global.Config.colourOutput = f colourOutput}

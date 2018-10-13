@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
@@ -40,14 +41,19 @@ import qualified Dhall (Interpret, InvalidType, auto, inputFile)
 import qualified Dhall.Parser as Dhall (ParseError, Src)
 import qualified Dhall.TypeCheck as Dhall (TypeError, X)
 
-import qualified CommandWrapper.Options.Alias as Options
+import CommandWrapper.Options.Alias (Alias)
+import CommandWrapper.Options.ColourOutput (ColourOutput)
+import qualified CommandWrapper.Options.ColourOutput as ColourOutput
+    ( ColourOutput(Auto)
+    )
 
 
 data Config = Config
-    { aliases :: [Options.Alias]
+    { aliases :: [Alias]
     , searchPath :: [FilePath]
     , extraHelpMessage :: Maybe String
     , verbosity :: Verbosity
+    , colourOutput :: ColourOutput
     }
   deriving (Generic, Show)
 
@@ -57,16 +63,23 @@ instance HasVerbosity Config where
     verbosity = typed
 
 instance Semigroup Config where
-    c1 <> c2 = Config
+    c1 <> c2@Config{colourOutput, verbosity} = Config
         { aliases = ((<>) `on` aliases) c1 c2
         , searchPath = ((<>) `on` searchPath) c2 c1
             -- Reverse order, more specific search path comes first.
         , extraHelpMessage = ((<>) `on` extraHelpMessage) c1 c2
-        , verbosity = verbosity c1
+        , verbosity
+        , colourOutput
         }
 
 def :: Config
-def = Config [] [] Nothing Verbosity.Normal
+def = Config
+    { aliases = []
+    , searchPath = []
+    , extraHelpMessage = Nothing
+    , verbosity = Verbosity.Normal
+    , colourOutput = ColourOutput.Auto
+    }
 
 read :: FilePath -> IO (Either String Config)
 read = catchDhallExceptions . Dhall.inputFile Dhall.auto

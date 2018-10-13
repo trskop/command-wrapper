@@ -59,10 +59,13 @@ import qualified CommandWrapper.Config as Global
     )
 import qualified CommandWrapper.Environment as Environment
     ( AppNames(AppNames, exePath, names, usedName)
-    , Params(Params, config, exePath, name, verbosity)
+    , Params(Params, colour, config, exePath, name, verbosity)
     , commandWrapperEnv
     , getEnv
     , mkEnvVars
+    )
+import qualified CommandWrapper.Options.ColourOutput as ColourOutput
+    ( ColourOutput(Auto)
     )
 
 
@@ -112,6 +115,7 @@ executeCommand appNames subcommand arguments globalConfig =
             , name = usedName
             , config
             , verbosity = Global.verbosity globalConfig
+            , colour = ColourOutput.Auto
             }
 
     unableToFindExecutableError =

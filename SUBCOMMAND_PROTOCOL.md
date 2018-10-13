@@ -50,6 +50,17 @@ are available to it:
     Subcommand must respect these values if it's producing any output that is
     not part of user interaction.
 
+* `COMMAND_WRAPPER_COLOUR` contains one of:
+
+    * `always` - Always use colourised output, even if output is not a
+      terminal. This can be useful when, for example, piping output to a pager.
+    * `auto` - Use colourised output when the output is a terminal that
+      supports it.
+    * `no` - Never use colourised output.
+
+    Subcommands aren't requred to support colourised output, but if they do
+    then they have to respect this environment variable.
+
 
 ## Configuration File
 

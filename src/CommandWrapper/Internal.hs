@@ -91,7 +91,9 @@ run appNames = \case
 
 -- {{{ Help Command -----------------------------------------------------------
 
--- {{{ Help Command -----------------------------------------------------------
+-- TODO:
+--
+-- * Support displaying manual pages. Integration with `pandoc`?
 
 data HelpMode a
     = MainHelp a
@@ -132,6 +134,7 @@ help appNames@AppNames{usedName} options globalConfig =
 
     switchTo = pure . Endo . const
 
+    -- TODO: Generate using optparse-applicative.
     helpMsg = unlines
         [ "Usage:"
         , ""
@@ -139,6 +142,19 @@ help appNames@AppNames{usedName} options globalConfig =
         , "  " <> usedName <> " config [SUBCOMMAND]"
         , "  " <> usedName <> " help [SUBCOMMAND]"
         , "  " <> usedName <> " {-h|--help}"
+        , ""
+        , "Global options:"
+        , ""
+        , "  -v                     Increment verbosity by one level. Can be\
+          \ used multiple times."
+        , "  --verbosity=VERBOSITY  Set verbosity level to VERBOSITY. Possible\
+          \ values of VERBOSITY are 'silent', 'normal', 'verbose', and\
+          \ 'annoying'."
+        , "  -s, --silent           Silent mode. Suppress normal diagnostic or\
+          \ result output."
+        , "  --colo[u]r=WHEN        Set WHEN colourised output should be \
+          \ produced. Possible values of WHEN are 'always', 'auto', and 'no'."
+        , "  --no-colo[u]r          Same as '--colour=no'."
         ]
 
 -- }}} Help Command -----------------------------------------------------------
