@@ -26,6 +26,7 @@ import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
 import Data.String (String)
 import System.Exit (die)
 import System.IO (IO{-, print-})
+import Text.Show (show)
 
 import qualified Options.Applicative as Options
 import qualified Options.Applicative.Standard as Options
@@ -44,12 +45,15 @@ import System.FilePath ((</>))
 
 import qualified CommandWrapper.Config as Global (Config(Config))
 import qualified CommandWrapper.Config as Global.Config (Config(..), def, read)
-import CommandWrapper.Environment (AppNames(..), getAppNames)
+import CommandWrapper.Environment (AppNames(..), getAppNames, parseEnvIO)
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
 import qualified CommandWrapper.Options as Options
 import CommandWrapper.Options.ColourOutput (ColourOutput)
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput (options)
+import qualified CommandWrapper.Options.ColourOutput as ColourOutput
+    ( options
+    , noColorEnvVar
+    )
 import qualified CommandWrapper.Options.GlobalMode as Options
 
 
@@ -66,10 +70,16 @@ defaults config (Endo f) =
 main :: IO ()
 main = do
     appNames@AppNames{exeName, usedName} <- getAppNames
+    applyNoColour <- parseEnvIO (die . show) ColourOutput.noColorEnvVar
+
+    let defaultConfig = Global.Config.def
+            { Global.Config.colourOutput =
+                applyNoColour (Global.Config.colourOutput Global.Config.def)
+            }
 
     -- TODO: This code can be simplified and generalised by mapping over a list
     --       of names under which command-wrapper is known at the moment.
-    config <- (\f g -> g (f Global.Config.def))
+    config <- (\f g -> g (f defaultConfig))
         <$> readGlobalConfig exeName
         <*> ( if exeName /= usedName
                  then readGlobalConfig usedName
