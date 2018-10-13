@@ -15,7 +15,7 @@ in let
       , searchPath : List Text
       , extraHelpMessage : Optional Text
       , verbosity : Verbosity
-      , colourOutput : ColourOutput
+      , colourOutput : Optional ColourOutput
       }
 
 in let

@@ -23,9 +23,10 @@ module CommandWrapper.Config
 import Control.Applicative (pure)
 import Control.Exception (Exception, catch)
 import Data.Either (Either(Left, Right))
-import Data.Function ((.), on)
+import Data.Function (($), (.), on)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe(Nothing))
+import Data.Monoid (Last(Last, getLast))
 import Data.Semigroup (Semigroup((<>)))
 import Data.String (String)
 import GHC.Generics (Generic)
@@ -43,9 +44,6 @@ import qualified Dhall.TypeCheck as Dhall (TypeError, X)
 
 import CommandWrapper.Options.Alias (Alias)
 import CommandWrapper.Options.ColourOutput (ColourOutput)
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput
-    ( ColourOutput(Auto)
-    )
 
 
 data Config = Config
@@ -53,7 +51,7 @@ data Config = Config
     , searchPath :: [FilePath]
     , extraHelpMessage :: Maybe String
     , verbosity :: Verbosity
-    , colourOutput :: ColourOutput
+    , colourOutput :: Maybe ColourOutput
     }
   deriving (Generic, Show)
 
@@ -63,13 +61,14 @@ instance HasVerbosity Config where
     verbosity = typed
 
 instance Semigroup Config where
-    c1 <> c2@Config{colourOutput, verbosity} = Config
+    c1 <> c2@Config{verbosity} = Config
         { aliases = ((<>) `on` aliases) c1 c2
         , searchPath = ((<>) `on` searchPath) c2 c1
             -- Reverse order, more specific search path comes first.
         , extraHelpMessage = ((<>) `on` extraHelpMessage) c1 c2
         , verbosity
-        , colourOutput
+        , colourOutput = getLast $ ((<>) `on` (Last . colourOutput)) c1 c2
+
         }
 
 def :: Config
@@ -78,7 +77,7 @@ def = Config
     , searchPath = []
     , extraHelpMessage = Nothing
     , verbosity = Verbosity.Normal
-    , colourOutput = ColourOutput.Auto
+    , colourOutput = Nothing
     }
 
 read :: FilePath -> IO (Either String Config)

@@ -22,7 +22,8 @@ import Data.Eq ((/=))
 import Data.Function (($), (.), flip, id)
 import Data.Functor -- ((<$>))
 import Data.Semigroup ((<>))
-import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
+import Data.Maybe (Maybe)
+import Data.Monoid (Endo(Endo, appEndo), Last(Last, getLast), mconcat, mempty)
 import Data.String (String)
 import System.Exit (die)
 import System.IO (IO{-, print-})
@@ -30,7 +31,6 @@ import Text.Show (show)
 
 import qualified Options.Applicative as Options
 import qualified Options.Applicative.Standard as Options
-import Data.Monoid.Endo (E, mapEndo)
 import Data.Monoid.Endo.Fold (foldEndo)
 import qualified Mainplate.Extensible as Mainplate
     ( Command(Internal)
@@ -70,11 +70,10 @@ defaults config (Endo f) =
 main :: IO ()
 main = do
     appNames@AppNames{exeName, usedName} <- getAppNames
-    applyNoColour <- parseEnvIO (die . show) ColourOutput.noColorEnvVar
+    defaultColourOutput <- parseEnvIO (die . show) ColourOutput.noColorEnvVar
 
     let defaultConfig = Global.Config.def
-            { Global.Config.colourOutput =
-                applyNoColour (Global.Config.colourOutput Global.Config.def)
+            { Global.Config.colourOutput = defaultColourOutput
             }
 
     -- TODO: This code can be simplified and generalised by mapping over a list
@@ -132,8 +131,11 @@ verbosityOptions = foldEndo
     <*> Options.silentFlag
 
 colourOptions :: Options.Parser (Endo Global.Config)
-colourOptions = mapEndo modifyConfig <$> ColourOutput.options
+colourOptions = modifyConfig <$> ColourOutput.options
   where
-    modifyConfig :: E ColourOutput -> E Global.Config
-    modifyConfig f config@Global.Config{Global.Config.colourOutput} =
-        config{Global.Config.colourOutput = f colourOutput}
+    modifyConfig :: Maybe ColourOutput -> Endo Global.Config
+    modifyConfig newValue =
+        Endo $ \config@Global.Config{Global.Config.colourOutput} -> config
+            { Global.Config.colourOutput =
+                getLast (Last colourOutput <> Last newValue)
+            }

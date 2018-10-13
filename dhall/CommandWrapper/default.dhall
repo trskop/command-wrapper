@@ -48,9 +48,9 @@ in let
               [ "${context.home}/.local/lib/command-wrapper"
               ] : List Text
 
-          , extraHelpMessage = [ helpMessage ]: Optional Text
+          , extraHelpMessage = [helpMessage] : Optional Text
           , verbosity = verbosity.normal
-          , colourOutput = colourOutput.auto
+          , colourOutput = [] : Optional CommandWrapper.ColourOutput
           }
 
 in  mkDefault

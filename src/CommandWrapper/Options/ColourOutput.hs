@@ -33,13 +33,11 @@ module CommandWrapper.Options.ColourOutput
 
 import Control.Applicative (optional)
 import Data.Maybe (isJust)
-import Data.Monoid (mconcat)
+import Data.Monoid (Last(Last, getLast), mconcat)
 import Data.String (IsString)
 import GHC.Generics (Generic)
 
 import qualified Data.CaseInsensitive as CI (mk)
-import Data.Monoid.Endo (E, Endo)
-import Data.Monoid.Endo.Fold (foldEndo)
 import qualified Dhall (Inject, Interpret)
 import qualified Options.Applicative as Options
 import System.Console.Terminfo (Terminal, getCapability, termColors)
@@ -73,39 +71,41 @@ instance Dhall.Interpret ColourOutput
 -- > > should check for the presence of a NO_COLOR environment variable that,
 -- > > when present (regardless of its value), prevents the addition of ANSI
 -- > > color.
-noColorEnvVar :: ParseEnv (E ColourOutput)
-noColorEnvVar = maybe id (\_ _ -> Never) <$> askOptionalVar "NO_COLOR"
+noColorEnvVar :: ParseEnv (Maybe ColourOutput)
+noColorEnvVar = fmap (const Never) <$> askOptionalVar "NO_COLOR"
 
 -- | Does specified terminal support colours?
 terminalSupportsColours :: Terminal -> Bool
 terminalSupportsColours term = isJust (getCapability term termColors)
 
-options :: Options.Parser (Endo ColourOutput)
-options = foldEndo
+options :: Options.Parser (Maybe ColourOutput)
+options = go
     <$> noColourFlag
     <*> noColorFlag
     <*> optional colourOption
     <*> optional colorOption
+  where
+    go a b c d = getLast . mconcat $ map Last [a, b, c, d]
 
-noColourFlag :: Options.Parser (E ColourOutput)
+noColourFlag :: Options.Parser (Maybe ColourOutput)
 noColourFlag = noColourFlag' "no-colour"
 
-noColorFlag :: Options.Parser (E ColourOutput)
+noColorFlag :: Options.Parser (Maybe ColourOutput)
 noColorFlag = noColourFlag' "no-color"
 
-noColourFlag' :: String ->  Options.Parser (E ColourOutput)
-noColourFlag' name = Options.flag id (const Never) $ mconcat
+noColourFlag' :: String ->  Options.Parser (Maybe ColourOutput)
+noColourFlag' name = Options.flag Nothing (Just Never) $ mconcat
     [ Options.long name
     , Options.help "Never use colourised output. Same as '--colour=never'."
     ]
 
-colourOption :: Options.Parser (E ColourOutput)
+colourOption :: Options.Parser ColourOutput
 colourOption = colourOption' "colour"
 
-colorOption :: Options.Parser (E ColourOutput)
+colorOption :: Options.Parser ColourOutput
 colorOption = colourOption' "color"
 
-colourOption' :: String -> Options.Parser (E ColourOutput)
+colourOption' :: String -> Options.Parser ColourOutput
 colourOption' name = Options.option parse' $ mconcat
     [ Options.long name
     , Options.help "Specify if and when colourised output should be used.\
@@ -113,7 +113,7 @@ colourOption' name = Options.option parse' $ mconcat
     , Options.metavar "WHEN"
     ]
   where
-    parse' = Options.maybeReader $ fmap const . parse . CI.mk
+    parse' = Options.maybeReader (parse . CI.mk)
 
 parse :: (IsString s, Eq s) => s -> Maybe ColourOutput
 parse = \case

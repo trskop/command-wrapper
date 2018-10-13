@@ -28,7 +28,7 @@ in let
           , extraHelpMessage = [] : Optional Text
 
           , verbosity = verbosity.normal
-          , colourOutput = colourOutput.auto
+          , colourOutput = [] : Optional CommandWrapper.ColourOutput
           }
 
 in let
