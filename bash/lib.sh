@@ -15,33 +15,80 @@ function verbosityToNum() {
 
 # Usage:
 #
+#   useColours WHEN_TO_USE_COLOURS FILE_DESCRIPTOR
+#
+# Arguments:
+#
+#   WHEN_TO_USE_COLOURS is one of 'always', 'auto', and 'no'.
+#
+# Exit code:
+#
+#   0 (Exit success) - Use colours on specified file descriptor
+#   1 (Exit failure) - Don't use colours on specified file descriptor
+function useColours() {
+    local when="$1"; shift
+    local fd="$1"; shift
+
+    function terminalSupportsColours() {
+        if [[ -t "${fd}" && "$(tput colors)" -gt 0 ]]; then
+            return 0
+        else
+            return 1
+        fi
+    }
+
+    case "${when}" in
+      'always') return 0;;
+      'auto')   terminalSupportsColours;;
+      'no')     return 1;;
+      *)        terminalSupportsColours;;
+    esac
+}
+
+# Usage:
+#
 #   msgf VERBOSITY MESSAGE_TYPE FORMAT [ARGUMENTS]
 function msgf() {
     local -r verbosity="$(verbosityToNum "$1")"; shift
     local -r type="$1"; shift
     local -r format="$1"; shift
 
+    function useColours_() {
+        useColours "${COMMAND_WRAPPER_COLOUR:-auto}" 0
+    }
+
+    local -r resetColour='\033[0m'
     case "${type}" in
         'info')
             local -r messageType='Info'
             local -r -i typeNum=3
             ;;
         'notice')
+            if useColours_; then
+                local -r colour='\033[0;37m'
+            fi
             local -r messageType='Notice'
             local -r -i typeNum=2
             ;;
         'warning')
+            if useColours_; then
+                local -r colour='\033[0;33m'
+            fi
             local -r messageType='Warning'
             local -r -i typeNum=1
             ;;
         'error')
+            if useColours_; then
+                local -r colour='\033[0;31m'
+            fi
             local -r messageType='Error'
             local -r -i typeNum=1
             ;;
     esac
 
     if (( typeNum <= verbosity )); then
-        printf "${messageType}: ${format}\n" "$@"
+        printf "${colour}${messageType}: ${format}${colour:+${resetColour}}\n" \
+            "$@"
     fi
 }
 
@@ -63,14 +110,14 @@ function notice() {
 #
 #   warn FORMAT [ARGUMENTS]
 function warn() {
-    msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'warning' "$@"
+    msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'warning' "$@" 1>&2
 }
 
 # Usage:
 #
 #   error FORMAT [ARGUMENTS]
 function error() {
-    msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'error' "$@"
+    msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'error' "$@" 1>&2
 }
 
 # Usage:
@@ -107,6 +154,12 @@ function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
 
     if  [[ -z "${COMMAND_WRAPPER_VERBOSITY}" ]]; then
         die 2 'COMMAND_WRAPPER_VERBOSITY: %s: %s' \
+            'Missing environment variable' \
+            'This command must be executed inside command-wrapper environment.'
+    fi
+
+    if  [[ -z "${COMMAND_WRAPPER_COLOUR}" ]]; then
+        die 2 'COMMAND_WRAPPER_COLOUR: %s: %s' \
             'Missing environment variable' \
             'This command must be executed inside command-wrapper environment.'
     fi
