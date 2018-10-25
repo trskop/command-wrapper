@@ -20,6 +20,8 @@ packages:
 
 extra-deps:
   - endo-0.3.0.1
+  - fuzzy-0.1.0.0
+
   - dhall-1.18.0
   - dhall-bash-1.0.16
   - dhall-json-1.2.4

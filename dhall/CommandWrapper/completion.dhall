@@ -9,6 +9,20 @@
       ''
       _${name}()
       {
+          COMPREPLY=($("${command}" 'completion' '--' "''${COMP_WORDS[''${COMP_CWORD}]}"))
+      }
+
+      complete -o filenames -F _${name} ${name}
+      ''
+  }
+
+{-
+  λ(name : Text)
+→ λ(command : Text)
+→ { bash =
+      ''
+      _${name}()
+      {
           local IFS=$'\\n'
           local CMDLINE=(--bash-completion-index="''${COMP_CWORD}")
 
@@ -22,3 +36,4 @@
       complete -o filenames -F _${name} ${name}
       ''
   }
+-}

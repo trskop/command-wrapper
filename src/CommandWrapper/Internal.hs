@@ -39,20 +39,28 @@ module CommandWrapper.Internal
   where
 
 import Control.Applicative (pure)
+import Control.Monad ((>>=), join)
+import Data.Bool (Bool(False))
+import qualified Data.Char as Char (toLower)
+import Data.Eq ((==))
 import Data.Foldable (mapM_, traverse_)
-import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<$>))
-import qualified Data.List as List (nub)
+import Data.Function (($), (.), const, id)
+import Data.Functor (Functor, (<$>), fmap)
+import qualified Data.List as List (break, filter, isPrefixOf, lookup, nub, takeWhile)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Monoid (Endo(Endo))
 import Data.Semigroup ((<>))
 import Data.String (String, unlines)
+import Data.Tuple (fst)
 import GHC.Generics (Generic)
 import System.Exit (die)
 import System.IO (IO, putStr, putStrLn)
 import Text.Show (Show)
 
 import qualified Mainplate (applySimpleDefaults, noConfigToRead, runAppWith)
+import qualified Safe (headMay)
+import Text.Fuzzy as Fuzzy (Fuzzy)
+import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 
 import qualified CommandWrapper.Config as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
@@ -224,7 +232,8 @@ config _appNames _options globalConfig =
 data Shell = Bash
   deriving (Generic, Show)
 
-data WhatArgumentsToList = Subcommands
+newtype WhatArgumentsToList
+    = Subcommands String
   deriving (Generic, Show)
     -- TODO: Extend this data type to be able to list various combinations of
     -- following groups:
@@ -235,13 +244,13 @@ data WhatArgumentsToList = Subcommands
     -- * Global options
 
 data CompletionMode a
-    = CompletionMode a
+    = CompletionMode String a
     | GenerateCompletionScriptMode Shell a
     | ListArgumentsMode WhatArgumentsToList a
   deriving (Functor, Generic, Show)
 
 completion :: AppNames -> [String] -> Global.Config -> IO ()
-completion appNames _options globalConfig =
+completion appNames options globalConfig =
     runMain parseOptions defaults $ \case
         -- TODO:
         --
@@ -259,7 +268,16 @@ completion appNames _options globalConfig =
         --   the subcommand with bash completion options passed to it. This
         --   will require us to extend `SUBCOMMAND_PROTOCOL.md`. Should we rely
         --   on `optparse-applicative` for this?
-        CompletionMode _config -> pure ()
+        CompletionMode pat cfg -> do
+            let subcmds = findSubcommands cfg pat
+
+            completions <-
+                case Safe.headMay pat of
+                    Nothing  -> (findOptions cfg ('-' : pat) <>) <$> subcmds
+                    Just '-' -> pure (findOptions cfg pat)
+                    _        -> subcmds
+
+            mapM_ putStrLn completions
 
         -- TODO:
         --
@@ -270,18 +288,89 @@ completion appNames _options globalConfig =
         GenerateCompletionScriptMode _shell _config -> pure ()
 
         ListArgumentsMode whatToList cfg -> case whatToList of
-            Subcommands -> do
-                let aliases = alias <$> Global.aliases cfg
-                    internalCommands = ["help", "config", "completion"]
-                cmds <- External.findSubcommands appNames cfg
-                mapM_ putStrLn (List.nub $ aliases <> internalCommands <> cmds)
+            Subcommands pat ->
+                findSubcommandsFuzzy cfg pat
+                    >>= mapM_ (putStrLn . Fuzzy.original)
   where
-    defaults = Mainplate.applySimpleDefaults (CompletionMode globalConfig)
+    defaults = Mainplate.applySimpleDefaults (CompletionMode "" globalConfig)
 
     parseOptions :: IO (Endo (CompletionMode Global.Config))
-    parseOptions =
+    parseOptions = do
+        let pat = case options of
+                []           -> ""
+                ["--"]       -> ""
+                "--" : p : _ -> p
+                p : _        -> p
+
         -- TODO: Temporary hack to make this subcommand somewhat useful.
-        pure . Endo $ const (ListArgumentsMode Subcommands globalConfig)
+        pure . Endo $ const (CompletionMode pat globalConfig)
+
+    getSubcommands :: Global.Config -> IO [String]
+    getSubcommands cfg = do
+        extCmds <- External.findSubcommands appNames cfg
+
+        let aliases = alias <$> Global.aliases cfg
+            internalCommands = ["help", "config", "completion"]
+
+        pure (List.nub $ aliases <> internalCommands <> extCmds)
+
+    findSubcommandsFuzzy :: Global.Config -> String -> IO [Fuzzy String String]
+    findSubcommandsFuzzy cfg pat = do
+        cmds <- getSubcommands cfg
+
+        let caseSensitiveSearch = False -- TODO: Move to config.
+        pure (Fuzzy.filter pat cmds "" "" id caseSensitiveSearch)
+
+    findSubcommands :: Global.Config -> String -> IO [String]
+    findSubcommands cfg pat =
+        List.filter (fmap Char.toLower pat `List.isPrefixOf`)
+            <$> getSubcommands cfg
+
+    findOptions :: Global.Config -> String -> [String]
+    findOptions cfg pat =
+        let verbosityValues =  ["silent", "normal", "verbose", "annoying"]
+            colourWhences = ["always", "auto", "never"]
+
+            shortOptions =
+                [ "-v", "-vv", "-vvv"
+                , "-s"
+                ]
+
+            longOptions :: [(String, Maybe (String -> [String]))]
+            longOptions =
+                [ ("--verbosity=", Just (findKeywords verbosityValues cfg))
+                , ("--color=", Just (findKeywords colourWhences cfg))
+                , ("--colour=", Just (findKeywords colourWhences cfg))
+                , ("--no-color", Nothing)
+                , ("--no-colour", Nothing)
+                ]
+
+        in  case List.takeWhile (== '-') pat of
+                -- No option starts with "---"
+                '-' : '-' : '-' : _ -> []
+
+                -- Search for long option.
+                '-' : '-' : pat' ->
+                    case List.break (== '=') pat' of
+                        (opt, '=' : pat'') ->
+                            case join (List.lookup ("--" <> opt <> "=") longOptions) of
+                                Just f -> f pat''
+                                _ -> []
+                        _ ->
+                            List.filter
+                                (fmap Char.toLower pat `List.isPrefixOf`)
+                                (fst <$> longOptions)
+
+                -- Search for both, long and short option.
+                '-' : _ ->
+                    List.filter (fmap Char.toLower pat `List.isPrefixOf`)
+                        (shortOptions <> fmap fst longOptions)
+
+                _ -> []
+
+    findKeywords :: [String] -> Global.Config -> String -> [String]
+    findKeywords keywords _cfg pat =
+        List.filter (fmap Char.toLower pat `List.isPrefixOf`) keywords
 
 -- }}} Completion Command -----------------------------------------------------
 

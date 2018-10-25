@@ -19,24 +19,29 @@ extra-source-files:
 
 dependencies:
   - base
+
   - case-insensitive
   - comonad
   - dhall >=1.17
+  - dhall-bash
+  - dhall-json
   - directory
   - endo
   - executable-path
   - filepath
+  - fuzzy
   - generic-lens
   - host-and-port
   - mainplate
   - mtl
   - optparse-applicative
   - projectroot
+  - safe
+  - terminfo
   - text
   - unix
   - unordered-containers
   - verbosity >=0.3
-  - terminfo
 
 ghc-options: -Wall
 
@@ -70,3 +75,10 @@ executables:
     dependencies:
       - *this
       - containers
+
+# command-wrapper-daemon:
+#   source-dirs: app-daemon
+#   main: Main.hs
+#   dependencies:
+#     - *this
+#     - containers
