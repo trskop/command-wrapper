@@ -25,10 +25,10 @@ in let
               [ "${context.home}/.local/lib/${context.toolset}"
               ] : List Text
 
-          , extraHelpMessage = [] : Optional Text
+          , extraHelpMessage = None Text
 
           , verbosity = verbosity.normal
-          , colourOutput = [] : Optional CommandWrapper.ColourOutput
+          , colourOutput = None CommandWrapper.ColourOutput
           }
 
 in let
