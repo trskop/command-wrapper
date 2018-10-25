@@ -15,10 +15,10 @@ in let
 
 in let
     ExecCommand = Command
-      //\\  { environment : List EnvironmentVariable
-            , searchPath : Bool
-            , workingDirectory : Optional Text
-            }
+      ⩓ { environment : List EnvironmentVariable
+        , searchPath : Bool
+        , workingDirectory : Optional Text
+        }
 
 in let
     NamedCommand =

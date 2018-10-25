@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
 stack --local-bin-path="${HOME}/.local/lib/command-wrapper" install
+stack install dhall dhall-text dhall-json dhall-bash
