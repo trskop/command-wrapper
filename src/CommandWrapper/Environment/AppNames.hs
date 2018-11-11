@@ -24,8 +24,9 @@ module CommandWrapper.Environment.AppNames
 
 import Data.Eq ((==))
 import Data.Functor ((<&>))
-import Data.String (String)
 import Data.List.NonEmpty (NonEmpty((:|)))
+import Data.String (String)
+import Data.Version (Version, makeVersion)
 import GHC.Generics (Generic)
 import System.Environment (getProgName)
 import System.IO (FilePath, IO)
@@ -38,34 +39,38 @@ import System.FilePath (takeFileName)
 data AppNames = AppNames
     { exePath :: FilePath
     , exeName :: String
+    , exeVersion :: Version
     , usedName :: String
     , names :: NonEmpty String
     }
   deriving (Generic, Show)
 
-getAppNames :: IO AppNames
-getAppNames = do
+getAppNames :: IO Version -> IO AppNames
+getAppNames getVersion = do
     usedName <- getProgName
+    version <- getVersion
     getScriptPath <&> \case
         Executable exePath ->
-            appNamesWithExePath usedName exePath
+            appNamesWithExePath usedName exePath version
 
         RunGHC exePath ->
-            appNamesWithExePath usedName exePath
+            appNamesWithExePath usedName exePath version
 
         Interactive ->
             AppNames
                 { exePath = ""
                 , exeName = ""
+                , exeVersion = makeVersion []
                 , usedName
                 , names = usedName :| []
                 }
   where
-    appNamesWithExePath usedName exePath =
+    appNamesWithExePath usedName exePath exeVersion =
         let exeName = takeFileName exePath
         in AppNames
             { exePath
             , exeName
+            , exeVersion
             , usedName
 
             -- More specific name has priority, i.e. user defined toolset has

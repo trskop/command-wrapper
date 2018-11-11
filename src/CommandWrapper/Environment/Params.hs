@@ -30,14 +30,19 @@ import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=))
 import Data.Bifunctor (first)
 import qualified Data.Char as Char (toLower)
+import Data.Eq ((/=))
 import Data.Function (($), (.))
 import Data.Functor ((<$>), fmap)
+import qualified Data.List as List (dropWhile)
+import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Semigroup (Semigroup((<>)))
-import Data.Tuple (uncurry)
-import Data.Maybe (maybe)
+import Data.String (String)
+import Data.Tuple (snd, uncurry)
+import Data.Version (Version, parseVersion, showVersion)
 import GHC.Generics (Generic)
 import System.IO (FilePath)
 import Text.Show (Show, show)
+import Text.ParserCombinators.ReadP (readP_to_S)
 
 import Control.Monad.Except (throwError)
 import qualified Data.CaseInsensitive as CaseInsensitive (mk)
@@ -69,6 +74,7 @@ data Params = Params
     , config :: FilePath
     , verbosity :: Verbosity
     , colour :: ColourOutput
+    , version :: Version
     }
   deriving (Generic, Show)
 
@@ -80,6 +86,7 @@ mkEnvVars Params{..} = EnvVars $ \prefix ->
         , (CommandWrapperConfig, config)
         , (CommandWrapperVerbosity, Char.toLower <$> show verbosity)
         , (CommandWrapperColour, Char.toLower <$> show colour)
+        , (CommandWrapperVersion, showVersion version)
         ]
 
 commandWrapperEnv :: EnvVars -> [(EnvVarName, EnvVarValue)]
@@ -93,12 +100,16 @@ askParams = Params
     <*> askCommandWrapperVar CommandWrapperConfig
     <*> askVerbosityVar CommandWrapperVerbosity
     <*> askColourOutputVar CommandWrapperColour
+    <*> askVersionVar CommandWrapperVersion
   where
     askVerbosityVar name = do
         askCommandWrapperVar' name >>= uncurry parseAsVerbosity
 
     askColourOutputVar name =
         askCommandWrapperVar' name >>= uncurry parseAsColourOutput
+
+    askVersionVar name =
+        askCommandWrapperVar' name >>= uncurry parseAsVersion
 
     parseAsVerbosity :: EnvVarName -> EnvVarValue -> ParseEnv Verbosity
     parseAsVerbosity name value =
@@ -107,8 +118,7 @@ askParams = Params
         $ CaseInsensitive.mk value
 
     unableToParseVerbosity :: forall a. EnvVarName -> EnvVarValue -> ParseEnv a
-    unableToParseVerbosity name s = throwError
-        $ ParseEnvError name ("'" <> s <> "': Unable to parse as verbosity.")
+    unableToParseVerbosity = throwParseEnvError "verbosity"
 
     parseAsColourOutput :: EnvVarName -> EnvVarValue -> ParseEnv ColourOutput
     parseAsColourOutput name value =
@@ -121,5 +131,23 @@ askParams = Params
         .  EnvVarName
         -> EnvVarValue
         -> ParseEnv a
-    unableToParseColourOutput name s = throwError $ ParseEnvError name
-        ("'" <> s <> "': Unable to parse colour output settings.")
+    unableToParseColourOutput = throwParseEnvError "colour output settings"
+
+    parseAsVersion :: EnvVarName -> EnvVarValue -> ParseEnv Version
+    parseAsVersion name value = maybe (unableToParseVersion name value) pure
+        $ case List.dropWhile ((/= "") . snd) (readP_to_S parseVersion value) of
+            (v, "") : _ -> Just v
+            _           -> Nothing
+
+    unableToParseVersion :: forall a .  EnvVarName -> EnvVarValue -> ParseEnv a
+    unableToParseVersion = throwParseEnvError "version"
+
+    throwParseEnvError
+        :: forall a
+        .  String
+        -> EnvVarName
+        -> EnvVarValue
+        -> ParseEnv a
+    throwParseEnvError what name s = throwError (ParseEnvError name msg)
+      where
+        msg = "'" <> s <> "': Unable to parse " <> what <> "."

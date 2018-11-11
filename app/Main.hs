@@ -56,6 +56,8 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     )
 import qualified CommandWrapper.Options.GlobalMode as Options
 
+import Paths_command_wrapper (version)
+
 
 readConfig :: Options.Command a -> IO (Either String (Endo Global.Config))
 readConfig _ = pure (Right mempty)
@@ -69,7 +71,7 @@ defaults config (Endo f) =
 
 main :: IO ()
 main = do
-    appNames@AppNames{exeName, usedName} <- getAppNames
+    appNames@AppNames{exeName, usedName} <- getAppNames (pure version)
     defaultColourOutput <- parseEnvIO (die . show) ColourOutput.noColorEnvVar
 
     let defaultConfig = Global.Config.def

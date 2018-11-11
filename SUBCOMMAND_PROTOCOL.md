@@ -22,6 +22,8 @@ are available to it:
 * `COMMAND_WRAPPER_EXE` contains full path to CommandWrapper executable, e.g.
   `/home/joe/.local/lib/command-wrapper/command-wrapper`.
 
+* `COMMAND_WRAPPER_VERSION` contains version of CommandWrapper executable.
+
 * `COMMAND_WRAPPER_NAME` contains name under which CommandWrapper was executed.
   This is not a file path, just command name.
 

@@ -58,8 +58,8 @@ import qualified CommandWrapper.Config as Global
     ( Config(Config, colourOutput, searchPath, verbosity)
     )
 import qualified CommandWrapper.Environment as Environment
-    ( AppNames(AppNames, exePath, names, usedName)
-    , Params(Params, colour, config, exePath, name, verbosity)
+    ( AppNames(AppNames, exePath, exeVersion, names, usedName)
+    , Params(Params, colour, config, exePath, name, verbosity, version)
     , commandWrapperEnv
     , getEnv
     , mkEnvVars
@@ -104,6 +104,7 @@ executeCommand appNames subcommand arguments globalConfig =
 
     Environment.AppNames
         { Environment.exePath
+        , Environment.exeVersion
         , Environment.usedName
         , Environment.names
         } = appNames
@@ -117,6 +118,7 @@ executeCommand appNames subcommand arguments globalConfig =
             , verbosity = Global.verbosity globalConfig
             , colour =
                 fromMaybe ColourOutput.Auto (Global.colourOutput globalConfig)
+            , version = exeVersion
             }
 
     unableToFindExecutableError =

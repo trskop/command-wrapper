@@ -58,6 +58,9 @@ data CommandWrapperVarName
     | CommandWrapperColour
     -- ^
     -- > <prefix>_COLOUR
+    | CommandWrapperVersion
+    -- ^
+    -- > <prefix>_VERSION
   deriving (Generic, Show)
 
 -- | Get fully formed Command Wrapper variable name:
@@ -73,3 +76,4 @@ commandWrapperVarName prefix = (prefix <>) . \case
     CommandWrapperConfig -> "_CONFIG"
     CommandWrapperVerbosity -> "_VERBOSITY"
     CommandWrapperColour -> "_COLOUR"
+    CommandWrapperVersion -> "_VERSION"

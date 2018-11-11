@@ -140,6 +140,12 @@ function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
             'This command must be executed inside command-wrapper environment.'
     fi
 
+    if  [[ -z "${COMMAND_WRAPPER_VERSION}" ]]; then
+        die 2 'COMMAND_WRAPPER_VERSION: %s: %s' \
+            'Missing environment variable' \
+            'This command must be executed inside command-wrapper environment.'
+    fi
+
     if  [[ -z "${COMMAND_WRAPPER_NAME}" ]]; then
         die 2 'COMMAND_WRAPPER_NAME: %s: %s' \
             'Missing environment variable' \
