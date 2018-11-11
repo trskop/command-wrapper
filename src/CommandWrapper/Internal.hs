@@ -101,7 +101,7 @@ run appNames = \case
 
 -- TODO:
 --
--- * Support displaying manual pages. Integration with `pandoc`?
+-- - Support displaying manual pages. Integration with `pandoc`?
 
 data HelpMode a
     = MainHelp a
@@ -184,9 +184,9 @@ config _appNames _options globalConfig =
 
         -- TODO:
         --
-        -- * Merge in functionality of: `dhall`, `dhall-json`, `dhall-bash`,
+        -- - Merge in functionality of: `dhall`, `dhall-json`, `dhall-bash`,
         --   and `dhall-text`
-        -- * Provide functionality for shell variables that transforms:
+        -- - Provide functionality for shell variables that transforms:
         --
         --     ```
         --     { name = "FOO"
@@ -238,10 +238,10 @@ newtype WhatArgumentsToList
     -- TODO: Extend this data type to be able to list various combinations of
     -- following groups:
     --
-    -- * External subcommands
-    -- * Internal subcommands
-    -- * Aliases
-    -- * Global options
+    -- - External subcommands
+    -- - Internal subcommands
+    -- - Aliases
+    -- - Global options
 
 data CompletionMode a
     = CompletionMode String a
@@ -254,17 +254,17 @@ completion appNames options globalConfig =
     runMain parseOptions defaults $ \case
         -- TODO:
         --
-        -- * This subcommand will need access to global parser definition to
+        -- - This subcommand will need access to global parser definition to
         --   provide completion for global options.
         --
-        -- * When completing subcommand names we need to find possible
+        -- - When completing subcommand names we need to find possible
         --   completions in:
         --
         --     - All possible external and internal subcommands.
         --     - All aliases defined by `command-wrapper` and `TOOLSET` (if not
         --       invoking `command-wrapper` directly).
         --
-        -- * When completing option/argument of a subcommand we need to execute
+        -- - When completing option/argument of a subcommand we need to execute
         --   the subcommand with bash completion options passed to it. This
         --   will require us to extend `SUBCOMMAND_PROTOCOL.md`. Should we rely
         --   on `optparse-applicative` for this?
@@ -281,9 +281,9 @@ completion appNames options globalConfig =
 
         -- TODO:
         --
-        -- * Completion script should be configurable.
+        -- - Completion script should be configurable.
         --
-        -- * By default it should be printed to `stdout`, but we should support
+        -- - By default it should be printed to `stdout`, but we should support
         --   writting it into a file without needing to redirect `stdout`.
         GenerateCompletionScriptMode _shell _config -> pure ()
 
