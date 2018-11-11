@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExplicitForAll #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RecordWildCards #-}
 -- |
@@ -27,10 +28,12 @@ module CommandWrapper.Environment.Params
 
 import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=))
+import Data.Bifunctor (first)
 import qualified Data.Char as Char (toLower)
 import Data.Function (($), (.))
-import Data.Functor ((<$>))
+import Data.Functor ((<$>), fmap)
 import Data.Semigroup (Semigroup((<>)))
+import Data.Tuple (uncurry)
 import Data.Maybe (maybe)
 import GHC.Generics (Generic)
 import System.IO (FilePath)
@@ -46,9 +49,16 @@ import CommandWrapper.Environment.Builder (EnvVars(EnvVars))
 import CommandWrapper.Environment.Parser
     ( ParseEnv
     , ParseEnvError(ParseEnvError)
-    , askVar
+    , askCommandWrapperVar
+    , askCommandWrapperVar'
     )
-import CommandWrapper.Environment.Variable (EnvVarName, EnvVarValue)
+import CommandWrapper.Environment.Variable
+    ( CommandWrapperVarName(..)
+    , EnvVarName
+    , EnvVarValue
+    , commandWrapperPrefix
+    , commandWrapperVarName
+    )
 import CommandWrapper.Options.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput (parse)
 
@@ -64,28 +74,31 @@ data Params = Params
 
 mkEnvVars :: Params -> EnvVars
 mkEnvVars Params{..} = EnvVars $ \prefix ->
-    HashMap.fromList
-      [ (prefix <> "_EXE", exePath)
-      , (prefix <> "_NAME", name)
-      , (prefix <> "_CONFIG", config)
-      , (prefix <> "_VERBOSITY", Char.toLower <$> show verbosity)
-      , (prefix <> "_COLOUR", Char.toLower <$> show colour)
-      ]
+    HashMap.fromList $ fmap (first $ commandWrapperVarName prefix)
+        [ (CommandWrapperExe, exePath)
+        , (CommandWrapperName, name)
+        , (CommandWrapperConfig, config)
+        , (CommandWrapperVerbosity, Char.toLower <$> show verbosity)
+        , (CommandWrapperColour, Char.toLower <$> show colour)
+        ]
 
 commandWrapperEnv :: EnvVars -> [(EnvVarName, EnvVarValue)]
-commandWrapperEnv (EnvVars mkEnv) = HashMap.toList (mkEnv "COMMAND_WRAPPER")
+commandWrapperEnv (EnvVars mkEnv) = HashMap.toList (mkEnv commandWrapperPrefix)
 
+-- | Parse Command Wrapper environment\/protocol.
 askParams :: ParseEnv Params
 askParams = Params
-    <$> askVar "COMMAND_WRAPPER_EXE"
-    <*> askVar "COMMAND_WRAPPER_NAME"
-    <*> askVar "COMMAND_WRAPPER_CONFIG"
-    <*> askVerbosityVar "COMMAND_WRAPPER_VERBOSITY"
-    <*> askColourOutputVar "COMMAND_WRAPPER_COLOUR"
+    <$> askCommandWrapperVar CommandWrapperExe
+    <*> askCommandWrapperVar CommandWrapperName
+    <*> askCommandWrapperVar CommandWrapperConfig
+    <*> askVerbosityVar CommandWrapperVerbosity
+    <*> askColourOutputVar CommandWrapperColour
   where
-    askVerbosityVar name = askVar name >>= parseAsVerbosity name
+    askVerbosityVar name = do
+        askCommandWrapperVar' name >>= uncurry parseAsVerbosity
 
-    askColourOutputVar name = askVar name >>= parseAsColourOutput name
+    askColourOutputVar name =
+        askCommandWrapperVar' name >>= uncurry parseAsColourOutput
 
     parseAsVerbosity :: EnvVarName -> EnvVarValue -> ParseEnv Verbosity
     parseAsVerbosity name value =
