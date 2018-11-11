@@ -49,6 +49,9 @@ data CommandWrapperVarName
     | CommandWrapperName
     -- ^
     -- > <prefix>_NAME
+    | CommandWrapperSubcommand
+    -- ^
+    -- > <prefix>_SUBCOMMAND
     | CommandWrapperConfig
     -- ^
     -- > <prefix>_CONFIG
@@ -73,6 +76,7 @@ commandWrapperVarName
 commandWrapperVarName prefix = (prefix <>) . \case
     CommandWrapperExe -> "_EXE"
     CommandWrapperName -> "_NAME"
+    CommandWrapperSubcommand -> "_SUBCOMMAND"
     CommandWrapperConfig -> "_CONFIG"
     CommandWrapperVerbosity -> "_VERBOSITY"
     CommandWrapperColour -> "_COLOUR"

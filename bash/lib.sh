@@ -10,6 +10,8 @@ function verbosityToNum() {
       'verbose')  echo 2;;
       'annoying') echo 3;;
       [0-3])      echo "$1";;
+      *)          echo 3;;    # There is probably a bug, let's be safe and
+                              # print the information.
     esac
 }
 
@@ -53,6 +55,10 @@ function msgf() {
     local -r type="$1"; shift
     local -r format="$1"; shift
 
+    # This function MUST work even in faulty Command Wrapper environment.
+    # Otherwise we wouldn't be able to print any error messages about a bad
+    # environment.
+
     function useColours_() {
         useColours "${COMMAND_WRAPPER_COLOUR:-auto}" 0
     }
@@ -87,8 +93,10 @@ function msgf() {
     esac
 
     if (( typeNum <= verbosity )); then
-        printf "${colour}${messageType}: ${format}${colour:+${resetColour}}\n" \
-            "$@"
+        local -r cmd="${COMMAND_WRAPPER_NAME:+"${COMMAND_WRAPPER_NAME} "}${COMMAND_WRAPPER_SUBCOMMAND:-${0##*/}}"
+        local -r fullFormat="${cmd}: ${messageType}: ${format}"
+
+        printf "${colour}${fullFormat}${colour:+${resetColour}}\n" "$@"
     fi
 }
 

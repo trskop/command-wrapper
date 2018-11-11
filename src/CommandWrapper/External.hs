@@ -59,7 +59,16 @@ import qualified CommandWrapper.Config as Global
     )
 import qualified CommandWrapper.Environment as Environment
     ( AppNames(AppNames, exePath, exeVersion, names, usedName)
-    , Params(Params, colour, config, exePath, name, verbosity, version)
+    , Params
+        ( Params
+        , colour
+        , config
+        , exePath
+        , name
+        , subcommand
+        , verbosity
+        , version
+        )
     , commandWrapperEnv
     , getEnv
     , mkEnvVars
@@ -114,6 +123,7 @@ executeCommand appNames subcommand arguments globalConfig =
         pure Environment.Params
             { exePath
             , name = usedName
+            , subcommand
             , config
             , verbosity = Global.verbosity globalConfig
             , colour =

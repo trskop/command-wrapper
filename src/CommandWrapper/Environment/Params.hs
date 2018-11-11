@@ -70,7 +70,8 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput (parse)
 
 data Params = Params
     { exePath :: FilePath
-    , name :: FilePath
+    , name :: String
+    , subcommand :: String
     , config :: FilePath
     , verbosity :: Verbosity
     , colour :: ColourOutput
@@ -83,6 +84,7 @@ mkEnvVars Params{..} = EnvVars $ \prefix ->
     HashMap.fromList $ fmap (first $ commandWrapperVarName prefix)
         [ (CommandWrapperExe, exePath)
         , (CommandWrapperName, name)
+        , (CommandWrapperSubcommand, subcommand)
         , (CommandWrapperConfig, config)
         , (CommandWrapperVerbosity, Char.toLower <$> show verbosity)
         , (CommandWrapperColour, Char.toLower <$> show colour)
@@ -97,6 +99,7 @@ askParams :: ParseEnv Params
 askParams = Params
     <$> askCommandWrapperVar CommandWrapperExe
     <*> askCommandWrapperVar CommandWrapperName
+    <*> askCommandWrapperVar CommandWrapperSubcommand
     <*> askCommandWrapperVar CommandWrapperConfig
     <*> askVerbosityVar CommandWrapperVerbosity
     <*> askColourOutputVar CommandWrapperColour

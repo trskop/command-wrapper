@@ -27,6 +27,15 @@ are available to it:
 * `COMMAND_WRAPPER_NAME` contains name under which CommandWrapper was executed.
   This is not a file path, just command name.
 
+    For example if `toolset foo` was executed then
+    `COMMAND_WRAPPER_SUBCOMMAND=toolset`.
+
+* `COMMAND_WRAPPER_SUBCOMMAND` contains name of the subcommand that is being
+  executed from the perspective of CommandWrapper.  This is not a file path.
+
+    For example if `toolset foo` was executed then
+    `COMMAND_WRAPPER_SUBCOMMAND=foo`.
+
 * `COMMAND_WRAPPER_CONFIG` contains a file path to subcommand configuration
   file. Subcommand may ignore it entirely, but if subcommand is using it then
   it has to correctly handle the case when the configuration file doesn't
