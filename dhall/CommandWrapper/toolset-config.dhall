@@ -48,8 +48,7 @@ in let
       → λ(defaults : CommandWrapper.DefaultConfig)
       → { aliases = defaults.aliases # aliases
         , extraHelpMessage =
-            [ "${mkPrefix defaults.extraHelpMessage}${helpMessage}"
-            ] : Optional Text
+            Some "${mkPrefix defaults.extraHelpMessage}${helpMessage}"
         , searchPath = defaults.searchPath
         , verbosity = defaults.verbosity
         , colourOutput = defaults.colourOutput
