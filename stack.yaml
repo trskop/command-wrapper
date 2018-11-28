@@ -36,4 +36,8 @@ extra-deps:
 
 flags:
   verbosity:
-    dhall: True
+    dhall: true
+
+  host-and-port:
+    dhall: true
+    generic-lens: true
