@@ -54,7 +54,7 @@ import System.FilePath ((</>), (<.>), takeFileName)
 import qualified System.FilePath as FilePath (getSearchPath)
 import System.Posix.Process (executeFile)
 
-import qualified CommandWrapper.Config as Global
+import qualified CommandWrapper.Config.Global as Global
     ( Config(Config, colourOutput, searchPath, verbosity)
     )
 import qualified CommandWrapper.Environment as Environment

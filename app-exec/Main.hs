@@ -52,6 +52,12 @@ import qualified Options.Applicative as Options
 import System.Directory (setCurrentDirectory)
 import qualified System.Posix as Posix (executeFile)
 
+import CommandWrapper.Config.Command (Command(..), NamedCommand(..))
+import qualified CommandWrapper.Config.Command as NamedCommand (isNamed)
+import CommandWrapper.Config.Environment (EnvironmentVariable(..))
+import qualified CommandWrapper.Config.Environment as EnvironmentVariable
+    ( toTuple
+    )
 import qualified CommandWrapper.Environment as Environment
 import qualified CommandWrapper.Options as Options (splitArguments)
 import CommandWrapper.Options.ColourOutput (ColourOutput)
@@ -63,36 +69,6 @@ newtype Config = Config
   deriving (Generic)
 
 instance Dhall.Interpret Config
-
-data NamedCommand = NamedCommand
-    { name :: Text
-    , command :: Verbosity -> ColourOutput -> [Text] -> Command
-    }
-  deriving (Generic)
-
-instance Dhall.Interpret NamedCommand
-
-data EnvironmentVariable = EnvironmentVariable
-    { name :: String
-    , value :: String
-    }
-  deriving (Generic, Show)
-
-instance Dhall.Interpret EnvironmentVariable
-
-data Command = Command
-    { command :: FilePath
-    , arguments :: [String]
-    , environment :: [EnvironmentVariable]
-    -- ^ List of variables to be added to current environment before executing
-    -- command.
-    , searchPath :: Bool
-    -- ^ Search @PATH@ when looking for 'command'?
-    , workingDirectory :: Maybe FilePath
-    }
-  deriving (Generic, Show)
-
-instance Dhall.Interpret Command
 
 main :: IO ()
 main = do
@@ -133,7 +109,7 @@ getCommand
     -> [Text]
     -> IO Command
 getCommand commands expectedName verbosity colourOutput arguments =
-    case List.find (\NamedCommand{name} -> name == expectedName) commands of
+    case List.find (NamedCommand.isNamed expectedName) commands of
         Nothing ->
             die (show expectedName <> ": Unknown COMMAND.")
 
@@ -150,9 +126,7 @@ executeCommand Command{..} = do
         Map.toList (removeCommandwrapperVars env <> additionalVars')
       where
         additionalVars' =
-            Map.fromList
-                $ additionalVars <&> \EnvironmentVariable{name, value} ->
-                    (name, value)
+            Map.fromList (EnvironmentVariable.toTuple <$> additionalVars)
 
         removeCommandwrapperVars env =
             foldMap (Endo . Map.delete) commandWrapperVars

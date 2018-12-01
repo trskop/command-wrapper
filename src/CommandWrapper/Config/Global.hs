@@ -3,8 +3,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TypeApplications #-}
 -- |
--- Module:      CommandWrapper.Config
--- Description: TODO: Module synopsis
+-- Module:      CommandWrapper.Config.Global
+-- Description: Global configuration file.
 -- Copyright:   (c) 2018 Peter Trško
 -- License:     BSD3
 --
@@ -12,8 +12,8 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
-module CommandWrapper.Config
+-- Global configuration file, i.e. one used by @command-wrapper@ executable.
+module CommandWrapper.Config.Global
     ( Config(..)
     , read
     , def

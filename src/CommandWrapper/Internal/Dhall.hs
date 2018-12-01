@@ -22,7 +22,7 @@ import Dhall.Main as Dhall (Mode)
 import Dhall.Binary as Dhall (StandardVersion)
 import qualified Dhall.JSON
 
-import qualified CommandWrapper.Config as Global
+import qualified CommandWrapper.Config.Global as Global
 
 
 data DhallOptions = DhallOptions

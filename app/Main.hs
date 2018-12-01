@@ -43,8 +43,12 @@ import System.Directory
     )
 import System.FilePath ((</>))
 
-import qualified CommandWrapper.Config as Global (Config(Config))
-import qualified CommandWrapper.Config as Global.Config (Config(..), def, read)
+import qualified CommandWrapper.Config.Global as Global (Config(Config))
+import qualified CommandWrapper.Config.Global as Global.Config
+    ( Config(..)
+    , def
+    , read
+    )
 import CommandWrapper.Environment (AppNames(..), getAppNames, parseEnvIO)
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
