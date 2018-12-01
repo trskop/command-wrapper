@@ -14,6 +14,7 @@
 -- Command description suitable for execution.
 module CommandWrapper.Config.Command
     ( Command(..)
+    , SimpleCommand(..)
     , NamedCommand(..)
     , isNamed
     )
@@ -53,3 +54,12 @@ data Command = Command
   deriving (Generic, Show)
 
 instance Dhall.Interpret Command
+
+data SimpleCommand = SimpleCommand
+    { command :: FilePath
+    , arguments :: [String]
+    , environment :: [EnvironmentVariable]
+    }
+  deriving (Generic, Show)
+
+instance Dhall.Interpret SimpleCommand

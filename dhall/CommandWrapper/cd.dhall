@@ -1,11 +1,8 @@
-  let
-    CommandWrapper = ./Type/package.dhall
+let CommandWrapper = ./Type/package.dhall
 
-in let
-    terminalEmulator = ./terminal-emulator.dhall
+let terminalEmulator = ./terminal-emulator.dhall
 
-in let
-    mkCd =
+let mkCd =
         λ ( context
               : { home : Text
                 }
@@ -21,7 +18,11 @@ in let
               ] : List Text
 
           -- Consider setting full path instead of just command name.
-          , menuTool = "fzf"
+          , menuTool =
+              { command = "fzf"
+              , arguments = [] : List Text
+              , environment = [] : List CommandWrapper.EnvironmentVariable
+              }
 
           -- Some systems may not have Bash in default search path. Consider
           -- using absolute file path instead.

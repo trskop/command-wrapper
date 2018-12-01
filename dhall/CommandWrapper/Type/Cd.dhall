@@ -1,23 +1,19 @@
-  let
-    Command = ./Command.dhall
+let CommandWithEnvironment = ./CommandWithEnvironment.dhall
 
-in let
-    CdConfig =
+let CdConfig =
       { directories : List Text
-      , menuTool : Text
+      , menuTool : CommandWithEnvironment
       , shell : Text
-      , terminalEmulator : ∀(directory : Text) → Command
+      , terminalEmulator : ∀(directory : Text) → CommandWithEnvironment
       }
 
-in let
-    CdMkConfig =
+let CdMkConfig =
         ∀ ( update
               : ∀(default : CdConfig) → CdConfig
           )
       → CdConfig
 
-in let
-    Cd =
+let Cd =
       { Config = CdConfig
       , MkConfig = CdMkConfig
       }

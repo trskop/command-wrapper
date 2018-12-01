@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -61,6 +62,8 @@ import Turtle
     , unset
     )
 
+import CommandWrapper.Config.Command (SimpleCommand(..))
+import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Environment as Environment
 
 
@@ -77,21 +80,13 @@ import qualified CommandWrapper.Environment as Environment
 
 data Config = Config
     { directories :: [Text]
-    , menuTool :: Text
+    , menuTool :: SimpleCommand
     , shell :: Text
-    , terminalEmulator :: Text -> TerminalEmulator
+    , terminalEmulator :: Text -> SimpleCommand
     }
   deriving (Generic)
 
 instance Dhall.Interpret Config
-
-data TerminalEmulator = TerminalEmulator
-    { command :: Text
-    , arguments :: [Text]
-    }
-  deriving (Generic, Show)
-
-instance Dhall.Interpret TerminalEmulator
 
 main :: IO ()
 main = do
@@ -102,7 +97,7 @@ main = do
     action <- evalStrategy terminalEmulator shell inTmuxSession strategy
 
     sh $ do
-        dir <- inproc menuTool []
+        dir <- runMenuTool menuTool
             $ select (unsafeTextToLine <$> List.nub directories)
 
         environment <- env
@@ -115,6 +110,18 @@ main = do
   where
     description =
         "Change directory by selecting one from preselected list"
+
+runMenuTool :: SimpleCommand -> Shell Line -> Shell Line
+runMenuTool SimpleCommand{..} input = do
+    for_ environment $ \EnvironmentVariable{name, value} ->
+        export (fromString name) (fromString value)
+
+    r <- inproc (fromString command) (fromString <$> arguments) input
+
+    for_ environment $ \EnvironmentVariable{name} ->
+        unset (fromString name)
+
+    pure r
 
 getEnvironment :: IO (Environment.Params, Bool)
 getEnvironment = Environment.parseEnvIO (die . show)
@@ -134,7 +141,7 @@ instance Semigroup Strategy where
     _    <> x    = x
 
 evalStrategy
-    :: (Text -> TerminalEmulator)
+    :: (Text -> SimpleCommand)
     -> Text
     -> Bool
     -> Strategy
@@ -178,7 +185,7 @@ parseOptions =
 data Action
     = RunShell Text
     | RunTmux
-    | RunTerminalEmulator (Text -> TerminalEmulator)
+    | RunTerminalEmulator (Text -> SimpleCommand)
 
 executeAction :: Line -> Action -> Shell ()
 executeAction directory = \case
@@ -187,7 +194,7 @@ executeAction directory = \case
         cd directoryPath
 
         exportEnvVariables (incrementLevel <$> need "CD_LEVEL")
-        executeCommand (Text.unpack shell) []
+        executeCommand (Text.unpack shell) [] []
 
     RunTmux -> do
         exists <- testdir directoryPath
@@ -196,23 +203,26 @@ executeAction directory = \case
 
         -- TODO: Find out how to define pass `CD_LEVEL` and `CD_DIRECTORY` to a
         -- Tmux window.
-        executeCommand "tmux" ["new-window", "-c", directoryStr]
+        executeCommand "tmux" ["new-window", "-c", directoryStr] []
 
     RunTerminalEmulator term -> do
         exists <- testdir directoryPath
         unless exists . liftIO
             $ die ("Error: '" <> directoryStr <> "': Directory doesn' exist.")
 
-        let TerminalEmulator{..} = term directoryText
+        let SimpleCommand{..} = term directoryText
         exportEnvVariables (pure "0")
-        executeCommand (Text.unpack command) (Text.unpack <$> arguments)
+        executeCommand command arguments environment
   where
     directoryPath = fromText directoryText
     directoryText = lineToText directory
     directoryStr = Text.unpack directoryText
 
-    executeCommand command arguments = do
+    executeCommand command arguments environment = do
         echo $ "+ : " <> showCommand command arguments
+
+        for_ environment $ \EnvironmentVariable{name, value} ->
+            export (fromString name) (fromString value)
 
         liftIO $ executeFile command True arguments Nothing
             `onException`

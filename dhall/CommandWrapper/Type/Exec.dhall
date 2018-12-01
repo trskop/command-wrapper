@@ -1,27 +1,15 @@
-  let
-    Command = ./Command.dhall
+let CommandWithEnvironment : Type = ./CommandWithEnvironment.dhall
 
-in let
-    Verbosity = ./Verbosity.dhall
+let Verbosity : Type = ./Verbosity.dhall
 
-in let
-    ColourOutput = ./ColourOutput.dhall
+let ColourOutput : Type = ./ColourOutput.dhall
 
-in let
-    EnvironmentVariable =
-      { name : Text
-      , value : Text
-      }
-
-in let
-    ExecCommand = Command
-      ⩓ { environment : List EnvironmentVariable
-        , searchPath : Bool
+let ExecCommand : Type = CommandWithEnvironment
+      ⩓ { searchPath : Bool
         , workingDirectory : Optional Text
         }
 
-in let
-    NamedCommand =
+let NamedCommand : Type =
       { name : Text
       , command :
           ∀ (verbosity : Verbosity)
@@ -33,5 +21,4 @@ in let
 in
     { Command = ExecCommand : Type
     , NamedCommand = NamedCommand : Type
-    , EnvironmentVariable = EnvironmentVariable : Type
     }

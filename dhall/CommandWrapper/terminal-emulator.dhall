@@ -1,11 +1,8 @@
-  let
-    CommandWrapper = ./Type/package.dhall
+let CommandWrapper = ./Type/package.dhall
 
-in let
-    command = ./command.dhall
+let command = ./command.dhall
 
-in let
-    urxvt = command.simple "urxvt"
+let urxvt = command.simple "urxvt"
 
 in let
     terminalEmulator =
@@ -13,12 +10,15 @@ in let
           {
           -- Start a new terminal emulator without any other specific
           -- requirements.
-            standard = urxvt
+            standard =
+                urxvt
+              ∧ {environment = [] : List CommandWrapper.EnvironmentVariable}
 
           -- Start a new terminal emulator in a specified directory.
           , inDirectory =
               λ(directory : Text)
-              → command.withExtraArguments urxvt ["-cd", directory]
+              →   command.withExtraArguments urxvt ["-cd", directory]
+                ∧ {environment = [] : List CommandWrapper.EnvironmentVariable}
           }
       }
 

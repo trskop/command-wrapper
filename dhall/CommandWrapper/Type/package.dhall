@@ -13,6 +13,8 @@ in let
 in let
     CommandWrapper =
       { Command = ./Command.dhall
+      , CommandWithEnvironment = ./CommandWithEnvironment.dhall
+      , EnvironmentVariable = ./EnvironmentVariable.dhall
       , SubcommandAlias = ./SubcommandAlias.dhall
       , TerminalEmulator = ./TerminalEmulator.dhall
       , Verbosity = ./Verbosity.dhall
@@ -34,7 +36,6 @@ in let
       , CdMkConfig = Cd.MkConfig
 
       -- Configuration for `exec` subcommand
-      , EnvironmentVariable = Exec.EnvironmentVariable
       , ExecCommand = Exec.Command
       , ExecNamedCommand = Exec.NamedCommand
       }
