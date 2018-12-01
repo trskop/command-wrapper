@@ -1,1 +1,2 @@
 https://raw.githubusercontent.com/trskop/verbosity/master/dhall/Verbosity/package.dhall
+sha256:2c8becb637e849d024a291cde20865d4ddfcc7a77abfbe81fb7a96c308dbe598
