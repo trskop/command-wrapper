@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module:      CommandWrapper.Environment.Variable
 -- Description: TODO: Module synopsis
@@ -20,7 +21,7 @@ module CommandWrapper.Environment.Variable
     , CommandWrapperPrefix
     , CommandWrapperVarName(..)
     , commandWrapperPrefix
-    , commandWrapperVarName
+    , getCommandWrapperVarName
     )
   where
 
@@ -30,11 +31,10 @@ import Data.Monoid ((<>))
 import GHC.Generics (Generic)
 import Text.Show (Show)
 
+import Data.Text (Text)
+import System.Environment.Variable (EnvVarName, EnvVarValue)
 
-type EnvVarName = String
-type EnvVarValue = String
-
-type CommandWrapperPrefix = String
+type CommandWrapperPrefix = Text
 
 -- | @'commandWrapperPrefix' = \"COMMAND_WRAPPER\"@
 commandWrapperPrefix :: CommandWrapperPrefix
@@ -69,11 +69,11 @@ data CommandWrapperVarName
 -- | Get fully formed Command Wrapper variable name:
 --
 -- > <prefix>_{EXE|NAME|CONFIG|VERBOSITY|COLOUR}
-commandWrapperVarName
+getCommandWrapperVarName
     :: CommandWrapperPrefix
     -> CommandWrapperVarName
     -> EnvVarName
-commandWrapperVarName prefix = (prefix <>) . \case
+getCommandWrapperVarName prefix = (prefix <>) . \case
     CommandWrapperExe -> "_EXE"
     CommandWrapperName -> "_NAME"
     CommandWrapperSubcommand -> "_SUBCOMMAND"

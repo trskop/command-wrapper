@@ -22,6 +22,7 @@ module Main (main)
   where
 
 import Control.Applicative ((<|>))
+import Data.Bifunctor (bimap)
 import Data.Foldable (for_)
 import Data.Functor ((<&>))
 import qualified Data.List as List (filter, find, isPrefixOf)
@@ -33,6 +34,7 @@ import System.Exit (die)
 
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
+import qualified Data.Text as Text (unpack)
 import qualified Data.Text.IO as Text (putStrLn)
 import qualified Dhall (Interpret, auto, inputFile)
 import Data.Verbosity (Verbosity)
@@ -126,7 +128,7 @@ executeCommand Command{..} = do
         Map.toList (removeCommandwrapperVars env <> additionalVars')
       where
         additionalVars' =
-            Map.fromList (EnvironmentVariable.toTuple <$> additionalVars)
+            Map.fromList (varToTuple <$> additionalVars)
 
         removeCommandwrapperVars env =
             foldMap (Endo . Map.delete) commandWrapperVars
@@ -134,6 +136,9 @@ executeCommand Command{..} = do
           where
             commandWrapperVars =
                 List.filter ("COMMAND_WRAPPER_" `List.isPrefixOf`) (fst <$> env)
+
+        varToTuple =
+            bimap Text.unpack Text.unpack . EnvironmentVariable.toTuple
 
 parseEnv :: IO Environment.Params
 parseEnv = Environment.parseEnvIO (die . show) Environment.askParams

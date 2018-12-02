@@ -114,12 +114,12 @@ main = do
 runMenuTool :: SimpleCommand -> Shell Line -> Shell Line
 runMenuTool SimpleCommand{..} input = do
     for_ environment $ \EnvironmentVariable{name, value} ->
-        export (fromString name) (fromString value)
+        export name value
 
     r <- inproc (fromString command) (fromString <$> arguments) input
 
     for_ environment $ \EnvironmentVariable{name} ->
-        unset (fromString name)
+        unset name
 
     pure r
 
@@ -127,7 +127,7 @@ getEnvironment :: IO (Environment.Params, Bool)
 getEnvironment = Environment.parseEnvIO (die . show)
     $ (,)
         <$> Environment.askParams
-        <*> (isJust <$> Environment.askOptionalVar "TMUX")
+        <*> (isJust <$> Environment.optionalVar "TMUX")
 
 data Strategy
     = Auto
@@ -222,7 +222,7 @@ executeAction directory = \case
         echo $ "+ : " <> showCommand command arguments
 
         for_ environment $ \EnvironmentVariable{name, value} ->
-            export (fromString name) (fromString value)
+            export name value
 
         liftIO $ executeFile command True arguments Nothing
             `onException`

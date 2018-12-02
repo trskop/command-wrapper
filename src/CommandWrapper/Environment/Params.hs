@@ -28,7 +28,7 @@ module CommandWrapper.Environment.Params
 
 import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=))
-import Data.Bifunctor (first)
+import Data.Bifunctor (bimap, first)
 import qualified Data.Char as Char (toLower)
 import Data.Eq ((/=))
 import Data.Function (($), (.))
@@ -36,7 +36,7 @@ import Data.Functor ((<$>), fmap)
 import qualified Data.List as List (dropWhile)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Semigroup (Semigroup((<>)))
-import Data.String (String)
+import Data.String (String, fromString)
 import Data.Tuple (snd, uncurry)
 import Data.Version (Version, parseVersion, showVersion)
 import GHC.Generics (Generic)
@@ -47,22 +47,24 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import Control.Monad.Except (throwError)
 import qualified Data.CaseInsensitive as CaseInsensitive (mk)
 import qualified Data.HashMap.Strict as HashMap (fromList, toList)
+import qualified Data.Text as Text (unpack)
 import Data.Verbosity (Verbosity)
 import qualified Data.Verbosity as Verbosity (parse)
 
-import CommandWrapper.Environment.Builder (EnvVars(EnvVars))
+import CommandWrapper.Environment.Builder (EnvBuilder(EnvBuilder))
 import CommandWrapper.Environment.Parser
     ( ParseEnv
     , ParseEnvError(ParseEnvError)
-    , askCommandWrapperVar
-    , askCommandWrapperVar'
+    , commandWrapperVar
+    , commandWrapperVar'
     )
 import CommandWrapper.Environment.Variable
     ( CommandWrapperVarName(..)
+    , CommandWrapperPrefix
     , EnvVarName
     , EnvVarValue
     , commandWrapperPrefix
-    , commandWrapperVarName
+    , getCommandWrapperVarName
     )
 import CommandWrapper.Options.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput (parse)
@@ -79,51 +81,68 @@ data Params = Params
     }
   deriving (Generic, Show)
 
-mkEnvVars :: Params -> EnvVars
-mkEnvVars Params{..} = EnvVars $ \prefix ->
-    HashMap.fromList $ fmap (first $ commandWrapperVarName prefix)
-        [ (CommandWrapperExe, exePath)
-        , (CommandWrapperName, name)
-        , (CommandWrapperSubcommand, subcommand)
-        , (CommandWrapperConfig, config)
-        , (CommandWrapperVerbosity, Char.toLower <$> show verbosity)
-        , (CommandWrapperColour, Char.toLower <$> show colour)
-        , (CommandWrapperVersion, showVersion version)
+mkEnvVars :: Params -> EnvBuilder CommandWrapperPrefix
+mkEnvVars Params{..} = EnvBuilder $ \prefix ->
+    HashMap.fromList $ fmap (first $ getCommandWrapperVarName prefix)
+        [ (CommandWrapperExe, fromString exePath)
+        , (CommandWrapperName, fromString name)
+        , (CommandWrapperSubcommand, fromString subcommand)
+        , (CommandWrapperConfig, fromString config)
+        , (CommandWrapperVerbosity, fromString $ Char.toLower <$> show verbosity)
+        , (CommandWrapperColour, fromString $ Char.toLower <$> show colour)
+        , (CommandWrapperVersion, fromString $ showVersion version)
         ]
 
-commandWrapperEnv :: EnvVars -> [(EnvVarName, EnvVarValue)]
-commandWrapperEnv (EnvVars mkEnv) = HashMap.toList (mkEnv commandWrapperPrefix)
+commandWrapperEnv
+    :: EnvBuilder CommandWrapperPrefix
+    -> [(String, String)]
+commandWrapperEnv (EnvBuilder mkEnv) =
+    fromHashMap (mkEnv commandWrapperPrefix)
+  where
+    fromHashMap = fmap (bimap Text.unpack Text.unpack) . HashMap.toList
 
 -- | Parse Command Wrapper environment\/protocol.
-askParams :: ParseEnv Params
+askParams :: ParseEnv CommandWrapperPrefix Params
 askParams = Params
-    <$> askCommandWrapperVar CommandWrapperExe
-    <*> askCommandWrapperVar CommandWrapperName
-    <*> askCommandWrapperVar CommandWrapperSubcommand
-    <*> askCommandWrapperVar CommandWrapperConfig
-    <*> askVerbosityVar CommandWrapperVerbosity
-    <*> askColourOutputVar CommandWrapperColour
-    <*> askVersionVar CommandWrapperVersion
+    <$> var CommandWrapperExe
+    <*> var CommandWrapperName
+    <*> var CommandWrapperSubcommand
+    <*> var CommandWrapperConfig
+    <*> verbosityVar CommandWrapperVerbosity
+    <*> colourOutputVar CommandWrapperColour
+    <*> versionVar CommandWrapperVersion
   where
-    askVerbosityVar name = do
-        askCommandWrapperVar' name >>= uncurry parseAsVerbosity
+    var = fmap Text.unpack . commandWrapperVar
 
-    askColourOutputVar name =
-        askCommandWrapperVar' name >>= uncurry parseAsColourOutput
+    verbosityVar name = do
+        commandWrapperVar' name >>= uncurry parseAsVerbosity
 
-    askVersionVar name =
-        askCommandWrapperVar' name >>= uncurry parseAsVersion
+    colourOutputVar name =
+        commandWrapperVar' name >>= uncurry parseAsColourOutput
 
-    parseAsVerbosity :: EnvVarName -> EnvVarValue -> ParseEnv Verbosity
+    versionVar name =
+        commandWrapperVar' name >>= uncurry parseAsVersion
+
+    parseAsVerbosity
+        :: EnvVarName
+        -> EnvVarValue
+        -> ParseEnv CommandWrapperPrefix Verbosity
     parseAsVerbosity name value =
         maybe (unableToParseVerbosity name value) pure
         . Verbosity.parse
         $ CaseInsensitive.mk value
 
-    unableToParseVerbosity :: forall a. EnvVarName -> EnvVarValue -> ParseEnv a
+    unableToParseVerbosity
+        :: forall a
+        .  EnvVarName
+        -> EnvVarValue
+        -> ParseEnv CommandWrapperPrefix a
     unableToParseVerbosity = throwParseEnvError "verbosity"
 
-    parseAsColourOutput :: EnvVarName -> EnvVarValue -> ParseEnv ColourOutput
+    parseAsColourOutput
+        :: EnvVarName
+        -> EnvVarValue
+        -> ParseEnv CommandWrapperPrefix ColourOutput
     parseAsColourOutput name value =
         maybe (unableToParseColourOutput name value) pure
         . ColourOutput.parse
@@ -133,16 +152,28 @@ askParams = Params
         :: forall a
         .  EnvVarName
         -> EnvVarValue
-        -> ParseEnv a
+        -> ParseEnv CommandWrapperPrefix a
     unableToParseColourOutput = throwParseEnvError "colour output settings"
 
-    parseAsVersion :: EnvVarName -> EnvVarValue -> ParseEnv Version
+    parseAsVersion
+        :: EnvVarName
+        -> EnvVarValue
+        -> ParseEnv CommandWrapperPrefix Version
     parseAsVersion name value = maybe (unableToParseVersion name value) pure
-        $ case List.dropWhile ((/= "") . snd) (readP_to_S parseVersion value) of
+        $ case parseVersion' value of
             (v, "") : _ -> Just v
             _           -> Nothing
+      where
+        parseVersion' =
+            List.dropWhile ((/= "") . snd)
+            . readP_to_S parseVersion
+            . Text.unpack
 
-    unableToParseVersion :: forall a .  EnvVarName -> EnvVarValue -> ParseEnv a
+    unableToParseVersion
+        :: forall a
+        .  EnvVarName
+        -> EnvVarValue
+        -> ParseEnv CommandWrapperPrefix a
     unableToParseVersion = throwParseEnvError "version"
 
     throwParseEnvError
@@ -150,7 +181,7 @@ askParams = Params
         .  String
         -> EnvVarName
         -> EnvVarValue
-        -> ParseEnv a
+        -> ParseEnv CommandWrapperPrefix a
     throwParseEnvError what name s = throwError (ParseEnvError name msg)
       where
-        msg = "'" <> s <> "': Unable to parse " <> what <> "."
+        msg = "'" <> Text.unpack s <> "': Unable to parse " <> what <> "."
