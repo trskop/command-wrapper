@@ -7,7 +7,7 @@ packages:
   - '.'
   - location:
       git: https://github.com/trskop/host-and-port.git
-      commit: f8a9f1ae1a410ad12969f9c5ea0810de45d9b2bc
+      commit: f4639d63f5c2e4c4faef94f5214111625af2a85d
     extra-dep: True
   - location:
       git: https://github.com/trskop/mainplate.git
