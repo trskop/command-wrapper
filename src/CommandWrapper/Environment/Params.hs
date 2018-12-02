@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExplicitForAll #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RecordWildCards #-}
 -- |

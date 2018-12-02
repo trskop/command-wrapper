@@ -25,7 +25,6 @@ module CommandWrapper.Environment.Variable
     )
   where
 
-import Data.String (String)
 import Data.Function ((.))
 import Data.Monoid ((<>))
 import GHC.Generics (Generic)

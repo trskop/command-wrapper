@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TupleSections #-}
