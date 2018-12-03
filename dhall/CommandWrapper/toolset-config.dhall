@@ -1,14 +1,10 @@
-  let
-    CommandWrapper = ./Type/package.dhall
+let CommandWrapper = ./Type/package.dhall
 
-in let
-    verbosity = ./verbosity.dhall
+let verbosity = ./verbosity.dhall
 
-in let
-    colourOutput = ./colour-output.dhall
+let colourOutput = ./colour-output.dhall
 
-in let
-    mkToolsetConfig =
+let mkToolsetConfig =
         λ ( context
               : { home : Text
                 , toolset : Text
@@ -31,14 +27,12 @@ in let
           , colourOutput = None CommandWrapper.ColourOutput
           }
 
-in let
-    mkPrefix =
+let mkPrefix =
       λ(optionalText : Optional Text)
       → Optional/fold Text optionalText Text
           (λ(t : Text) → "${t}\n") ""
 
-in let
-    addSubcommandAliases
+let addSubcommandAliases
       : ∀(aliases : List CommandWrapper.SubcommandAlias)
       → ∀(helpMessage : Text)
       → ∀(defaults : CommandWrapper.DefaultConfig)

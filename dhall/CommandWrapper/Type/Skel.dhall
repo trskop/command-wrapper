@@ -1,39 +1,33 @@
-  let
-    SkelTemplate =
+let SkelTemplate =
       { targetFile : Optional Text
       , executable : Bool
       , template : Text
       }
 
-in let
-    SkelLanguageTemplates =
+let SkelLanguageTemplates =
       { haskell : SkelTemplate
       , bash : SkelTemplate
       }
 
-in let
-    SkelConfig =
+let SkelConfig =
       { targetFile : Text
       , templates : SkelLanguageTemplates
       }
 
-in let
-    SkelMkLangageTemplates =
+let SkelMkLangageTemplates =
         ∀(description : Text)
       → ∀(wrapper : Text)
       → ∀(subcommand : Text)
       → SkelLanguageTemplates
 
-in let
-    SkelMkConfig =
+let SkelMkConfig =
         ∀(mkLanguageTemplates : SkelMkLangageTemplates)
       → ∀(description : Text)
       → ∀(wrapper : Text)
       → ∀(subcommand : Text)
       → SkelConfig
 
-in let
-    Skel =
+let Skel =
       { Template = SkelTemplate
       , LanguageTemplates = SkelLanguageTemplates
       , Config = SkelConfig

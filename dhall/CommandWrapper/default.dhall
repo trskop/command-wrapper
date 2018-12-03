@@ -1,14 +1,10 @@
-  let
-    CommandWrapper = ./Type/package.dhall
+let CommandWrapper = ./Type/package.dhall
 
-in let
-    verbosity = ./verbosity.dhall
+let verbosity = ./verbosity.dhall
 
-in let
-    colourOutput = ./colour-output.dhall
+let colourOutput = ./colour-output.dhall
 
-in let
-    helpMessage = ''
+let helpMessage = ''
 
 Internal Subcommands:
 
@@ -22,8 +18,7 @@ External Subcommands:
   completion
 ''
 
-in let
-    mkDefault =
+let mkDefault =
         λ ( context
               : { home : Text
                 }

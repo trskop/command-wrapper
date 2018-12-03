@@ -1,11 +1,8 @@
-   let
-    Verbosity = ./Verbosity.dhall
+let Verbosity = ./Verbosity.dhall
 
-in let
-    ColourOutput = ./ColourOutput.dhall
+let ColourOutput = ./ColourOutput.dhall
 
-in let
-    DefaultConfig =
+let DefaultConfig =
       { aliases
           : List
               { alias : Text
@@ -18,15 +15,13 @@ in let
       , colourOutput : Optional ColourOutput
       }
 
-in let
-    DefaultMkConfig =
+let DefaultMkConfig =
         ∀ ( update
               :  ∀(default : DefaultConfig) → DefaultConfig
           )
       → DefaultConfig
 
-in let
-    Default =
+let Default =
       { Config = DefaultConfig
       , MkConfig = DefaultMkConfig
       }

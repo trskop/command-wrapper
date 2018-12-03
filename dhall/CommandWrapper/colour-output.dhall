@@ -1,8 +1,6 @@
-let
-    ColourOutput = ./Type/ColourOutput.dhall
+let ColourOutput = ./Type/ColourOutput.dhall
 
-in let
-    fold
+let fold
       : ∀(r : Type)
       → ∀ (handler
             : { Always : {} → r
@@ -23,15 +21,13 @@ in let
       → λ(colourOutput : ColourOutput)
       → merge handler colourOutput
 
-in let
-    toText = fold Text
+let toText = fold Text
       { Always = λ(_ : {}) → "always"
       , Auto = λ(_ : {}) → "auto"
       , Never = λ(_ : {}) → "never"
       }
 
-in
-    { always = <Always = {=} | Auto : {} | Never : {} > : ColourOutput
+in  { always = <Always = {=} | Auto : {} | Never : {} > : ColourOutput
     , auto = <Always : {} | Auto = {=} | Never : {} > : ColourOutput
     , never = <Always : {} | Auto : {} | Never = {=} > : ColourOutput
     , fold = fold

@@ -4,8 +4,7 @@ let command = ./command.dhall
 
 let urxvt = command.simple "urxvt"
 
-in let
-    terminalEmulator =
+let terminalEmulator =
       { urxvt =
           {
           -- Start a new terminal emulator without any other specific

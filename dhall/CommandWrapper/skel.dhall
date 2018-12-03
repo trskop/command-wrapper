@@ -1,8 +1,6 @@
-  let
-    CommandWrapper = ./Type/package.dhall
+let CommandWrapper = ./Type/package.dhall
 
-in let
-    mkSkel =
+let mkSkel =
         λ ( context
               : { home : Text
                 }
