@@ -1,1 +1,2 @@
-<Always : {} | Auto : {} | Never : {} >
+https://raw.githubusercontent.com/trskop/mainplate/master/dhall/Type/ColourOutput.dhall
+sha256:308e83b5fc8693f3a5d9bffab8159caffc02f16d4021ee6e2d21b31cfd9bbb53

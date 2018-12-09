@@ -1,6 +1,2 @@
-let EnvironmentVariable : Type =
-      { name : Text
-      , value : Text
-      }
-
-in EnvironmentVariable
+https://raw.githubusercontent.com/trskop/mainplate/master/dhall/Type/EnvironmentVariable.dhall
+sha256:9b53c389f746093d746aa040816e6d4991825f366783c58db12b81645e207cfa
