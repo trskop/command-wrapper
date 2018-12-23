@@ -22,13 +22,15 @@ module CommandWrapper.Environment.AppNames
     )
   where
 
+import Control.Applicative (pure)
 import Data.Eq ((==))
 import Data.Functor ((<&>))
 import Data.List.NonEmpty (NonEmpty((:|)))
+import Data.Maybe (maybe)
 import Data.String (String)
 import Data.Version (Version, makeVersion)
 import GHC.Generics (Generic)
-import System.Environment (getProgName)
+import System.Environment (getProgName, lookupEnv)
 import System.IO (FilePath, IO)
 import Text.Show (Show)
 
@@ -47,7 +49,7 @@ data AppNames = AppNames
 
 getAppNames :: IO Version -> IO AppNames
 getAppNames getVersion = do
-    usedName <- getProgName
+    usedName <- getUsedName
     version <- getVersion
     getScriptPath <&> \case
         Executable exePath ->
@@ -77,3 +79,11 @@ getAppNames getVersion = do
             -- preference from generic 'command-wrapper' commands.
             , names = usedName :| if exeName == usedName then [] else [exeName]
             }
+
+    getUsedName = do
+        -- Environment variable @COMMAND_WRAPPER_INVOKE_AS=<used-name>@
+        -- overrides the default value of 'usedName' This is useful for testing
+        -- and when subcommands call other subcommands.  With this there is no
+        -- need to pass around path to toolset binary/symlink.
+        possiblyOverrideProgName <- lookupEnv "COMMAND_WRAPPER_INVOKE_AS"
+        maybe getProgName pure possiblyOverrideProgName
