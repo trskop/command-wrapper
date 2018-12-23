@@ -77,6 +77,9 @@ import qualified CommandWrapper.Environment as Environment
 --     let the parent die. Make sure that stdin/stdout are detached, and
 --     killing original process where `TOOLSET cd` was invoked won't kill the
 --     terminal.)
+--
+--   * Option to print a command that would be performed.  This is useful for
+--     shell key-bindings.  Printing plain `cd ${dir}` would be nice as well.
 
 data Config = Config
     { directories :: [Text]
