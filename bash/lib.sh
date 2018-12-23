@@ -23,10 +23,10 @@ function verbosityToNum() {
 #
 #   WHEN_TO_USE_COLOURS is one of 'always', 'auto', and 'never'.
 #
-# Exit code:
+# Return value / exit code:
 #
-#   0 (Exit success) - Use colours on specified file descriptor
-#   1 (Exit failure) - Don't use colours on specified file descriptor
+#   0 -- Use colours on specified file descriptor
+#   1 -- Don't use colours on specified file descriptor
 function useColours() {
     local when="$1"; shift
     local fd="$1"; shift

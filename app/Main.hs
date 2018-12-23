@@ -1,9 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE NamedFieldPuns #-}
--- {-# LANGUAGE TypeApplications #-}
 -- |
 -- Module:       Main
--- Description:  TODO: Module description.
+-- Description:  Top-level executable of Command Wrapper.
 -- Copyright:    (c) 2014-2018 Peter Trsko
 -- License:      BSD3
 --
@@ -11,7 +10,8 @@
 -- Stability:    experimental
 -- Portability:  GHC specific language extensions.
 --
--- TODO: Module description.
+-- Top-level executable of Command Wrapper, it's usually installed as
+-- @${HOME}/.local/lib/command-wrapper/command-wrapper@.
 module Main (main)
   where
 

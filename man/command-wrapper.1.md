@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 22nd December 2018
+% 23nd December 2018
 
 
 # NAME
@@ -9,14 +9,9 @@
 of.
 
 
-# DESCRIPTION
-
-TODO
-
-
 # USAGE
 
-command-wrapper \[GLOBAL\_OPTIONS] SUBCOMMAND \[SUBCOMMAND\_ARGUMENTS]
+command-wrapper \[GLOBAL\_OPTIONS] SUBCOMMAND \[\--] \[SUBCOMMAND\_ARGUMENTS]
 
 command-wrapper \[GLOBAL\_OPTIONS] help \[SUBCOMMAND]
 
@@ -27,9 +22,60 @@ command-wrapper \[GLOBAL\_OPTIONS] completion \[COMPLETION\_OPTIONS]
 command-wrapper {\--help|-h}
 
 
+# DESCRIPTION
+
+Some command line applications with a lot of commands try to avoid polluting
+`$PATH` with all of them.  One of the approaches to this is to have one top
+level command exposed and the rest is implemented as subcommands.  Subcommands
+are either internal functions or external commands (standalone executables).
+Example of such application is Git which uses mix of internal subcommands and
+external subcommand.
+
+In general such toolset top level command has syntax like this:
+
+    TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
+
+This package provides universal top-level command, that can be named as
+required, and API for subcommands.  Subcommands may be written in any language,
+they just need to be executable files that respect the subcommand API.
+
+
 # GLOBAL OPTIONS
 
-TODO
+\--verbosity=*VERBOSITY*
+:   Specify how annoying the output of `dhall-cli` should be.  Possible values
+    of *VERBOSITY* are:
+
+    * *silent*
+    * *normal*
+    * *verbose*
+    * *annoying*
+
+\--silent
+:   Same as `--verbosity=silent`.  **TODO: Not yet implemented!**
+
+\--verbose
+:   Same as `--verbosity=verbose`.
+
+-v
+:   Increment verbosity by one level; can be repeated.
+
+\--color[=*WHEN*], \--colour[=*WHEN*]
+:   Colourise output; *WHEN* can be one of `always` (default if *WHEN* is omitted),
+    `auto`, or `never`.
+
+\--no-color, \--no-colour
+:   Same as `--colour=never`.  See also `NO_COLOR` in *ENVIRONMENT VARIABLES*
+    section.
+
+\--no-aliases
+:   Ignore *SUBCOMMAND* aliases.  This is useful when used from e.g. scripts to
+    avoid issues with user defined aliases interfering with how the script
+    behaves.  **TODO: Not yet implemented!**
+
+\-C DIRECTORY, --change-directory=DIRECTORY
+:   Change working directory before doing anything, especially executing a
+    subcommand.  **TODO: Not yet implemented!**
 
 
 # SUBCOMMANDS
@@ -57,10 +103,79 @@ TODO
 
 # FILES
 
-TODO
+`${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/default.dhall`
+:   Top-level command wrapper configuration file.  It mostly provides defaults
+    that can be overriden by `GLOBAL_OPTIONS`, additional help messages, and
+    alias definitions.
+
+`${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/default.dhall`
+:   Same as already mentioned `.../command-wrapper/default.dhall`.  However
+    this one is used by a specific `toolset`, and it is applied on top of the
+    `command-wrapper` one.  Configuration for a specific toolset is
+    `.../command-wrapper/default.dhall` unless it is overriden in
+    `.../${toolset}/default.dhall`.
+
+`${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/${toolset}-${subcommand}.dhall`
+:   Subcommand specific configuration file.  There is not much we can say about
+    them, since every subcommand can have its own definition.  See also
+    `command-wrapper-subcommand-protocol(7)` for more details on how
+    subcommands use their configuration files.
 
 
 # ENVIRONMENT VARIABLES
+
+`XDG_CONFIG_HOME`
+:   Overrides where Command Wrapper looks for configuration files.  Loading
+    toolset configuration file uses following logic:
+
+    * If `XDG_CONFIG_HOME` environment variable is set then the configuration
+      file has path:
+
+        ```
+        ${XDG_CONFIG_HOME}/${toolset}/default.dhall
+        ```
+
+    * If `XDG_CONFIG_HOME` environment variable is not set then default value
+      is used instead:
+
+        ```
+        ${HOME}/.config/${toolset}/default.dhall
+        ```
+
+    For subcommand configuration files it is:
+
+    * If `XDG_CONFIG_HOME` environment variable is set then the configuration
+      file has path:
+
+        ```
+        ${XDG_CONFIG_HOME}/${toolset}/${toolset}-${subcommand}.dhall
+        ```
+
+    * If `XDG_CONFIG_HOME` environment variable is not set then default value
+      is used instead:
+
+        ```
+        ${HOME}/.config/${toolset}/${toolset}-${subcommand}.dhall
+        ```
+
+    See [XDG Base Directory Specification
+    ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
+    for more information on rationale behind this.
+
+`NO_COLOR`
+:   This environment variable is an informal standard which is available
+    online at <https://no-color.org>. The standard states:
+
+    > Accepting the futility of trying to reverse this trend, an informal
+    > standard is hereby proposed:
+    >
+    > All command-line software which outputs text with ANSI color added
+    > should check for the presence of a `NO_COLOR` environment variable
+    > that, when present (regardless of its value), prevents the addition of
+    > ANSI color.
+
+    In case of Command Wrapper setting this environment variable has similar
+    effect as if `--no-colour` command line option was specified.
 
 `COMMAND_WRAPPER_INVOKE_AS`
 :   This value overrides the name under which `command-wrapper` command was
@@ -84,7 +199,10 @@ TODO
 
 # SEE ALSO
 
-TODO
+command-wrapper-subcommand-protocol(7)
+
+* [XDG Base Directory Specification
+  ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
 
 
 # BUGS
