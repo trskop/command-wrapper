@@ -67,20 +67,6 @@ import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Environment as Environment
 
 
--- TODO:
---
---   * Support for glob patterns in configuration? Would be useful for
---     something like `~/Devel/*`, which would list all the immediate
---     subdirectories of ~/Devel
---
---   * Option to detach terminal emulator process. (Spawn a new process, and
---     let the parent die. Make sure that stdin/stdout are detached, and
---     killing original process where `TOOLSET cd` was invoked won't kill the
---     terminal.)
---
---   * Option to print a command that would be performed.  This is useful for
---     shell key-bindings.  Printing plain `cd ${dir}` would be nice as well.
-
 data Config = Config
     { directories :: [Text]
     , menuTool :: SimpleCommand
@@ -247,3 +233,16 @@ executeAction directory = \case
     incrementLevel =
         maybe "1" (fromString . show . (+1))
         . (>>= readMaybe @Word . Text.unpack)
+
+-- TODO:
+--
+-- - Support for glob patterns in configuration? Would be useful for something
+--   like `~/Devel/*`, which would list all the immediate subdirectories of
+--   `~/Devel`.
+--
+-- - Option to detach terminal emulator process. (Spawn a new process, and let
+--   the parent die. Make sure that stdin/stdout are detached, and killing
+--   original process where `TOOLSET cd` was invoked won't kill the terminal.)
+--
+-- - Option to print a command that would be performed.  This is useful for
+--   shell key-bindings.  Printing plain `cd ${dir}` would be nice as well.

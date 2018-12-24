@@ -52,7 +52,7 @@ they just need to be executable files that respect the subcommand API.
     * *annoying*
 
 \--silent
-:   Same as `--verbosity=silent`.  **TODO: Not yet implemented!**
+:   Same as `--verbosity=silent`.
 
 \--verbose
 :   Same as `--verbosity=verbose`.
@@ -62,7 +62,8 @@ they just need to be executable files that respect the subcommand API.
 
 \--color[=*WHEN*], \--colour[=*WHEN*]
 :   Colourise output; *WHEN* can be one of `always` (default if *WHEN* is omitted),
-    `auto`, or `never`.
+    `auto`, or `never`.  See also `NO_COLOR` in *ENVIRONMENT VARIABLES*
+    section.
 
 \--no-color, \--no-colour
 :   Same as `--colour=never`.  See also `NO_COLOR` in *ENVIRONMENT VARIABLES*
@@ -108,6 +109,9 @@ TODO
     that can be overriden by `GLOBAL_OPTIONS`, additional help messages, and
     alias definitions.
 
+    See also `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better
+    understand how the location of the configuration file is determined.
+
 `${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/default.dhall`
 :   Same as already mentioned `.../command-wrapper/default.dhall`.  However
     this one is used by a specific `toolset`, and it is applied on top of the
@@ -115,11 +119,20 @@ TODO
     `.../command-wrapper/default.dhall` unless it is overriden in
     `.../${toolset}/default.dhall`.
 
+    See also `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better
+    understand how the location of the configuration file is determined.
+
+
 `${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/${toolset}-${subcommand}.dhall`
 :   Subcommand specific configuration file.  There is not much we can say about
-    them, since every subcommand can have its own definition.  See also
-    `command-wrapper-subcommand-protocol(7)` for more details on how
-    subcommands use their configuration files.
+    them, since every subcommand can have its own definition.
+
+    See also:
+
+    * `command-wrapper-subcommand-protocol(7)` for more details on how
+      subcommands use their configuration files.
+    * `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better understand
+      how the location of the configuration file is determined.
 
 
 # ENVIRONMENT VARIABLES
@@ -174,8 +187,16 @@ TODO
     > that, when present (regardless of its value), prevents the addition of
     > ANSI color.
 
-    In case of Command Wrapper setting this environment variable has similar
-    effect as if `--no-colour` command line option was specified.
+    Command Wrapper treats @NO_COLOR@ as a default value.  It can be overridden
+    by `colourOutput` property in toolset configuration file (`default.dhall`)
+    and/or using command line option(s).
+
+    Alternatively, following command can be used to temporarily disable
+    `NO_COLOR`:
+
+    ```
+    env -u 'NO_COLOR' TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
+    ```
 
 `COMMAND_WRAPPER_INVOKE_AS`
 :   This value overrides the name under which `command-wrapper` command was
@@ -188,13 +209,30 @@ TODO
     COMMAND_WRAPPER_INVOKE_AS=bar foo
     ```
 
+    Or if your shell doesn't support the above syntax:
+
+    ```
+    env COMMAND_WRAPPER_INVOKE_AS=bar foo
+    ```
+
     Then Command Wrapper will behave as if it was invoked as `bar`.   This is
     useful for debugging toolsets, and for developing new one.  More
     importantly this allows subcommands to call toolsets reliably.  Without
     this mechanism subcommands would either need toolsets to always be in
     `PATH` or we would need to pass toolset specific symlink/binary in an
-    environment variable.  See `command-wrapper-subcommand-protocol(7)` for
-    more details on how subcommands are invoked.
+    environment variable.
+
+    The most reliable way how to invoke Command Wrapper in a subcommand, that
+    is implemented as Bash script, is:
+
+    ```
+    function toolset() {
+       COMMAND_WRAPPER_INVOKE_AS=${COMMAND_WRAPPER_NAME} ${COMMAND_WRAPPER_EXE} "$@"
+    }
+    ```
+
+    See also `command-wrapper-subcommand-protocol(7)` for more details on how
+    subcommands are invoked.
 
 
 # SEE ALSO

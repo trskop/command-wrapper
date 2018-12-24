@@ -151,15 +151,12 @@ parseOptions =
 -- TODO:
 --
 -- * Allow alternatives, i.e. have a list of commands for one `NAME` and the
---   first one that is available is used.
+--   first one that is available is used.  (Just an idea.)
 --
 -- * Implement command-line completion, when available in `command-wrapper`
 --   itself.
-
--- Usage:
 --
---   TOOLSET exec NAME [ARGUMENTS]
---
--- Examples:
---
---   TOOLSET exec psql-production
+-- * Evaluate command with and without extra arguments.  If the result is the
+--   same then print warning to the user.  Dual case would be interesting as
+--   well.  Having the ability to tell when the command requires additional
+--   arguments, but there is no obvious simple solution.

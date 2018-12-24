@@ -1,8 +1,27 @@
 # Library for writing CommandWrapper subcommands in Bash.
 
+# Convert VERBOSITY value into an integer where `silent = 0`, and
+# `annoying = 3`.  Numeric values are much easier to compare, and order, in
+# Bash scripts.
+#
 # Usage:
 #
 #   verbosityToNum VERBOSITY
+#
+# Arguments:
+#
+#   VERBOSITY is one of 'silent', 'normal', 'verbose', 'annoying', and a number
+#     in between 0 (including) and 3 (including).  If this function is unable
+#     to parse VERBOSITY then 'annoying' is assumed.  This is to make sure that
+#     the user will see error messages in case of faulty environment/script.
+#
+# Return value:
+#
+#   0 - Always
+#
+# Stdout:
+#
+#   Number in between '0' (including) and '3' (including).
 function verbosityToNum() {
     case "$1" in
       'silent')   echo 0;;
@@ -15,6 +34,8 @@ function verbosityToNum() {
     esac
 }
 
+# Determine if colourised output should be produced.
+#
 # Usage:
 #
 #   useColours WHEN_TO_USE_COLOURS FILE_DESCRIPTOR
@@ -23,10 +44,17 @@ function verbosityToNum() {
 #
 #   WHEN_TO_USE_COLOURS is one of 'always', 'auto', and 'never'.
 #
+#   FILE_DESCRIPTOR is an open file descriptor that may or may not be attached
+#     to a terminal.  Standard values are 1 for stdout, and 2 for stderr.
+#
 # Return value / exit code:
 #
 #   0 -- Use colours on specified file descriptor
 #   1 -- Don't use colours on specified file descriptor
+#
+# Usage example:
+#
+#   useColours "${COMMAND_WRAPPER_COLOUR}" 1
 function useColours() {
     local when="$1"; shift
     local fd="$1"; shift
@@ -47,9 +75,18 @@ function useColours() {
     esac
 }
 
+# Low-level function for printing out messages.
+#
 # Usage:
 #
 #   msgf VERBOSITY MESSAGE_TYPE FORMAT [ARGUMENTS]
+#
+# Arguments:
+#
+#   VERBOSITY is one of 'silent', 'normal', 'verbose', and 'annoying'.  Value
+#     of ${COMMAND_WRAPPER_VERBOSITY} should be used when available.
+#
+#   MESSAGE_TYPE is one of 'info', 'notice', 'warning', and 'error'.
 function msgf() {
     local -r verbosity="$(verbosityToNum "$1")"; shift
     local -r type="$1"; shift
@@ -128,9 +165,15 @@ function error() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'error' "$@" 1>&2
 }
 
+# Like `error` function, but calls `exit EXIT_CODE` afterwards.
+#
 # Usage:
 #
 #   die EXIT_CODE FORMAT [ARGUMENTS]
+#
+# Arguments:
+#
+#   EXIT_CODE, terminate script with this exit code after printing the error.
 function die() {
     local -r exitCode="$1"; shift
 
@@ -138,10 +181,25 @@ function die() {
     exit "${exitCode}"
 }
 
+# Check that the Command Wrapper environment variables, as defined in
+# Subcommand Protocol, were passed to us.  If any of them is missing then this
+# this function will terminate the the subcommand with exit code 2, and
+# appropriate error message.
+#
 # Usage:
 #
 #   dieIfExecutedOutsideOfCommandWrapperEnvironment
+#
+# Return value:
+#
+#   0 - Always, on failure it calls `exit 2`, i.e. terminates the script.
+#
+# See Also
+#
+#   Command Wrapper's Subcommand Protocol command-wrapper-subcommand-protocol(7)
+#   for more details.
 function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
+
     if  [[ -z "${COMMAND_WRAPPER_EXE}" ]]; then
         die 2 'COMMAND_WRAPPER_EXE: %s: %s' \
             'Missing environment variable' \
@@ -189,11 +247,17 @@ function commandWrapperEnvironmentVariables() {
     env | sed -n 's/\(COMMAND_WRAPPER_[^=]*\)=.*/\1/;T;p'
 }
 
+# Execute a specified command, but with Command Wrapper environment variables
+# removed from its environment.
+#
 # Usage:
 #
 #   exec [-cl] [-a NAME] [COMMAND [ARGUMENTS ...]] [REDIRECTION ...]
 #
-# See "help exec" for more details.
+# See also:
+#
+#   * Function `commandWrapperEnvironmentVariables`.
+#   * Run "help exec" for more details about Bash's exec.
 function exec_() {
     export -n $(commandWrapperEnvironmentVariables)
 

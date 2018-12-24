@@ -139,3 +139,10 @@ parseLanguage t = case CI.mk t of
     "haskell" -> Just Haskell
     "bash" -> Just Bash
     _ -> Nothing
+
+-- TODO:
+--
+-- - Skeletons of configuration files would be very useful.  Not only an empty
+--   one for the newly created subcommand, but also being able to have various
+--   commonly used configuration skeletons.  Or is that something that `config`
+--   subcommand should be doing?
