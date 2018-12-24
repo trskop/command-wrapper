@@ -97,7 +97,7 @@ function msgf() {
     # environment.
 
     function useColours_() {
-        useColours "${COMMAND_WRAPPER_COLOUR:-auto}" 0
+        useColours "${COMMAND_WRAPPER_COLOUR:-auto}" 1
     }
 
     local -r resetColour='\033[0m'
@@ -213,6 +213,12 @@ function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
     fi
 
     if  [[ -z "${COMMAND_WRAPPER_NAME}" ]]; then
+        die 2 'COMMAND_WRAPPER_NAME: %s: %s' \
+            'Missing environment variable' \
+            'This command must be executed inside command-wrapper environment.'
+    fi
+
+    if  [[ -z "${COMMAND_WRAPPER_SUBCOMMAND}" ]]; then
         die 2 'COMMAND_WRAPPER_NAME: %s: %s' \
             'Missing environment variable' \
             'This command must be executed inside command-wrapper environment.'
