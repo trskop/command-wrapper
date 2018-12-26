@@ -5,8 +5,8 @@
 
 # NAME
 
-`command-wrapper-exec` -- Generate subcommand skeleton for specific
-Command Wrapper environment, i.e. toolset.
+`command-wrapper-exec` -- Execute predefined command with a user specified
+environment.
 
 
 # USAGE
@@ -18,7 +18,10 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec COMMAND [\--] \[EXTRA\_COMMAND\_ARGUMEN
 
 # DESCRIPTION
 
-**TODO**
+This command is similar to shell aliases.  Its configuration defines list of
+commands associated with a symbolic name.  For each command we can specify a
+working directory, environment variables, and arguments.  Most of the features,
+as well as restriction, come from using Dhall for configuration.
 
 
 # OPTIONS
@@ -84,7 +87,7 @@ contains the following:
 ```
 let CommandWrapper =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Type/package.dhall
-      sha256:68ba89320d6498cfd4a50409f2bc9625f5f047cf668ce4cb5749184ff4e239b3
+      sha256:aced9da8f45e34f0e4fd6847c20c42351b71b559691702db89337a8705c28a0e
 
 in  { commands =
         [ { name = "echo"
@@ -121,7 +124,7 @@ will add an alias named `hello.world`:
 ```
 let CommandWrapper =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Type/package.dhall
-      sha256:68ba89320d6498cfd4a50409f2bc9625f5f047cf668ce4cb5749184ff4e239b3
+      sha256:aced9da8f45e34f0e4fd6847c20c42351b71b559691702db89337a8705c28a0e
 
 in    λ(cfg : CommandWrapper.DefaultConfig)
     →   cfg

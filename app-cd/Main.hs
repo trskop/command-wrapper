@@ -246,3 +246,6 @@ executeAction directory = \case
 --
 -- - Option to print a command that would be performed.  This is useful for
 --   shell key-bindings.  Printing plain `cd ${dir}` would be nice as well.
+--
+-- - Support directory specific commands.  For example we may want a specific
+--   shell for a certain directory.
