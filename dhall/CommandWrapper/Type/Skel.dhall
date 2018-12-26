@@ -1,44 +1,26 @@
-let SkelTemplate =
-      { targetFile : Optional Text
+let SkelLanguage : Type = <Bash : {} | Dhall : {} | Haskell : {}>
+
+let SkelTemplate : Type =
+      { targetFile : Text
       , executable : Bool
       , template : Text
       }
 
-let SkelLanguageTemplates =
-      { haskell : SkelTemplate
-      , bash : SkelTemplate
+let SkelConfig : Type =
+      { template : ∀(language : SkelLanguage) → SkelTemplate
+
+      -- Open the newly created file in an editor?
+      , editAfterwards : Bool
       }
 
-let SkelConfig =
-      { targetFile : Text
-      , templates : SkelLanguageTemplates
-      }
-
-let SkelMkLangageTemplates =
-        ∀(description : Text)
-      → ∀(wrapper : Text)
-      → ∀(subcommand : Text)
-      → SkelLanguageTemplates
-
-let SkelMkConfig =
-        ∀(mkLanguageTemplates : SkelMkLangageTemplates)
-      → ∀(description : Text)
-      → ∀(wrapper : Text)
-      → ∀(subcommand : Text)
+let SkelMkConfig : Type =
+        ∀(wrapper : Text)     -- Name of the TOOLSET_COMMAND
+      → ∀(subcommand : Text)  -- Name of the SUBCOMMAND
+      → ∀(command : Text)     -- "${TOOLSET_COMMAND}-${SUBCOMMAND}"
       → SkelConfig
 
-let Skel =
-      { Template = SkelTemplate
-      , LanguageTemplates = SkelLanguageTemplates
-      , Config = SkelConfig
-      , MkLangageTemplates = SkelMkLangageTemplates
-      , MkConfig = SkelMkConfig
-      }
-
-in  Skel
-      : { Template : Type
-        , LanguageTemplates : Type
-        , Config : Type
-        , MkLangageTemplates : Type
-        , MkConfig : Type
-        }
+in  { Language = SkelLanguage
+    , Template = SkelTemplate
+    , Config = SkelConfig
+    , MkConfig = SkelMkConfig
+    }

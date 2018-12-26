@@ -28,6 +28,13 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] skel \[-l LANGUAGE|\--language=LANGUAGE] SUB
     * *haskell* (default)
     * *bash*
 
+-e, --edit
+:   Open the created file in an editor.
+
+-E, --no-edit
+:   Inverse of `--edit` that is useful if `--edit` mode is configured to be the
+    default.
+
 SUBCOMMAND
 :   Name of the new subcommand.  Where and how the source code or executable
     file will be named is configurable.  By default it is:

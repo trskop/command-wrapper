@@ -1,3 +1,4 @@
+-- TODO: Rename 'Default' to 'Toolset'?
 let Default = ./Default.dhall
 
 let Cd = ./Cd.dhall
@@ -19,10 +20,9 @@ in  { Command = ./Command.dhall
     , DefaultMkConfig = Default.MkConfig
 
     -- Configuration for `skel` subcommand
+    , SkelLanguage = Skel.Language
     , SkelTemplate = Skel.Template
-    , SkelLanguageTemplates = Skel.LanguageTemplates
     , SkelConfig = Skel.Config
-    , SkelMkLangageTemplates = Skel.MkLangageTemplates
     , SkelMkConfig = Skel.MkConfig
 
     -- Configuration for `cd` subcommand

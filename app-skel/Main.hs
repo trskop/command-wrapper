@@ -1,4 +1,6 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -26,6 +28,7 @@ module Main (main)
 
 import Control.Applicative (optional)
 import Control.Monad (when)
+import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
 import Data.String (fromString)
 import GHC.Generics (Generic)
@@ -34,7 +37,7 @@ import System.Exit (die)
 import Data.CaseInsensitive as CI (mk)
 import Data.Text (Text)
 import qualified Data.Text.IO as Text (writeFile)
-import qualified Dhall (Interpret, auto, inputFile)
+import qualified Dhall (Inject, Interpret, auto, inputFile)
 import qualified Data.Text as Text (unpack)
 import System.Directory
     ( createDirectoryIfMissing
@@ -48,81 +51,118 @@ import qualified Turtle
 import qualified CommandWrapper.Environment as Environment
 
 
+data Language
+    = Haskell
+    | Bash
+    | Dhall
+  deriving stock (Generic, Show)
+  deriving anyclass (Dhall.Inject, Dhall.Interpret)
+
 data Config = Config
-    { targetFile :: FilePath
-    , templates :: Templates
+    { template :: Language -> Template
+    , editAfterwards :: Bool
+    -- TODO: Editor settings to override environment.
     }
-  deriving (Generic, Show)
-
-instance Dhall.Interpret Config
-
-data Templates = Templates
-    { haskell :: Template
-    , bash :: Template
-    }
-  deriving (Generic, Show)
-
-instance Dhall.Interpret Templates
+  deriving stock (Generic)
+  deriving anyclass (Dhall.Interpret)
 
 data Template = Template
-    { targetFile :: Maybe FilePath
+    { targetFile :: FilePath
     , template :: Text
     , executable :: Bool
     }
-  deriving (Generic, Show)
-
-instance Dhall.Interpret Template
+  deriving stock (Generic, Show)
+  deriving anyclass (Dhall.Interpret)
 
 main :: IO ()
 main = do
     Environment.Params{name = wrapperName, config = configFile} <- parseEnv
     mkConfig <- Dhall.inputFile Dhall.auto configFile
-    (subcommandName, possiblyLanguage) <- Turtle.options description parseOptions
+    Mode
+        { subcommandName
+        , language = possiblyLanguage
+        , editAfterwards = possiblyEditAfterwards
+        } <- Turtle.options description parseOptions
 
     let subcommand = wrapperName <> "-" <> subcommandName
-        Config{targetFile, templates = Templates{..}} =
-            mkConfig defaultSubcommandDescription
+        Config{template, editAfterwards} =
+            mkConfig
                 (fromString @Text wrapperName)
+                (fromString @Text subcommandName)
                 (fromString @Text subcommand)
 
-    createdFile <- generateSkeleton targetFile $ case possiblyLanguage of
-        Nothing -> haskell
-        Just Haskell -> haskell
-        Just Bash -> bash
+        language = fromMaybe Haskell possiblyLanguage
+
+    createdFile <- generateSkeleton (template language)
 
     putStrLn ("Successfully created '" <> createdFile <> "'")
+
+    when (fromMaybe editAfterwards possiblyEditAfterwards)
+        $ startEditor createdFile
   where
     description =
         "Generate subcommand skeleton for specific command-wrapper environment"
 
-    -- TODO: Option for this.
-    defaultSubcommandDescription :: Text
-    defaultSubcommandDescription = "TODO: Describe me!"
-
-generateSkeleton :: FilePath -> Template -> IO FilePath
-generateSkeleton defaultTarget Template{executable, targetFile, template} = do
-    let destFile = fromMaybe defaultTarget targetFile
-
+generateSkeleton :: Template -> IO FilePath
+generateSkeleton Template{executable, targetFile, template} = do
     -- This may be the first command of that specific toolset.
-    createDirectoryIfMissing True (takeDirectory destFile)
-    Text.writeFile destFile template
+    createDirectoryIfMissing True (takeDirectory targetFile)
+    Text.writeFile targetFile template
     when executable $ do
-        perms <- getPermissions destFile
-        setPermissions destFile (perms{Directory.executable = True})
+        perms <- getPermissions targetFile
+        setPermissions targetFile perms{Directory.executable = True}
 
-    pure destFile
+    pure targetFile
 
 parseEnv :: IO Environment.Params
 parseEnv = Environment.parseEnvIO (die . show) Environment.askParams
 
-parseOptions :: Turtle.Parser (String, Maybe Language)
+data Mode = Mode
+    { subcommandName :: String
+    , language :: Maybe Language
+    , editAfterwards :: Maybe Bool
+    }
+
+parseOptions :: Turtle.Parser Mode
 parseOptions =
-    (,) <$> Turtle.arg parseSubcommandName "SUBCOMMAND"
+    go  <$> ( Turtle.arg parseSubcommandName "SUBCOMMAND"
                 "Name of the new subcommand"
-        <*> optional
+                <&> \subcommandName -> Mode
+                    { subcommandName
+                    , language = Nothing
+                    , editAfterwards = Nothing
+                    }
+            )
+
+        <*> ( optional
                 ( Turtle.opt parseLanguage "language" 'l'
                     "Choose programming language of subcommand skeleton"
                 )
+                <&> \language mode -> mode{language}
+            )
+
+        <*> ( optional
+                ( Turtle.switch "edit" 'e'
+                    "Open the created file in an editor afterwards"
+                )
+                <&> \editAfterwards Mode{language, subcommandName} ->
+                    Mode{editAfterwards, language, subcommandName}
+            )
+
+        <*> ( optional
+                ( Turtle.switch "no-edit" 'E'
+                    "Don't open the created file in an editor afterwards"
+                )
+                <&> \doNotEditAfterwards Mode{language, subcommandName} ->
+                    Mode
+                        { subcommandName
+                        , language
+                        , editAfterwards = not <$> doNotEditAfterwards
+                        }
+            )
+
+  where
+    go m f g h = h (g (f m))    -- TODO: Switch to 'foldEndo'.
 
 parseSubcommandName :: Text -> Maybe String
 parseSubcommandName = \case
@@ -132,13 +172,15 @@ parseSubcommandName = \case
         --       characters. Any other reasonable restrictions on subcommand
         --       name?
 
-data Language = Haskell | Bash
-
 parseLanguage :: Text -> Maybe Language
 parseLanguage t = case CI.mk t of
     "haskell" -> Just Haskell
     "bash" -> Just Bash
+    "dhall" -> Just Dhall
     _ -> Nothing
+
+startEditor :: FilePath -> IO ()
+startEditor _ = pure () -- TODO: Implement
 
 -- TODO:
 --
