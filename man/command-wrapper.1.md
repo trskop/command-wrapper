@@ -52,7 +52,10 @@ they just need to be executable files that respect the subcommand API.
     * *annoying*
 
 \--silent
-:   Same as `--verbosity=silent`.
+:   Same as `--verbosity=silent` and `--quiet`.
+
+\--quiet
+:   Same as `--verbosity=silent` and `--silent`.
 
 \--verbose
 :   Same as `--verbosity=verbose`.

@@ -135,6 +135,7 @@ verbosityOptions = foldEndo
     <$> many Options.incrementVerbosityFlag
     <*> optional Options.verbosityOption
     <*> Options.silentFlag
+    <*> Options.quietFlag
 
 colourOptions :: Options.Parser (Endo Global.Config)
 colourOptions = modifyConfig <$> ColourOutput.options

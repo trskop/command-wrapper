@@ -159,8 +159,10 @@ help appNames@AppNames{usedName} options globalConfig =
           \ values of VERBOSITY are 'silent', 'normal', 'verbose', and\
           \ 'annoying'."
         , "  -s, --silent           Silent mode. Suppress normal diagnostic or\
-          \ result output."
-        , "  --colo[u]r=WHEN        Set WHEN colourised output should be \
+          \ result output. Same as '--quiet' and '--verbosity=silent'."
+        , "  -q, --quiet            Silent mode. Suppress normal diagnostic or\
+          \ result output. Same as '--silent' and '--verbosity=silent'."
+        , "  --colo[u]r=WHEN        Set WHEN colourised output should be\
           \ produced. Possible values of WHEN are 'always', 'auto', and\
           \ 'never'."
         , "  --no-colo[u]r          Same as '--colour=no'."
