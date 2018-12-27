@@ -77,9 +77,13 @@ they just need to be executable files that respect the subcommand API.
     avoid issues with user defined aliases interfering with how the script
     behaves.  **TODO: Not yet implemented!**
 
-\-C DIRECTORY, --change-directory=DIRECTORY
+-C *DIRECTORY*, \--change-directory=*DIRECTORY*
 :   Change working directory before doing anything, especially executing a
     subcommand.  **TODO: Not yet implemented!**
+
+-h, --help
+:   Print toolset (*TOOLSET_COMMAND*) help information and exit.  Using `help`
+    subcommand without arguments gives the same result.
 
 
 # SUBCOMMANDS
@@ -89,15 +93,22 @@ subcommands are:
 
 * *help* -- Print help information for top-level toolset command or a specified
   *SUBCOMMAND*.
+
 * *config* -- Currently not implemented.
+
 * *completion* -- Provides shell completion.  Currently only partially
   implemented for Bash shell.
 
 Some external subcommands are bundled with Command Wrapper itself:
 
-* *cd*
-* *exec*
-* *skel*
+* *cd* -- Start a new subshell / Tmux window / terminal emulator in a selected
+  directory.  See `command-wrapper-cd(1)` for more details.
+
+* *exec* -- Execute predefined command with a user specified environment.  See
+  `command-wrapper-exec(1)` for more details.
+
+* *skel* -- Generate subcommand skeleton for specific Command Wrapper
+  environment, i.e. toolset.  See `command-wrapper-skel(1)` for more details.
 
 
 # EXIT STATUS
@@ -240,6 +251,7 @@ TODO
 
 # SEE ALSO
 
+command-wrapper-cd(1), command-wrapper-exec(1), command-wrapper-skel(1),
 command-wrapper-subcommand-protocol(7)
 
 * [XDG Base Directory Specification

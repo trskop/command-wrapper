@@ -11,7 +11,11 @@ Command Wrapper environment, i.e. toolset.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] skel \[-l LANGUAGE|\--language=LANGUAGE] SUBCOMMAND
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] skel \[\--language=LANGUAGE|-l LANGUAGE] SUBCOMMAND
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] skel {\--help|-h}
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help skel
 
 
 # DESCRIPTION

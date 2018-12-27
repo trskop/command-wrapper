@@ -11,7 +11,11 @@ in a selected directory.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd \[-s|\--shell|-t|\--tmux|-e|\--terminal]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd \[\--shell|-s|\--tmux|-t|\--terminal|-e]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd {\--help|-h}
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help cd
 
 
 # DESCRIPTION
