@@ -1,7 +1,7 @@
 # For advanced use and comprehensive documentation of the format, please see:
 # https://docs.haskellstack.org/en/stable/yaml_configuration/
 
-resolver: lts-12.20
+resolver: lts-13.0
 
 packages:
   - '.'
@@ -11,7 +11,7 @@ packages:
     extra-dep: True
   - location:
       git: https://github.com/trskop/mainplate.git
-      commit: 68cd6f825d951144a0055a63a72b19f60cdac8ee
+      commit: adbade9b17185119786b90ed9f539976f89e1d14
     extra-dep: True
   - location:
       git: https://github.com/trskop/verbosity.git
@@ -22,17 +22,19 @@ extra-deps:
   - endo-0.3.0.1
   - fuzzy-0.1.0.0
 
-  - dhall-1.19.1
-  - dhall-bash-1.0.17
-  - dhall-json-1.2.5
-  - dhall-text-1.0.14
+# Keeping the following in case of new Dhall release:
+#
+# - dhall-1.19.1
+# - dhall-bash-1.0.17
+# - dhall-json-1.2.5
+# - dhall-text-1.0.14
 
-  # Dhall dependencies:
-  - dotgen-0.4.2@sha256:309b7cc8a3593a8e48bee7b53020d5f72db156d58edf78a0214f58fbb84b292b
-  - serialise-0.2.1.0@sha256:8d6051f64c6ebfaf705195dd0b8dfb667617f2e674b290ed2e44985009e4f951
-  - megaparsec-7.0.4
-  - repline-0.2.0.0
-  - neat-interpolation-0.3.2.4  # dhall-bash
+# # Dhall dependencies:
+# - dotgen-0.4.2@sha256:309b7cc8a3593a8e48bee7b53020d5f72db156d58edf78a0214f58fbb84b292b
+# - serialise-0.2.1.0@sha256:8d6051f64c6ebfaf705195dd0b8dfb667617f2e674b290ed2e44985009e4f951
+# - megaparsec-7.0.4
+# - repline-0.2.0.0
+# - neat-interpolation-0.3.2.4  # dhall-bash
 
 flags:
   verbosity:
