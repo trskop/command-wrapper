@@ -36,13 +36,13 @@
 module Main (main)
   where
 
-import Control.Monad (when)
+import Control.Monad (unless)
 import Data.List (isPrefixOf)
 import System.Exit (die)
 
 import Data.Time.Clock.POSIX (getCurrentTime)
 import System.Directory
-    ( XdgDirectory(XdgConfig)
+    ( XdgDirectory(XdgConfig, XdgData)
     , getHomeDirectory
     , getXdgDirectory
     , setCurrentDirectory
@@ -74,6 +74,7 @@ data Directories = Directories
     { home :: FilePath
     , projectRoot :: FilePath
     , configDir :: FilePath
+    , dataDir :: FilePath
     , localDir :: FilePath
     }
 
@@ -91,6 +92,7 @@ main = do
 
     home <- getHomeDirectory
     configDir <- getXdgDirectory XdgConfig ""
+    dataDir <- getXdgDirectory XdgData ""
     let localDir = home </> ".local"
 
     setCurrentDirectory projectRoot
@@ -104,12 +106,21 @@ shakeMain Directories{..} opts = shakeArgs opts $ do
         commandWrapperBin =
             localLibDir </> "command-wrapper" </> "command-wrapper"
 
+        manDir = dataDir </> "command-wrapper" </> "man"
+        man1Dir = manDir </> "man1"
+        man7Dir = manDir </> "man7"
+
     want
         [ commandWrapperBin
         , localBinDir </> "dhall"
         , localBinDir </> "dhall-to-bash"
         , localBinDir </> "dhall-to-json"  -- Implies "dhall-to-yaml".
         , localBinDir </> "dhall-to-text"
+        , man1Dir </> "command-wrapper.1.gz"
+        , man1Dir </> "command-wrapper-cd.1.gz"
+        , man1Dir </> "command-wrapper-exec.1.gz"
+        , man1Dir </> "command-wrapper-skel.1.gz"
+        , man7Dir </> "command-wrapper-subcommand-protocol.7.gz"
         ]
 
     hasThisRepoChanged <- addOracle (thisGitRepo projectRoot)
@@ -118,7 +129,7 @@ shakeMain Directories{..} opts = shakeArgs opts $ do
 
         let dst = takeDirectory out
         targetExists <- doesDirectoryExist dst
-        when targetExists
+        unless targetExists
             $ cmd_ "mkdir -p" [dst]
 
         cmd_ "stack" ["--local-bin-path=" <> takeDirectory out] "install"
@@ -132,5 +143,19 @@ shakeMain Directories{..} opts = shakeArgs opts $ do
                     else outFile
 
         cmd_ "stack install" [package]
+
+    [man1Dir </> "*.1.gz", man7Dir </> "*.7.gz"] |%> \out -> do
+        let tempOut = dropExtension out
+            src = "man" </> dropExtension (takeFileName out) <.> "md"
+            dst = takeDirectory out
+
+        need [src]
+
+        targetExists <- doesDirectoryExist dst
+        unless targetExists
+            $ cmd_ "mkdir -p" [dst]
+
+        cmd_ "pandoc --standalone --to=man" ["--output=" <> tempOut, src]
+        cmd_ "gzip --force -9" [tempOut]
 
 -- vim:ft=haskell
