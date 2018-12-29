@@ -73,14 +73,14 @@ are available to it:
 
 `COMMAND_WRAPPER_CONFIG`
 
-:   Contains a file path to subcommand configuration file. Subcommand may it
-    entirely, but if subcommand is using it then it has to correctly handle the
-    case when the configuration file doesn't exist. It's up to individual
-    subcommand to decide which of these scenarios it will use if the
+:   Contains a file path to subcommand configuration file. Subcommand may
+    ignore it entirely, but if subcommand is using it then it has to correctly
+    handle the case when the configuration file doesn't exist.  It's up to
+    individual subcommand to decide which of these scenarios it will use if the
     configuration doesn't exist:
 
-    1. Use hardcoded defaults. Subcommand may generate the configuration file
-       with these defaults. If it does so then the user must be notified by a
+    1. Use hardcoded defaults.  Subcommand may generate the configuration file
+       with these defaults.  If it does so then the user must be notified by a
        message that it was done so. Such message is subject to verbosity
        setting (see `COMMAND_WRAPPER_VERBOSITY`), i.e. if verbosity is set to
        `silent` then the message is not actually printed.
@@ -91,13 +91,17 @@ are available to it:
 `COMMAND_WRAPPER_VERBOSITY`
 :   Contains one of:
 
-    * `silent` -- Don't print any messages.
+    * `silent` -- Don't print any messages, not even error messages.
     * `normal` -- Print only important messages.
-    * `verbose` -- Print anything that comes in to mind.
+    * `verbose` -- Print anything that comes into mind.
     * `annoying` -- Print debugging/tracing information.
 
     Subcommand must respect these values if it's producing any output that is
-    not part of user interaction.
+    not part of user interaction.  Note that error messages should be supressed
+    in `silent` mode, and only *EXIT STATUS* should be an indication of error.
+
+    Value of *VERBOSITY* should not affect output that is part interactive
+    session with the user.
 
 `COMMAND_WRAPPER_COLOUR`
 :   Contains one of:
@@ -130,6 +134,31 @@ This way it can guarantee consistent UI.
 subcommands do not have to rely on Dhall tools to be installed separately. This
 would also allow tools that want to use JSON format to generate a temporary
 file created from the Dhall configuration file.
+
+
+# EXIT STATUS
+
+`0`
+:   If everything went OK.
+
+`1`
+:   If subcommand has encounter one of the following issues:
+
+        * Unable to parse command line arguments/options.
+        * Unable to parse configuration file, or if there was a type error in
+          a configuration file.
+        * Required configuration file is missing.
+
+`2`
+:   Returned by a subcommand if the Command Wrapper environment wasn't set up
+    properly.  In other words *SUBCOMMAND PROTOCOL* was violated by the caller.
+
+    This can indicate a version mismatch between Command Wrapper installation,
+    and subcommand/toolset installation.
+
+*OTHER*
+:   Subcommands are free to use other *EXIT STATUS* codes if there is no
+    *EXIT STATUS* defined for that purpose.
 
 
 # SEE ALSO

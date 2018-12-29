@@ -99,8 +99,7 @@ Install `command-wrapper`:
 
 ```Bash
 git clone https://github.com/trskop/command-wrapper.git ~/.local/src/trskop/command-wrapper
-mkdir -p ~/.local/lib/command-wrapper
-stack --stack-yaml="${HOME}/.local/src/trskop/command-wrapper/stack.yaml" --local-bin-path="${HOME}/.local/lib/command-wrapper" install
+~/.local/src/trskop/command-wrapper/install
 mkdir ~/.config/command-wrapper
 ```
 
@@ -131,20 +130,43 @@ mkdir ~/.config/"${toolset}" ~/.local/lib/"${toolset}"
 │       └── ${toolset}-${toolsetSubcommand0}.dhall
 ├── .local/
 │   ├── ...
-│   └── lib/
-│       ├── ...
-│       ├── command-wrapper/
-│       │   ├── command-wrapper
-│       │   ├── command-wrapper-${subcommand0}
-│       │   ├── ...
-│       │   └── command-wrapper-${subcommandN}
-│       └── ${toolset}/
-│           ├── ${toolset}-${toolsetSubcommand0}
-│           ├── ...
-│           └── ${toolset}-${toolsetSubcommandN}
+│   ├── lib/
+│   │   ├── ...
+│   │   ├── command-wrapper/
+│   │   │   ├── command-wrapper
+│   │   │   ├── command-wrapper-${subcommand0}
+│   │   │   ├── ...
+│   │   │   └── command-wrapper-${subcommandN}
+│   │   └── ${toolset}/
+│   │       ├── ${toolset}-${toolsetSubcommand0}
+│   │       ├── ...
+│   │       └── ${toolset}-${toolsetSubcommandN}
+│   └── share/
+│       ├── man/
+│       │   ├── man1
+│       │   │   ├── command-wrapper.1.gz
+│       │   │   ├── command-wrapper-cd.1.gz
+│       │   │   ├── command-wrapper-exec.1.gz
+│       │   │   ├── command-wrapper-skel.1.gz
+│       │   │   └── ...
+│       │   ├── man7/
+│       │   │   ├── command-wrapper-subcommand-protocol.7.gz
+│       │   │   └── ...
+│       │   └── ...
+│       └── ...
 └── bin/
-    └── ${toolset} --> ../.local/lib/command-wrapper/command-wrapper
+    ├── ${toolset} --> ../.local/lib/command-wrapper/command-wrapper
+    └── ...
 ````
+
+Interestingly `man` is able to find manual pages in `$HOME/.local/shae/man` if
+`$HOME/.local/bin` is in `$PATH`.  This was tested only on systems with
+<http://man-db.nongnu.org/> installed.  To test if `$HOME/.local/shae/man` is
+used by `man` run `manpath` command, which should print out something like:
+
+```
+/home/peter/.local/share/man:/usr/local/man:/usr/local/share/man:/usr/share/man
+```
 
 
 

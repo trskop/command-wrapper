@@ -40,13 +40,89 @@ import System.FilePath (takeFileName)
 
 data AppNames = AppNames
     { exePath :: FilePath
+    -- ^ Full path to the executable, symlinks are resolved.
+    --
+    -- For example, default installation path of Command Wrapper for @\"neo\"@
+    -- result in:
+    --
+    -- @
+    -- 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+    -- @
+
     , exeName :: String
+    -- ^ Executable file name
+    --
+    -- For example, if
+    --
+    -- @
+    -- 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+    -- @
+    --
+    -- Then
+    --
+    -- @
+    -- 'exeName' = \"command-wrapper\"
+    -- @
+
     , exeVersion :: Version
+    -- ^ Version number of the executable.  How this information is gathered
+    -- is intentionally left vague.
+
     , usedName :: String
+    -- ^ Name under which the executable was executed.
+    --
+    -- For example if user invoked command @yx SOMETHING@, which was resolved
+    -- by shell into a symlink:
+    --
+    -- @
+    -- \"/home/neo/bin/yx\" -> \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+    -- @
+    --
+    -- Then:
+    --
+    -- @
+    -- 'usedName' = \"yx\"
+    -- @
+
     , names :: NonEmpty String
+    -- ^ List of names under which the Command Wrapper executable is known.
+    -- Order is significant when searching for a subcommand.  First name has
+    -- precedence.
+    --
+    -- For example if @'exeName' = \"command-wrapper\"@, and
+    -- @'usedName' = \"yx\"@ then:
+    --
+    -- @
+    -- 'names' = \"yx\" :| [\"command-wrapper\"]
+    -- @
     }
   deriving (Generic, Show)
 
+-- | Smart constructor for 'AppNames'.
+--
+-- Lets say that we have a following installation:
+--
+-- > ~/
+-- > ├── bin/
+-- > │   ├── yx -> ../.local/lib/command-wrapper/command-wrapper
+-- > │   └── ...
+-- > ├── .local/lib/command-wrapper/
+-- > │   ├── command-wrapper
+-- > │   └── ...
+-- > └── ...
+--
+-- If user @\"neo\"@ invokes @yx SOMETHING@ command and @\"$HOME\/bin\"@ is in
+-- their @\"$PATH\"@ then return value of this function would be:
+--
+-- @
+-- 'AppNames'
+--     { 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+--     , 'exeName' = \"command-wrapper\"
+--     , 'exeVersion' = ... -- Whatever the first argument of 'getAppNames' returned.
+--     , 'usedName' = \"yx\"
+--     , 'names' = \"yx\" :| [\"command-wrapper\"]
+--     }
+-- @
 getAppNames :: IO Version -> IO AppNames
 getAppNames getVersion = do
     usedName <- getUsedName
