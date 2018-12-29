@@ -106,7 +106,9 @@ shakeMain Directories{..} opts = shakeArgs opts $ do
         commandWrapperBin =
             localLibDir </> "command-wrapper" </> "command-wrapper"
 
-        manDir = dataDir </> "command-wrapper" </> "man"
+        -- Standard `man` command should be able to pick this up.  Try
+        -- `manpath` after installation to be sure.
+        manDir = dataDir </> "man"
         man1Dir = manDir </> "man1"
         man7Dir = manDir </> "man7"
 
