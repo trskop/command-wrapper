@@ -21,6 +21,7 @@ module CommandWrapper.Options.ColourOutput
 
     -- * Terminal
     , terminalSupportsColours
+    , shouldUseColours
 
     -- * Options
     , options
@@ -33,6 +34,7 @@ module CommandWrapper.Options.ColourOutput
 
 import Control.Applicative (optional)
 import Data.Monoid (Last(Last, getLast), mconcat)
+import System.IO (Handle, hIsTerminalDevice)
 
 import qualified Data.CaseInsensitive as CI (mk)
 import Data.Output.Colour
@@ -40,8 +42,10 @@ import Data.Output.Colour
     , noColorEnvVar
     , parse
     , terminalSupportsColours
+    , useColoursWhen
     )
 import qualified Options.Applicative as Options
+import System.Console.Terminfo (setupTermFromEnv)
 
 
 options :: Options.Parser (Maybe ColourOutput)
@@ -80,3 +84,11 @@ colourOption' name = Options.option parse' $ mconcat
     ]
   where
     parse' = Options.maybeReader (parse . CI.mk)
+
+-- | Check if we should use colours for the specified output handle.
+shouldUseColours :: Handle -> ColourOutput -> IO Bool
+shouldUseColours handle = useColoursWhen $ do
+    otputIsTerminal <- hIsTerminalDevice handle
+    if otputIsTerminal
+        then terminalSupportsColours <$> setupTermFromEnv
+        else pure False

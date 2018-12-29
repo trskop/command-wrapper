@@ -1,8 +1,9 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module:      CommandWrapper.Internal
 -- Description: Internal commands supported by CommandWrapper
@@ -46,15 +47,21 @@ import Data.Eq ((==))
 import Data.Foldable (mapM_, traverse_)
 import Data.Function (($), (.), const, id)
 import Data.Functor (Functor, (<$>), fmap)
-import qualified Data.List as List (break, filter, isPrefixOf, lookup, nub, takeWhile)
-import Data.Maybe (Maybe(..), isJust)
+import qualified Data.List as List
+    ( break
+    , filter
+    , isPrefixOf
+    , lookup
+    , nub
+    , takeWhile
+    )
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Monoid (Endo(Endo))
 import Data.Semigroup ((<>))
-import Data.String (String, unlines)
+import Data.String (String, fromString, unlines)
 import Data.Tuple (fst)
 import GHC.Generics (Generic)
-import System.Exit (die)
-import System.IO (IO, putStr, putStrLn)
+import System.IO (IO, putStr, putStrLn, stderr)
 import Text.Show (Show)
 
 import qualified Mainplate (applySimpleDefaults, noConfigToRead, runAppWith)
@@ -68,7 +75,14 @@ import qualified CommandWrapper.External as External
     ( executeCommand
     , findSubcommands
     )
+import CommandWrapper.Message
+    ( dieSubcommandNotYetImplemented
+    , dieTooManyArguments
+    )
 import CommandWrapper.Options.Alias (Alias(alias), applyAlias)
+import qualified CommandWrapper.Options.ColourOutput as ColourOutput
+    ( ColourOutput(Auto)
+    )
 
 
 data Command
@@ -138,7 +152,14 @@ help appNames@AppNames{usedName} options globalConfig =
                         SubcommandHelp subcmd' globalConfig
 
         _ : arg : _ ->
-            die ("Error: '" <> arg <> "': Too many arguments")
+            let Global.Config
+                    { Global.verbosity
+                    , Global.colourOutput = possiblyColourOutput
+                    } = globalConfig
+
+            in dieTooManyArguments (fromString usedName) "help" verbosity
+                (fromMaybe ColourOutput.Auto possiblyColourOutput) stderr
+                (fromString arg)
 
     switchTo = pure . Endo . const
 
@@ -179,7 +200,7 @@ data ConfigMode a
   deriving (Functor, Generic, Show)
 
 config :: AppNames -> [String] -> Global.Config -> IO ()
-config _appNames _options globalConfig =
+config AppNames{usedName} _options globalConfig =
     runMain parseOptions defaults $ \case
         InitConfig _ -> pure ()
         ConfigLib _ -> pure ()
@@ -225,7 +246,14 @@ config _appNames _options globalConfig =
     defaults = Mainplate.applySimpleDefaults (InitConfig globalConfig)
 
     parseOptions :: IO (Endo (ConfigMode Global.Config))
-    parseOptions = die "Error: config: Subcommand not yet implemented."
+    parseOptions =
+        let Global.Config
+                { Global.verbosity
+                , Global.colourOutput = possiblyColourOutput
+                } = globalConfig
+
+        in dieSubcommandNotYetImplemented (fromString usedName) verbosity
+            (fromMaybe ColourOutput.Auto possiblyColourOutput) stderr "config"
 
 -- }}} Config Command ---------------------------------------------------------
 

@@ -20,6 +20,7 @@ extra-source-files:
 dependencies:
   - base
 
+  - ansi-terminal
   - case-insensitive
   - comonad
   - dhall >=1.17

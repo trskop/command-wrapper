@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 -- |
 -- Module:      CommandWrapper.External
@@ -34,10 +35,10 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty (toList)
 import Data.Maybe (Maybe(Just, Nothing), catMaybes, fromMaybe, listToMaybe)
 import Data.Semigroup ((<>))
-import Data.String (String)
+import Data.String (String, fromString)
 import Data.Traversable (mapM)
-import System.Exit (die)
-import System.IO (FilePath, IO{-, print-})
+import System.IO (FilePath, IO, stderr)
+import Text.Show (show)
 
 --import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 import qualified Mainplate (ExternalCommand(..))
@@ -76,6 +77,11 @@ import qualified CommandWrapper.Environment as Environment
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     ( ColourOutput(Auto)
     )
+import CommandWrapper.Message
+    ( debugMsg
+    , dieUnableToExecuteSubcommand
+    , dieUnableToFindSubcommandExecutable
+    )
 
 
 type Command = Mainplate.ExternalCommand
@@ -95,28 +101,30 @@ executeCommand
     -> Global.Config
     -> IO a
 executeCommand appNames subcommand arguments globalConfig =
-    findSubcommandExecutable commands globalConfig >>= \case
+    findSubcommandExecutable usedName commands globalConfig >>= \case
         Nothing ->
-            die unableToFindExecutableError
+            dieUnableToFindSubcommandExecutable (fromString usedName) verbosity
+                colourOutput stderr (fromString subcommand)
 
         Just (prefix, command, executable) -> do
---          print ("Trying to execute", executable)
+            debugMsg (fromString usedName) verbosity colourOutput stderr
+                $ "Trying to execute: " <> fromString (show executable)
             extraEnvVars <- Environment.mkEnvVars <$> getParams prefix command
             currentEnv <- Environment.getEnv
             let env = Environment.commandWrapperEnv (currentEnv <> extraEnvVars)
 
             executeFile executable False arguments (Just env)
-                `onException` die (unableToExecuteError executable)
+                `onException` dieUnableToExecuteSubcommand
+                    (fromString usedName) verbosity colourOutput stderr
+                    (fromString subcommand) (fromString executable)
   where
     commands = names <&> \prefix ->
         (prefix, prefix <> "-" <> subcommand)
 
-    Environment.AppNames
-        { Environment.exePath
-        , Environment.exeVersion
-        , Environment.usedName
-        , Environment.names
-        } = appNames
+    Environment.AppNames{exePath, exeVersion, usedName, names} = appNames
+
+    Global.Config{verbosity, colourOutput = possiblyColourOutput} = globalConfig
+    colourOutput = fromMaybe ColourOutput.Auto possiblyColourOutput
 
     getParams prefix command = do
         config <- getXdgDirectory XdgConfig (prefix </> command <.> "dhall")
@@ -125,28 +133,22 @@ executeCommand appNames subcommand arguments globalConfig =
             , name = usedName
             , subcommand
             , config
-            , verbosity = Global.verbosity globalConfig
-            , colour =
-                fromMaybe ColourOutput.Auto (Global.colourOutput globalConfig)
+            , verbosity
+            , colour = colourOutput
             , version = exeVersion
             }
 
-    unableToFindExecutableError =
-        "Error: " <> subcommand
-        <> ": Unable to find suitable executable for this subcommand"
-
-    unableToExecuteError executable =
-        "Error: " <> subcommand
-        <> ": Unable to execute external subcommand executable: '"
-        <> executable <> "'"
-
 findSubcommandExecutable
-    :: NonEmpty (String, String)
+    :: String
+    -> NonEmpty (String, String)
     -> Global.Config
     -> IO (Maybe (String, String, FilePath))
-findSubcommandExecutable subcommands config = do
+findSubcommandExecutable usedName subcommands config = do
     searchPath <- getSearchPath config
---  print ("Search path", searchPath')
+    debugMsg (fromString usedName) verbosity colourOutput stderr
+        $ "Using following subcommand executable search path: "
+        <> fromString (show searchPath)
+
     loop searchPath (NonEmpty.toList subcommands)
   where
     loop searchPath = \case
@@ -158,6 +160,9 @@ findSubcommandExecutable subcommands config = do
 
     findSubcommandExecutable' searchPath =
         fmap listToMaybe . findExecutablesInDirectories searchPath
+
+    Global.Config{verbosity, colourOutput = possiblyColourOutput} = config
+    colourOutput = fromMaybe ColourOutput.Auto possiblyColourOutput
 
 -- | Find all (unique) external subcommands.
 findSubcommands :: Environment.AppNames -> Global.Config -> IO [String]

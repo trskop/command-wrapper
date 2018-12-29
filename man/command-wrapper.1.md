@@ -139,6 +139,15 @@ Some external subcommands are bundled with Command Wrapper itself:
     This can indicate a version mismatch between Command Wrapper installation,
     and *subcommand*/*toolset* installation.
 
+`126`
+:   Failed while trying to execute external subcommand or other external
+    command.  Probably a permission problem, or command is not an executable.
+
+`127`
+:   Unable to find external subcommand or other external command that we
+    Command Wrapper was trying to execute.  Possibly a typo in the command
+    name, or an issue with `$PATH` environment variable.
+
 *OTHER*
 :   Subcommands are free to use other *EXIT STATUS* codes if there is no
     *EXIT STATUS* defined for that purpose.  See also *SUBCOMMAND PROTOCOL*.
