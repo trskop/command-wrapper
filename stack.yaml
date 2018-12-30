@@ -22,14 +22,13 @@ extra-deps:
   - endo-0.3.0.1
   - fuzzy-0.1.0.0
 
-# Keeping the following in case of new Dhall release:
-#
-# - dhall-1.19.1
-# - dhall-bash-1.0.17
-# - dhall-json-1.2.5
-# - dhall-text-1.0.14
+  - dhall-1.20.0
+  - dhall-bash-1.0.18
+  - dhall-json-1.2.6
+  - dhall-text-1.0.15
 
-# # Dhall dependencies:
+# Keeping the following in case of new Dhall release:
+  # Dhall dependencies:
 # - dotgen-0.4.2@sha256:309b7cc8a3593a8e48bee7b53020d5f72db156d58edf78a0214f58fbb84b292b
 # - serialise-0.2.1.0@sha256:8d6051f64c6ebfaf705195dd0b8dfb667617f2e674b290ed2e44985009e4f951
 # - megaparsec-7.0.4
