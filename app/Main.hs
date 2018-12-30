@@ -20,7 +20,7 @@ import Control.Monad ((>>=))
 import Data.Either (Either(Right), either)
 import Data.Eq ((/=))
 import Data.Function (($), (.), flip, id)
-import Data.Functor -- ((<$>))
+import Data.Functor ((<$>))
 import Data.Semigroup ((<>))
 import Data.Maybe (Maybe)
 import Data.Monoid (Endo(Endo, appEndo), Last(Last, getLast), mconcat, mempty)
@@ -49,7 +49,12 @@ import qualified CommandWrapper.Config.Global as Global.Config
     , def
     , read
     )
-import CommandWrapper.Environment (AppNames(..), getAppNames, parseEnvIO)
+import CommandWrapper.Environment
+    ( AppNames(..)
+    , commandWrapperPrefix
+    , getAppNames
+    , parseEnvIO
+    )
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
 import qualified CommandWrapper.Options as Options
@@ -75,7 +80,8 @@ defaults config (Endo f) =
 
 main :: IO ()
 main = do
-    appNames@AppNames{exeName, usedName} <- getAppNames (pure version)
+    appNames@AppNames{exeName, usedName} <- getAppNames'
+    -- TODO: It would be great to have debugging message with 'appNames' in it.
     defaultColourOutput <- parseEnvIO (die . show) ColourOutput.noColorEnvVar
 
     let defaultConfig = Global.Config.def
@@ -97,12 +103,17 @@ main = do
     readGlobalConfig baseName = do
         configFile <- getXdgDirectory XdgConfig (baseName </> "default.dhall")
         configExists <- doesFileExist configFile
+        -- TODO: Debugging message that tells the user that we either read the
+        --   configuration file or that we are using hardcoded defaults.
 --      print (if configExists then "Reading" else "No such file", configFile)
         if configExists
             then
                 Global.Config.read configFile >>= either die (pure . flip (<>))
             else
                 pure id
+
+getAppNames' :: IO AppNames
+getAppNames' = getAppNames commandWrapperPrefix (pure version)
 
 parseOptions :: Global.Config -> IO (Endo (Options.Command Global.Config))
 parseOptions config =

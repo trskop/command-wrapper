@@ -5,7 +5,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Environment.AppNames
--- Description: TODO: Module synopsis
+-- Description: Representation of all the names and paths under wich Command
+--              Wrapper is known.
 -- Copyright:   (c) 2018 Peter Trško
 -- License:     BSD3
 --
@@ -13,7 +14,12 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Representation of all the names and paths under wich Command Wrapper is
+-- known.  These are used to search for subcommands, populate environment
+-- variables for subcommands, in error messages, etc.
+--
+-- See also @command-wrapper(1)@ and @command-wrapper-subcommand-protocol(7)@
+-- manual pages.
 module CommandWrapper.Environment.AppNames
     (
     -- * Application Names
@@ -34,8 +40,15 @@ import System.Environment (getProgName, lookupEnv)
 import System.IO (FilePath, IO)
 import Text.Show (Show)
 
+import qualified Data.Text as Text (unpack)
 import System.Environment.Executable (ScriptPath(..), getScriptPath)
 import System.FilePath (takeFileName)
+
+import CommandWrapper.Environment.Variable
+    ( CommandWrapperPrefix
+    , CommandWrapperToolsetVarName(CommandWrapperInvokeAs)
+    , getCommandWrapperToolsetVarName
+    )
 
 
 data AppNames = AppNames
@@ -83,6 +96,11 @@ data AppNames = AppNames
     -- @
     -- 'usedName' = \"yx\"
     -- @
+    --
+    -- This value can be overriden by an environment variable
+    -- @<prefix>_INVOKE_AS=<used-name>@. See 'CommandWrapperPrefix',
+    -- 'CommandWrapperInvokeAs', and @command-wrapper(1)@ manual page section
+    -- /ENVIRONMENT VARIABLES/.
 
     , names :: NonEmpty String
     -- ^ List of names under which the Command Wrapper executable is known.
@@ -118,13 +136,18 @@ data AppNames = AppNames
 -- 'AppNames'
 --     { 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
 --     , 'exeName' = \"command-wrapper\"
---     , 'exeVersion' = ... -- Whatever the first argument of 'getAppNames' returned.
+--     , 'exeVersion' = ... -- Whatever the second argument of 'getAppNames' returned.
 --     , 'usedName' = \"yx\"
 --     , 'names' = \"yx\" :| [\"command-wrapper\"]
 --     }
 -- @
-getAppNames :: IO Version -> IO AppNames
-getAppNames getVersion = do
+getAppNames
+    :: CommandWrapperPrefix
+    -- ^ Prefix used by Command Wrapper's environment variables.  Usually
+    -- 'CommandWrapper.Environment.Variable.commandWrapperPrefix'.
+    -> IO Version
+    -> IO AppNames
+getAppNames prefix getVersion = do
     usedName <- getUsedName
     version <- getVersion
     getScriptPath <&> \case
@@ -157,9 +180,12 @@ getAppNames getVersion = do
             }
 
     getUsedName = do
-        -- Environment variable @COMMAND_WRAPPER_INVOKE_AS=<used-name>@
-        -- overrides the default value of 'usedName' This is useful for testing
-        -- and when subcommands call other subcommands.  With this there is no
-        -- need to pass around path to toolset binary/symlink.
-        possiblyOverrideProgName <- lookupEnv "COMMAND_WRAPPER_INVOKE_AS"
+        -- Environment variable @<prefix>_INVOKE_AS=<used-name>@ overrides the
+        -- default value of 'usedName'. This is useful for testing, and when
+        -- subcommands call other subcommands.  With this there is no need to
+        -- pass around path to toolset binary/symlink.
+        let invokeAsVarName =
+                getCommandWrapperToolsetVarName prefix CommandWrapperInvokeAs
+
+        possiblyOverrideProgName <- lookupEnv (Text.unpack invokeAsVarName)
         maybe getProgName pure possiblyOverrideProgName

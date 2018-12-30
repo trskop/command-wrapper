@@ -45,7 +45,7 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 
 import Control.Monad.Except (throwError)
 import qualified Data.CaseInsensitive as CaseInsensitive (mk)
-import qualified Data.HashMap.Strict as HashMap (fromList, toList)
+import qualified Data.HashMap.Strict as HashMap (delete, fromList, toList)
 import qualified Data.Text as Text (unpack)
 import Data.Verbosity (Verbosity)
 import qualified Data.Verbosity as Verbosity (parse)
@@ -58,11 +58,13 @@ import CommandWrapper.Environment.Parser
     , commandWrapperVar'
     )
 import CommandWrapper.Environment.Variable
-    ( CommandWrapperVarName(..)
-    , CommandWrapperPrefix
+    ( CommandWrapperPrefix
+    , CommandWrapperToolsetVarName(..)
+    , CommandWrapperVarName(..)
     , EnvVarName
     , EnvVarValue
     , commandWrapperPrefix
+    , getCommandWrapperToolsetVarName
     , getCommandWrapperVarName
     )
 import CommandWrapper.Options.ColourOutput (ColourOutput)
@@ -96,9 +98,19 @@ commandWrapperEnv
     :: EnvBuilder CommandWrapperPrefix
     -> [(String, String)]
 commandWrapperEnv (EnvBuilder mkEnv) =
-    fromHashMap (mkEnv commandWrapperPrefix)
+    fromHashMap . removeToolsetVars $ mkEnv commandWrapperPrefix
   where
     fromHashMap = fmap (bimap Text.unpack Text.unpack) . HashMap.toList
+
+    removeToolsetVars =
+        -- TODO: This assumes that there is only one einvorinment variable
+        --   defined in 'CommandWrapperToolsetVarName' data type.  This is true
+        --   at the moment, but it should be written in generic way to support
+        --   'CommandWrapperToolsetVarName' extensions.
+        let invokeAs =
+                getCommandWrapperToolsetVarName commandWrapperPrefix
+                    CommandWrapperInvokeAs
+        in HashMap.delete invokeAs
 
 -- | Parse Command Wrapper environment\/protocol.
 askParams :: ParseEnv CommandWrapperPrefix Params

@@ -111,7 +111,11 @@ executeCommand appNames subcommand arguments globalConfig =
                 $ "Trying to execute: " <> fromString (show executable)
             extraEnvVars <- Environment.mkEnvVars <$> getParams prefix command
             currentEnv <- Environment.getEnv
-            let env = Environment.commandWrapperEnv (currentEnv <> extraEnvVars)
+            let -- When combining environments with '<>' the first environment
+                -- has precedence if the key is in both.  If our environment
+                -- already contains Command Wrapper environment variables we
+                -- need to override them.
+                env = Environment.commandWrapperEnv (extraEnvVars <> currentEnv)
 
             executeFile executable False arguments (Just env)
                 `onException` dieUnableToExecuteSubcommand
