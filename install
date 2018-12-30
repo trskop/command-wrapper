@@ -1,6 +1,6 @@
 #!/usr/bin/env stack
 {- stack script
-    --resolver lts-12.20
+    --resolver lts-13.0
     --package directory
     --package executable-path
     --package shake
@@ -22,8 +22,7 @@
 
 -- |
 -- Module:      Main
--- Description: Initialise configuration for applications that do not support
---              XDG Base Directory Specification
+-- Description: Install Command Wrapper, its documentation, and required tools.
 -- Copyright:   (c) 2018 Peter Trško
 -- License:     BSD3
 --
@@ -31,8 +30,7 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- Initialise configuration for applications that do not support XDG Base
--- Directory Specification.
+-- Install Command Wrapper, its documentation, and required tools.
 module Main (main)
   where
 
@@ -62,7 +60,15 @@ type instance RuleResult ThisGitRepo = String
 
 thisGitRepo :: FilePath -> ThisGitRepo -> Action String
 thisGitRepo directory ThisGitRepo{} = do
-    Stdout status <- cmd "git status -s -- stack.yaml app/ src/"
+    Stdout status <- cmd "git status -s --"
+        [ "stack.yaml"
+        , "package.yaml"
+        , "app/"
+        , "app-cd/"
+        , "app-exec/"
+        , "app-skel/"
+        , "src/"
+        ]
     if null @[] @Char status
         then do
             Stdout hash <- cmd "git -C" [directory] "show-ref -s origin/HEAD"
@@ -103,8 +109,12 @@ shakeMain Directories{..} opts = shakeArgs opts $ do
     let localLibDir = localDir </> "lib"
         localBinDir = localDir </> "bin"
 
-        commandWrapperBin =
-            localLibDir </> "command-wrapper" </> "command-wrapper"
+        commandWrapperLibexecDir = localLibDir </> "command-wrapper"
+
+        commandWrapperBin = commandWrapperLibexecDir </> "command-wrapper"
+        cdBin = commandWrapperLibexecDir </> "command-wrapper-cd"
+        execBin = commandWrapperLibexecDir </> "command-wrapper-exec"
+        skelBin = commandWrapperLibexecDir </> "command-wrapper-skel"
 
         -- Standard `man` command should be able to pick this up.  Try
         -- `manpath` after installation to be sure.
@@ -114,10 +124,15 @@ shakeMain Directories{..} opts = shakeArgs opts $ do
 
     want
         [ commandWrapperBin
+        , cdBin
+        , execBin
+        , skelBin
+
         , localBinDir </> "dhall"
         , localBinDir </> "dhall-to-bash"
         , localBinDir </> "dhall-to-json"  -- Implies "dhall-to-yaml".
         , localBinDir </> "dhall-to-text"
+
         , man1Dir </> "command-wrapper.1.gz"
         , man1Dir </> "command-wrapper-cd.1.gz"
         , man1Dir </> "command-wrapper-exec.1.gz"
@@ -126,15 +141,15 @@ shakeMain Directories{..} opts = shakeArgs opts $ do
         ]
 
     hasThisRepoChanged <- addOracle (thisGitRepo projectRoot)
-    commandWrapperBin %> \out -> do
+    [commandWrapperBin, cdBin, execBin, skelBin] &%> \outs -> do
         _ <- hasThisRepoChanged (ThisGitRepo ())
 
-        let dst = takeDirectory out
+        let dst = takeDirectory (head outs)
         targetExists <- doesDirectoryExist dst
         unless targetExists
             $ cmd_ "mkdir -p" [dst]
 
-        cmd_ "stack" ["--local-bin-path=" <> takeDirectory out] "install"
+        cmd_ "stack" ["--local-bin-path=" <> dst] "install"
 
     (localBinDir </> "dhall*") %> \out -> do
         -- TODO: Oracle that checks version.
