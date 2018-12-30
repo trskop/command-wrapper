@@ -188,3 +188,6 @@ startEditor _ = pure () -- TODO: Implement
 --   one for the newly created subcommand, but also being able to have various
 --   commonly used configuration skeletons.  Or is that something that `config`
 --   subcommand should be doing?
+--
+-- - When `TOOLSET skel SUBCOMMAND --language=dhall` is invoked we could try to
+--   find a specific skeleton for that subcommand.

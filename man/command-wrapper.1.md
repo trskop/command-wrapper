@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 23nd December 2018
+% 30th December 2018
 
 
 # NAME
@@ -24,20 +24,34 @@ TOOLSET\_COMMAND {\--help|-h}
 
 # DESCRIPTION
 
-Some command line applications with a lot of commands try to avoid polluting
-`$PATH` with all of them.  One of the approaches to this is to have one top
-level command exposed and the rest is implemented as subcommands.  Subcommands
-are either internal functions or external commands (standalone executables).
-Example of such application is Git which uses mix of internal subcommands and
-external subcommand.
+Many UNIX/Linux users create their own ad-hoc tools that serve a specific need.
+This need may be specific to their use-case, their job, or just a one-off.
+Core idea of Command Wrapper is to provide a structure for creating such
+scripts as fast as possible, and with a reasonable user experience right away.
 
-In general such toolset top level command has syntax like this:
+Another thing that comes from having a lot of tools is that they are scattered
+all over the place.  Command Wrapper sidesteps this by hiding them from `$PATH`
+by using similar approach as e.g. Git.  Command Wrapper subcommands are either
+internal functions or external commands (standalone executables).  It allows
+you to define what is called *toolset*.  A symbolic link to it's main
+executable, which reuses all the basic machinery of Command Wrapper, but has
+it's own name-space for subcommands.
+
+In general such *TOOLSET_COMMAND* has syntax like this:
 
     TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
 
-This package provides universal top-level command, that can be named as
-required, and API for subcommands.  Subcommands may be written in any language,
-they just need to be executable files that respect the subcommand API.
+Multiple toolsets can easily coexist on the same machine.  It usually makes
+sense to have one for personal tooling, and one for work tooling.
+
+First subcommand that was introduced was `help`, obviously, but the one right
+after that was `skel`.  Which allows you to create a new subcommand skeleton,
+see `command-wrapper-skel(1)` for more details.  Subcommand can be written in
+any language user chooses.  It just needs to be an executable, and follow
+Command Wrapper's *SUBCOMMAND PROTOCOL*, which is documented in a separate
+manual page `command-wrapper-subcommand-protocol(7)`. For more information on
+where subcommands are installed see also *FILES AND DIRECTORIES* section of
+this manual.
 
 
 # GLOBAL OPTIONS
@@ -234,8 +248,8 @@ Some external subcommands are bundled with Command Wrapper itself:
 
 `${HOME}/.local/lib/${toolset}/`
 :   This is the generalisation of the idea behind
-    `${HOME}/.local/lib/${toolset}/` directory.   Whenever a new *toolset* is
-    created, as a symlink to
+    `${HOME}/.local/lib/command-wrapper/` directory.  Whenever a new *toolset*
+    is created, as a symlink to
     `${HOME}/.local/lib/command-wrapper/command-wrapper` executable, it will be
     looking for its (external) subcommands in this directory.  Subcommands are
     expected to be executable and have following absolute path:
