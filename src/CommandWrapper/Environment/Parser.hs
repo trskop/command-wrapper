@@ -55,7 +55,7 @@ import CommandWrapper.Environment.Variable
     , CommandWrapperVarName
     , EnvVarName
     , EnvVarValue
-    , commandWrapperPrefix
+    , defaultCommandWrapperPrefix
     , getCommandWrapperVarName
     )
 
@@ -83,13 +83,14 @@ commandWrapperVarName name =
 -- specialised version of 'Parser.parseEnv' from "System.Environment.Parser":
 --
 -- @
--- 'parseEnv' = 'parseEnv' 'commandWrapperPrefix'
+-- 'parseEnv' = 'parseEnv' 'defaultCommandWrapperPrefix'
 -- @
 parseEnv
     :: HashMap EnvVarName EnvVarValue
     -> ParseEnv CommandWrapperPrefix a
     -> Either ParseEnvError a
-parseEnv = Parser.parseEnv commandWrapperPrefix
+parseEnv = Parser.parseEnv defaultCommandWrapperPrefix
+    -- TODO: Get rid of hardcoded 'defaultCommandWrapperPrefix' at some point.
 
 -- | Variant of 'parseEnv' that populates the environment by reading process
 -- environment variables.
@@ -99,3 +100,5 @@ parseEnvIO
     -> ParseEnv CommandWrapperPrefix a
     -> io a
 parseEnvIO = parseEnvWithIO parseEnv
+    -- TODO: Get rid of hardcoded 'defaultCommandWrapperPrefix' (in 'parseEnv')
+    -- at some point.

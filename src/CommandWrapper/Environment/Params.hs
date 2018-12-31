@@ -1,10 +1,12 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ExplicitForAll #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RecordWildCards #-}
 -- |
 -- Module:      CommandWrapper.Environment.Params
--- Description: TODO: Module synopsis
+-- Description: Subcommand parameters as defined by Subcommand Protocol.
 -- Copyright:   (c) 2018 Peter Trško
 -- License:     BSD3
 --
@@ -12,11 +14,13 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Subcommand parameters as defined by Subcommand Protocol.  See
+-- @command-wrapper-subcommand-protocol(1)@ manual page for its definition.
 module CommandWrapper.Environment.Params
     (
-    -- * Environment Builder
       Params(..)
+
+    -- * Environment Builder
     , mkEnvVars
     , commandWrapperEnv
 
@@ -57,13 +61,15 @@ import CommandWrapper.Environment.Parser
     , commandWrapperVar
     , commandWrapperVar'
     )
+import CommandWrapper.Environment.AppNames
+    ( AppNames(AppNames, commandWrapperPrefix)
+    )
 import CommandWrapper.Environment.Variable
     ( CommandWrapperPrefix
     , CommandWrapperToolsetVarName(..)
     , CommandWrapperVarName(..)
     , EnvVarName
     , EnvVarValue
-    , commandWrapperPrefix
     , getCommandWrapperToolsetVarName
     , getCommandWrapperVarName
     )
@@ -71,6 +77,11 @@ import CommandWrapper.Options.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput (parse)
 
 
+-- | Subcommand parameters.  They are used to populate environment variables
+-- used in Subcommand Protocol.
+--
+-- See also 'mkEnvVars' and @command-wrapper-subcommand-protocol(1)@ manual
+-- page for more details.
 data Params = Params
     { exePath :: FilePath
     , name :: String
@@ -80,8 +91,13 @@ data Params = Params
     , colour :: ColourOutput
     , version :: Version
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
 
+-- | Build environment as defined by Subcommand Protocol.  This has to be used
+-- when calling a Command Wrapper subcommand.
+--
+-- See also 'Params' and @command-wrapper-subcommand-protocol(1)@ manual page
+-- for more details.
 mkEnvVars :: Params -> EnvBuilder CommandWrapperPrefix
 mkEnvVars Params{..} = EnvBuilder $ \prefix ->
     HashMap.fromList $ fmap (first $ getCommandWrapperVarName prefix)
@@ -94,10 +110,15 @@ mkEnvVars Params{..} = EnvBuilder $ \prefix ->
         , (CommandWrapperVersion, fromString $ showVersion version)
         ]
 
+-- | Evaluate environment builder intended for executing a command.  It removes
+-- environment variables defined in 'CommandWrapperToolsetVarName' to avoid
+-- potential leak of abstraction.  Especially if executed command is another
+-- Command Wrapper instance.
 commandWrapperEnv
-    :: EnvBuilder CommandWrapperPrefix
+    :: AppNames
+    -> EnvBuilder CommandWrapperPrefix
     -> [(String, String)]
-commandWrapperEnv (EnvBuilder mkEnv) =
+commandWrapperEnv AppNames{commandWrapperPrefix} (EnvBuilder mkEnv) =
     fromHashMap . removeToolsetVars $ mkEnv commandWrapperPrefix
   where
     fromHashMap = fmap (bimap Text.unpack Text.unpack) . HashMap.toList
@@ -112,7 +133,11 @@ commandWrapperEnv (EnvBuilder mkEnv) =
                     CommandWrapperInvokeAs
         in HashMap.delete invokeAs
 
--- | Parse Command Wrapper environment\/protocol.
+-- | Parse Command Wrapper environment variables that are part of subcommand
+-- protocol.
+--
+-- See also 'Params' and @command-wrapper-subcommand-protocol(1)@ manual page
+-- for more details.
 askParams :: ParseEnv CommandWrapperPrefix Params
 askParams = Params
     <$> var CommandWrapperExe

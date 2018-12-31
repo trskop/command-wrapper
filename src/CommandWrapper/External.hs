@@ -115,7 +115,8 @@ executeCommand appNames subcommand arguments globalConfig =
                 -- has precedence if the key is in both.  If our environment
                 -- already contains Command Wrapper environment variables we
                 -- need to override them.
-                env = Environment.commandWrapperEnv (extraEnvVars <> currentEnv)
+                envBuilder = extraEnvVars <> currentEnv
+                env = Environment.commandWrapperEnv appNames envBuilder
 
             executeFile executable False arguments (Just env)
                 `onException` dieUnableToExecuteSubcommand

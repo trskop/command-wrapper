@@ -24,7 +24,7 @@ module CommandWrapper.Environment.Variable
     -- 'CommandWrapperVarName' and 'CommandWrapperToolsetVarName'.  It will
     -- make environment unambiguous when it comes to their purpose.
     , CommandWrapperPrefix
-    , commandWrapperPrefix
+    , defaultCommandWrapperPrefix
 
     -- ** Command Wrapper Subcommand Environment Variables
     --
@@ -52,9 +52,9 @@ import System.Environment.Variable (EnvVarName, EnvVarValue)
 
 type CommandWrapperPrefix = Text
 
--- | @'commandWrapperPrefix' = \"COMMAND_WRAPPER\"@
-commandWrapperPrefix :: CommandWrapperPrefix
-commandWrapperPrefix = "COMMAND_WRAPPER"
+-- | @'defaultCommandWrapperPrefix' = \"COMMAND_WRAPPER\"@
+defaultCommandWrapperPrefix :: CommandWrapperPrefix
+defaultCommandWrapperPrefix = "COMMAND_WRAPPER"
 
 -- | Enumeration of variables that are part of Command Wrapper subcommand
 -- environment\/protocol.

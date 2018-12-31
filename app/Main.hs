@@ -51,7 +51,7 @@ import qualified CommandWrapper.Config.Global as Global.Config
     )
 import CommandWrapper.Environment
     ( AppNames(..)
-    , commandWrapperPrefix
+    , defaultCommandWrapperPrefix
     , getAppNames
     , parseEnvIO
     )
@@ -113,7 +113,7 @@ main = do
                 pure id
 
 getAppNames' :: IO AppNames
-getAppNames' = getAppNames commandWrapperPrefix (pure version)
+getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version)
 
 parseOptions :: Global.Config -> IO (Endo (Options.Command Global.Config))
 parseOptions config =

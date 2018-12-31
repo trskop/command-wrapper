@@ -113,6 +113,9 @@ data AppNames = AppNames
     -- @
     -- 'names' = \"yx\" :| [\"command-wrapper\"]
     -- @
+
+    , commandWrapperPrefix :: CommandWrapperPrefix
+    -- ^ Prefix shared by all Command Wrapper environment variables.
     }
   deriving (Generic, Show)
 
@@ -144,7 +147,7 @@ data AppNames = AppNames
 getAppNames
     :: CommandWrapperPrefix
     -- ^ Prefix used by Command Wrapper's environment variables.  Usually
-    -- 'CommandWrapper.Environment.Variable.commandWrapperPrefix'.
+    -- 'CommandWrapper.Environment.Variable.defaultCommandWrapperPrefix'.
     -> IO Version
     -> IO AppNames
 getAppNames prefix getVersion = do
@@ -158,12 +161,16 @@ getAppNames prefix getVersion = do
             appNamesWithExePath usedName exePath version
 
         Interactive ->
+            -- TODO: Command Wrapper is probably not able to function with
+            -- following values.  This needs to be tested and maybe it's better
+            -- to die with honor then to continue.
             AppNames
                 { exePath = ""
                 , exeName = ""
                 , exeVersion = makeVersion []
                 , usedName
                 , names = usedName :| []
+                , commandWrapperPrefix = prefix
                 }
   where
     appNamesWithExePath usedName exePath exeVersion =
@@ -177,6 +184,7 @@ getAppNames prefix getVersion = do
             -- More specific name has priority, i.e. user defined toolset has
             -- preference from generic 'command-wrapper' commands.
             , names = usedName :| if exeName == usedName then [] else [exeName]
+            , commandWrapperPrefix = prefix
             }
 
     getUsedName = do
