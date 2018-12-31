@@ -132,6 +132,10 @@ Some external subcommands are bundled with Command Wrapper itself:
 
 # EXIT STATUS
 
+Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
+[Advanced Bash-Scripting Guide: Appendix E. Exit Codes With Special Meanings
+](http://tldp.org/LDP/abs/html/exitcodes.html) for reference.
+
 `0`
 :   If everything went OK.  Executable `command-wrapper` returns this status
     only when it handled the subcommand internaly.  In case of it invoking an
@@ -161,6 +165,10 @@ Some external subcommands are bundled with Command Wrapper itself:
 :   Unable to find external subcommand or other external command that we
     Command Wrapper was trying to execute.  Possibly a typo in the command
     name, or an issue with `$PATH` environment variable.
+
+`255`
+:   Exit status out of range.  Some subroutine tried to terminate with exit
+    code that is out of 0-255 range.
 
 *OTHER*
 :   Subcommands are free to use other *EXIT STATUS* codes if there is no
@@ -376,8 +384,11 @@ protocol is described in `command-wrapper-subcommand-protocol(7)` manual page.
 command-wrapper-cd(1), command-wrapper-exec(1), command-wrapper-skel(1),
 command-wrapper-subcommand-protocol(7)
 
+* [Dhall configuration language](https://dhall-lang.org)
 * [XDG Base Directory Specification
   ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
+* [Advanced Bash-Scripting Guide: Appendix E. Exit Codes With Special Meanings
+  ](http://tldp.org/LDP/abs/html/exitcodes.html)
 
 
 # BUGS

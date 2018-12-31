@@ -138,6 +138,10 @@ file created from the Dhall configuration file.
 
 # EXIT STATUS
 
+Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
+[Advanced Bash-Scripting Guide: Appendix E. Exit Codes With Special Meanings
+](http://tldp.org/LDP/abs/html/exitcodes.html) for reference.
+
 `0`
 :   If everything went OK.
 
@@ -156,6 +160,10 @@ file created from the Dhall configuration file.
     This can indicate a version mismatch between Command Wrapper installation,
     and subcommand/toolset installation.
 
+`255`
+:   Exit status out of range.  Some subroutine tried to terminate with exit
+    code that is out of 0-255 range.
+
 *OTHER*
 :   Subcommands are free to use other *EXIT STATUS* codes if there is no
     *EXIT STATUS* defined for that purpose.
@@ -165,4 +173,6 @@ file created from the Dhall configuration file.
 
 command-wrapper(1)
 
-[Dhall configuration language](https://dhall-lang.org)
+* [Dhall configuration language](https://dhall-lang.org)
+* [Advanced Bash-Scripting Guide: Appendix E. Exit Codes With Special Meanings
+  ](http://tldp.org/LDP/abs/html/exitcodes.html)
