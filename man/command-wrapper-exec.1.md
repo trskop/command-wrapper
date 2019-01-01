@@ -40,7 +40,9 @@ COMMAND
 
 # EXIT STATUS
 
-TODO
+For documentation of generic *EXIT STATUS* codes see `command-wrapper(1)`
+manual page section *EXIT STATUS*.  Any *EXIT STATUS* codes specific to this
+subcommand will be listed below.
 
 
 # FILES
