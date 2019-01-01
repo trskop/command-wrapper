@@ -112,6 +112,7 @@ runMenuTool SimpleCommand{..} input = do
 
     pure r
 
+-- | TODO: Refactor this in a way that can reuse "CommandWrapper.Prelude".
 getEnvironment :: IO (Environment.Params, Bool)
 getEnvironment = Environment.parseEnvIO (die . show)
     $ (,)

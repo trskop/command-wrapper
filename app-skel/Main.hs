@@ -32,7 +32,6 @@ import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
 import Data.String (fromString)
 import GHC.Generics (Generic)
-import System.Exit (die)
 
 import Data.CaseInsensitive as CI (mk)
 import Data.Text (Text)
@@ -48,7 +47,10 @@ import qualified System.Directory as Directory (executable)
 import System.FilePath (takeDirectory)
 import qualified Turtle
 
-import qualified CommandWrapper.Environment as Environment
+import CommandWrapper.Prelude
+    ( Params(Params, config, name)
+    , subcommandParams
+    )
 
 
 data Language
@@ -76,7 +78,7 @@ data Template = Template
 
 main :: IO ()
 main = do
-    Environment.Params{name = wrapperName, config = configFile} <- parseEnv
+    Params{name = wrapperName, config = configFile} <- subcommandParams
     mkConfig <- Dhall.inputFile Dhall.auto configFile
     Mode
         { subcommandName
@@ -113,9 +115,6 @@ generateSkeleton Template{executable, targetFile, template} = do
         setPermissions targetFile perms{Directory.executable = True}
 
     pure targetFile
-
-parseEnv :: IO Environment.Params
-parseEnv = Environment.parseEnvIO (die . show) Environment.askParams
 
 data Mode = Mode
     { subcommandName :: String

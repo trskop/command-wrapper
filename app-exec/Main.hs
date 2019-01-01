@@ -30,14 +30,12 @@ import Data.Monoid (Endo(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
 import System.Environment (getArgs, getEnvironment)
-import System.Exit (die)
 
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
 import qualified Data.Text as Text (unpack)
 import qualified Data.Text.IO as Text (putStrLn)
 import qualified Dhall (Interpret, auto, inputFile)
-import Data.Verbosity (Verbosity)
 import qualified Options.Applicative as Options
     ( Parser
     , defaultPrefs
@@ -60,9 +58,13 @@ import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Config.Environment as EnvironmentVariable
     ( toTuple
     )
-import qualified CommandWrapper.Environment as Environment
 import qualified CommandWrapper.Options as Options (splitArguments)
-import CommandWrapper.Options.ColourOutput (ColourOutput)
+import CommandWrapper.Prelude
+    ( Params(Params, colour, config, verbosity)
+    , dieWith
+    , stderr
+    , subcommandParams
+    )
 
 
 newtype Config = Config
@@ -74,7 +76,7 @@ instance Dhall.Interpret Config
 
 main :: IO ()
 main = do
-    Environment.Params{config = configFile, verbosity, colour} <- parseEnv
+    params@Params{config = configFile} <- subcommandParams
 
     (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
 
@@ -91,10 +93,10 @@ main = do
         else
             case fromString <$> commandAndItsArguments of
                 [] ->
-                    die "COMMAND: Missing argument."
+                    dieWith params stderr 1 "COMMAND: Missing argument."
 
                 name : arguments ->
-                    getCommand commands name verbosity colour arguments
+                    getCommand params commands name arguments
                     >>= executeCommand
   where
     description = mconcat
@@ -104,19 +106,19 @@ main = do
         ]
 
 getCommand
-    :: [NamedCommand]
+    :: Params
+    -> [NamedCommand]
     -> Text
-    -> Verbosity
-    -> ColourOutput
     -> [Text]
     -> IO Command
-getCommand commands expectedName verbosity colourOutput arguments =
+getCommand params@Params{verbosity, colour} commands expectedName arguments =
     case List.find (NamedCommand.isNamed expectedName) commands of
         Nothing ->
-            die (show expectedName <> ": Unknown COMMAND.")
+            dieWith params stderr 126
+                $ fromString (show expectedName) <> ": Unknown COMMAND."
 
         Just NamedCommand{command} ->
-            pure (command verbosity colourOutput arguments)
+            pure (command verbosity colour arguments)
 
 executeCommand :: Command -> IO ()
 executeCommand Command{..} = do
@@ -139,9 +141,6 @@ executeCommand Command{..} = do
 
         varToTuple =
             bimap Text.unpack Text.unpack . EnvironmentVariable.toTuple
-
-parseEnv :: IO Environment.Params
-parseEnv = Environment.parseEnvIO (die . show) Environment.askParams
 
 parseOptions :: Options.Parser (Bool -> Bool)
 parseOptions =
