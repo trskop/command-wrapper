@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+
 # Library for writing CommandWrapper subcommands in Bash.
 
 # Convert VERBOSITY value into an integer where `silent = 0`, and
@@ -133,6 +135,7 @@ function msgf() {
         local -r cmd="${COMMAND_WRAPPER_NAME:+"${COMMAND_WRAPPER_NAME} "}${COMMAND_WRAPPER_SUBCOMMAND:-${0##*/}}"
         local -r fullFormat="${cmd}: ${messageType}: ${format}"
 
+        # shellcheck disable=SC2059
         printf "${colour}${fullFormat}${colour:+${resetColour}}\n" "$@"
     fi
 }
@@ -265,7 +268,7 @@ function commandWrapperEnvironmentVariables() {
 #   * Function `commandWrapperEnvironmentVariables`.
 #   * Run "help exec" for more details about Bash's exec.
 function exec_() {
-    export -n $(commandWrapperEnvironmentVariables)
+    export -n "$(commandWrapperEnvironmentVariables)"
 
     exec "$@"
 }
