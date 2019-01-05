@@ -17,6 +17,24 @@ extra-source-files:
   - dhall/CommandWrapper/*.dhall
   - dhall/CommandWrapper/Type/*.dhall
 
+default-extensions:
+  - DeriveAnyClass
+  - DeriveFunctor
+  - DeriveGeneric
+  - DerivingStrategies
+  - DuplicateRecordFields
+  - GeneralizedNewtypeDeriving
+  - InstanceSigs
+  - LambdaCase
+  - MultiWayIf
+  - NamedFieldPuns
+  - OverloadedStrings
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - TupleSections
+  - TypeApplications
+
 dependencies:
   - base
 

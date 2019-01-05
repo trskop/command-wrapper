@@ -1,5 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE NamedFieldPuns #-}
 -- |
 -- Module:       Main
 -- Description:  Top-level executable of Command Wrapper.

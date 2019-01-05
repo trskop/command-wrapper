@@ -1,18 +1,16 @@
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE Rank2Types #-}
 -- |
 -- Module:      CommandWrapper.Options.GlobalMode
--- Description: TODO: Module synopsis
--- Copyright:   (c) 2018 Peter Trško
+-- Description: Top-level application mode
+-- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Top-level application mode.  It provides the ability for us to handle help
+-- without interference from option parsing library.
 module CommandWrapper.Options.GlobalMode
     ( GlobalMode(..)
     , runGlobalMode

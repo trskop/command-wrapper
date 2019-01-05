@@ -1,13 +1,8 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE ExplicitForAll #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE RecordWildCards #-}
 -- |
 -- Module:      CommandWrapper.Environment.Params
 -- Description: Subcommand parameters as defined by Subcommand Protocol.
--- Copyright:   (c) 2018 Peter Trško
+-- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com

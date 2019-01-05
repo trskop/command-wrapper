@@ -1,17 +1,15 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Options.Alias
--- Description: TODO: Module synopsis
--- Copyright:   (c) 2018 Peter Trško
+-- Description: Subcommand aliases; their definition and evaluation
+-- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Subcommand aliases; their definition and evaluation.
 module CommandWrapper.Options.Alias
     ( Alias(..)
     , applyAlias
@@ -34,9 +32,8 @@ data Alias = Alias
     , command :: String
     , arguments :: [String]
     }
-  deriving (Generic, Show)
-
-instance Dhall.Interpret Alias
+  deriving stock (Generic, Show)
+  deriving anyclass (Dhall.Interpret)
 
 applyAlias :: [Alias] -> String -> [String] -> (String, [String])
 applyAlias aliases subcommand arguments =

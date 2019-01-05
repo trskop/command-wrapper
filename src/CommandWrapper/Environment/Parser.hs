@@ -1,17 +1,15 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE TupleSections #-}
 -- |
 -- Module:      CommandWrapper.Environment.Parser
--- Description: TODO: Module synopsis
--- Copyright:   (c) 2018 Peter Trško
+-- Description: Parser for environment variables.
+-- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Parser for environment variables.
 module CommandWrapper.Environment.Parser
     (
     -- * Environment Parser

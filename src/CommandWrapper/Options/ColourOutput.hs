@@ -1,17 +1,14 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module:      CommandWrapper.Options.Colour
--- Description: TODO: Module synopsis
--- Copyright:   (c) 2018 Peter Trško
+-- Description: Colourised output preferences
+-- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Colourised output preferences.
 module CommandWrapper.Options.ColourOutput
     ( ColourOutput(..)
     , parse

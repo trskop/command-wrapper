@@ -1,8 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 -- |
 -- Module:      CommandWrapper.Options
 -- Description: Utilities for parsing command line options.

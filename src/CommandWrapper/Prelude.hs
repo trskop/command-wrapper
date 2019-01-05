@@ -1,9 +1,8 @@
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Prelude
 -- Description: Give subcommands everything they need to seamlessly integrate.
--- Copyright:   (c) 2018 Peter Trško
+-- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -47,10 +46,16 @@ module CommandWrapper.Prelude
     )
   where
 
+import Data.Bool ((||))
+import Data.Functor ((<$>))
+import Data.Int (Int)
+import Data.Monoid ((<>))
+import Data.Ord ((<=), (>))
 import Data.String (fromString)
-import System.IO (Handle, stderr, stdout)
+import System.IO (Handle, IO, stderr, stdout)
 import System.Environment (getProgName)
 import System.Exit (ExitCode(ExitFailure), exitWith)
+import Text.Show (show)
 
 import Data.Text (Text)
 import Data.Verbosity (Verbosity(..))
