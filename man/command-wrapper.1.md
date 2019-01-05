@@ -291,6 +291,71 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     reuse common subcommands.
 
 
+# STANDARD DIRECTORY LAYOUT
+
+Location of configuration can be overridden using `$XDG_CONFIG_HOME`
+environment variable.  See *FILES AND DIRECTORIES*, *ENVIRONMENT VARIABLES*, and
+*CONFIGURATION FILE* sections for more details on how to override certain
+locations.
+
+```
+~/
+├── .config/
+│   ├── ...
+│   ├── command-wrapper/
+│   │   ├── default.dhall
+│   │   ├── command-wrapper-${subcommand0}.dhall
+│   │   ├── ...
+│   │   └── command-wrapper-${subcommandN}.dhall
+│   └── ${toolset}/
+│       ├── default.dhall
+│       ├── ${toolset}-${toolsetSubcommand0}.dhall
+│       ├── ...
+│       └── ${toolset}-${toolsetSubcommand0}.dhall
+│
+├── .local/
+│   ├── ...
+│   ├── lib/
+│   │   ├── ...
+│   │   ├── command-wrapper/
+│   │   │   ├── command-wrapper
+│   │   │   ├── command-wrapper-${subcommand0}
+│   │   │   ├── ...
+│   │   │   └── command-wrapper-${subcommandN}
+│   │   └── ${toolset}/
+│   │       ├── ${toolset}-${toolsetSubcommand0}
+│   │       ├── ...
+│   │       └── ${toolset}-${toolsetSubcommandN}
+│   │
+│   └── share/
+│       ├── man/
+│       │   ├── man1
+│       │   │   ├── command-wrapper.1.gz
+│       │   │   ├── command-wrapper-cd.1.gz
+│       │   │   ├── command-wrapper-exec.1.gz
+│       │   │   ├── command-wrapper-skel.1.gz
+│       │   │   └── ...
+│       │   ├── man7/
+│       │   │   ├── command-wrapper-subcommand-protocol.7.gz
+│       │   │   └── ...
+│       │   └── ...
+│       └── ...
+│
+└── bin/
+    ├── ${toolset} --> ../.local/lib/command-wrapper/command-wrapper
+    └── ...
+```
+
+Interestingly `man` is able to find manual pages in `$HOME/.local/share/man` if
+`$HOME/.local/bin` is in `$PATH`.  This was tested only on systems with
+<http://man-db.nongnu.org/> installed.  To test if `$HOME/.local/share/man` is
+used by `man` run `manpath` command, which should print out something like:
+
+```
+/home/user/.local/share/man:/usr/local/man:/usr/local/share/man:/usr/share/man
+```
+
+
 # ENVIRONMENT VARIABLES
 
 `XDG_CONFIG_HOME`
@@ -393,7 +458,7 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 
 # CONFIGURATION FILE
 
-Configuration files are read from these locations:
+Toolset configuration files are read from these locations:
 
 * `${XDG_CONFIG_HOME:-${HOME}/.config}/command-wrapper/default.dhall`
 * `${XDG_CONFIG_HOME:-${HOME}/.config}/${toolset}/default.dhall` -- Read only
@@ -403,6 +468,8 @@ Configuration files are then composed together to form one configuration.  The
 way the fields are composed depends on the individual fields.  Usually they are
 concatenated, or in some case specific toolset configuration overrides
 `command-wrapper` configuration.
+
+Toolset configuration file has following type:
 
 ```
 let CommandWrapper =
@@ -481,6 +548,9 @@ in
 
     } : CommandWrapper.DefaultConfig
 ```
+
+Imports in the above description aren't necessary.  To get fully
+normalised/desugared version just paste it as an input to `dhall` command.
 
 
 # SUBCOMMAND PROTOCOL

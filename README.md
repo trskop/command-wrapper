@@ -6,91 +6,54 @@
 
 ## Description
 
-Some command line applications with a lot of commands try to avoid polluting
-`$PATH` with all of them.  One of the approaches to this is to have one top
-level command exposed and the rest is implemented as subcommands.  Subcommands
-are either internal functions or external commands (standalone executables).
-Example of such application is Git which uses mix of internal subcommands and
-external subcommand.
+Many UNIX/Linux users create their own ad-hoc tools that serve a specific need.
+This need may be specific to their use-case, their job, or just a one-off.
+Core idea of Command Wrapper is to provide a structure for creating such
+scripts as fast as possible, and with a reasonable user experience right away.
 
-In general such toolset top level command has syntax like this:
+Another thing that comes from having a lot of tools is that they are scattered
+all over the place.  Command Wrapper sidesteps this by hiding them from `$PATH`
+by using similar approach as e.g. Git.  Command Wrapper subcommands are either
+internal functions or external commands (standalone executables).  It allows
+you to define what is called *toolset*.  A symbolic link to it's main
+executable, which reuses all the basic machinery of Command Wrapper, but has
+it's own name-space for subcommands.
+
+In general such `TOOLSET_COMMAND` has syntax like this:
 
     TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
 
-This package provides universal top-level command, that can be named as
-required, and API for subcommands.  Subcommands may be written in any language,
-they just need to be executable files that respect the subcommand API.
+Multiple toolsets can easily coexist on the same machine.  It usually makes
+sense to have one for personal tooling, and one for work tooling.
+
+First subcommand that was introduced was `help`, obviously, but the one right
+after that was `skel`.  Which allows you to create a new subcommand skeleton,
+see `command-wrapper-skel(1)` manual page for more details.  Subcommand can be
+written in any language user chooses.  It just needs to be an executable, and
+follow Command Wrapper's [*SUBCOMMAND PROTOCOL*](#subcommand-protocol).
 
 
-## Internal Subcommands
+## Documentation
 
-```
-Usage:
+Documentation is in the form of manual pages written in Markdown and compiled
+using `pandoc`.  See [`man/`](./man/) directory.
 
-    TOOLSET_COMMAND [GLOBAL_OPTIONS] help [HELP_OPTIONS] [SUBCOMMAND]
-
-    TOOLSET_COMMAND [GLOBAL_OPTIONS] config [CONFIG_OPTIONS] [name [value]]
-
-    TOOLSET_COMMAND [GLOBAL_OPTIONS] completion -- WORD
-```
-
-**TODO:**
-
-* Subcommand `config` is not currently implemented.
-* Subcommand `completion` is only partially implemented.
-
-
-## External Subcommands
-
-Following subcommands are included in Command Wrapper installation (this
-package):
+### Basic Usage
 
 ```
-Like `cd` shell command, but allows the user to select a directory from a
-pre-defined list.  Normally it spawns a new shell, or a Tmux window.
-
-Usage:
-
-  TOOLSET_COMMAND [GLOBAL_OPTIONS] cd [-s|--shell|-t|--tmux|-e|--terminal]
-
-Available options:
-
-  -h, --help                Show this help text
-  -s, --shell               Execute a subshell even if in a Tmux session.
-  -t, --tmux                Create a new Tmux window, or fail if not in Tmux
-                            session.
-  -e, --terminal            Open a new terminal emulator window.
+TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
+TOOLSET_COMMAND [GLOBAL_OPTIONS] config [SUBCOMMAND]
+TOOLSET_COMMAND [GLOBAL_OPTIONS] help [SUBCOMMAND]
+TOOLSET_COMMAND [GLOBAL_OPTIONS] {-h|--help}
 ```
 
-```
-Execute a command with predefined environment and command line options.
+More can be found in [`command-wrapper(1)`](man/command-wrapper.1.md) manual
+page, including list of external subcommands installed along with it.
 
-Usage:
+### Subcommand Protocol
 
-  TOOLSET_COMMAND [GLOBAL_OPTIONS] exec COMMAND_NAME [--] [EXTRA_COMMAND_ARGUMENTS]
-
-  TOOLSET_COMMAND [GLOBAL_OPTIONS] exec [-l|--ls]
-
-Available options:
-  -h, --help                Show this help text
-  -l, --ls                  List available commands.
-```
-
-```
-Generate subcommand skeleton for specific command-wrapper environment.
-
-Usage:
-
-  TOOLSET_COMMAND [GLOBAL_OPTIONS] skel SUBCOMMAND [-l LANGUAGE|--language=LANGUAGE]
-
-Available options:
-  -h, --help                         Show this help text
-
-  -l LANGAUGE, --language=LANGUAGE   Choose programming language of subcommand
-                                     skeleton
-
-  SUBCOMMAND                         Name of the new subcommand
-```
+Is documented in [`command-wrapper-subcommand-protocol(7)`
+](man/command-wrapper-subcommand-protocol.7.md) a separate manual page.
 
 
 ## Install
@@ -110,64 +73,6 @@ toolset='INSERT_COMMAND_NAME_HERE'
 ln -s ../.local/lib/command-wrapper/command-wrapper ~/bin/"${toolset}"
 mkdir ~/.config/"${toolset}" ~/.local/lib/"${toolset}"
 ```
-
-
-## Directory Layout
-
-````
-~/
-├── .config/
-│   ├── ...
-│   ├── command-wrapper/
-│   │   ├── default.dhall
-│   │   ├── command-wrapper-${subcommand0}.dhall
-│   │   ├── ...
-│   │   └── command-wrapper-${subcommandN}.dhall
-│   └── ${toolset}/
-│       ├── default.dhall
-│       ├── ${toolset}-${toolsetSubcommand0}.dhall
-│       ├── ...
-│       └── ${toolset}-${toolsetSubcommand0}.dhall
-├── .local/
-│   ├── ...
-│   ├── lib/
-│   │   ├── ...
-│   │   ├── command-wrapper/
-│   │   │   ├── command-wrapper
-│   │   │   ├── command-wrapper-${subcommand0}
-│   │   │   ├── ...
-│   │   │   └── command-wrapper-${subcommandN}
-│   │   └── ${toolset}/
-│   │       ├── ${toolset}-${toolsetSubcommand0}
-│   │       ├── ...
-│   │       └── ${toolset}-${toolsetSubcommandN}
-│   └── share/
-│       ├── man/
-│       │   ├── man1
-│       │   │   ├── command-wrapper.1.gz
-│       │   │   ├── command-wrapper-cd.1.gz
-│       │   │   ├── command-wrapper-exec.1.gz
-│       │   │   ├── command-wrapper-skel.1.gz
-│       │   │   └── ...
-│       │   ├── man7/
-│       │   │   ├── command-wrapper-subcommand-protocol.7.gz
-│       │   │   └── ...
-│       │   └── ...
-│       └── ...
-└── bin/
-    ├── ${toolset} --> ../.local/lib/command-wrapper/command-wrapper
-    └── ...
-````
-
-Interestingly `man` is able to find manual pages in `$HOME/.local/shae/man` if
-`$HOME/.local/bin` is in `$PATH`.  This was tested only on systems with
-<http://man-db.nongnu.org/> installed.  To test if `$HOME/.local/shae/man` is
-used by `man` run `manpath` command, which should print out something like:
-
-```
-/home/peter/.local/share/man:/usr/local/man:/usr/local/share/man:/usr/share/man
-```
-
 
 
 [Haskell.org]:
