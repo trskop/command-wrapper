@@ -7,7 +7,7 @@
 -- |
 -- Module:      CommandWrapper.Internal
 -- Description: Internal commands supported by CommandWrapper
--- Copyright:   (c) 2018 Peter Trško
+-- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -64,7 +64,7 @@ import GHC.Generics (Generic)
 import System.IO (IO, putStr, putStrLn, stderr)
 import Text.Show (Show)
 
-import qualified Mainplate (applySimpleDefaults, noConfigToRead, runAppWith)
+import qualified Mainplate (applySimpleDefaults)
 import qualified Safe (headMay)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
@@ -75,6 +75,7 @@ import qualified CommandWrapper.External as External
     ( executeCommand
     , findSubcommands
     )
+import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message
     ( dieSubcommandNotYetImplemented
     , dieTooManyArguments
@@ -403,19 +404,3 @@ completion appNames options globalConfig =
         List.filter (fmap Char.toLower pat `List.isPrefixOf`) keywords
 
 -- }}} Completion Command -----------------------------------------------------
-
--- {{{ Generic Functions ------------------------------------------------------
-
--- | Simplified version of 'Mainplate.runAppWith' that assumes that we don't
--- need to parse any additional configuration file. This should be true for
--- internal commands.
-runMain
-    :: Functor mode
-    => IO (Endo (mode config))
-    -> (Endo (mode config) -> IO (mode config))
-    -> (mode config -> IO ())
-    -> IO ()
-runMain parseOptions =
-    Mainplate.runAppWith parseOptions (pure . Mainplate.noConfigToRead)
-
--- }}} ------------------------------------------------------------------------
