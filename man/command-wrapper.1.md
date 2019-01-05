@@ -100,7 +100,7 @@ this manual.
 :   Change working directory before doing anything, especially executing a
     subcommand.  **TODO: Not yet implemented!**
 
--h, --help
+-h, \--help
 :   Print toolset (*TOOLSET_COMMAND*) help information and exit.  Using `help`
     subcommand without arguments gives the same result.
 
@@ -182,6 +182,8 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     that can be overriden by `GLOBAL_OPTIONS`, additional help messages, and
     alias definitions.
 
+    Configuration file itself is described in the *CONFIGURATION FILE* section.
+
     See also `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better
     understand how the location of the configuration file is determined.
 
@@ -191,6 +193,8 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     `command-wrapper` one.  Configuration for a specific *toolset* is
     `.../command-wrapper/default.dhall` unless it is overriden in
     `.../${toolset}/default.dhall`.
+
+    Configuration file itself is described in the *CONFIGURATION FILE* section.
 
     See also `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better
     understand how the location of the configuration file is determined.
@@ -324,7 +328,7 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     > that, when present (regardless of its value), prevents the addition of
     > ANSI color.
 
-    Command Wrapper treats @NO_COLOR@ as a default value.  It can be overridden
+    Command Wrapper treats `NO_COLOR` as a default value.  It can be overridden
     by `colourOutput` property in *toolset* configuration file (`default.dhall`)
     and/or using command line option(s).
 
@@ -370,6 +374,98 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 
     See also `command-wrapper-subcommand-protocol(7)` for more details on how
     subcommands are invoked.
+
+
+# CONFIGURATION FILE
+
+Configuration files are read from these locations:
+
+* `${XDG_CONFIG_HOME:-${HOME}/.config}/command-wrapper/default.dhall`
+* `${XDG_CONFIG_HOME:-${HOME}/.config}/${toolset}/default.dhall` -- Read only
+  if invoked under different name than `command-wrapper`.
+
+Configuration files are then composed together to form one configuration.  The
+way the fields are composed depends on the individual fields.  Usually they are
+concatenated, or in some case specific toolset configuration overrides
+`command-wrapper` configuration.
+
+```
+let CommandWrapper =
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Type/package.dhall
+      -- Note that adding a hash will allow Dhall to cache the import.
+      -- See also `dhall hash --help`.
+
+let commandWrapper =
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      -- Note that adding a hash will allow Dhall to cache the import.
+      -- See also `dhall hash --help`.
+
+in
+    -- Subcommand aliases.  These can be used to invoke subcommand in
+    -- the form:
+    --
+    --     TOOLSET [GLOBAL_OPTIONS] ALIAS [EXTRA_ARGUMENTS]
+    --
+    -- Which is then translated into:
+    --
+    --     TOOLSET [GLOBAL_OPTIONS] COMMAND [ARGUMENTS] [EXTRA_ARGUMENTS]
+    --
+    -- In addition to the above `help` also understands aliases:
+    --
+    --     TOOLSET [GLOBAL_OPTIONS] help ALIAS
+    --
+    -- Is the same as:
+    --
+    --     TOOLSET [GLOBAL_OPTIONS] help COMMAND
+    { aliases
+        : List
+            -- Name of the alias, i.e. name under which we can execute
+            -- this subcommand.
+            { alias : Text
+
+            -- Command Wrapper subcommand to be executed under the
+            -- name specified in `alias` field.
+            , command : Text
+
+            -- Arguments premended to the argument list when invoked.
+            , arguments : List Text
+            }
+
+    -- Path where to search for subcommands.  Definition from
+    --
+    --     `${XDG_CONFIG_HOME:-${HOME}/.config}/command-wrapper/default.dhall`
+    --
+    -- are concatenated with those from
+    --
+    --     `${XDG_CONFIG_HOME:-${HOME}/.config}/${toolset}/default.dhall`
+    , searchPath : List Text
+
+    -- Allows user to override default command wrapper behaviour when
+    -- it comes colourised output.  By default Command Wrapper uses
+    -- the value:
+    --
+    --     CommandWrapper.ColourOutput.Auto {=}
+    --
+    -- Unless `NO_COLOR` environment variable is set, in which case
+    -- following is used:
+    --
+    --     CommandWrapper.ColourOutput.Never {=}
+    --
+    -- See also `--colour` option and `NO_COLOR` environment variable
+    -- descriptions.
+    , colourOutput : Optional CommandWrapper.ColourOutput
+
+    -- Extra text to be displayed when `TOOLSET help` or `TOOLSET --help`
+    -- is invoked.  It is useful for providing important examples, and
+    -- references to additional documentation.
+    , extraHelpMessage : Optional Text
+
+    -- Default verbosity to be used when command is invoked.  See
+    -- `--verbosity` option for more details.
+    , verbosity : CommandWrapper.Verbosity
+
+    } : CommandWrapper.DefaultConfig
+```
 
 
 # SUBCOMMAND PROTOCOL
