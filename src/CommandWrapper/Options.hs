@@ -107,10 +107,10 @@ parseCommandWrapper appNames parserPrefs parserInfo getAliases =
     runGlobalMode' :: GlobalMode (Endo config) -> Endo (Command config)
     runGlobalMode' = runGlobalMode $ \(Endo f) -> Endo $ \case
         Mainplate.Internal _oldCmd config ->
-            Mainplate.Internal (Internal.HelpCmommand []) (f config)
+            Mainplate.Internal (Internal.HelpCommand []) (f config)
 
         Mainplate.External _oldCmd config ->
-            Mainplate.Internal (Internal.HelpCmommand []) (f config)
+            Mainplate.Internal (Internal.HelpCommand []) (f config)
 
 parse
     :: forall globalMode mode config

@@ -75,7 +75,7 @@ defaults
     -> Endo (Options.Command Global.Config)
     -> IO (Options.Command Global.Config)
 defaults config (Endo f) =
-    pure . f $ Mainplate.Internal (Internal.HelpCmommand []) config
+    pure . f $ Mainplate.Internal (Internal.HelpCommand []) config
 
 main :: IO ()
 main = do
