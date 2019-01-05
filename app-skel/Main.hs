@@ -180,3 +180,9 @@ startEditor _ = pure () -- TODO: Implement
 --
 -- - When `TOOLSET skel SUBCOMMAND --language=dhall` is invoked we could try to
 --   find a specific skeleton for that subcommand.
+--
+-- - Maybe switch syntax of config skeletons to:
+--
+--     ```
+--     TOOLSET skel {--config|-c} {--toolset|SUBCOMMAND}
+--     ```

@@ -98,7 +98,7 @@ mainHelpMsg AppNames{usedName} = unlines
     , "Global options:"
     , ""
     , "  -v"
-    ,      "Increment verbosity by one level. Can be used multiple times."
+    , "     Increment verbosity by one level. Can be used multiple times."
     , ""
 
     , "  --verbosity=VERBOSITY"

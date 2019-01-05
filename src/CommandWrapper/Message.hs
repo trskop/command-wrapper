@@ -14,7 +14,10 @@
 module CommandWrapper.Message
     ( errorMsg
     , warningMsg
+    , noticeMsg
     , debugMsg
+
+    , withTerminal
 
     -- * Print Error and Die
     , dieFailedToParseEnvironment
@@ -23,20 +26,43 @@ module CommandWrapper.Message
     , dieTooManyArguments
     , dieUnableToExecuteSubcommand
     , dieUnableToFindSubcommandExecutable
+
+    -- * Pretty
+    , MessageType(..)
+
+    , Error(..)
+    , errorDoc
+
+    , Warning(..)
+    , warningDoc
+
+    , Notice(..)
+    , noticeDoc
+
+    , Info(..)
+    , infoDoc
+
+    , Debug(..)
+    , debugDoc
+
+    , message
+    , defaultLayoutOptions
     )
   where
 
 import Control.Exception (bracket_)
 import Control.Monad (when)
+import Data.Coerce (Coercible, coerce)
 import Data.Maybe (fromMaybe)
-import Data.String (fromString)
+import Data.Proxy (Proxy(Proxy))
 import System.Exit (ExitCode(ExitFailure), exitWith)
-import System.IO (Handle, hPutStr, hPutStrLn)
+import System.IO (Handle, IOMode(WriteMode), hPutStr, hPutStrLn, withFile)
 
 import Data.Text (Text)
-import qualified Data.Text as Text (null)
-import qualified Data.Text.IO as Text (hPutStrLn)
-import Data.Verbosity (Verbosity(Annoying, Silent))
+import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
+import Data.Verbosity (Verbosity(Annoying, Normal, Silent, Verbose))
 import qualified Options.Applicative.Help as Options
     ( Chunk(..)
     , ParserHelp(ParserHelp, helpError)
@@ -47,14 +73,14 @@ import qualified Options.Applicative.Help as Options
     , text
     )
 import qualified System.Console.ANSI as Terminal
-    ( Color(Red, White, Yellow)
-    , ColorIntensity(Dull, Vivid)
+    ( Color(Red)
+    , ColorIntensity(Vivid)
     , ConsoleLayer(Foreground)
     , SGR(Reset, SetColor)
     , setSGRCode
     )
 import qualified System.Console.Terminal.Size as Terminal
-    ( Window(width)
+    ( Window(Window, width)
     , hSize
     )
 
@@ -62,82 +88,61 @@ import CommandWrapper.Environment.Parser (ParseEnvError)
 import CommandWrapper.Options.ColourOutput (ColourOutput(..), shouldUseColours)
 
 
--- TODO: Generalise the pattern in 'errorMsg' and 'warningMsg' functions.
-
 errorMsg
-    :: Text
+    :: (forall ann. Pretty.Doc ann)
     -- ^ Command that is being executed.  It should either be @TOOLSET@ or
     -- @TOOLSET SUBCOMMAND@.
     -> Verbosity
     -> ColourOutput
     -> Handle
-    -> Text
+    -> (forall ann. Pretty.Doc ann)
     -- ^ Error message.
     -> IO ()
 errorMsg command verbosity colourOutput h msg =
-    when (verbosity > Silent) $ do
-        useColours <- shouldUseColours h colourOutput
-        withColour h useColours vividRed $ \h' ->
-            Text.hPutStrLn h' (formatCommand command <> "Error: " <> msg)
-  where
-    vividRed = Terminal.SetColor
-        Terminal.Foreground
-        Terminal.Vivid
-        Terminal.Red
+    message defaultLayoutOptions verbosity colourOutput h
+        $ errorDoc (command <> Pretty.colon <+> "Error:" <+> msg)
 
 warningMsg
-    :: Text
+    :: (forall ann. Pretty.Doc ann)
     -- ^ Command that is being executed.  It should either be @TOOLSET@ or
     -- @TOOLSET SUBCOMMAND@.
     -> Verbosity
     -> ColourOutput
     -> Handle
-    -> Text
+    -> (forall ann. Pretty.Doc ann)
     -- ^ Warning message.
     -> IO ()
 warningMsg command verbosity colourOutput h msg =
-    when (verbosity > Silent) $ do
-        useColours <- shouldUseColours h colourOutput
-        withColour h useColours vividYellow $ \h' ->
-            Text.hPutStrLn h' (formatCommand command <> "Warning: " <> msg)
-  where
-    vividYellow = Terminal.SetColor
-        Terminal.Foreground
-        Terminal.Vivid
-        Terminal.Yellow
+    message defaultLayoutOptions verbosity colourOutput h
+        $ warningDoc (command <> Pretty.colon <+> "Warning:" <+> msg)
 
-debugMsg
-    :: Text
+noticeMsg
+    :: (forall ann. Pretty.Doc ann)
     -- ^ Command that is being executed.  It should either be @TOOLSET@ or
     -- @TOOLSET SUBCOMMAND@.
     -> Verbosity
     -> ColourOutput
     -> Handle
-    -> Text
+    -> (forall ann. Pretty.Doc ann)
+    -- ^ Debug message.
+    -> IO ()
+noticeMsg command verbosity colourOutput h msg =
+    message defaultLayoutOptions verbosity colourOutput h
+        $ noticeDoc (command <> Pretty.colon <+> msg)
+
+debugMsg
+    :: (forall ann. Pretty.Doc ann)
+    -- ^ Command that is being executed.  It should either be @TOOLSET@ or
+    -- @TOOLSET SUBCOMMAND@.
+    -> Verbosity
+    -> ColourOutput
+    -> Handle
+    -> (forall ann. Pretty.Doc ann)
     -- ^ Debug message.
     -> IO ()
 debugMsg command verbosity colourOutput h msg =
-    when (verbosity >= Annoying) $ do
-        useColours <- shouldUseColours h colourOutput
-        withColour h useColours dullWhite $ \h' ->
-            Text.hPutStrLn h' (formatCommand command <> "Debug: " <> msg)
-  where
-    dullWhite = Terminal.SetColor
-        Terminal.Foreground
-        Terminal.Dull
-        Terminal.White
-
-withColour :: Handle -> Bool -> Terminal.SGR -> (Handle -> IO ()) -> IO ()
-withColour h useColours colour action =
-    if useColours
-        then hSetSgrCode h colour `bracket_` hReset h $ action h
-        else action h
-
-formatCommand :: Text -> Text
-formatCommand command =
-    if Text.null command
-        then ""
-        else command <> ": "
+    message defaultLayoutOptions verbosity colourOutput h
+        $ debugDoc (command <> Pretty.colon <+> "Debug:" <+> msg)
 
 hSetSgrCode :: Handle -> Terminal.SGR -> IO ()
 hSetSgrCode h code = hPutStr h $ Terminal.setSGRCode [code]
@@ -148,7 +153,7 @@ hReset h = hSetSgrCode h Terminal.Reset
 -- | Die with exit code @127@ which was choosen based on
 -- <http://www.tldp.org/LDP/abs/html/exitcodes.html>
 dieUnableToFindSubcommandExecutable
-    :: Text
+    :: (forall ann. Pretty.Doc ann)
     -- ^ Name under which Command Wrapper was executed.
     -> Verbosity
     -> ColourOutput
@@ -156,18 +161,18 @@ dieUnableToFindSubcommandExecutable
     -> Text
     -- ^ Subcommand name for which we tried to find an executable.
     -> IO a
-dieUnableToFindSubcommandExecutable name verbosity colourOutput h
-  subcommand = do
-    errorMsg name verbosity colourOutput h
-        ( subcommand
-        <> ": Unable to find suitable executable for this subcommand"
+dieUnableToFindSubcommandExecutable name verbosity colour h subcommand = do
+    errorMsg name verbosity colour h
+        ( pretty subcommand
+        <> Pretty.colon
+        <+> "Unable to find suitable executable for this subcommand"
         )
     exitWith (ExitFailure 127)
 
 -- | Die with exit code @126@ which was choosen based on
 -- <http://www.tldp.org/LDP/abs/html/exitcodes.html>
 dieUnableToExecuteSubcommand
-    :: Text
+    :: (forall ann. Pretty.Doc ann)
     -- ^ Name under which Command Wrapper was executed.
     -> Verbosity
     -> ColourOutput
@@ -177,47 +182,48 @@ dieUnableToExecuteSubcommand
     -> Text
     -- ^ Executable that we tried to execute.
     -> IO a
-dieUnableToExecuteSubcommand name verbosity colourOutput h subcommand
-  executable = do
-    errorMsg name verbosity colourOutput h
-        ( fromString (show subcommand)
-        <> ": Unable to execute external subcommand executable: '"
-        <> fromString (show executable) <> "'"
+dieUnableToExecuteSubcommand name verbosity colour h subcommand executable = do
+    errorMsg name verbosity colour h
+        ( Pretty.dquotes (pretty subcommand) <> Pretty.colon
+        <+> "Unable to execute external subcommand executable:"
+        <+> Pretty.dquotes (pretty executable)
         )
     exitWith (ExitFailure 126)
 
 dieTooManyArguments
-    :: Text
+    :: (forall ann. Pretty.Doc ann)
     -- ^ Name under which Command Wrapper was executed.
-    -> Text
+    -> (forall ann. Pretty.Doc ann)
     -- ^ Subcommand name.
     -> Verbosity
     -> ColourOutput
     -> Handle
-    -> Text
+    -> (forall ann. Pretty.Doc ann)
     -- ^ Argument responsible for the error.
     -> IO a
 dieTooManyArguments name subcommand verbosity colourOutput h argument = do
-    errorMsg (name <> " " <> subcommand) verbosity colourOutput h
-        $ fromString (show argument) <> ": Too many arguments."
+    errorMsg (name <+> subcommand) verbosity colourOutput h
+        $ Pretty.dquotes argument <> Pretty.colon <+> "Too many arguments."
     exitWith (ExitFailure 1)
 
 dieSubcommandNotYetImplemented
-    :: Text
+    :: (forall ann. Pretty.Doc ann)
     -- ^ Name under which Command Wrapper was executed.
     -> Verbosity
     -> ColourOutput
     -> Handle
-    -> Text
+    -> (forall ann. Pretty.Doc ann)
     -- ^ Name of the subcommand that is not implemented at the moment.
     -> IO a
 dieSubcommandNotYetImplemented name verbosity colourOutput h subcommand = do
     errorMsg name verbosity colourOutput h
-        $ fromString (show subcommand) <> ": Subcommand not yet implemented."
+        ( Pretty.dquotes subcommand <> Pretty.colon
+        <+> "Subcommand not yet implemented."
+        )
     exitWith (ExitFailure 126)
 
 dieFailedToParseEnvironment
-    :: Text
+    :: (forall ann. Pretty.Doc ann)
     -- ^ Name under which Command Wrapper was executed.
     -> Verbosity
     -> ColourOutput
@@ -226,7 +232,7 @@ dieFailedToParseEnvironment
     -> IO a
 dieFailedToParseEnvironment name verbosity colourOutput h err = do
     errorMsg name verbosity colourOutput h
-        $ "Failed to parse environment: " <> fromString (show err)
+        $ "Failed to parse environment:" <+> Pretty.viaShow err
     exitWith (ExitFailure 1)
 
 dieFailedToParseOptions
@@ -241,7 +247,7 @@ dieFailedToParseOptions name verbosity colour h
     -- TODO: Duplicity.
     when (verbosity > Silent) $ do
         useColours <- shouldUseColours h colour
-        withColour h useColours vividRed $ \h' -> do
+        withColour useColours vividRed $ \h' -> do
             width <- maybe 80 Terminal.width <$> Terminal.hSize h'
             hPutStrLn h' (renderError width)
 
@@ -260,8 +266,117 @@ dieFailedToParseOptions name verbosity colour h
     fromChunk (Options.Chunk possiblyDoc) =
         fromMaybe "Parsing command line arguments failed." possiblyDoc
 
-    -- TODO: Duplicity.
+    withColour :: Bool -> Terminal.SGR -> (Handle -> IO ()) -> IO ()
+    withColour useColours colourSgr action =
+        if useColours
+            then hSetSgrCode h colourSgr `bracket_` hReset h $ action h
+            else action h
+
     vividRed = Terminal.SetColor
         Terminal.Foreground
         Terminal.Vivid
         Terminal.Red
+
+-- | Provide access to controlling terminal.  This is useful in cases when
+-- @stdout@/@stderr@ is redirected or used for something else then
+-- communicating with the user.
+--
+-- TODO: Move to "CommandWrapper.Prelude" module.
+withTerminal :: (Handle -> IO a) -> IO a
+withTerminal = withFile "/dev/tty" WriteMode
+
+-- {{{ Pretty Messages --------------------------------------------------------
+
+class MessageType ann where
+    -- | Minimal 'Verbosity' level when the message should be printed.
+    messageMinVerbosity :: proxy ann -> Verbosity
+
+    messageStyle :: ann -> Pretty.AnsiStyle
+
+    default messageStyle
+        :: Coercible ann Pretty.AnsiStyle
+        => ann
+        -> Pretty.AnsiStyle
+    messageStyle = coerce
+
+newtype (Error ann) = Error ann
+
+instance MessageType (Error Pretty.AnsiStyle) where
+    messageMinVerbosity _ = Normal
+
+errorDoc :: (forall ann. Pretty.Doc ann) -> Pretty.Doc (Error Pretty.AnsiStyle)
+errorDoc = Pretty.annotate $ Error (Pretty.color Pretty.Red)
+
+newtype (Warning ann) = Warning ann
+
+instance MessageType (Warning Pretty.AnsiStyle) where
+    messageMinVerbosity _ = Normal
+
+warningDoc
+    :: (forall ann. Pretty.Doc ann)
+    -> Pretty.Doc (Warning Pretty.AnsiStyle)
+warningDoc = Pretty.annotate $ Warning (Pretty.color Pretty.Yellow)
+
+newtype (Notice ann) = Notice ann
+
+noticeDoc
+    :: (forall ann. Pretty.Doc ann)
+    -> Pretty.Doc (Notice Pretty.AnsiStyle)
+noticeDoc = Pretty.annotate $ Notice (Pretty.color Pretty.White)
+
+instance MessageType (Notice Pretty.AnsiStyle) where
+    messageMinVerbosity _ = Normal
+
+newtype (Info ann) = Info ann
+
+instance MessageType (Info Pretty.AnsiStyle) where
+    messageMinVerbosity _ = Verbose
+
+infoDoc :: (forall ann. Pretty.Doc ann) -> Pretty.Doc (Info Pretty.AnsiStyle)
+infoDoc = Pretty.annotate $ Info (Pretty.color Pretty.White)
+
+newtype (Debug ann) = Debug ann
+
+instance MessageType (Debug Pretty.AnsiStyle) where
+    messageMinVerbosity _ = Annoying
+
+debugDoc :: (forall ann. Pretty.Doc ann) -> Pretty.Doc (Debug Pretty.AnsiStyle)
+debugDoc = Pretty.annotate $ Debug (Pretty.color Pretty.White)
+
+-- | Print a message when in appropriate 'Verbosity' level.  Colours are used
+-- based on user preferences, and layout is based on terminal size, if using
+-- terminal.
+message
+    :: forall ann
+    .  MessageType ann
+    => (Maybe (Terminal.Window Int) -> Pretty.LayoutOptions)
+    -> Verbosity
+    -> ColourOutput
+    -> Handle
+    -> Pretty.Doc ann
+    -> IO ()
+message mkLayoutOptions verbosity colourOutput h doc =
+    when (verbosity >= messageMinVerbosity (Proxy @ann)) $ do
+        useColours <- shouldUseColours h colourOutput
+        layoutOptions <- mkLayoutOptions <$> Terminal.hSize h
+        putDoc useColours layoutOptions doc
+  where
+    putDoc :: Bool -> Pretty.LayoutOptions -> Pretty.Doc ann -> IO ()
+    putDoc useColours opts =
+        Pretty.renderIO h . reAnnotate useColours . Pretty.layoutPretty opts
+
+    reAnnotate
+        :: Bool
+        -> Pretty.SimpleDocStream ann
+        -> Pretty.SimpleDocStream Pretty.AnsiStyle
+    reAnnotate useColours =
+        if useColours
+            then Pretty.reAnnotateS messageStyle
+            else Pretty.unAnnotateS
+
+defaultLayoutOptions :: Maybe (Terminal.Window Int) -> Pretty.LayoutOptions
+defaultLayoutOptions = Pretty.LayoutOptions . \case
+    Nothing -> Pretty.Unbounded
+    Just Terminal.Window{width} -> Pretty.AvailablePerLine width 1.0
+
+-- }}} Pretty Messages --------------------------------------------------------

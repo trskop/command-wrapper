@@ -43,26 +43,30 @@ module CommandWrapper.Prelude
     -- | Some of these are just reexported from "System.IO" from `base` package.
     , stderr
     , stdout
+    , Message.withTerminal
     )
   where
 
 import Data.Bool ((||))
-import Data.Functor ((<$>))
 import Data.Int (Int)
 import Data.Monoid ((<>))
 import Data.Ord ((<=), (>))
-import Data.String (fromString)
 import System.IO (Handle, IO, stderr, stdout)
 import System.Environment (getProgName)
 import System.Exit (ExitCode(ExitFailure), exitWith)
-import Text.Show (show)
 
 import Data.Text (Text)
+import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty
 import Data.Verbosity (Verbosity(..))
 
 import CommandWrapper.Environment.Params(Params(..), askParams)
 import CommandWrapper.Environment.Parser(parseEnvIO)
-import qualified CommandWrapper.Message as Message (errorMsg)
+import qualified CommandWrapper.Message as Message
+    ( errorMsg
+    , warningMsg
+    , withTerminal
+    )
 import CommandWrapper.Options.ColourOutput (ColourOutput(..), shouldUseColours)
 
 
@@ -74,8 +78,8 @@ subcommandParams = parseEnvIO protocolError askParams
     protocolError err = do
         -- This is not the best thing we can use, but it's close enough to the
         -- `TOOLSET SUBCOMMAND@ format that it could be useful to the users.
-        name <- fromString <$> getProgName
-        Message.errorMsg name Normal Auto stderr (message err)
+        name <- getProgName
+        Message.errorMsg (pretty name) Normal Auto stderr (message err)
 
         -- See `command-wrapper-subcommand-protocol(1)` manual page section
         -- /EXIT STATUS/.
@@ -83,20 +87,20 @@ subcommandParams = parseEnvIO protocolError askParams
 
     message err =
         "This command must be executed inside Command Wrapper environment:"
-        <> " Failed to parse environment variables: "
-        <> fromString (show err)
-        <> ": See command-wrapper-subcommand-protocol(1) manual page for more"
-        <> " details."
+        <+> "Failed to parse environment variables:"
+        <+> Pretty.viaShow err <> Pretty.colon
+        <+> "See command-wrapper-subcommand-protocol(1) manual page for more"
+        <+> "details."
 
 errorMsg :: Params -> Handle -> Text -> IO ()
-errorMsg Params{colour, name, subcommand, verbosity} =
-    let cmd = fromString name <> " " <> fromString subcommand
-    in Message.errorMsg cmd verbosity colour
+errorMsg Params{colour, name, subcommand, verbosity} h msg =
+    let cmd = name <> " " <> subcommand
+    in Message.errorMsg (pretty cmd) verbosity colour h (pretty msg)
 
 warningMsg :: Params -> Handle -> Text -> IO ()
-warningMsg Params{colour, name, subcommand, verbosity} =
-    let cmd = fromString name <> " " <> fromString subcommand
-    in Message.errorMsg cmd verbosity colour
+warningMsg Params{colour, name, subcommand, verbosity} h msg =
+    let cmd = name <> " " <> subcommand
+    in Message.warningMsg (pretty cmd) verbosity colour h (pretty msg)
 
 dieWith
     :: Params

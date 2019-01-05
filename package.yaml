@@ -18,11 +18,14 @@ extra-source-files:
   - dhall/CommandWrapper/Type/*.dhall
 
 default-extensions:
+  - DefaultSignatures
   - DeriveAnyClass
   - DeriveFunctor
   - DeriveGeneric
   - DerivingStrategies
   - DuplicateRecordFields
+  - FlexibleContexts
+  - FlexibleInstances
   - GeneralizedNewtypeDeriving
   - InstanceSigs
   - LambdaCase
@@ -54,6 +57,8 @@ dependencies:
   - mainplate
   - mtl
   - optparse-applicative
+  - prettyprinter
+  - prettyprinter-ansi-terminal
   - safe
   - terminal-size
   - terminfo
