@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 30th December 2018
+% 5th January 2019
 
 
 # NAME
@@ -103,6 +103,21 @@ this manual.
 -h, \--help
 :   Print toolset (*TOOLSET_COMMAND*) help information and exit.  Using `help`
     subcommand without arguments gives the same result.
+
+*SUBCOMMAND*
+:   Name of a Command Wrapper or toolset subcommand.  See *SUBCOMMANDS* section
+    for list of internal subcommands and some external subcommands that are
+    provided as part of standard Command Wrapper installation.
+
+*SUBCOMMAND\_ARGUMENTS*
+:   Arguments passed to the *SUBCOMMAND* as they are.  Their meaning depends
+    on what specific *SUBCOMMAND* accepts as arguments.  See documentation of a
+    specific *SUBCOMMAND*, some of them are listed in *SUBCOMMANDS* section.
+    Short help message is provided when following is executed:
+
+    ```
+    TOOLSET_COMMAND help SUBCOMMAND
+    ```
 
 
 # SUBCOMMANDS
