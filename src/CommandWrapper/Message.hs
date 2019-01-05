@@ -1,8 +1,9 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module:      CommandWrapper.Message
 -- Description: Helper functions for printing messages.
--- Copyright:   (c) 2018 Peter Trško
+-- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -17,30 +18,45 @@ module CommandWrapper.Message
     , debugMsg
 
     -- * Print Error and Die
-    , dieUnableToFindSubcommandExecutable
-    , dieUnableToExecuteSubcommand
+    , dieFailedToParseEnvironment
+    , dieFailedToParseOptions
     , dieSubcommandNotYetImplemented
     , dieTooManyArguments
-    , dieFailedToParseEnvironment
+    , dieUnableToExecuteSubcommand
+    , dieUnableToFindSubcommandExecutable
     )
   where
 
 import Control.Exception (bracket_)
 import Control.Monad (when)
+import Data.Maybe (fromMaybe)
 import Data.String (fromString)
 import System.Exit (ExitCode(ExitFailure), exitWith)
-import System.IO (Handle, hPutStr)
+import System.IO (Handle, hPutStr, hPutStrLn)
 
 import Data.Text (Text)
 import qualified Data.Text as Text (null)
 import qualified Data.Text.IO as Text (hPutStrLn)
 import Data.Verbosity (Verbosity(Annoying, Silent))
-import qualified System.Console.ANSI as AnsiTerminal
+import qualified Options.Applicative.Help as Options
+    ( Chunk(..)
+    , ParserHelp(ParserHelp, helpError)
+    , colon
+    , displayS
+    , hsep
+    , renderPretty
+    , text
+    )
+import qualified System.Console.ANSI as Terminal
     ( Color(Red, White, Yellow)
     , ColorIntensity(Dull, Vivid)
     , ConsoleLayer(Foreground)
     , SGR(Reset, SetColor)
     , setSGRCode
+    )
+import qualified System.Console.Terminal.Size as Terminal
+    ( Window(width)
+    , hSize
     )
 
 import CommandWrapper.Environment.Parser (ParseEnvError)
@@ -65,10 +81,10 @@ errorMsg command verbosity colourOutput h msg =
         withColour h useColours vividRed $ \h' ->
             Text.hPutStrLn h' (formatCommand command <> "Error: " <> msg)
   where
-    vividRed = AnsiTerminal.SetColor
-        AnsiTerminal.Foreground
-        AnsiTerminal.Vivid
-        AnsiTerminal.Red
+    vividRed = Terminal.SetColor
+        Terminal.Foreground
+        Terminal.Vivid
+        Terminal.Red
 
 warningMsg
     :: Text
@@ -86,10 +102,10 @@ warningMsg command verbosity colourOutput h msg =
         withColour h useColours vividYellow $ \h' ->
             Text.hPutStrLn h' (formatCommand command <> "Warning: " <> msg)
   where
-    vividYellow = AnsiTerminal.SetColor
-        AnsiTerminal.Foreground
-        AnsiTerminal.Vivid
-        AnsiTerminal.Yellow
+    vividYellow = Terminal.SetColor
+        Terminal.Foreground
+        Terminal.Vivid
+        Terminal.Yellow
 
 debugMsg
     :: Text
@@ -107,12 +123,12 @@ debugMsg command verbosity colourOutput h msg =
         withColour h useColours dullWhite $ \h' ->
             Text.hPutStrLn h' (formatCommand command <> "Debug: " <> msg)
   where
-    dullWhite = AnsiTerminal.SetColor
-        AnsiTerminal.Foreground
-        AnsiTerminal.Dull
-        AnsiTerminal.White
+    dullWhite = Terminal.SetColor
+        Terminal.Foreground
+        Terminal.Dull
+        Terminal.White
 
-withColour :: Handle -> Bool -> AnsiTerminal.SGR -> (Handle -> IO ()) -> IO ()
+withColour :: Handle -> Bool -> Terminal.SGR -> (Handle -> IO ()) -> IO ()
 withColour h useColours colour action =
     if useColours
         then hSetSgrCode h colour `bracket_` hReset h $ action h
@@ -124,11 +140,11 @@ formatCommand command =
         then ""
         else command <> ": "
 
-hSetSgrCode :: Handle -> AnsiTerminal.SGR -> IO ()
-hSetSgrCode h code = hPutStr h $ AnsiTerminal.setSGRCode [code]
+hSetSgrCode :: Handle -> Terminal.SGR -> IO ()
+hSetSgrCode h code = hPutStr h $ Terminal.setSGRCode [code]
 
 hReset :: Handle -> IO ()
-hReset h = hSetSgrCode h AnsiTerminal.Reset
+hReset h = hSetSgrCode h Terminal.Reset
 
 -- | Die with exit code @127@ which was choosen based on
 -- <http://www.tldp.org/LDP/abs/html/exitcodes.html>
@@ -213,3 +229,40 @@ dieFailedToParseEnvironment name verbosity colourOutput h err = do
     errorMsg name verbosity colourOutput h
         $ "Failed to parse environment: " <> fromString (show err)
     exitWith (ExitFailure 1)
+
+dieFailedToParseOptions
+    :: String
+    -> Verbosity
+    -> ColourOutput
+    -> Handle
+    -> Options.ParserHelp
+    -> IO a
+dieFailedToParseOptions name verbosity colour h
+  Options.ParserHelp{Options.helpError} = do
+    -- TODO: Duplicity.
+    when (verbosity > Silent) $ do
+        useColours <- shouldUseColours h colour
+        withColour h useColours vividRed $ \h' -> do
+            width <- maybe 80 Terminal.width <$> Terminal.hSize h'
+            hPutStrLn h' (renderError width)
+
+    exitWith (ExitFailure 1)
+  where
+    renderError width =
+        (`Options.displayS` "") . Options.renderPretty 1.0 width $ Options.hsep
+            [ Options.text name <> Options.colon
+            , "Error:"
+            , fromChunk helpError <> Options.colon
+            , Options.text "See"
+            , Options.text ("'" <> name <> " help'")
+            , Options.text "for more details."
+            ]
+
+    fromChunk (Options.Chunk possiblyDoc) =
+        fromMaybe "Parsing command line arguments failed." possiblyDoc
+
+    -- TODO: Duplicity.
+    vividRed = Terminal.SetColor
+        Terminal.Foreground
+        Terminal.Vivid
+        Terminal.Red

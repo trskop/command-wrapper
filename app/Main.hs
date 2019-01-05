@@ -3,7 +3,7 @@
 -- |
 -- Module:       Main
 -- Description:  Top-level executable of Command Wrapper.
--- Copyright:    (c) 2014-2018 Peter Trsko
+-- Copyright:    (c) 2014-2019 Peter Trsko
 -- License:      BSD3
 --
 -- Maintainer:   peter.trsko@gmail.com
@@ -97,7 +97,7 @@ main = do
                  else pure id
             )
 
-    Mainplate.runExtensibleAppWith (parseOptions config) readConfig
+    Mainplate.runExtensibleAppWith (parseOptions appNames config) readConfig
         (defaults config) (External.run appNames) (Internal.run appNames)
   where
     readGlobalConfig baseName = do
@@ -115,9 +115,12 @@ main = do
 getAppNames' :: IO AppNames
 getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version)
 
-parseOptions :: Global.Config -> IO (Endo (Options.Command Global.Config))
-parseOptions config =
-    Options.parseCommandWrapper Options.defaultPrefs parserInfo
+parseOptions
+    :: AppNames
+    -> Global.Config
+    -> IO (Endo (Options.Command Global.Config))
+parseOptions appNames config =
+    Options.parseCommandWrapper appNames Options.defaultPrefs parserInfo
         $ pure . Global.Config.aliases . (`appEndo` config)
   where
     parserInfo :: Options.ParserInfo (Options.GlobalMode (Endo Global.Config))

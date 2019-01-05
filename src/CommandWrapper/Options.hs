@@ -2,18 +2,18 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE Rank2Types #-}
---{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -- |
 -- Module:      CommandWrapper.Options
--- Description: TODO: Module synopsis
--- Copyright:   (c) 2018 Peter Trško
+-- Description: Utilities for parsing command line options.
+-- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Utilities for parsing command line options.
 module CommandWrapper.Options
     (
     -- * CommandWrapper Specific API
@@ -44,43 +44,50 @@ import Data.Maybe (Maybe(Just), listToMaybe)
 import Data.Monoid (Endo(Endo), (<>), mempty)
 import Data.String (String)
 import System.Environment (getArgs)
-import System.IO (IO)
+import System.Exit (ExitCode(ExitFailure), exitWith)
+import System.IO (IO, stderr)
 
 import Control.Comonad (Comonad, extract)
 import Data.Monoid.Endo (E)
+import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
+import qualified Data.Output.Colour as ColourOutput (ColourOutput(Auto))
 import qualified Mainplate (Command(..), ExternalCommand(..))
 import qualified Options.Applicative as Options
-    ( ParserInfo
+    ( ParserFailure(ParserFailure, execFailure)
+    , ParserInfo
     , ParserPrefs
-    , ParserResult(Failure, Success)
-    , handleParseResult
+    , ParserResult(CompletionInvoked, Failure, Success)
     , parserFailure
     )
 import qualified Options.Applicative.Common as Options (runParserInfo)
 import qualified Options.Applicative.Internal as Options (runP)
 
+import CommandWrapper.Environment.AppNames (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External (Command)
 import qualified CommandWrapper.Internal as Internal (Command(..), command)
 import CommandWrapper.Options.Alias (Alias(..), applyAlias)
 import CommandWrapper.Options.GlobalMode (GlobalMode(..), runGlobalMode)
+import CommandWrapper.Message (dieFailedToParseOptions)
 
 
 type Command = Mainplate.Command External.Command Internal.Command
 
 parseCommandWrapper
-    :: Options.ParserPrefs
+    :: AppNames
+    -> Options.ParserPrefs
     -> Options.ParserInfo (GlobalMode (Endo config))
     -> (Endo config -> IO [Alias])
     -> IO (Endo (Command config))
-parseCommandWrapper parserPrefs parserInfo getAliases =
-    parse parserPrefs parserInfo runGlobalMode' $ \updateConfig arguments -> do
-        aliases <- getAliases updateConfig
-        pure $ case arguments of
-            [] ->
-                mempty
+parseCommandWrapper appNames parserPrefs parserInfo getAliases =
+    parse appNames parserPrefs parserInfo runGlobalMode'
+        $ \updateConfig arguments -> do
+            aliases <- getAliases updateConfig
+            pure $ case arguments of
+                [] ->
+                    mempty
 
-            cmd : args ->
-                Endo (parseCommand aliases cmd args)
+                cmd : args ->
+                    Endo (parseCommand aliases cmd args)
   where
     parseCommand aliases cmd args =
         -- This is a very naive implementation and it will have to be
@@ -110,23 +117,41 @@ parseCommandWrapper parserPrefs parserInfo getAliases =
             Mainplate.Internal (Internal.HelpCmommand []) (f config)
 
 parse
-    :: (Functor mode, Comonad globalMode)
-    => Options.ParserPrefs
+    :: forall globalMode mode config
+    .  (Functor mode, Comonad globalMode)
+    => AppNames
+    -> Options.ParserPrefs
     -> Options.ParserInfo (globalMode (Endo config))
     -> (forall a. globalMode (Endo a) -> Endo (mode a))
     -> (forall a. Endo config -> [String] -> IO (Endo (mode a)))
     -> IO (Endo (mode config))
-parse parserPrefs parserInfo fromGlobalMode parseArguments = do
+parse appNames parserPrefs parserInfo fromGlobalMode parseArguments = do
     (globalOptions, arguments) <- splitArguments <$> getArgs
 
-    globalMode <- Options.handleParseResult (execParserPure' globalOptions)
+    globalMode <- handleParseResult appNames (execParserPure' globalOptions)
 
     let updateConfig = extract globalMode
     updateCommand <- parseArguments updateConfig arguments
 
     pure $ fromGlobalMode globalMode <> updateCommand
   where
+    execParserPure'
+        :: [String]
+        -> Options.ParserResult (globalMode (Endo config))
     execParserPure' = execParserPure parserPrefs parserInfo
+
+handleParseResult :: AppNames -> Options.ParserResult a -> IO a
+handleParseResult AppNames{usedName} = \case
+    Options.Success a ->
+        pure a
+
+    Options.Failure Options.ParserFailure{Options.execFailure} ->
+        let (err, _, _) = execFailure usedName
+        in dieFailedToParseOptions usedName Verbosity.Normal ColourOutput.Auto
+            stderr err
+
+    Options.CompletionInvoked _ ->
+        exitWith (ExitFailure 1) -- TODO: This is imposible case.
 
 -- | Split arguments into global options and the rest.
 --

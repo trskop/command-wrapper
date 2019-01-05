@@ -9,7 +9,7 @@ license: BSD3
 license-file: LICENSE
 author: Peter Trško
 maintainer: peter.trsko@gmail.com
-copyright: (c) 2014-2018 Peter Trško
+copyright: (c) 2014-2019 Peter Trško
 category: Tools
 
 extra-source-files:
@@ -37,6 +37,7 @@ dependencies:
   - mtl
   - optparse-applicative
   - safe
+  - terminal-size
   - terminfo
   - text
   - unix
