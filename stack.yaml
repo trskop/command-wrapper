@@ -22,7 +22,7 @@ extra-deps:
   - endo-0.3.0.1
   - fuzzy-0.1.0.0
 
-  - dhall-1.20.0
+  - dhall-1.20.1
   - dhall-bash-1.0.18
   - dhall-json-1.2.6
   - dhall-text-1.0.15
