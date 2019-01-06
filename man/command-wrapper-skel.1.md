@@ -25,21 +25,22 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help skel
 
 # OPTIONS
 
--l *LANGUAGE*, \--language=*LANGUAGE*
+\--language=*LANGUAGE*, \--language *LANGUAGE*, -l *LANGUAGE*
 :   Choose programming language of the new subcommand.  Currently only
     following values are supported:
 
     * *haskell* (default)
     * *bash*
+    * *dhall* (configuration files)
 
--e, --edit
-:   Open the created file in an editor.
+\--edit, -e
+:   Open the created file in an editor.  **TODO: Currently not implemented!**
 
--E, --no-edit
+\--no-edit, -E
 :   Inverse of `--edit` that is useful if `--edit` mode is configured to be the
-    default.
+    default.  **TODO: Currently not implemented!**
 
-SUBCOMMAND
+`SUBCOMMAND`
 :   Name of the new subcommand.  Where and how the source code or executable
     file will be named is configurable.  By default it is:
 

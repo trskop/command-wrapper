@@ -35,13 +35,13 @@ there are other alternatives.
 
 # OPTIONS
 
--s, \--shell
+\--shell, -s
 :   Execute a subshell even if in a Tmux session.
 
--t, \--tmux
+\--tmux, -t
 :   Create a new Tmux window, or fail if not in Tmux.
 
--e, \--terminal
+\--terminal, -e
 :   Open a new terminal emulator window.
 
 

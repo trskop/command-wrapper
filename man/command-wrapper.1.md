@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 5th January 2019
+% 6th January 2019
 
 
 # NAME
@@ -96,11 +96,11 @@ this manual.
     avoid issues with user defined aliases interfering with how the script
     behaves.  **TODO: Not yet implemented!**
 
--C *DIRECTORY*, \--change-directory=*DIRECTORY*
+\--change-directory=*DIRECTORY*, -C *DIRECTORY*,
 :   Change working directory before doing anything, especially executing a
     subcommand.  **TODO: Not yet implemented!**
 
--h, \--help
+\--help, -h
 :   Print toolset (*TOOLSET_COMMAND*) help information and exit.  Using `help`
     subcommand without arguments gives the same result.
 
@@ -473,7 +473,7 @@ Toolset configuration file has following type:
 
 ```
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Type/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 

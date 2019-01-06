@@ -10,7 +10,9 @@ Protocol that must be respected by all external *Command Wrapper* subcommands.
 
 # DESCRIPTION
 
-TODO
+Command Wrapper follows a specific calling convention for external subcommands.
+Subcommands are required to follow a specific protocol when invoked, which is
+described in this manual page.
 
 
 # COMMAND LINE ARGUMENTS
@@ -18,7 +20,7 @@ TODO
 Each subcommand must support following options:
 
 * `--help` which prints subcommand specific help message. This is
-  invoked by CommandWrapper's `help` internal subcommand.
+  invoked by Command Wrapper's `help` internal subcommand.
 
 * (*PROPOSED*) `--info` which prints program description in Dhall format.
 
@@ -32,15 +34,19 @@ When external subcommand is executed then the following environment variables
 are available to it:
 
 `COMMAND_WRAPPER_EXE`
-:   Contains full path to CommandWrapper executable.  Usually
+:   Contains full path to Command Wrapper executable.  Usually
     `${HOME}/.local/lib/command-wrapper/command-wrapper`, e.g.
     `/home/joe/.local/lib/command-wrapper/command-wrapper`.
 
 `COMMAND_WRAPPER_VERSION`
-:   Contains version of CommandWrapper executable.
+:   Contains version of Command Wrapper executable.
+
+    **TODO**: In the future this will be a version of *SUBCOMMAND PROTOCOL*, at
+    the moment the version of Command Wrapper and *SUBCOMMAND PROTOCOL* are one
+    and the same.
 
 `COMMAND_WRAPPER_NAME`
-:   Contains name under which CommandWrapper was executed.  This is not a file
+:   Contains name under which Command Wrapper was executed.  This is not a file
     path, just command name.
 
     For example if we run:
@@ -57,7 +63,7 @@ are available to it:
 
 `COMMAND_WRAPPER_SUBCOMMAND`
 :   Contains name of the subcommand that is being executed from the perspective
-    of CommandWrapper.  This is not a file path.
+    of Command Wrapper.  This is not a file path.
 
     For example if we run:
 
@@ -126,11 +132,11 @@ dependencies, e.g. DNS resolution uses `/etc/resolv.conf`.  However, if it's
 possible then temporary configuration file should be generated and passed to
 the dependency explicitly.
 
-When this is respected by the subcommand then CommandWrapper has full control
+When this is respected by the subcommand then Command Wrapper has full control
 over subcommand configuration and command line arguments that are passed to it.
 This way it can guarantee consistent UI.
 
-**TODO:** CommandWrapper should provide `dhall` subcommand so that e.g. Bash
+**TODO:** Command Wrapper should provide `dhall` subcommand so that e.g. Bash
 subcommands do not have to rely on Dhall tools to be installed separately. This
 would also allow tools that want to use JSON format to generate a temporary
 file created from the Dhall configuration file.
