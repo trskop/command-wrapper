@@ -48,6 +48,7 @@ module CommandWrapper.Message
     , debugDoc
 
     , message
+    , hPutDoc
     , defaultLayoutOptions
     )
   where
@@ -365,13 +366,33 @@ message
     -> Pretty.Doc ann
     -> IO ()
 message mkLayoutOptions verbosity colourOutput h doc =
-    when (verbosity >= messageMinVerbosity (Proxy @ann)) $ do
-        useColours <- shouldUseColours h colourOutput
-        layoutOptions <- mkLayoutOptions <$> Terminal.hSize h
-        putDoc useColours layoutOptions doc
+    when (verbosity >= messageMinVerbosity (Proxy @ann))
+        $ hPutDoc mkLayoutOptions messageStyle colourOutput h doc
+
+hPutDoc
+    :: forall ann
+    .  (Maybe (Terminal.Window Int) -> Pretty.LayoutOptions)
+    -> (ann -> Pretty.AnsiStyle)
+    -> ColourOutput
+    -> Handle
+    -> Pretty.Doc ann
+    -> IO ()
+hPutDoc mkLayoutOptions style colourOutput h doc = do
+    useColours <- shouldUseColours h colourOutput
+
+    -- We are examinig handle `h` as if it was a terminal, however there are
+    -- cases when this is not desirable.  For example if we are piping to a
+    -- pager we want to examine controlling terminal to get its size instead of
+    -- handle into which we are printing.
+    layoutOptions <- mkLayoutOptions <$> Terminal.hSize h
+
+    putDoc useColours layoutOptions doc
   where
     putDoc :: Bool -> Pretty.LayoutOptions -> Pretty.Doc ann -> IO ()
     putDoc useColours opts =
+        -- Reannotating on the level of `SimpleDocStream` is more efficient
+        -- than on the level of `Doc`.  See `prettyprint` documentation for
+        -- details.
         Pretty.renderIO h . reAnnotate useColours . Pretty.layoutPretty opts
 
     reAnnotate
@@ -380,7 +401,7 @@ message mkLayoutOptions verbosity colourOutput h doc =
         -> Pretty.SimpleDocStream Pretty.AnsiStyle
     reAnnotate useColours =
         if useColours
-            then Pretty.reAnnotateS messageStyle
+            then Pretty.reAnnotateS style
             else Pretty.unAnnotateS
 
 defaultLayoutOptions :: Maybe (Terminal.Window Int) -> Pretty.LayoutOptions

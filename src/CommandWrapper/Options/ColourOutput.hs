@@ -82,8 +82,37 @@ colourOption' name = Options.option parse' $ mconcat
   where
     parse' = Options.maybeReader (parse . CI.mk)
 
--- | Check if we should use colours for the specified output handle.
-shouldUseColours :: Handle -> ColourOutput -> IO Bool
+-- | Check if we should use colours for the specified output handle.  This
+-- function doesn't look for @NO_COLOR@ environment variable.  That has to be
+-- done manually before calling this function.  It would be impossible to
+-- override @NO_COLOR@ by options\/configuration otherwise.
+--
+-- See also 'noColorEnvVar' for more details.
+--
+-- Simple usage example:
+--
+-- @
+-- printMessage :: Config -> 'Handle' -> Doc Style -> IO ()
+-- printMessage Config{colourOutput} handle msg = do
+--     useColours <- 'shouldUseColours' handle colourOutput
+--     if useColours
+--         then printColourisedMessage handle msg
+--         else printPlainMessage handle msg
+-- @
+shouldUseColours
+    :: Handle
+    -- ^ A handle to which we want to print colourised output.  In case of
+    -- 'Auto' we are checking if this is connected to a terminal or not, and
+    -- if it is then we are checking that the terminal supports colours.
+    -> ColourOutput
+    -- ^ User preferences.  Usually combination of configuration, environment
+    -- ('noColorEnvVar'), and command line options that culminate in this value.
+    -> IO Bool
+    -- ^ Return values:
+    --
+    -- * 'False' - Don't use colours when printing to specified 'Handle'.
+    -- * 'True' - You are free to use colours when printing to specified
+    --   'Handle'.
 shouldUseColours handle = useColoursWhen $ do
     otputIsTerminal <- hIsTerminalDevice handle
     if otputIsTerminal
