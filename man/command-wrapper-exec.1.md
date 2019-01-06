@@ -11,7 +11,7 @@ environment.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--ls|-l}
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec COMMAND [\--] \[EXTRA\_COMMAND\_ARGUMENTS]
 
@@ -36,7 +36,7 @@ scripting language like Bash.
 
 # OPTIONS
 
-\--ls, -l
+\--list, \--ls, -l
 :   List available *COMMAND*s.
 
 `COMMAND`

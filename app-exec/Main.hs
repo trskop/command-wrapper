@@ -138,7 +138,8 @@ executeCommand Command{..} = do
 
 parseOptions :: Options.Parser (Bool -> Bool)
 parseOptions =
-    Options.flag' (const True) (Options.short 'l' <> Options.long "ls")
+    Options.flag' (const True) (Options.short 'l' <> Options.long "list")
+    <|> Options.flag' (const True) (Options.long "ls")
     <|> pure id
 
 -- TODO:
