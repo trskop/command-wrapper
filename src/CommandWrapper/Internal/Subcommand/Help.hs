@@ -13,6 +13,12 @@ module CommandWrapper.Internal.Subcommand.Help
     ( HelpMode(..)
     , help
     , helpSubcommandHelp
+
+    -- * Utilities
+    , section
+    , option
+    , globalOptionsSection
+    , usageSection
     )
   where
 
@@ -21,15 +27,21 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(Endo))
 import Data.String (fromString)
 import GHC.Generics (Generic)
-import System.IO (stderr)
+import System.IO (stderr, stdout)
 
-import qualified Mainplate (applySimpleDefaults)
+import Data.Text (Text)
 import qualified Data.Output.Colour as ColourOutput (ColourOutput(Auto))
+import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import qualified Mainplate (applySimpleDefaults)
 
 import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External (executeCommand)
 import CommandWrapper.Internal.Utils (runMain)
+import CommandWrapper.Message (Result, defaultLayoutOptions, message)
 import qualified CommandWrapper.Message as Message (dieTooManyArguments)
 import CommandWrapper.Options.Alias (applyAlias)
 
@@ -41,7 +53,7 @@ data HelpMode a
   deriving stock (Functor, Generic, Show)
 
 help
-    :: (String -> Maybe String)
+    :: (String -> Maybe (Pretty.Doc (Result Pretty.AnsiStyle)))
     -- ^ Return help message to print if string argument is an internal
     -- subcommand.
     --
@@ -50,16 +62,17 @@ help
     -> [String]
     -> Config
     -> IO ()
-help internalHelp appNames options config@Config{extraHelpMessage} =
+help internalHelp appNames options config =
     runMain (parseOptions appNames config options) defaults $ \case
         MainHelp _config -> do
-            putStr (mainHelpMsg appNames)
+            message defaultLayoutOptions verbosity colour stdout
+                (mainHelpMsg appNames)
             traverse_ putStrLn extraHelpMessage
 
         SubcommandHelp cmd _config ->
             case internalHelp cmd of
                 Just msg ->
-                    putStr msg
+                    message defaultLayoutOptions verbosity colour stdout msg
 
                 Nothing ->
                     External.executeCommand appNames cmd ["--help"] config
@@ -68,6 +81,9 @@ help internalHelp appNames options config@Config{extraHelpMessage} =
             pure ()
   where
     defaults = Mainplate.applySimpleDefaults (MainHelp ())
+
+    Config{colourOutput, extraHelpMessage, verbosity} = config
+    colour = fromMaybe ColourOutput.Auto colourOutput
 
 -- TODO:
 --
@@ -86,56 +102,82 @@ parseOptions appNames config@Config{aliases} = \case
   where
     switchTo = pure . Endo . const
 
-mainHelpMsg :: AppNames -> String
-mainHelpMsg AppNames{usedName} = unlines
-    [ "Usage:"
-    , ""
-    , "  " <> usedName <> " [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]"
-    , "  " <> usedName <> " config [SUBCOMMAND]"
-    , "  " <> usedName <> " help [SUBCOMMAND]"
-    , "  " <> usedName <> " {-h|--help}"
-    , ""
-    , "Global options:"
-    , ""
-    , "  -v"
-    , "     Increment verbosity by one level. Can be used multiple times."
-    , ""
+mainHelpMsg :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
+mainHelpMsg AppNames{usedName} = Pretty.vsep
+    [ usageSection usedName
+        [ "[GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]"
+        , "config [SUBCOMMAND]"
+        , "help [SUBCOMMAND]"
+        , "{-h|--help}"
+        ]
 
-    , "  --verbosity=VERBOSITY"
-    , "     Set verbosity level to VERBOSITY. Possible values of VERBOSITY are\
-        \ 'silent', 'normal', 'verbose', and 'annoying'."
-    , ""
-    , "  --silent, -s"
-    , "    Silent mode. Suppress normal diagnostic or result output. Same as\
-        \ '--quiet' and '--verbosity=silent'."
-    , ""
-    , "  --quiet, -q"
-    , "    Silent mode. Suppress normal diagnostic or result output. Same as\
-        \ '--silent' and '--verbosity=silent'."
-    , ""
-    , "  --colo[u]r=WHEN"
-    , "    Set WHEN colourised output should be produced. Possible values of\
-        \ WHEN are 'always', 'auto', and 'never'."
-    , ""
-    , "  --no-colo[u]r"
-    , "    Same as '--colour=no'."
+    , section "Global options:"
+        [ option "-v"
+            [ "Increment verbosity by one level. Can be used multiple times."
+            ]
+
+        , option "--verbosity=VERBOSITY"
+            [ "Set verbosity level to VERBOSITY. Possible values of"
+            , "VERBOSITY are 'silent', 'normal', 'verbose', and 'annoying'."
+            ]
+
+        , option "--silent, -s"
+            [ "Silent mode. Suppress normal diagnostic or result output."
+            , "Same as '--quiet' and '--verbosity=silent'."
+            ]
+
+        , option "--quiet, -q"
+            [ "Silent mode. Suppress normal diagnostic or result output."
+            , "Same as '--silent' and '--verbosity=silent'."
+            ]
+
+        , option "--colo[u]r=WHEN"
+            [ "Set WHEN colourised output should be produced."
+            , "Possible values of WHEN are 'always', 'auto', and 'never'."
+            ]
+
+        , option "--no-colo[u]r"
+            [ "Same as '--colour=no'."
+            ]
+        ]
     ]
 
-helpSubcommandHelp :: AppNames -> String
-helpSubcommandHelp AppNames{usedName} = unlines
-    [ "Usage:"
+helpSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpSubcommandHelp AppNames{usedName} = Pretty.vsep
+    [ usageSection usedName
+        [ "[GLOBAL_OPTIONS] help [SUBCOMMAND]"
+        , "[GLOBAL_OPTIONS] {--help|-h}"
+        ]
+
+    , section "Options:"
+        [ option "SUBCOMMAND"
+            [ "Name of a subcommand for which to show help message."
+            ]
+        ]
+
+    , globalOptionsSection usedName
     , ""
-    , "  " <> usedName <> " [GLOBAL_OPTIONS] help [SUBCOMMAND]"
-    , "  " <> usedName <> " [GLOBAL_OPTIONS] {--help|-h}"
+    ]
+
+usageSection :: Pretty command => command -> [Pretty.Doc ann] -> Pretty.Doc ann
+usageSection commandName ds =
+    section "Usage:" $ ((pretty commandName <+>) <$> ds) <> [""]
+
+globalOptionsSection :: Pretty toolset => toolset -> Pretty.Doc ann
+globalOptionsSection toolset =
+    section "Global options:"
+        [ Pretty.reflow "See output of"
+            <+> Pretty.squotes (pretty toolset <+> "help") <> "."
+        ]
+
+section :: Pretty.Doc ann -> [Pretty.Doc ann] -> Pretty.Doc ann
+section d ds = Pretty.nest 2 $ Pretty.vsep (d : "" : ds)
+
+option :: Pretty.Doc ann -> [Text] -> Pretty.Doc ann
+option d ds = Pretty.vsep
+    [ d
+    , Pretty.indent 4 $ Pretty.hsep (Pretty.reflow <$> ds)
     , ""
-    , "Options:"
-    , ""
-    , "  SUBCOMMAND"
-    , "    Name of a subcommand for which to show help message."
-    , ""
-    , "Global options:"
-    , ""
-    , "  See output of '" <> usedName <> " help'."
     ]
 
 dieTooManyArguments :: AppNames -> Config -> String -> IO a

@@ -44,6 +44,8 @@ import GHC.Generics (Generic)
 import System.IO (IO, stderr)
 import Text.Show (Show)
 
+import qualified Data.Text.Prettyprint.Doc as Pretty (Doc)
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Mainplate (applySimpleDefaults)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
@@ -59,7 +61,7 @@ import qualified CommandWrapper.Internal.Subcommand.Help as Subcommand
     , helpSubcommandHelp
     )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message (dieSubcommandNotYetImplemented)
+import CommandWrapper.Message (Result, dieSubcommandNotYetImplemented)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     ( ColourOutput(Auto)
     )
@@ -99,7 +101,10 @@ help appNames = Subcommand.help internalSubcommandHelpMsg appNames
     internalSubcommandHelpMsg s =
         internalSubcommandHelp appNames <$> command s []
 
-internalSubcommandHelp :: AppNames -> Command -> String
+internalSubcommandHelp
+    :: AppNames
+    -> Command
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
 internalSubcommandHelp appNames = \case
     HelpCommand _ ->
         Subcommand.helpSubcommandHelp appNames

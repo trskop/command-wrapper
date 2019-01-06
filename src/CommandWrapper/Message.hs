@@ -30,6 +30,8 @@ module CommandWrapper.Message
     -- * Pretty
     , MessageType(..)
 
+    , Result(..)
+
     , Error(..)
     , errorDoc
 
@@ -100,7 +102,7 @@ errorMsg
     -> IO ()
 errorMsg command verbosity colourOutput h msg =
     message defaultLayoutOptions verbosity colourOutput h
-        $ errorDoc (command <> Pretty.colon <+> "Error:" <+> msg)
+        $ errorDoc (command <> Pretty.colon <+> "Error:" <+> msg) <> Pretty.line
 
 warningMsg
     :: (forall ann. Pretty.Doc ann)
@@ -114,7 +116,7 @@ warningMsg
     -> IO ()
 warningMsg command verbosity colourOutput h msg =
     message defaultLayoutOptions verbosity colourOutput h
-        $ warningDoc (command <> Pretty.colon <+> "Warning:" <+> msg)
+        $ warningDoc (command <> Pretty.colon <+> "Warning:" <+> msg) <> Pretty.line
 
 noticeMsg
     :: (forall ann. Pretty.Doc ann)
@@ -128,7 +130,7 @@ noticeMsg
     -> IO ()
 noticeMsg command verbosity colourOutput h msg =
     message defaultLayoutOptions verbosity colourOutput h
-        $ noticeDoc (command <> Pretty.colon <+> msg)
+        $ noticeDoc (command <> Pretty.colon <+> msg) <> Pretty.line
 
 debugMsg
     :: (forall ann. Pretty.Doc ann)
@@ -142,7 +144,7 @@ debugMsg
     -> IO ()
 debugMsg command verbosity colourOutput h msg =
     message defaultLayoutOptions verbosity colourOutput h
-        $ debugDoc (command <> Pretty.colon <+> "Debug:" <+> msg)
+        $ debugDoc (command <> Pretty.colon <+> "Debug:" <+> msg) <> Pretty.line
 
 hSetSgrCode :: Handle -> Terminal.SGR -> IO ()
 hSetSgrCode h code = hPutStr h $ Terminal.setSGRCode [code]
@@ -165,7 +167,7 @@ dieUnableToFindSubcommandExecutable name verbosity colour h subcommand = do
     errorMsg name verbosity colour h
         ( pretty subcommand
         <> Pretty.colon
-        <+> "Unable to find suitable executable for this subcommand"
+        <+> "Unable to find suitable executable for this subcommand."
         )
     exitWith (ExitFailure 127)
 
@@ -186,7 +188,7 @@ dieUnableToExecuteSubcommand name verbosity colour h subcommand executable = do
     errorMsg name verbosity colour h
         ( Pretty.dquotes (pretty subcommand) <> Pretty.colon
         <+> "Unable to execute external subcommand executable:"
-        <+> Pretty.dquotes (pretty executable)
+        <+> Pretty.dquotes (pretty executable) <> "."
         )
     exitWith (ExitFailure 126)
 
@@ -298,6 +300,13 @@ class MessageType ann where
         => ann
         -> Pretty.AnsiStyle
     messageStyle = coerce
+
+-- | Application result\/output.  It doesn't matter that verbosity is set to
+-- 'Silent', we have to print it.
+newtype Result ann = Result ann
+
+instance MessageType (Result Pretty.AnsiStyle) where
+    messageMinVerbosity _ = Silent
 
 newtype (Error ann) = Error ann
 

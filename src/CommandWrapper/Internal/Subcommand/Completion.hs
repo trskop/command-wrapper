@@ -35,12 +35,14 @@ import qualified Data.List as List
 import Data.Maybe (Maybe(..))
 import Data.Monoid (Endo(Endo))
 import Data.Semigroup ((<>))
-import Data.String (String, unlines)
+import Data.String (String)
 import Data.Tuple (fst)
 import GHC.Generics (Generic)
 import System.IO (IO, putStrLn)
 import Text.Show (Show)
 
+import qualified Data.Text.Prettyprint.Doc as Pretty (Doc, vsep)
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Mainplate (applySimpleDefaults)
 import qualified Safe (headMay)
 import Text.Fuzzy as Fuzzy (Fuzzy)
@@ -49,8 +51,14 @@ import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External (findSubcommands)
+import CommandWrapper.Internal.Subcommand.Help
+    ( globalOptionsSection
+    , option
+    , section
+    , usageSection
+    )
 import CommandWrapper.Internal.Utils (runMain)
---import CommandWrapper.Message
+import CommandWrapper.Message (Result)
 import CommandWrapper.Options.Alias (Alias(alias))
 
 
@@ -197,19 +205,18 @@ completion appNames options globalConfig =
     findKeywords keywords _cfg pat =
         List.filter (fmap Char.toLower pat `List.isPrefixOf`) keywords
 
-completionSubcommandHelp :: AppNames -> String
-completionSubcommandHelp AppNames{usedName} = unlines
-    [ "Usage:"
-    , ""
-    , "  " <> usedName <> " [GLOBAL_OPTIONS] completion [--] [WORD]"
-    , ""
-    , "Options:"
-    , ""
-    , "  SUBCOMMAND"
-    , "    Name of a subcommand for which to show help message."
-    , ""
-    , "Global options:"
-    , ""
-    , "  See output of '" <> usedName <> " help'."
-    ]
+completionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
+completionSubcommandHelp AppNames{usedName} = Pretty.vsep
+    [ usageSection usedName
+        [ "[GLOBAL_OPTIONS] completion [--] [WORD]"
+        ]
 
+    , section "Options:"
+        [ option "SUBCOMMAND"
+            [ "Name of a subcommand for which to show help message."
+            ]
+        ]
+
+    , globalOptionsSection usedName
+    , ""
+    ]
