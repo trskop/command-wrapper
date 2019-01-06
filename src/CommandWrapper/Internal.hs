@@ -22,8 +22,8 @@ module CommandWrapper.Internal
     , help
 
     -- ** Config Command
-    , ConfigMode(..)
-    , config
+    , Subcommand.ConfigMode(..)
+    , Subcommand.config
 
     -- ** Completion Command
     , Subcommand.CompletionMode(..)
@@ -34,26 +34,28 @@ module CommandWrapper.Internal
     )
   where
 
-import Control.Applicative (pure)
-import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<$>))
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Monoid (Endo)
-import Data.String (String, fromString)
+import Data.Function ((.), const)
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe(..))
+import Data.String (String)
 import GHC.Generics (Generic)
-import System.IO (IO, stderr)
+import System.IO (IO)
 import Text.Show (Show)
 
 import qualified Data.Text.Prettyprint.Doc as Pretty (Doc)
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
-import qualified Mainplate (applySimpleDefaults)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
+import CommandWrapper.Environment (AppNames)
 import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
     ( CompletionMode(..)
     , completion
     , completionSubcommandHelp
+    )
+import CommandWrapper.Internal.Subcommand.Config as Subcommand
+    ( ConfigMode(..)
+    , config
+    , configSubcommandHelp
     )
 import qualified CommandWrapper.Internal.Subcommand.Help as Subcommand
     ( HelpMode(..)
@@ -61,10 +63,7 @@ import qualified CommandWrapper.Internal.Subcommand.Help as Subcommand
     , helpSubcommandHelp
     )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message (Result, dieSubcommandNotYetImplemented)
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput
-    ( ColourOutput(Auto)
-    )
+import CommandWrapper.Message (Result)
 
 
 data Command
@@ -109,76 +108,11 @@ internalSubcommandHelp appNames = \case
     HelpCommand _ ->
         Subcommand.helpSubcommandHelp appNames
 
-    ConfigCommand _ -> "Subcommand currently not implemented."
+    ConfigCommand _ ->
+        Subcommand.configSubcommandHelp appNames
 
     CompletionCommand _ ->
         Subcommand.completionSubcommandHelp appNames
 
 
 -- }}} Help Command -----------------------------------------------------------
-
--- {{{ Config Command ---------------------------------------------------------
-
-data ConfigMode a
-    = InitConfig a
-    | ConfigLib a
-    | Dhall a
-  deriving (Functor, Generic, Show)
-
-config :: AppNames -> [String] -> Global.Config -> IO ()
-config AppNames{usedName} _options globalConfig =
-    runMain parseOptions defaults $ \case
-        InitConfig _ -> pure ()
-        ConfigLib _ -> pure ()
-
-        -- TODO:
-        --
-        -- - Merge in functionality of: `dhall`, `dhall-json`, `dhall-bash`,
-        --   and `dhall-text`
-        -- - Provide functionality for shell variables that transforms:
-        --
-        --     ```
-        --     { name = "FOO"
-        --     , value = "foo"
-        --     }
-        --     ```
-        --
-        --     Into:
-        --
-        --     ```
-        --     export FOO=foo
-        --     ```
-        --
-        --     It should also support transorming:
-        --
-        --     ```
-        --     [ { name = "FOO"
-        --       , value = "foo"
-        --       }
-        --     , { name = "BAR"
-        --       , value = "bar"
-        --       }
-        --     ]
-        --     ```
-        --
-        --     Into:
-        --
-        --     ```
-        --     export FOO=foo
-        --     export FOO=bar
-        --     ```
-        Dhall _ -> pure ()
-  where
-    defaults = Mainplate.applySimpleDefaults (InitConfig globalConfig)
-
-    parseOptions :: IO (Endo (ConfigMode Global.Config))
-    parseOptions =
-        let Global.Config
-                { Global.verbosity
-                , Global.colourOutput = possiblyColourOutput
-                } = globalConfig
-
-        in dieSubcommandNotYetImplemented (fromString usedName) verbosity
-            (fromMaybe ColourOutput.Auto possiblyColourOutput) stderr "config"
-
--- }}} Config Command ---------------------------------------------------------
