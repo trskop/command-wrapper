@@ -212,7 +212,7 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
         ]
 
     , section "Options:"
-        [ option "SUBCOMMAND"
+        [ option ["SUBCOMMAND"]
             [ "Name of a subcommand for which to show help message."
             ]
         ]

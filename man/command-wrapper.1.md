@@ -19,7 +19,11 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \[SUBCOMMAND] \[CONFIG\_OPTIONS]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \[COMPLETION\_OPTIONS]
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] version \[VERSION\_OPTIONS]
+
 TOOLSET\_COMMAND {\--help|-h}
+
+TOOLSET\_COMMAND {\--version|-V}
 
 
 # DESCRIPTION
@@ -101,8 +105,14 @@ this manual.
     subcommand.  **TODO: Not yet implemented!**
 
 \--help, -h
-:   Print toolset (*TOOLSET_COMMAND*) help information and exit.  Using `help`
-    subcommand without arguments gives the same result.
+:   Print toolset (*TOOLSET_COMMAND*) help information and exit.  Using *help*
+    subcommand without arguments gives the same result.  See *help* subcommand
+    for more details.
+
+\--version, -V
+:   Print version iformation to *stdout* and exit.  Using *version* subcommand
+    without arguments gives the same result.  See *version* subcommand for more
+    details.
 
 *SUBCOMMAND*
 :   Name of a Command Wrapper or toolset subcommand.  See *SUBCOMMANDS* section
@@ -132,6 +142,8 @@ subcommands are:
 
 * *completion* -- Provides shell completion.  Currently only partially
   implemented for Bash shell.
+
+* *version* -- Print version information to *stdout* and exit.
 
 Some external subcommands are bundled with Command Wrapper itself:
 

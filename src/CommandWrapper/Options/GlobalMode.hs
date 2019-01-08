@@ -13,6 +13,7 @@
 -- without interference from option parsing library.
 module CommandWrapper.Options.GlobalMode
     ( GlobalMode(..)
+    , switchGlobalMode
     , runGlobalMode
     )
   where
@@ -26,7 +27,9 @@ import Control.Comonad (Comonad(extend, extract))
 -- very limited way.
 data GlobalMode a
     = HelpMode a
-    -- ^ Switch to internal help command.
+    -- ^ Switch to internal @help@ command.
+    | VersionMode a
+    -- ^ Switch to internal @version@ command.
     | PreserveMode a
   deriving (Functor)
 
@@ -34,21 +37,32 @@ instance Comonad GlobalMode where
     extract :: GlobalMode a -> a
     extract = \case
         HelpMode a -> a
+        VersionMode a -> a
         PreserveMode a -> a
 
     extend :: (GlobalMode a -> b) -> GlobalMode a -> GlobalMode b
     extend f mode = case mode of
         HelpMode _ -> HelpMode b
+        VersionMode _ -> VersionMode b
         PreserveMode _ -> PreserveMode b
       where
         b = f mode
+
+switchGlobalMode
+    :: (forall a. a -> GlobalMode a)
+    -> GlobalMode config
+    -> GlobalMode config
+switchGlobalMode f = f . extract
 
 runGlobalMode
     :: Functor mode
     => (forall b. Endo b -> Endo (mode b))
     -- ^ Switch to \"help\" mode.
+    -> (forall b. Endo b -> Endo (mode b))
+    -- ^ Switch to \"version\" mode.
     -> GlobalMode (Endo a)
     -> Endo (mode a)
-runGlobalMode helpMode = \case
+runGlobalMode helpMode versionMode = \case
     HelpMode f            -> helpMode f
+    VersionMode f         -> versionMode f
     PreserveMode (Endo f) -> Endo (fmap f)

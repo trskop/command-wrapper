@@ -44,7 +44,7 @@ dependencies:
   - ansi-terminal
   - case-insensitive
   - comonad
-  - dhall >=1.17
+  - dhall >=1.20
   - dhall-bash
   - dhall-json
   - directory

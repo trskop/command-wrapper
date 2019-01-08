@@ -15,12 +15,21 @@ module CommandWrapper.Internal.Dhall
   where
 
 import GHC.Generics (Generic)
+import System.IO (Handle, hPutStrLn)
 
-import Dhall.Main as Dhall (Mode)
-import Dhall.Binary as Dhall (StandardVersion)
+import qualified Dhall (InputType(InputType, embed))
+import qualified Dhall.Main as Dhall (Mode)
+import qualified Dhall.Binary as Dhall (StandardVersion)
+import qualified Dhall.Pretty as Dhall
+    ( CharacterSet
+    , annToAnsiStyle
+    , prettyCharacterSet
+    )
 import qualified Dhall.JSON
 
 import qualified CommandWrapper.Config.Global as Global
+import CommandWrapper.Message (hPutDoc, defaultLayoutOptions)
+import CommandWrapper.Options.ColourOutput (ColourOutput)
 
 
 data DhallOptions = DhallOptions
@@ -39,3 +48,15 @@ data DhallMode a
 
 dhall :: DhallMode Global.Config -> IO ()
 dhall = undefined
+
+hPut
+    :: ColourOutput
+    -> Dhall.CharacterSet
+    -> Handle
+    -> Dhall.InputType a
+    -> a
+    -> IO ()
+hPut colour charset handle Dhall.InputType{embed = toExpr} a = do
+    hPutDoc defaultLayoutOptions Dhall.annToAnsiStyle colour handle
+        $ Dhall.prettyCharacterSet charset (toExpr a)
+    hPutStrLn handle ""

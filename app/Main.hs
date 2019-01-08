@@ -1,4 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 -- |
 -- Module:       Main
 -- Description:  Top-level executable of Command Wrapper.
@@ -16,6 +18,7 @@ module Main (main)
 
 import Control.Applicative ((<*>), many, optional, pure)
 import Control.Monad ((>>=))
+import Data.Bool (Bool(True))
 import Data.Either (Either(Right), either)
 import Data.Eq ((/=))
 import Data.Function (($), (.), flip, id)
@@ -127,21 +130,11 @@ parseOptions appNames config =
         Options.info globalOptions Options.fullDesc
 
 globalOptions :: Options.Parser (Options.GlobalMode (Endo Global.Config))
-globalOptions = withHelpOptions
+globalOptions = withGlobalMode
     <*> ( foldEndo
             <$> verbosityOptions
             <*> colourOptions
         )
-
-withHelpOptions
-    :: Options.Parser
-        ( Endo Global.Config -> Options.GlobalMode (Endo Global.Config)
-        )
-withHelpOptions = Options.flag Options.PreserveMode Options.HelpMode $ mconcat
-    [ Options.short 'h'
-    , Options.long "help"
-    , Options.help "Print this help message and exit."
-    ]
 
 verbosityOptions :: Options.Parser (Endo Global.Config)
 verbosityOptions = foldEndo
@@ -159,3 +152,34 @@ colourOptions = modifyConfig <$> ColourOutput.options
             { Global.Config.colourOutput =
                 getLast (Last colourOutput <> Last newValue)
             }
+
+withGlobalMode
+    :: Options.Parser
+        ( Endo Global.Config -> Options.GlobalMode (Endo Global.Config)
+        )
+withGlobalMode = run <$> go
+  where
+    go :: Options.Parser (Endo (Options.GlobalMode (Endo Global.Config)))
+    go = foldEndo
+        <$> helpOption
+        <*> versionOption
+
+    run :: Endo (Options.GlobalMode (Endo Global.Config))
+        -> Endo Global.Config
+        -> Options.GlobalMode (Endo Global.Config)
+    run (Endo f) = f . Options.PreserveMode
+
+helpOption :: Options.Parser (Endo (Options.GlobalMode (Endo Global.Config)))
+helpOption = Options.flag mempty switchToHelpMode $ mconcat
+    [ Options.short 'h'
+    , Options.long "help"
+    , Options.help "Print this help message and exit."
+    ]
+  where
+    switchToHelpMode = Endo (Options.switchGlobalMode Options.HelpMode)
+
+versionOption
+    :: Options.Parser (Endo (Options.GlobalMode (Endo Global.Config)))
+versionOption = Options.flag mempty switchToVersionMode (Options.version True)
+  where
+    switchToVersionMode = Endo (Options.switchGlobalMode Options.VersionMode)

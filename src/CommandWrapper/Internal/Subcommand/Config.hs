@@ -111,7 +111,7 @@ config AppNames{usedName} _options globalConfig =
 configSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 configSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
-        [ "[GLOBAL_OPTIONS] config"
+        [ "[GLOBAL_OPTIONS] config [EXPRESSION]"
         ]
 
 --  , section "Options:"

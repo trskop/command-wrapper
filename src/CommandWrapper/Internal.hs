@@ -29,6 +29,12 @@ module CommandWrapper.Internal
     , Subcommand.CompletionMode(..)
     , Subcommand.completion
 
+    -- ** Completion Command
+    , Subcommand.VersionMode(..)
+    , Subcommand.VersionInfo(..)
+    , Subcommand.PrettyVersion(..)
+    , Subcommand.version
+
     -- * Generic Functions
     , runMain
     )
@@ -38,6 +44,7 @@ import Data.Function ((.), const)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe(..))
 import Data.String (String)
+import Data.Version (makeVersion)
 import GHC.Generics (Generic)
 import System.IO (IO)
 import Text.Show (Show)
@@ -52,7 +59,7 @@ import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
     , completion
     , completionSubcommandHelp
     )
-import CommandWrapper.Internal.Subcommand.Config as Subcommand
+import qualified CommandWrapper.Internal.Subcommand.Config as Subcommand
     ( ConfigMode(..)
     , config
     , configSubcommandHelp
@@ -62,14 +69,24 @@ import qualified CommandWrapper.Internal.Subcommand.Help as Subcommand
     , help
     , helpSubcommandHelp
     )
+import qualified CommandWrapper.Internal.Subcommand.Version as Subcommand
+    ( VersionInfo(..)
+    , VersionMode(..)
+    , PrettyVersion(..)
+    , version
+    , versionSubcommandHelp
+    )
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message (Result)
+
+import Paths_command_wrapper (version) -- Temporary
 
 
 data Command
     = HelpCommand [String]
     | ConfigCommand [String]
     | CompletionCommand [String]
+    | VersionCommand [String]
   deriving (Generic, Show)
 
 -- | Smart constructor for 'Command'.
@@ -84,13 +101,23 @@ command = \case
     "help" -> Just . HelpCommand
     "config" -> Just . ConfigCommand
     "completion" -> Just . CompletionCommand
+    "version" -> Just . VersionCommand
     _ -> const Nothing
 
 run :: AppNames -> Command -> Global.Config -> IO ()
 run appNames = \case
     HelpCommand options -> help appNames options
-    ConfigCommand options -> config appNames options
+    ConfigCommand options -> Subcommand.config appNames options
     CompletionCommand options -> Subcommand.completion appNames options
+    VersionCommand options -> Subcommand.version versionInfo appNames options
+  where
+    -- TODO: Define real version information.
+    versionInfo = Subcommand.VersionInfo
+        { commandWrapper = Subcommand.PrettyVersion version
+        , subcommandProtocol = Subcommand.PrettyVersion (makeVersion [1, 0, 0])
+        , dhallLibrary = Subcommand.PrettyVersion (makeVersion [1, 20, 1])
+        , dhallStandard = Subcommand.PrettyVersion (makeVersion [5, 0, 0])
+        }
 
 -- {{{ Help Command -----------------------------------------------------------
 
@@ -114,5 +141,7 @@ internalSubcommandHelp appNames = \case
     CompletionCommand _ ->
         Subcommand.completionSubcommandHelp appNames
 
+    VersionCommand _ ->
+        Subcommand.versionSubcommandHelp appNames
 
 -- }}} Help Command -----------------------------------------------------------
