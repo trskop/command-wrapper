@@ -1,6 +1,6 @@
 #!/usr/bin/env stack
 {- stack script
-    --resolver lts-13.1
+    --resolver lts-13.2
     --package directory
     --package executable-path
     --package shake
@@ -135,8 +135,12 @@ shakeMain Directories{..} opts = shakeArgs opts $ do
 
         , man1Dir </> "command-wrapper.1.gz"
         , man1Dir </> "command-wrapper-cd.1.gz"
+        , man1Dir </> "command-wrapper-completion.1.gz"
+        , man1Dir </> "command-wrapper-config.1.gz"
         , man1Dir </> "command-wrapper-exec.1.gz"
+        , man1Dir </> "command-wrapper-help.1.gz"
         , man1Dir </> "command-wrapper-skel.1.gz"
+        , man1Dir </> "command-wrapper-version.1.gz"
         , man7Dir </> "command-wrapper-subcommand-protocol.7.gz"
         ]
 

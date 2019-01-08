@@ -188,7 +188,7 @@ versionSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
 --      [ "[GLOBAL_OPTIONS] version [--dhall|--bash|--numeric[=COMPONENT]]"
         [ "[GLOBAL_OPTIONS] version [--dhall|--bash]"
-        , "[GLOBAL_OPTIONS] {-V|--version}"
+        , "[GLOBAL_OPTIONS] {--version|-V}"
         ]
 
     , section "Options:"
