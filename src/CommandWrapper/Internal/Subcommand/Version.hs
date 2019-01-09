@@ -35,6 +35,7 @@ import qualified Data.Text.IO as Text (putStr)
 import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Dhall
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Mainplate (applySimpleDefaults)
@@ -42,9 +43,9 @@ import qualified Options.Applicative as Options
     ( Parser
     , defaultPrefs
     , flag
-    , help
     , info
     , long
+    , short
     )
 
 import CommandWrapper.Config.Global (Config(..))
@@ -52,9 +53,14 @@ import CommandWrapper.Environment (AppNames(AppNames, usedName))
 --import qualified CommandWrapper.External as External (executeCommand)
 import CommandWrapper.Internal.Dhall as Dhall (hPut)
 import CommandWrapper.Internal.Subcommand.Help
-    ( {-globalOptionsSection
-    ,-} option
+    ( globalOptionsHelp
+    , helpOptions
+    , longOption
+--  , metavar
+    , optionDescription
     , section
+    , shortOption
+    , toolsetCommand
     , usageSection
     )
 import CommandWrapper.Internal.Utils (runMain)
@@ -62,14 +68,14 @@ import CommandWrapper.Message (Result, defaultLayoutOptions, message)
 --import qualified CommandWrapper.Message as Message (dieTooManyArguments)
 --import CommandWrapper.Options.Alias (applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
-    ( execParserPure
-    , handleParseResult
+    ( internalSubcommandParse
     )
 
 
 data VersionMode a
     = FullVersion OutputFormat a
     | NumericVersion (Maybe VersionInfoField) a
+    | VersionHelp a
   deriving stock (Functor, Generic, Show)
 
 data OutputFormat = PlainFormat | DhallFormat | BashFormat
@@ -129,6 +135,10 @@ version versionInfo appNames options config =
         NumericVersion _field _config ->
             message defaultLayoutOptions verbosity colour stdout
                 ("TODO" :: Pretty.Doc (Result Pretty.AnsiStyle))
+
+        VersionHelp _config ->
+            message defaultLayoutOptions verbosity colour stdout
+                (versionSubcommandHelp appNames)
   where
     defaults = Mainplate.applySimpleDefaults (FullVersion PlainFormat ())
 
@@ -158,54 +168,69 @@ versionInfoBash VersionInfo{..} = Text.unlines
         <> "\""
 
 parseOptions :: AppNames -> Config -> [String] -> IO (Endo (VersionMode ()))
-parseOptions appNames _config options =
+parseOptions appNames config options =
     execParser $ foldEndo
-        <$> (dhallFlag <|> bashFlag)
+        <$> (   dhallFlag
+            <|> bashFlag
+            <|> helpFlag
+            )
+
   where
     switchTo = Endo . const
     switchToBashFormat = switchTo (FullVersion BashFormat ())
     switchToDhallFormat = switchTo (FullVersion DhallFormat ())
+    switchToHelpMode = switchTo (VersionHelp ())
 
-    dhallFlag, bashFlag :: Options.Parser (Endo (VersionMode ()))
+    dhallFlag, bashFlag, helpFlag :: Options.Parser (Endo (VersionMode ()))
 
-    dhallFlag = Options.flag mempty switchToDhallFormat $ mconcat
-        [ Options.long "dhall"
-        , Options.help "Print version information in Dhall format."
-        ]
+    dhallFlag = Options.flag mempty switchToDhallFormat (Options.long "dhall")
 
-    bashFlag = Options.flag mempty switchToBashFormat $ mconcat
-        [ Options.long "bash"
-        , Options.help "Print version information in format suitable for Bash."
-        ]
+    bashFlag = Options.flag mempty switchToBashFormat (Options.long "bash")
 
     execParser parser =
-        Options.handleParseResult appNames
-            $ Options.execParserPure Options.defaultPrefs
-                (Options.info parser mempty) options
+        Options.internalSubcommandParse appNames config "version"
+            Options.defaultPrefs (Options.info parser mempty) options
+
+    helpFlag = Options.flag mempty switchToHelpMode $ mconcat
+        [ Options.short 'h'
+        , Options.long "help"
+        ]
 
 versionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 versionSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
---      [ "[GLOBAL_OPTIONS] version [--dhall|--bash|--numeric[=COMPONENT]]"
-        [ "[GLOBAL_OPTIONS] version [--dhall|--bash]"
-        , "[GLOBAL_OPTIONS] {--version|-V}"
+        [ "version" <+> Pretty.brackets
+            ( longOption "dhall"
+            <> "|" <> longOption "bash"
+--          <> "|" <> longOption "numeric"
+--              <> Pretty.brackets ("=" <> metavar "COMPONENT")
+            )
+        , "version" <+> helpOptions
+        , "help version"
+        , Pretty.braces (longOption "version" <> "|" <> shortOption 'V')
         ]
 
     , section "Options:"
-        [ option ["--dhall"]
-            [ "Print version information in Dhall format."
+        [ optionDescription ["--dhall"]
+            [ Pretty.reflow "Print version information in Dhall format."
             ]
 
-        , option ["--bash"]
-            [ "Print version information in format suitable for Bash."
+        , optionDescription ["--bash"]
+            [ Pretty.reflow
+                "Print version information in format suitable for Bash."
             ]
 
---      , option ["--numeric[=COMPONENT]"]
+--      , optionDescription ["--numeric[=COMPONENT]"]
 --          [ "Print version of COMPONENT in machine readable form."
 --          ]
---
---      , option ["--help", "-h"]
---          [ "Print this help and exit.  Same as '... help version'"
---          ]
+
+        , optionDescription ["--help", "-h"]
+            [ Pretty.reflow "Print this help and exit. Same as"
+            , Pretty.squotes (toolsetCommand usedName "help version") <> "."
+            ]
+
+        , globalOptionsHelp usedName
         ]
+
+    , ""
     ]

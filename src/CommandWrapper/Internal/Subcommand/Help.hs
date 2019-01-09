@@ -15,21 +15,34 @@ module CommandWrapper.Internal.Subcommand.Help
     , helpSubcommandHelp
 
     -- * Utilities
-    , section
-    , option
-    , globalOptionsSection
-    , usageSection
+    , (<++>)
+    , command
     , dullGreen
+    , globalOptions
+    , globalOptionsHelp
+    , helpOptions
+    , longOption
+    , metavar
+    , optionDescription
+    , optionalMetavar
+    , optionalSubcommand
+    , section
+    , shortOption
+    , toolsetCommand
+    , usageSection
+    , value
     )
   where
 
+import Control.Applicative ((<|>), optional)
 import Data.Foldable (traverse_)
+import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(Endo))
-import Data.String (fromString)
 import GHC.Generics (Generic)
-import System.IO (stderr, stdout)
+import System.IO (stdout)
 
+import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
 import qualified Data.Output.Colour as ColourOutput (ColourOutput(Auto))
 import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
@@ -37,14 +50,27 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty --(AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Mainplate (applySimpleDefaults)
+import qualified Options.Applicative as Options
+    ( Parser
+    , defaultPrefs
+    , flag
+    , info
+    , long
+    , metavar
+    , short
+    , strArgument
+    , strOption
+    )
 
 import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External (executeCommand)
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message (Result(..), defaultLayoutOptions, message)
-import qualified CommandWrapper.Message as Message (dieTooManyArguments)
 import CommandWrapper.Options.Alias (applyAlias)
+import qualified CommandWrapper.Options.Optparse as Options
+    ( internalSubcommandParse
+    )
 
 
 data HelpMode a
@@ -90,96 +116,143 @@ help internalHelp appNames options config =
 --
 -- > TOOLSET [GLOBAL_OPTIONS] help --man TOPIC
 parseOptions :: AppNames -> Config -> [String] -> IO (Endo (HelpMode ()))
-parseOptions appNames config@Config{aliases} = \case
-    [] ->
-        switchTo (MainHelp ())
-
-    [subcmd] ->
-        let (subcmd', _) = applyAlias aliases subcmd []
-        in switchTo (SubcommandHelp subcmd' ())
-
-    _ : arg : _ ->
-        dieTooManyArguments appNames config arg
+parseOptions appNames config@Config{aliases} options =
+    execParser $ foldEndo
+        <$> optional
+                ( helpFlag
+                <|> manFlag
+                <|> subcommandArg
+                )
   where
-    switchTo = pure . Endo . const
+    switchTo = Endo . const
+
+    manFlag, helpFlag, subcommandArg :: Options.Parser (Endo (HelpMode ()))
+
+    manFlag =
+        Options.strOption (Options.long "man" <> Options.metavar "TOPIC")
+            <&> \topic -> switchTo (ManPage topic ())
+
+    helpFlag =
+        Options.flag mempty (switchTo $ SubcommandHelp "help" ())
+            (Options.long "help" <> Options.short 'h')
+
+    subcommandArg =
+        Options.strArgument (Options.metavar "SUBCOMMAND") <&> \cmd ->
+            let (realCmd, _) = applyAlias aliases cmd []
+            in switchTo (SubcommandHelp realCmd ())
+
+    execParser parser =
+        Options.internalSubcommandParse appNames config "help"
+            Options.defaultPrefs (Options.info parser mempty) options
 
 mainHelpMsg :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 mainHelpMsg AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
-        [ globalOptions <+> subcommand <+> subcommandArguments
-        , globalOptions <+> "help" <+> subcommand
-        , globalOptions <+> "config" <+> subcommand
-        , globalOptions <+> "version" <+> subcommand
-        , globalOptions <+> "completion" <+> subcommand
-        , globalOptions <+> helpOptions
+        [ subcommand <+> subcommandArguments
+        , "help" <+> optionalMetavar "HELP_OPTIONS" <+> optionalSubcommand
+        , "config" <+> optionalMetavar "CONFIG_OPTIONS" <+> optionalSubcommand
+        , "version" <+> optionalMetavar "VERSION_OPTIONS"
+        , "completion" <+> optionalMetavar "COMPLETION_OPTIONS"
+        , helpOptions
         ]
 
     , section (Pretty.annotate dullGreen "GLOBAL_OPTIONS" <> ":")
-        [ option ["-v"]
-            [ "Increment verbosity by one level. Can be used multiple times."
+        [ optionDescription ["-v"]
+            [ Pretty.reflow "Increment verbosity by one level. Can be used"
+            , Pretty.reflow "multiple times."
             ]
 
-        , option ["--verbosity=VERBOSITY"]
-            [ "Set verbosity level to VERBOSITY. Possible values of"
-            , "VERBOSITY are 'silent', 'normal', 'verbose', and 'annoying'."
+        , optionDescription ["--verbosity=VERBOSITY"]
+            [ Pretty.reflow "Set verbosity level to"
+            , metavar "VERBOSITY" <> "."
+            , Pretty.reflow "Possible values of"
+            , metavar "VERBOSITY", "are"
+            , Pretty.squotes (value "silent") <> ","
+            , Pretty.squotes (value "normal") <> ","
+            , Pretty.squotes (value "verbose") <> ","
+            , "and"
+            , Pretty.squotes (value "annoying") <> "."
             ]
 
-        , option ["--silent", "-s"]
-            [ "Silent mode. Suppress normal diagnostic or result output."
-            , "Same as '--quiet' and '--verbosity=silent'."
+        , optionDescription ["--silent", "-s"]
+            (silentDescription "quiet")
+
+        , optionDescription ["--quiet", "-q"]
+            (silentDescription "silent")
+
+        , optionDescription ["--colo[u]r=WHEN"]
+            [ "Set", metavar "WHEN"
+            , Pretty.reflow "colourised output should be produced. Possible"
+            , Pretty.reflow "values of"
+            , metavar "WHEN", "are", Pretty.squotes (value "always") <> ","
+            , Pretty.squotes (value "auto") <> ","
+            , "and", Pretty.squotes (value "never") <> "."
             ]
 
-        , option ["--quiet", "-q"]
-            [ "Silent mode. Suppress normal diagnostic or result output."
-            , "Same as '--silent' and '--verbosity=silent'."
+        , optionDescription ["--no-colo[u]r"]
+            [ Pretty.reflow "Same as"
+            , Pretty.squotes (longOption "colour=never") <> "."
             ]
 
-        , option ["--colo[u]r=WHEN"]
-            [ "Set WHEN colourised output should be produced."
-            , "Possible values of WHEN are 'always', 'auto', and 'never'."
-            ]
-
-        , option ["--no-colo[u]r"]
-            [ "Same as '--colour=no'."
-            ]
-
-        , option ["--version", "-V"]
-            [ "Print version information to stdout and exit."
+        , optionDescription ["--version", "-V"]
+            [ Pretty.reflow "Print version information to stdout and exit."
             ]
         ]
+    , ""
 
-    , section (Pretty.annotate dullGreen "SUBCOMMAND" <> ":")
-        [ "TODO"
+    , section (metavar "SUBCOMMAND" <> ":")
+        [ Pretty.reflow "Name of either internal or external subcommand."
         ]
+    , ""
     ]
+  where
+    silentDescription altOpt =
+        [ Pretty.reflow
+            "Silent mode. Suppress normal diagnostic or result output. Same as"
+        , Pretty.squotes (longOption altOpt) <> ",", "and"
+        , Pretty.squotes (longOption "verbosity=silent") <> "."
+        ]
 
 helpSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
-        [ globalOptions <+> "help" <+> subcommand
-        , globalOptions <+> helpOptions
+        [ "help" <+> subcommand
+--      , "help" <+> longOption "man" <> "=" <> metavar "TOPIC"
+        , "help" <+> helpOptions
+        , helpOptions
         ]
 
     , section "Options:"
-        [ option ["SUBCOMMAND"]
-            [ "Name of a subcommand for which to show help message."
+        [ optionDescription ["SUBCOMMAND"]
+            [ Pretty.reflow "Name of an internal or external subcommand for"
+            , Pretty.reflow "which to show help message."
             ]
+
+--      , optionDescription ["--man=TOPIC"]
+--          [ Pretty.reflow "Show manual page for"
+--          , metavar "TOPIC"
+--          , Pretty.reflow "instead of short help message."
+--          ]
+
+        , optionDescription ["--help", "-h"]
+            [ Pretty.reflow "Print this help and exit. Same as"
+            , Pretty.squotes (toolsetCommand usedName "help help") <> "."
+            ]
+
+        , globalOptionsHelp usedName
         ]
 
-    , globalOptionsSection usedName
     , ""
     ]
 
 helpOptions :: Pretty.Doc (Result Pretty.AnsiStyle)
-helpOptions =
-    Pretty.braces
-        ( Pretty.annotate dullGreen "--help"
-        <> "|"
-        <> Pretty.annotate dullGreen "-h"
-        )
+helpOptions = Pretty.braces (longOption "help" <> "|" <> shortOption 'h')
 
 subcommand :: Pretty.Doc (Result Pretty.AnsiStyle)
-subcommand = Pretty.brackets (Pretty.annotate dullGreen "SUBCOMMAND")
+subcommand = metavar "SUBCOMMAND"
+
+optionalSubcommand :: Pretty.Doc (Result Pretty.AnsiStyle)
+optionalSubcommand = Pretty.brackets subcommand
 
 subcommandArguments :: Pretty.Doc (Result Pretty.AnsiStyle)
 subcommandArguments =
@@ -192,28 +265,39 @@ dullGreen, magenta :: Result Pretty.AnsiStyle
 dullGreen = Result (Pretty.colorDull Pretty.Green)
 magenta = Result (Pretty.color Pretty.Magenta)
 
-usageSection :: Pretty command => command -> [Pretty.Doc ann] -> Pretty.Doc ann
+usageSection
+    :: Pretty command
+    => command
+    -> [Pretty.Doc (Result Pretty.AnsiStyle)]
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
 usageSection commandName ds =
-    section "Usage:" $ ((pretty commandName <+>) <$> ds) <> [""]
+    section "Usage:"
+        $   ( ds <&> \rest ->
+                pretty commandName <+> globalOptions <+> rest
+            )
+        <>  [""]
 
-globalOptionsSection
+globalOptionsHelp
     :: Pretty toolset
     => toolset
     -> Pretty.Doc (Result Pretty.AnsiStyle)
-globalOptionsSection toolset =
-    section (Pretty.annotate dullGreen "GLOBAL_OPTIONS" <> ":")
-        [ Pretty.reflow "See output of" <+> Pretty.squotes callHelp <> "."
+globalOptionsHelp toolset =
+    optionDescription ["GLOBAL_OPTIONS"]
+        [ Pretty.reflow "See output of" <++> Pretty.squotes callHelp <> "."
         ]
   where
-    callHelp = Pretty.annotate magenta (pretty toolset <+> "help")
+    callHelp = toolsetCommand toolset "help"
 
 section :: Pretty.Doc ann -> [Pretty.Doc ann] -> Pretty.Doc ann
 section d ds = Pretty.nest 2 $ Pretty.vsep (d : "" : ds)
 
-option :: [Text] -> [Text] -> Pretty.Doc (Result Pretty.AnsiStyle)
-option opts ds = Pretty.vsep
+optionDescription
+    :: [Text]
+    -> [Pretty.Doc (Result Pretty.AnsiStyle)]
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
+optionDescription opts ds = Pretty.vsep
     [ prettyOpts opts
-    , Pretty.indent 4 $ Pretty.hsep (Pretty.reflow <$> ds)
+    , Pretty.indent 4 $ Pretty.fillSep ds
     , ""
     ]
   where
@@ -222,7 +306,32 @@ option opts ds = Pretty.vsep
         . Pretty.punctuate Pretty.comma
         . fmap (Pretty.annotate dullGreen . pretty)
 
-dieTooManyArguments :: AppNames -> Config -> String -> IO a
-dieTooManyArguments AppNames{usedName} Config{verbosity, colourOutput} arg =
-    Message.dieTooManyArguments (fromString usedName) "help" verbosity
-        (fromMaybe ColourOutput.Auto colourOutput) stderr (fromString arg)
+shortOption :: Char -> Pretty.Doc (Result Pretty.AnsiStyle)
+shortOption o = Pretty.annotate dullGreen ("-" <> pretty o)
+
+longOption :: Text -> Pretty.Doc (Result Pretty.AnsiStyle)
+longOption o = Pretty.annotate dullGreen ("--" <> pretty o)
+
+metavar :: Text -> Pretty.Doc (Result Pretty.AnsiStyle)
+metavar = Pretty.annotate dullGreen . pretty
+
+value :: Text -> Pretty.Doc (Result Pretty.AnsiStyle)
+value = Pretty.annotate dullGreen . pretty
+
+optionalMetavar :: Text -> Pretty.Doc (Result Pretty.AnsiStyle)
+optionalMetavar = Pretty.brackets . metavar
+
+command
+    :: Pretty.Doc (Result Pretty.AnsiStyle)
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
+command = Pretty.annotate magenta
+
+toolsetCommand
+    :: Pretty toolset
+    => toolset
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
+toolsetCommand toolset doc = Pretty.annotate magenta (pretty toolset <+> doc)
+
+(<++>) :: Pretty.Doc ann -> Pretty.Doc ann -> Pretty.Doc ann
+x <++> y = x <> Pretty.softline <> y

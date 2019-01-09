@@ -14,6 +14,8 @@ module CommandWrapper.Options.Optparse
     (
     -- * Generic API
       parse
+    , subcommandParse
+    , internalSubcommandParse
 
     -- ** Helper Functions
     , splitArguments
@@ -23,13 +25,14 @@ module CommandWrapper.Options.Optparse
   where
 
 import Control.Applicative (pure)
+import Control.Monad ((>>=))
 import Data.Bool ((&&))
 import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
 import Data.Functor (Functor, (<$>))
-import Data.Function (($))
+import Data.Function (($), (.))
 import qualified Data.List as List (span)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (Endo, (<>))
 import Data.String (String)
 import System.Environment (getArgs)
@@ -37,7 +40,9 @@ import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (IO, stderr)
 
 import Control.Comonad (Comonad, extract)
+import Data.Verbosity (Verbosity)
 import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
+import Data.Output.Colour (ColourOutput)
 import qualified Data.Output.Colour as ColourOutput (ColourOutput(Auto))
 import qualified Options.Applicative as Options
     ( ParserFailure(ParserFailure, execFailure)
@@ -49,7 +54,11 @@ import qualified Options.Applicative as Options
 import qualified Options.Applicative.Common as Options (runParserInfo)
 import qualified Options.Applicative.Internal as Options (runP)
 
+import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Environment.AppNames (AppNames(AppNames, usedName))
+import CommandWrapper.Environment.Params
+    ( Params(Params, colour, name, subcommand, verbosity)
+    )
 import CommandWrapper.Message (dieFailedToParseOptions)
 
 
@@ -65,7 +74,7 @@ parse
 parse appNames parserPrefs parserInfo fromGlobalMode parseArguments = do
     (globalOptions, arguments) <- splitArguments <$> getArgs
 
-    globalMode <- handleParseResult appNames (execParserPure' globalOptions)
+    globalMode <- handleParseResult' appNames (execParserPure' globalOptions)
 
     let updateConfig = extract globalMode
     updateCommand <- parseArguments updateConfig arguments
@@ -76,6 +85,38 @@ parse appNames parserPrefs parserInfo fromGlobalMode parseArguments = do
         :: [String]
         -> Options.ParserResult (globalMode (Endo config))
     execParserPure' = execParserPure parserPrefs parserInfo
+
+    handleParseResult' AppNames{usedName} =
+        -- TODO: We should at least respect `NO_COLOR`.
+        handleParseResult usedName Verbosity.Normal ColourOutput.Auto
+
+subcommandParse
+    :: Params
+    -> Options.ParserPrefs
+    -> Options.ParserInfo (Endo (mode config))
+    -> IO (Endo (mode config))
+subcommandParse params parserPrefs parserInfo =
+    getArgs >>= handleParseResult' params . execParserPure'
+  where
+    execParserPure' = execParserPure parserPrefs parserInfo
+
+    handleParseResult' Params{colour, name, subcommand, verbosity} =
+        handleParseResult (name <> " " <> subcommand) verbosity colour
+
+internalSubcommandParse
+    :: AppNames
+    -> Config
+    -> String
+    -> Options.ParserPrefs
+    -> Options.ParserInfo (Endo (mode config))
+    -> [String]
+    -> IO (Endo (mode config))
+internalSubcommandParse appNames config subcommand parserPrefs parserInfo =
+    handleParseResult' appNames config . execParserPure parserPrefs parserInfo
+  where
+    handleParseResult' AppNames{usedName} Config{colourOutput, verbosity} =
+        handleParseResult (usedName <> " " <> subcommand) verbosity
+            (fromMaybe ColourOutput.Auto colourOutput)
 
 -- | Split arguments into global options and the rest.
 --
@@ -119,15 +160,19 @@ execParserPure pprefs pinfo args =
     (Left err, ctx) ->
         Options.Failure (Options.parserFailure pprefs pinfo err ctx)
 
-handleParseResult :: AppNames -> Options.ParserResult a -> IO a
-handleParseResult AppNames{usedName} = \case
+handleParseResult
+    :: String
+    -> Verbosity
+    -> ColourOutput
+    -> Options.ParserResult a
+    -> IO a
+handleParseResult command verbosity colour = \case
     Options.Success a ->
         pure a
 
     Options.Failure Options.ParserFailure{Options.execFailure} ->
-        let (err, _, _) = execFailure usedName
-        in dieFailedToParseOptions usedName Verbosity.Normal ColourOutput.Auto
-            stderr err
+        let (err, _, _) = execFailure command
+        in dieFailedToParseOptions command verbosity colour stderr err
 
     Options.CompletionInvoked _ ->
         exitWith (ExitFailure 1) -- TODO: This is imposible case.

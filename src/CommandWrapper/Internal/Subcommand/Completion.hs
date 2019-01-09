@@ -41,8 +41,10 @@ import GHC.Generics (Generic)
 import System.IO (IO, putStrLn)
 import Text.Show (Show)
 
-import qualified Data.Text.Prettyprint.Doc as Pretty (Doc, vsep)
+import Data.Text.Prettyprint.Doc ((<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty (Doc, brackets, vsep)
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Mainplate (applySimpleDefaults)
 import qualified Safe (headMay)
 import Text.Fuzzy as Fuzzy (Fuzzy)
@@ -52,10 +54,13 @@ import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External (findSubcommands)
 import CommandWrapper.Internal.Subcommand.Help
-    ( globalOptionsSection
-    , option
+    ( globalOptionsHelp
+    , metavar
+    , optionDescription
+    , optionalMetavar
     , section
     , usageSection
+    , value
     )
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message (Result)
@@ -208,15 +213,17 @@ completion appNames options globalConfig =
 completionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 completionSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
-        [ "[GLOBAL_OPTIONS] completion [--] [WORD]"
+        [ "completion" <+> Pretty.brackets (value "--")
+            <+> optionalMetavar "WORD"
         ]
 
     , section "Options:"
-        [ option ["WORD"]
-            [ "WORD to complete."
+        [ optionDescription ["WORD"]
+            [ metavar "WORD", Pretty.reflow "to complete."
             ]
+
+        , globalOptionsHelp usedName
         ]
 
-    , globalOptionsSection usedName
     , ""
     ]
