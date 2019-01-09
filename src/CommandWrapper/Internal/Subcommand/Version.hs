@@ -100,7 +100,9 @@ instance Dhall.Inject PrettyVersion where
 data VersionInfo = VersionInfo
     { commandWrapper :: PrettyVersion
     , subcommandProtocol :: PrettyVersion
-    , dhallLibrary :: PrettyVersion
+    , dhallLibrary :: Text
+    -- TODO: We would like to use PrettyVersion, but we are getting string via
+    -- CPP.
     , dhallStandard :: PrettyVersion
     }
   deriving stock (Generic, Show)
@@ -156,16 +158,15 @@ versionInfoDoc VersionInfo{..} = Pretty.vsep
 
 versionInfoBash :: VersionInfo -> Text
 versionInfoBash VersionInfo{..} = Text.unlines
-    [ var "TOOL" commandWrapper
-    , var "SUBCOMMAND_PROTOCOL" subcommandProtocol
+    [ var "TOOL" (showVersion' commandWrapper)
+    , var "SUBCOMMAND_PROTOCOL" (showVersion' subcommandProtocol)
     , var "DHALL_LIBRARY" dhallLibrary
-    , var "DHALL_STANDARD" dhallStandard
+    , var "DHALL_STANDARD" (showVersion' dhallStandard)
     ]
   where
-    var n v =
-        "COMMAND_WRAPPER_" <> n <> "_VERSION=\""
-        <> fromString (showVersion (rawVersion v))
-        <> "\""
+    showVersion' = fromString . showVersion . rawVersion
+
+    var n v = "COMMAND_WRAPPER_" <> n <> "_VERSION=\"" <> v <> "\""
 
 parseOptions :: AppNames -> Config -> [String] -> IO (Endo (VersionMode ()))
 parseOptions appNames config options =

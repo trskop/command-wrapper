@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Internal
@@ -51,9 +52,13 @@ import Text.Show (Show)
 
 import qualified Data.Text.Prettyprint.Doc as Pretty (Doc)
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Dhall.Binary as Dhall
+    ( StandardVersion(..)
+    , defaultStandardVersion
+    )
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
-import CommandWrapper.Environment (AppNames)
+import CommandWrapper.Environment (AppNames, subcommandProtocolVersion)
 import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
     ( CompletionMode(..)
     , completion
@@ -111,12 +116,22 @@ run appNames = \case
     CompletionCommand options -> Subcommand.completion appNames options
     VersionCommand options -> Subcommand.version versionInfo appNames options
   where
-    -- TODO: Define real version information.
+    -- TODO: Is this the best place for this definition?
     versionInfo = Subcommand.VersionInfo
         { commandWrapper = Subcommand.PrettyVersion version
-        , subcommandProtocol = Subcommand.PrettyVersion (makeVersion [1, 0, 0])
-        , dhallLibrary = Subcommand.PrettyVersion (makeVersion [1, 20, 1])
-        , dhallStandard = Subcommand.PrettyVersion (makeVersion [5, 0, 0])
+
+        , subcommandProtocol =
+            Subcommand.PrettyVersion subcommandProtocolVersion
+
+        -- TODO: We would like to use PrettyVersion, however, that would
+        -- require parsing the version string.  Best approach would probably be
+        -- TemplateHaskell, so that we can fail during compilation time.
+        , dhallLibrary = VERSION_dhall
+
+        -- This is a hacky way how to figure out what standard Dhall library is
+        -- using.  It should also fail to compile if it changes.
+        , dhallStandard = case Dhall.defaultStandardVersion of
+            Dhall.V_5_0_0 -> Subcommand.PrettyVersion (makeVersion [5, 0, 0])
         }
 
 -- {{{ Help Command -----------------------------------------------------------

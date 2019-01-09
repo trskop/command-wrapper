@@ -54,7 +54,7 @@ import qualified CommandWrapper.Config.Global as Global
     ( Config(Config, colourOutput, searchPath, verbosity)
     )
 import qualified CommandWrapper.Environment as Environment
-    ( AppNames(AppNames, exePath, exeVersion, names, usedName)
+    ( AppNames(AppNames, exePath, names, usedName)
     , Params
         ( Params
         , colour
@@ -68,6 +68,7 @@ import qualified CommandWrapper.Environment as Environment
     , commandWrapperEnv
     , getEnv
     , mkEnvVars
+    , subcommandProtocolVersion
     )
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     ( ColourOutput(Auto)
@@ -121,7 +122,7 @@ executeCommand appNames subcommand arguments globalConfig =
     commands = names <&> \prefix ->
         (prefix, prefix <> "-" <> subcommand)
 
-    Environment.AppNames{exePath, exeVersion, usedName, names} = appNames
+    Environment.AppNames{exePath, usedName, names} = appNames
 
     Global.Config{verbosity, colourOutput = possiblyColourOutput} = globalConfig
     colourOutput = fromMaybe ColourOutput.Auto possiblyColourOutput
@@ -135,7 +136,7 @@ executeCommand appNames subcommand arguments globalConfig =
             , config
             , verbosity
             , colour = colourOutput
-            , version = exeVersion
+            , version = Environment.subcommandProtocolVersion
             }
 
 findSubcommandExecutable

@@ -15,6 +15,8 @@ module CommandWrapper.Environment.Params
     (
       Params(..)
 
+    , subcommandProtocolVersion
+
     -- * Environment Builder
     , mkEnvVars
     , commandWrapperEnv
@@ -36,7 +38,7 @@ import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Semigroup (Semigroup((<>)))
 import Data.String (String, fromString)
 import Data.Tuple (snd, uncurry)
-import Data.Version (Version, parseVersion, showVersion)
+import Data.Version (Version, makeVersion, parseVersion, showVersion)
 import GHC.Generics (Generic)
 import System.IO (FilePath)
 import Text.Show (Show, show)
@@ -87,6 +89,11 @@ data Params = Params
     , version :: Version
     }
   deriving stock (Generic, Show)
+
+-- | Subcommand protocol is versioned separately from Command Wrapper library
+-- and Command Wrapper tool.
+subcommandProtocolVersion :: Version
+subcommandProtocolVersion = makeVersion [1, 0, 0]
 
 -- | Build environment as defined by Subcommand Protocol.  This has to be used
 -- when calling a Command Wrapper subcommand.
@@ -145,7 +152,7 @@ askParams = Params
   where
     var = fmap Text.unpack . commandWrapperVar
 
-    verbosityVar name = do
+    verbosityVar name =
         commandWrapperVar' name >>= uncurry parseAsVerbosity
 
     colourOutputVar name =
