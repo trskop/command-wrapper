@@ -60,6 +60,7 @@ dependencies:
   - prettyprinter
   - prettyprinter-ansi-terminal
   - safe
+  - template-haskell
   - terminal-size
   - terminfo
   - text

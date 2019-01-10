@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE QuasiQuotes #-}
 -- |
 -- Module:      CommandWrapper.Internal
 -- Description: Internal commands supported by CommandWrapper
@@ -79,6 +80,7 @@ import qualified CommandWrapper.Internal.Subcommand.Version as Subcommand
     , VersionMode(..)
     , PrettyVersion(..)
     , version
+    , versionQQ
     , versionSubcommandHelp
     )
 import CommandWrapper.Internal.Utils (runMain)
@@ -126,7 +128,8 @@ run appNames = \case
         -- TODO: We would like to use PrettyVersion, however, that would
         -- require parsing the version string.  Best approach would probably be
         -- TemplateHaskell, so that we can fail during compilation time.
-        , dhallLibrary = VERSION_dhall
+        , dhallLibrary =
+            Subcommand.PrettyVersion [Subcommand.versionQQ|VERSION_dhall|]
 
         -- This is a hacky way how to figure out what standard Dhall library is
         -- using.  It should also fail to compile if it changes.

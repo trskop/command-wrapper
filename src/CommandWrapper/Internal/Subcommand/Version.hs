@@ -15,6 +15,7 @@ module CommandWrapper.Internal.Subcommand.Version
     , PrettyVersion(..)
     , version
     , versionSubcommandHelp
+    , versionQQ
     )
   where
 
@@ -22,9 +23,8 @@ import Control.Applicative ((<|>))
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(Endo))
 import Data.String (fromString)
-import Data.Version (Version(versionBranch), showVersion)
+import Data.Version (showVersion)
 import GHC.Generics (Generic)
-import Numeric.Natural (Natural)
 import System.IO (stdout)
 
 import Data.Monoid.Endo.Fold (foldEndo)
@@ -63,6 +63,12 @@ import CommandWrapper.Internal.Subcommand.Help
     , toolsetCommand
     , usageSection
     )
+import CommandWrapper.Internal.Subcommand.Version.Info
+    ( PrettyVersion(..)
+    , VersionInfo(..)
+    , VersionInfoField(..)
+    , versionQQ
+    )
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message (Result, defaultLayoutOptions, message)
 --import qualified CommandWrapper.Message as Message (dieTooManyArguments)
@@ -80,40 +86,6 @@ data VersionMode a
 
 data OutputFormat = PlainFormat | DhallFormat | BashFormat
   deriving stock (Generic, Show)
-
-newtype PrettyVersion = PrettyVersion {rawVersion :: Version}
-  deriving stock (Generic, Show)
-
-instance Pretty PrettyVersion where
-    pretty (PrettyVersion v) = pretty (showVersion v)
-
-instance Dhall.Inject PrettyVersion where
-    injectWith opts = Dhall.InputType
-        { embed = embedList . toNaturals . versionBranch . rawVersion
-        , declared
-        }
-      where
-        Dhall.InputType{embed = embedList, declared} = Dhall.injectWith opts
-
-        toNaturals :: [Int] -> [Natural] = fmap fromIntegral
-
-data VersionInfo = VersionInfo
-    { commandWrapper :: PrettyVersion
-    , subcommandProtocol :: PrettyVersion
-    , dhallLibrary :: Text
-    -- TODO: We would like to use PrettyVersion, but we are getting string via
-    -- CPP.
-    , dhallStandard :: PrettyVersion
-    }
-  deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Inject)
-
-data VersionInfoField
-    = CommandWrapperField
-    | SubcommandProtocolField
-    | DhallLibrary
-    | DhallStandard
-  deriving stock (Eq, Generic, Ord, Show)
 
 version
     :: VersionInfo
@@ -150,9 +122,9 @@ version versionInfo appNames options config =
 versionInfoDoc :: VersionInfo -> Pretty.Doc (Result Pretty.AnsiStyle)
 versionInfoDoc VersionInfo{..} = Pretty.vsep
     [ "Command Wrapper Tool:" <+> pretty commandWrapper
-    , "Subcommand Protocol:" <+> pretty subcommandProtocol
-    , "Dhall Library:" <+> pretty dhallLibrary
-    , "Dhall Standard:" <+> pretty dhallStandard
+    , "Subcommand Protocol: " <+> pretty subcommandProtocol
+    , "Dhall Library:       " <+> pretty dhallLibrary
+    , "Dhall Standard:      " <+> pretty dhallStandard
     , ""
     ]
 
@@ -160,7 +132,7 @@ versionInfoBash :: VersionInfo -> Text
 versionInfoBash VersionInfo{..} = Text.unlines
     [ var "TOOL" (showVersion' commandWrapper)
     , var "SUBCOMMAND_PROTOCOL" (showVersion' subcommandProtocol)
-    , var "DHALL_LIBRARY" dhallLibrary
+    , var "DHALL_LIBRARY" (showVersion' dhallLibrary)
     , var "DHALL_STANDARD" (showVersion' dhallStandard)
     ]
   where
