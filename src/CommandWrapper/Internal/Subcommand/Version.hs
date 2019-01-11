@@ -188,6 +188,8 @@ versionSubcommandHelp AppNames{usedName} = Pretty.vsep
             [ Pretty.reflow "Print version information in Dhall format."
             ]
 
+        -- TODO: Consider having "--shell=SHELL" option instad. See `completion`
+        -- subcommand.
         , optionDescription ["--bash"]
             [ Pretty.reflow
                 "Print version information in format suitable for Bash."
