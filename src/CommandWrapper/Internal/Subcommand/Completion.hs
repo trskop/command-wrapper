@@ -411,6 +411,7 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
                 )
 
         , "completion" <+> helpOptions
+        , "help completion"
         ]
 
     , section "Options:"
@@ -425,6 +426,11 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             , metavar "SHELL" <> "."
             , Pretty.reflow "Currently only supported value is"
             , value "bash" <> "."
+            ]
+
+        , optionDescription ["--script"]
+            [ Pretty.reflow "Generate completion script suitable for sourcing"
+            , Pretty.reflow "in your shell's *rc file."
             ]
 
         , optionDescription ["--alias=ALIAS"]
