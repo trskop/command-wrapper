@@ -256,6 +256,20 @@ function commandWrapperEnvironmentVariables() {
     env | sed -n 's/\(COMMAND_WRAPPER_[^=]*\)=.*/\1/;T;p'
 }
 
+# Uses 'commandWrapperEnvironmentVariables' to list Command Wrapper environment
+# variables and then unsets them.  Useful if we need to remove them before
+# executing something.
+#
+# Usage:
+#
+#   removeCommandWrapperEnvironmentVariables
+function removeCommandWrapperEnvironmentVariables() {
+    local -a vars=()
+    mapfile -t vars < <(commandWrapperEnvironmentVariables)
+    export -n "${vars[@]}"
+    unset vars
+}
+
 # Execute a specified command, but with Command Wrapper environment variables
 # removed from its environment.
 #
@@ -268,7 +282,6 @@ function commandWrapperEnvironmentVariables() {
 #   * Function `commandWrapperEnvironmentVariables`.
 #   * Run "help exec" for more details about Bash's exec.
 function exec_() {
-    export -n "$(commandWrapperEnvironmentVariables)"
-
+    removeCommandWrapperEnvironmentVariables
     exec "$@"
 }
