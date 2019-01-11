@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TemplateHaskell #-}
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion
 -- Description: TODO: Module synopsis
@@ -25,7 +26,7 @@ import Data.Bool (Bool(False), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq ((==))
-import Data.Foldable (all, asum, mapM_, null)
+import Data.Foldable (all, asum, forM_, mapM_, null)
 import Data.Function (($), (.), const, id)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List
@@ -39,18 +40,21 @@ import qualified Data.List as List
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
 import Data.Semigroup ((<>))
-import Data.String (String)
+import Data.String (String, fromString)
 import Data.Tuple (fst)
 import Data.Word (Word)
 import GHC.Generics (Generic)
-import System.IO (IO, putStrLn, stdout)
+import System.Exit (ExitCode(ExitFailure), exitWith)
+import System.IO (IO, putStrLn, stderr, stdout)
 import Text.Read (readMaybe)
 import Text.Show (Show)
 
 import Data.CaseInsensitive as CI (mk)
 import Data.Monoid.Endo (mapEndo)
-import Data.Monoid.Endo.Fold (foldEndo)
-import Data.Text.Prettyprint.Doc ((<+>))
+import Data.Monoid.Endo.Fold (dualFoldEndo, foldEndo)
+import Data.Text (Text)
+import qualified Data.Text.IO as Text (putStrLn)
+import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
     , brackets
@@ -59,6 +63,8 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import qualified Dhall
+import qualified Dhall.TH (staticDhallExpression)
 import qualified Mainplate (applySimpleDefaults)
 import qualified Options.Applicative as Options
     ( Parser
@@ -77,7 +83,7 @@ import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
+import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
 import qualified CommandWrapper.External as External (findSubcommands)
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
@@ -91,7 +97,7 @@ import CommandWrapper.Internal.Subcommand.Help
     , value
     )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message (Result, defaultLayoutOptions, message)
+import CommandWrapper.Message (Result, defaultLayoutOptions, errorMsg, message)
 import CommandWrapper.Options.Alias (Alias(alias))
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     ( ColourOutput(Auto)
@@ -135,6 +141,25 @@ data ScriptOptions = ScriptOptions
     , shell :: Shell
     }
   deriving stock (Generic, Show)
+
+-- | We'll change this data type to:
+-- @
+-- newtype MkCompletionScript = MkCompletionScript
+--     { mkCompletionScript :: 'Shell' -> Text -> Text -> Text
+--     }
+-- @
+newtype MkCompletionScript = MkCompletionScript
+    { mkCompletionScript :: Text -> Text -> Text -> Scripts
+    }
+  deriving stock (Generic)
+
+-- We'll get rid of this type once Dhall function is redefined to accept sum
+-- type representing shell variant.
+newtype Scripts = Scripts
+    { bash :: Text
+    }
+  deriving stock (Generic, Show)
+  deriving anyclass (Dhall.Interpret)
 
 class HasShell a where
     updateShell :: Endo Shell -> Endo a
@@ -203,8 +228,33 @@ completion appNames options config =
         --
         -- - By default it should be printed to `stdout`, but we should support
         --   writting it into a file without needing to redirect `stdout`.
-        ScriptMode ScriptOptions{shell = Bash, aliases = _} () ->
-            pure ()
+        ScriptMode ScriptOptions{shell = Bash, aliases} () -> do
+            let mkCompletionScriptExpr =
+                    $(Dhall.TH.staticDhallExpression
+                        "./dhall/CommandWrapper/completion.dhall"
+                    )
+
+                AppNames{exePath, usedName} = appNames
+
+            case MkCompletionScript <$> Dhall.extract Dhall.auto mkCompletionScriptExpr of
+                Nothing -> do
+                    -- TODO: Figure out how to handle this better.
+                    let Global.Config{colourOutput, verbosity} = config
+                        colour = fromMaybe ColourOutput.Auto colourOutput
+                        subcommand = pretty (usedName <> " completion:")
+                    errorMsg subcommand verbosity colour stderr
+                        "Failed to generate completion script."
+                    -- TODO: This is probably not the best exit code.
+                    exitWith (ExitFailure 1)
+
+                Just (MkCompletionScript mkScript) ->
+                    forM_ (usedName : aliases) $ \name ->
+                        let Scripts{bash} = mkScript
+                                (fromString name :: Text)
+                                (fromString usedName :: Text)
+                                (fromString exePath :: Text)
+
+                        in Text.putStrLn bash
 
         ListArgumentsMode whatToList () -> case whatToList of
             Subcommands pat ->
@@ -308,7 +358,7 @@ parseOptions appNames config arguments = do
     let (options, words) = Options.splitArguments arguments
 
     execParser options $ asum
-        [ foldEndo
+        [ dualFoldEndo
             <$> scriptFlag
             <*> optional shellOption
             <*> many aliasOption

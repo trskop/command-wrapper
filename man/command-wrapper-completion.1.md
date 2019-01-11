@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 8th January 2019
+% 11th January 2019
 
 
 # NAME
@@ -49,7 +49,6 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help completion
 :   *WORD*s to complete. In Bash these are the elements of `COMP_WORDS` array.
 
 
-
 # EXIT STATUS
 
 See `command-wrapper(1)` manual page section *EXIT STATUS*.
@@ -63,6 +62,26 @@ See `command-wrapper(1)` manual page section *FILES AND DIRECTORIES*.
 # ENVIRONMENT VARIABLES
 
 See `command-wrapper(1)` manual page section *ENVIRONMENT VARIABLES*.
+
+
+# BASH CONFIGURATION
+
+This subcommand can generate Bash completion script, which can be sourced in
+`~/.bashrc` file:
+
+```
+# shellcheck source=/dev/null
+source <(toolset completion --script --shell=bash)
+```
+
+Where `toolset` is the name under which `command-wrapper` is used.  If any
+aliases for `toolset` are used we can provide completion for them as well:
+
+```
+alias ts=toolset
+# shellcheck source=/dev/null
+source <(toolset completion --script --shell=bash --alias='ts')
+```
 
 
 # SEE ALSO
