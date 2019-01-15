@@ -17,9 +17,11 @@ module CommandWrapper.Internal.Dhall
 import GHC.Generics (Generic)
 import System.IO (Handle, hPutStrLn)
 
+import Data.Text.Prettyprint.Doc (Pretty)
 import qualified Dhall (InputType(InputType, embed))
-import qualified Dhall.Main as Dhall (Mode)
 import qualified Dhall.Binary as Dhall (StandardVersion)
+import qualified Dhall.Core as Dhall (Expr)
+import qualified Dhall.Main as Dhall (Mode)
 import qualified Dhall.Pretty as Dhall
     ( CharacterSet
     , annToAnsiStyle
@@ -56,7 +58,17 @@ hPut
     -> Dhall.InputType a
     -> a
     -> IO ()
-hPut colour charset handle Dhall.InputType{embed = toExpr} a = do
+hPut colour charset handle Dhall.InputType{embed = toExpr} =
+    hPutExpr colour charset handle . toExpr
+
+hPutExpr
+    :: Pretty a
+    => ColourOutput
+    -> Dhall.CharacterSet
+    -> Handle
+    -> Dhall.Expr s a
+    -> IO ()
+hPutExpr colour charset handle expr = do
     hPutDoc defaultLayoutOptions Dhall.annToAnsiStyle colour handle
-        $ Dhall.prettyCharacterSet charset (toExpr a)
+        $ Dhall.prettyCharacterSet charset expr
     hPutStrLn handle ""
