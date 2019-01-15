@@ -322,27 +322,27 @@ completion appNames options config =
                 ]
 
         in  case List.takeWhile (== '-') pat of
-                -- No option starts with "---"
-                '-' : '-' : '-' : _ -> []
+                -- Search for both, long and short option.
+                "-" ->
+                    (if pat == "-" then ("--" :) else id)
+                    $  List.filter (pat `List.isPrefixOf`) shortOptions
+                    <> List.filter (fmap Char.toLower pat `List.isPrefixOf`)
+                        (fmap fst longOptions)
 
                 -- Search for long option.
-                '-' : '-' : pat' ->
-                    case List.break (== '=') pat' of
-                        (opt, '=' : pat'') ->
-                            case join (List.lookup ("--" <> opt <> "=") longOptions) of
-                                Just f -> f pat''
+                "--" ->
+                    (if pat == "--" then ("--" :) else id)
+                    $ case List.break (== '=') pat of
+                        (opt, '=' : pat') ->
+                            case join (List.lookup (opt <> "=") longOptions) of
+                                Just f -> ((opt <> "=") <>) <$> f pat'
                                 _ -> []
                         _ ->
                             List.filter
                                 (fmap Char.toLower pat `List.isPrefixOf`)
                                 (fst <$> longOptions)
 
-                -- Search for both, long and short option.
-                '-' : _ ->
-                    List.filter (pat `List.isPrefixOf`) shortOptions
-                    <> List.filter (fmap Char.toLower pat `List.isPrefixOf`)
-                        (fmap fst longOptions)
-
+                -- No option starts with "---" or more.
                 _ -> []
 
     findKeywords :: [String] -> Global.Config -> String -> [String]
