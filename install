@@ -68,6 +68,7 @@ thisGitRepo directory ThisGitRepo{} = do
         , "app-exec/"
         , "app-skel/"
         , "src/"
+        , "man/"
         ]
     if null @[] @Char status
         then do
