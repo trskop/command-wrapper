@@ -11,7 +11,7 @@ packages:
     extra-dep: True
   - location:
       git: https://github.com/trskop/mainplate.git
-      commit: adbade9b17185119786b90ed9f539976f89e1d14
+      commit: 34bc37da5bf31fd158aeda28d3297fc7e0062ce8
     extra-dep: True
   - location:
       git: https://github.com/trskop/verbosity.git
