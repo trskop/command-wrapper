@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 6th January 2019
+% 24th January 2019
 
 
 # NAME
@@ -183,6 +183,9 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 
     This can indicate a version mismatch between Command Wrapper installation,
     and *subcommand*/*toolset* installation.
+
+`125`
+:   Functionality or an internal subcommand is not yet implemented.
 
 `126`
 :   Failed while trying to execute external subcommand or other external

@@ -223,7 +223,7 @@ dieSubcommandNotYetImplemented name verbosity colourOutput h subcommand = do
         ( Pretty.dquotes subcommand <> Pretty.colon
         <+> "Subcommand not yet implemented."
         )
-    exitWith (ExitFailure 126)
+    exitWith (ExitFailure 125)
 
 dieFailedToParseEnvironment
     :: (forall ann. Pretty.Doc ann)
