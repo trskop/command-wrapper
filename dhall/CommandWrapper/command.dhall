@@ -1,4 +1,4 @@
-let CommandWrapper = ./Type/package.dhall
+let CommandWrapper = ./Types.dhall
 
 in  { simple =
           λ(command : Text)

@@ -1,6 +1,4 @@
-let CommandWrapper = ./Type/package.dhall
-
-let verbosity = ./verbosity.dhall
+let CommandWrapper = ./Types.dhall
 
 let colourOutput = ./colour-output.dhall
 
@@ -23,7 +21,7 @@ let mkToolsetConfig =
 
           , extraHelpMessage = None Text
 
-          , verbosity = verbosity.normal
+          , verbosity = CommandWrapper.Verbosity.Normal {=}
           , colourOutput = None CommandWrapper.ColourOutput
           }
 

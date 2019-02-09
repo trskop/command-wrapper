@@ -1,6 +1,4 @@
-let CommandWrapper = ./Type/package.dhall
-
-let verbosity = ./verbosity.dhall
+let CommandWrapper = ./Types.dhall
 
 let colourOutput = ./colour-output.dhall
 
@@ -8,14 +6,15 @@ let helpMessage = ''
 
 Internal Subcommands:
 
-  help     (aliases: h, hlp)
+  help       (aliases: h, hlp)
+  config     (aliases: cfg)
+  completion
 
 External Subcommands:
 
   cd
   exec
   skel
-  completion
 ''
 
 let mkDefault =
@@ -37,6 +36,10 @@ let mkDefault =
                 , command = "help"
                 , arguments = [] : List Text
                 }
+              , { alias = "cfg"
+                , command = "config"
+                , arguments = [] : List Text
+                }
               ] : List CommandWrapper.SubcommandAlias
 
           , searchPath =
@@ -44,7 +47,7 @@ let mkDefault =
               ] : List Text
 
           , extraHelpMessage = Some helpMessage
-          , verbosity = verbosity.normal
+          , verbosity = CommandWrapper.Verbosity.Normal {=}
           , colourOutput = None CommandWrapper.ColourOutput
           }
 

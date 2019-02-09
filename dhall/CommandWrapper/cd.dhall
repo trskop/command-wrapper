@@ -1,4 +1,4 @@
-let CommandWrapper = ./Type/package.dhall
+let CommandWrapper = ./Types.dhall
 
 let terminalEmulator = ./terminal-emulator.dhall
 
