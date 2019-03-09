@@ -53,10 +53,7 @@ import Text.Show (Show)
 
 import qualified Data.Text.Prettyprint.Doc as Pretty (Doc)
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
-import qualified Dhall.Binary as Dhall
-    ( StandardVersion(..)
-    , defaultStandardVersion
-    )
+import qualified Dhall.Binary as Dhall (StandardVersion(..))
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames, subcommandProtocolVersion)
@@ -131,11 +128,20 @@ run appNames = \case
         , dhallLibrary =
             Subcommand.PrettyVersion [Subcommand.versionQQ|VERSION_dhall|]
 
-        -- This is a hacky way how to figure out what standard Dhall library is
-        -- using.  It should also fail to compile if it changes.
-        , dhallStandard = case Dhall.defaultStandardVersion of
-            Dhall.V_5_0_0 -> Subcommand.PrettyVersion (makeVersion [5, 0, 0])
+        -- This is a hacky way how to print Dhall Standard that Dhall library
+        -- is using.  Unfortunately there is no nicer alternative at the
+        -- moment.
+        , dhallStandard = dhallStandardVersion Dhall.V_5_0_0
         }
+
+dhallStandardVersion :: Dhall.StandardVersion -> Subcommand.PrettyVersion
+dhallStandardVersion = Subcommand.PrettyVersion . makeVersion . \case
+    Dhall.NoVersion -> []
+    Dhall.V_1_0_0 -> [1, 0, 0]
+    Dhall.V_2_0_0 -> [2, 0, 0]
+    Dhall.V_3_0_0 -> [3, 0, 0]
+    Dhall.V_4_0_0 -> [4, 0, 0]
+    Dhall.V_5_0_0 -> [5, 0, 0]
 
 -- {{{ Help Command -----------------------------------------------------------
 

@@ -1,7 +1,7 @@
 # For advanced use and comprehensive documentation of the format, please see:
 # https://docs.haskellstack.org/en/stable/yaml_configuration/
 
-resolver: lts-13.6
+resolver: lts-13.11
 
 packages:
   - '.'
@@ -22,10 +22,10 @@ extra-deps:
   - endo-0.3.0.1
   - fuzzy-0.1.0.0
 
-  - dhall-1.20.1
-  - dhall-bash-1.0.18
-  - dhall-json-1.2.6
-  - dhall-text-1.0.15
+  - dhall-1.21.0
+  - dhall-bash-1.0.19
+  - dhall-json-1.2.7
+  - dhall-text-1.0.16
 
 # Keeping the following in case of new Dhall release:
   # Dhall dependencies:

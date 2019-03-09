@@ -82,7 +82,7 @@ read = catchDhallExceptions . Dhall.inputFile Dhall.auto
   where
     catchDhallExceptions parse =
         (Right <$> parse)
-            `catch` handleException @Dhall.InvalidType
+            `catch` handleException @(Dhall.InvalidType Dhall.Src Dhall.X)
             `catch` handleException @Dhall.ParseError
             `catch` handleException @(Dhall.TypeError Dhall.Src Dhall.X)
 

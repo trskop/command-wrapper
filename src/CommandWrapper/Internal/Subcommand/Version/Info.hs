@@ -19,7 +19,12 @@ module CommandWrapper.Internal.Subcommand.Version.Info
 
 import qualified Data.List as List (dropWhile, takeWhile)
 import Data.Tuple (snd)
-import Data.Version (Version(versionBranch), parseVersion, showVersion)
+import Data.Version
+    ( Version(versionBranch)
+    , makeVersion
+    , parseVersion
+    , showVersion
+    )
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import Text.ParserCombinators.ReadP (readP_to_S)
@@ -43,7 +48,9 @@ newtype PrettyVersion = PrettyVersion {rawVersion :: Version}
   deriving stock (Generic, Show)
 
 instance Pretty PrettyVersion where
-    pretty (PrettyVersion v) = pretty (showVersion v)
+    pretty (PrettyVersion v)
+      | v == makeVersion [] = "N/A"
+      | otherwise           = pretty (showVersion v)
 
 instance Dhall.Inject PrettyVersion where
     injectWith opts = Dhall.InputType
