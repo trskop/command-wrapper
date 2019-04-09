@@ -161,13 +161,28 @@ parseOptions =
 
 -- TODO:
 --
--- * Allow alternatives, i.e. have a list of commands for one `NAME` and the
---   first one that is available is used.  (Just an idea.)
+-- *  Allow alternatives, i.e. have a list of commands for one `NAME` and the
+--    first one that is available is used.  (Just an idea.)
 --
--- * Implement command-line completion, when available in `command-wrapper`
---   itself.
+-- *  Implement command-line completion, when available in `command-wrapper`
+--    itself.
 --
--- * Evaluate command with and without extra arguments.  If the result is the
---   same then print warning to the user.  Dual case would be interesting as
---   well.  Having the ability to tell when the command requires additional
---   arguments, but there is no obvious simple solution.
+-- *  Evaluate command with and without extra arguments.  If the result is the
+--    same then print warning to the user.  Dual case would be interesting as
+--    well.  Having the ability to tell when the command requires additional
+--    arguments, but there is no obvious simple solution.
+--
+-- *  Ability to take Dhall function of the following type:
+--
+--    ```
+--    Verbosity -> ColourOutput -> [Text] -> Command
+--    ```
+--
+--    As an argument and execute it.
+--
+--    ```
+--    TOOLSET exec --command=DHALL [ARGUMENTS]
+--    ```
+--
+--    Since Dhall supports imports, the above will work for files and URLs as
+--    well.
