@@ -33,8 +33,7 @@ import qualified Dhall
     )
 import qualified Dhall.Core as Dhall
     ( Expr
-        ( Annot
-        , App
+        ( App
         , List
         , ListLit
         , None
@@ -123,15 +122,9 @@ inputList Dhall.InputType{..} = Dhall.InputType
     }
 
 inputMaybe :: Dhall.InputType a -> Dhall.InputType (Maybe a)
-inputMaybe Dhall.InputType{..} = inputAnnotated Dhall.InputType
+inputMaybe Dhall.InputType{..} = Dhall.InputType
     { declared = Dhall.Optional `Dhall.App` declared
-    , embed = maybe Dhall.None (Dhall.Some . embed)
-    }
-
-inputAnnotated :: Dhall.InputType a -> Dhall.InputType a
-inputAnnotated Dhall.InputType{..} = Dhall.InputType
-    { declared
-    , embed = \a -> embed a `Dhall.Annot` declared
+    , embed = maybe (Dhall.None `Dhall.App` declared) (Dhall.Some . embed)
     }
 
 -- }}} Helper Functions -- Do Not Export --------------------------------------
