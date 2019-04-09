@@ -17,10 +17,33 @@ module CommandWrapper.Config.Command
     )
   where
 
+import Data.String (fromString)
 import GHC.Generics (Generic)
+import GHC.Exts (IsList(fromList))
 
 import Data.Text (Text)
-import qualified Dhall (Interpret)
+import Dhall ((>$<), (>*<))
+import qualified Dhall
+    ( Inject(injectWith)
+    , InputType(InputType, declared, embed)
+    , Interpret
+    , InterpretOptions(InterpretOptions, fieldModifier)
+    , inputRecord
+    , inputFieldWith
+    )
+import qualified Dhall.Core as Dhall
+    ( Expr
+        ( Annot
+        , App
+        , List
+        , ListLit
+        , None
+        , Optional
+        , Some
+        , Text
+        , TextLit
+        )
+    )
 import Data.Verbosity (Verbosity)
 
 import CommandWrapper.Config.Environment (EnvironmentVariable)
@@ -31,9 +54,8 @@ data NamedCommand = NamedCommand
     { name :: Text
     , command :: Verbosity -> ColourOutput -> [Text] -> Command
     }
-  deriving (Generic)
-
-instance Dhall.Interpret NamedCommand
+  deriving stock (Generic)
+  deriving anyclass (Dhall.Interpret)
 
 isNamed :: Text -> NamedCommand -> Bool
 isNamed expectedName NamedCommand{name} = name == expectedName
@@ -48,15 +70,68 @@ data Command = Command
     -- ^ Search @PATH@ when looking for 'command'?
     , workingDirectory :: Maybe FilePath
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
+  deriving anyclass (Dhall.Interpret)
 
-instance Dhall.Interpret Command
+instance Dhall.Inject Command where
+    injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.inputRecord
+        ( adapt
+            >$< field "command" inputString
+            >*< field "arguments" (inputList inputString)
+            >*< field "environment" (Dhall.injectWith opts)
+            >*< field "searchPath" (Dhall.injectWith opts)
+            >*< field "workingDirectory" (inputMaybe inputString)
+        )
+      where
+        adapt Command{..} =
+            (command, (arguments, (environment, (searchPath, workingDirectory))))
+
+        field = Dhall.inputFieldWith . fieldModifier
 
 data SimpleCommand = SimpleCommand
     { command :: FilePath
     , arguments :: [String]
     , environment :: [EnvironmentVariable]
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
+  deriving anyclass (Dhall.Interpret)
 
-instance Dhall.Interpret SimpleCommand
+instance Dhall.Inject SimpleCommand where
+    injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.inputRecord
+        ( adapt
+            >$< field "command" inputString
+            >*< field "arguments" (inputList inputString)
+            >*< field "environment" (Dhall.injectWith opts)
+        )
+      where
+        adapt SimpleCommand{..} = (command, (arguments, environment))
+
+        field = Dhall.inputFieldWith . fieldModifier
+
+-- {{{ Helper Functions -- Do Not Export --------------------------------------
+
+inputString :: Dhall.InputType String
+inputString = Dhall.InputType
+    { declared = Dhall.Text
+    , embed = Dhall.TextLit . fromString
+    }
+
+inputList :: Dhall.InputType a -> Dhall.InputType [a]
+inputList Dhall.InputType{..} = Dhall.InputType
+    { declared = Dhall.List `Dhall.App` declared
+    , embed = Dhall.ListLit (Just declared) . fromList . fmap embed
+    }
+
+inputMaybe :: Dhall.InputType a -> Dhall.InputType (Maybe a)
+inputMaybe Dhall.InputType{..} = inputAnnotated Dhall.InputType
+    { declared = Dhall.Optional `Dhall.App` declared
+    , embed = maybe Dhall.None (Dhall.Some . embed)
+    }
+
+inputAnnotated :: Dhall.InputType a -> Dhall.InputType a
+inputAnnotated Dhall.InputType{..} = Dhall.InputType
+    { declared
+    , embed = \a -> embed a `Dhall.Annot` declared
+    }
+
+-- }}} Helper Functions -- Do Not Export --------------------------------------

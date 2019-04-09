@@ -29,7 +29,8 @@ import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
 import qualified Data.Text as Text (unpack)
 import qualified Data.Text.IO as Text (putStrLn)
-import qualified Dhall (Interpret, auto, inputFile)
+import qualified Dhall (Interpret, auto, inject, inputFile)
+import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
     ( Parser
     , defaultPrefs
@@ -53,10 +54,12 @@ import qualified CommandWrapper.Config.Environment as EnvironmentVariable
     ( toTuple
     )
 import qualified CommandWrapper.Options as Options (splitArguments)
+import qualified CommandWrapper.Internal.Dhall as Dhall (hPut)
 import CommandWrapper.Prelude
     ( Params(Params, colour, config, verbosity)
     , dieWith
     , stderr
+    , stdout
     , subcommandParams
     )
 
@@ -64,9 +67,10 @@ import CommandWrapper.Prelude
 newtype Config = Config
     { commands :: [NamedCommand]
     }
-  deriving (Generic)
+  deriving stock (Generic)
+  deriving anyclass (Dhall.Interpret)
 
-instance Dhall.Interpret Config
+data Action = List | DryRun | Run
 
 main :: IO ()
 main = do
@@ -75,24 +79,32 @@ main = do
     (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
 
     Config{commands} <- Dhall.inputFile Dhall.auto configFile
-    listCommands <- fmap ($ False) . Options.handleParseResult
+    action <- fmap ($ Run) . Options.handleParseResult
         $ Options.execParserPure
             Options.defaultPrefs
             (Options.info (Options.helper <*> parseOptions) description)
             options
 
-    if listCommands
-        then
+    case action of
+        List ->
             mapM_ (Text.putStrLn . (name :: NamedCommand -> Text)) commands
-        else
-            case fromString <$> commandAndItsArguments of
-                [] ->
-                    dieWith params stderr 1 "COMMAND: Missing argument."
 
-                name : arguments ->
-                    getCommand params commands name arguments
-                    >>= executeCommand
+        DryRun ->
+            getExecutableCommand params commands commandAndItsArguments
+                >>= printCommand params
+
+        Run ->
+            getExecutableCommand params commands commandAndItsArguments
+                >>= executeCommand
   where
+    getExecutableCommand params commands commandAndItsArguments =
+        case fromString <$> commandAndItsArguments of
+            [] ->
+                dieWith params stderr 1 "COMMAND: Missing argument."
+
+            name : arguments ->
+                getCommand params commands name arguments
+
     description = mconcat
         [ Options.fullDesc
         , Options.progDesc "Execute a command with predefined environment and\
@@ -136,10 +148,15 @@ executeCommand Command{..} = do
         varToTuple =
             bimap Text.unpack Text.unpack . EnvironmentVariable.toTuple
 
-parseOptions :: Options.Parser (Bool -> Bool)
+printCommand :: Params -> Command -> IO ()
+printCommand Params{colour} =
+    Dhall.hPut colour Dhall.Unicode stdout Dhall.inject
+
+parseOptions :: Options.Parser (Action -> Action)
 parseOptions =
-    Options.flag' (const True) (Options.short 'l' <> Options.long "list")
-    <|> Options.flag' (const True) (Options.long "ls")
+    Options.flag' (const List) (Options.short 'l' <> Options.long "list")
+    <|> Options.flag' (const List) (Options.long "ls")
+    <|> Options.flag' (const DryRun) (Options.long "print")
     <|> pure id
 
 -- TODO:

@@ -17,7 +17,7 @@ module CommandWrapper.Config.Environment
 
 import GHC.Generics (Generic)
 
-import qualified Dhall (Interpret)
+import qualified Dhall (Inject, Interpret)
 
 import CommandWrapper.Environment.Variable (EnvVarName, EnvVarValue)
 
@@ -26,9 +26,8 @@ data EnvironmentVariable = EnvironmentVariable
     { name :: EnvVarName
     , value :: EnvVarValue
     }
-  deriving (Generic, Show)
-
-instance Dhall.Interpret EnvironmentVariable
+  deriving stock (Generic, Show)
+  deriving anyclass (Dhall.Inject, Dhall.Interpret)
 
 toTuple :: EnvironmentVariable -> (EnvVarName, EnvVarValue)
 toTuple EnvironmentVariable{name, value} = (name, value)
