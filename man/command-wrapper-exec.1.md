@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 6th January 2019
+% 9th April 2019
 
 
 # NAME
@@ -14,6 +14,8 @@ environment.
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec COMMAND [\--] \[EXTRA\_COMMAND\_ARGUMENTS]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec --print COMMAND [\--] \[EXTRA\_COMMAND\_ARGUMENTS]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--help|-h}
 
@@ -29,7 +31,7 @@ arguments.
 
 Most of the features, as well as restriction, come from using Dhall for
 configuration.  Biggest advantage is probably that it is possible to share
-command definitions in the form of Dhall filles that we can safely import, even
+command definitions in the form of Dhall files that we can safely import, even
 from a URL.  All of this can be done without dropping to general purpose
 scripting language like Bash.
 
@@ -38,6 +40,11 @@ scripting language like Bash.
 
 \--list, \--ls, -l
 :   List available *COMMAND*s.
+
+\--print
+:   Print command as it will be executed in Dhall format.  Can be used as
+    dry-run functionality, for debugging, and for creating template when adding
+    new command.
 
 `COMMAND`
 :   `COMMAND` is a symbolic command name as it is specified in configuration
