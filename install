@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-exec "$(dirname "${0}")/Shakefile.hs" --colour
+exec "$(dirname "$0")/Shakefile.hs" --colour "$@"
