@@ -134,6 +134,7 @@ globalOptions = withGlobalMode
     <*> ( foldEndo
             <$> verbosityOptions
             <*> colourOptions
+            <*> noAliasesOption
         )
 
 verbosityOptions :: Options.Parser (Endo Global.Config)
@@ -152,6 +153,16 @@ colourOptions = modifyConfig <$> ColourOutput.options
             { Global.Config.colourOutput =
                 getLast (Last colourOutput <> Last newValue)
             }
+
+noAliasesOption :: Options.Parser (Endo Global.Config)
+noAliasesOption = Options.flag mempty modifyConfig $ mconcat
+    [ Options.long "no-aliases"
+    , Options.help "Ignore SUBCOMMAND aliases."
+    ]
+  where
+    modifyConfig :: Endo Global.Config
+    modifyConfig =
+        Endo $ \config -> config{Global.Config.aliases = []}
 
 withGlobalMode
     :: Options.Parser

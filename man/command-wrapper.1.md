@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 24th January 2019
+% 10th April 2019
 
 
 # NAME
@@ -98,7 +98,7 @@ this manual.
 \--no-aliases
 :   Ignore *SUBCOMMAND* aliases.  This is useful when used from e.g. scripts to
     avoid issues with user defined aliases interfering with how the script
-    behaves.  **TODO: Not yet implemented!**
+    behaves.
 
 \--change-directory=*DIRECTORY*, -C *DIRECTORY*,
 :   Change working directory before doing anything, especially executing a

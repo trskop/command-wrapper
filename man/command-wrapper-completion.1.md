@@ -69,10 +69,12 @@ interface for querying Command Wrapper's command line interface (CLI).
 
 \--subcommands
 :   Query all available subcommands.  This includes internal subcommands,
-    external subcommands, and subcommand aliases.
+    external subcommands, and subcommand aliases.  See also global option
+    `--no-aliases` in `command-wrapper(1)`.
 
 \--subcommand-aliases
-:   Query available subcommand aliases.
+:   Query available subcommand aliases.  See also global option `--no-aliases`
+    in `command-wrapper(1)`.
 
 \--supported-shells
 :   Query shells supported by command line completion.  (Currently only Bash is

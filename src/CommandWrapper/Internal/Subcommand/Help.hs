@@ -105,6 +105,7 @@ help internalHelp appNames options config =
                     External.executeCommand appNames cmd ["--help"] config
 
         ManPage _topic _config ->
+            -- TODO: Implement this.
             pure ()
   where
     defaults = Mainplate.applySimpleDefaults (MainHelp ())
@@ -153,6 +154,7 @@ mainHelpMsg AppNames{usedName} = Pretty.vsep
         , "config" <+> optionalMetavar "CONFIG_OPTIONS" <+> optionalSubcommand
         , "version" <+> optionalMetavar "VERSION_OPTIONS"
         , "completion" <+> optionalMetavar "COMPLETION_OPTIONS"
+        , Pretty.braces (longOption "version" <> "|" <> shortOption 'V')
         , helpOptions
         ]
 
@@ -194,8 +196,18 @@ mainHelpMsg AppNames{usedName} = Pretty.vsep
             , Pretty.squotes (longOption "colour=never") <> "."
             ]
 
+        , optionDescription ["--no-aliases"]
+            [ "Ignore", metavar "SUBCOMMAND", Pretty.reflow "aliases. This is\
+                \ useful when used from e.g. scripts to avoid issues with user\
+                \ defined aliases interfering with how the script behaves."
+            ]
+
         , optionDescription ["--version", "-V"]
             [ Pretty.reflow "Print version information to stdout and exit."
+            ]
+
+        , optionDescription ["--help", "-h"]
+            [ Pretty.reflow "Print this help and exit."
             ]
         ]
     , ""
