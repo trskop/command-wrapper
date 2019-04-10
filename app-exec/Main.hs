@@ -186,3 +186,27 @@ parseOptions =
 --
 --    Since Dhall supports imports, the above will work for files and URLs as
 --    well.
+--
+-- *  Support desktop notifications:
+--
+--    ```
+--    { commands =
+--        [ ...
+--        , { name = "build-and-notify"
+--          , command = ./build-command.dhall
+--          , notify =
+--              Some
+--                { when = <Always = {=} | TakesLongerThan : Natural>
+--                , params =
+--                      \(exitCode : <ExitSuccess : {} | ExitFailure : Natural>)
+--                    -> { icon = foldExitCode (Optional Text) (Some "dialog-information") (Some "dialog-error") exitCode
+--                       , urgency = foldExitCode (Optional Text) (Some "low") (Some "normal") exitCode
+--                       , message = "Build ${foldExitCode Text "finished successfully" "failed"}."
+--                       , soundFile = None Text
+--                       }
+--                }
+--          }
+--        , ...
+--        ]
+--    }
+--    ```
