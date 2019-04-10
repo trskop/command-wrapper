@@ -20,7 +20,7 @@ module CommandWrapper.Internal.Subcommand.Completion
 
 import Prelude (fromIntegral)
 
-import Control.Applicative ((<*>), many, optional, pure)
+import Control.Applicative ((<*>), (<|>), many, optional, pure)
 import Control.Monad ((>>=), join)
 import Data.Bool (Bool(False), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
@@ -111,8 +111,20 @@ import qualified CommandWrapper.Options.Optparse as Options
 data Shell = Bash
   deriving (Generic, Show)
 
-newtype WhatArgumentsToList
-    = Subcommands String
+data Query = Query
+    { what :: WhatToQuery
+
+    , pattern :: String
+    -- ^ TODO: This conflates pattern not present and empty pattern.  Maybe we
+    -- should support multiple patterns, in which case this will nicely unite
+    -- with 'CompletionOptions'.
+
+    , caseSensitive :: Bool
+    -- ^ Be case sensitive when pattern matching values.
+    --
+    -- * @False@: don't be case sensitive when pattern matching.
+    -- * @True@: be case sensitive when pattern matching.
+    }
   deriving (Generic, Show)
     -- TODO: Extend this data type to be able to list various combinations of
     -- following groups:
@@ -122,10 +134,24 @@ newtype WhatArgumentsToList
     -- - Aliases
     -- - Global options
 
+data WhatToQuery
+    = QuerySubcommands
+    | QuerySubcommandAliases
+    | QueryVerbosityValues
+    | QuerySupportedShells
+  deriving (Generic, Show)
+
+defQueryOptions :: Query
+defQueryOptions = Query
+    { what = QuerySubcommands
+    , pattern = ""
+    , caseSensitive = False
+    }
+
 data CompletionMode a
     = CompletionMode CompletionOptions a
     | ScriptMode ScriptOptions a
-    | ListArgumentsMode WhatArgumentsToList a
+    | QueryMode Query a
     | HelpMode a
   deriving stock (Functor, Generic, Show)
 
@@ -256,10 +282,42 @@ completion appNames options config =
 
                         in Text.putStrLn bash
 
-        ListArgumentsMode whatToList () -> case whatToList of
-            Subcommands pat ->
-                findSubcommandsFuzzy config pat
-                    >>= mapM_ (putStrLn . Fuzzy.original)
+        QueryMode query@Query{..} () -> case what of
+            QuerySubcommands
+              | null pattern ->
+                    getSubcommands config >>= mapM_ putStrLn
+
+              | otherwise ->
+                    findSubcommandsFuzzy config query
+                        >>= mapM_ (putStrLn . Fuzzy.original)
+
+            QuerySubcommandAliases
+              | null pattern ->
+                    mapM_ putStrLn (getAliases config)
+
+              | otherwise ->
+                    mapM_ (putStrLn . Fuzzy.original)
+                        (findSubcommandAliasesFuzzy config query)
+
+            QueryVerbosityValues
+              | null pattern ->
+                    mapM_ putStrLn verbosityValues
+
+              | otherwise ->
+                    mapM_ (putStrLn . Fuzzy.original)
+                        ( Fuzzy.filter pattern verbosityValues "" "" id
+                            caseSensitive
+                        )
+
+            QuerySupportedShells
+              | null pattern ->
+                    mapM_ putStrLn supportedShells
+
+              | otherwise ->
+                    mapM_ (putStrLn . Fuzzy.original)
+                        ( Fuzzy.filter pattern supportedShells "" "" id
+                            caseSensitive
+                        )
 
         HelpMode () ->
             let Global.Config{colourOutput, verbosity} = config
@@ -277,6 +335,9 @@ completion appNames options config =
 
         in Mainplate.applySimpleDefaults (CompletionMode opts ())
 
+    getAliases :: Global.Config -> [String]
+    getAliases = List.nub . fmap alias . Global.aliases
+
     getSubcommands :: Global.Config -> IO [String]
     getSubcommands cfg = do
         extCmds <- External.findSubcommands appNames cfg
@@ -286,23 +347,34 @@ completion appNames options config =
 
         pure (List.nub $ aliases <> internalCommands <> extCmds)
 
-    findSubcommandsFuzzy :: Global.Config -> String -> IO [Fuzzy String String]
-    findSubcommandsFuzzy cfg pat = do
+    findSubcommandsFuzzy :: Global.Config -> Query -> IO [Fuzzy String String]
+    findSubcommandsFuzzy cfg Query{pattern, caseSensitive} = do
         cmds <- getSubcommands cfg
+        pure (Fuzzy.filter pattern cmds "" "" id caseSensitive)
 
-        let caseSensitiveSearch = False -- TODO: Move to config.
-        pure (Fuzzy.filter pat cmds "" "" id caseSensitiveSearch)
+    findSubcommandAliasesFuzzy
+        :: Global.Config
+        -> Query
+        -> [Fuzzy String String]
+    findSubcommandAliasesFuzzy cfg Query{pattern, caseSensitive} =
+        Fuzzy.filter pattern (getAliases cfg) "" "" id caseSensitive
 
     findSubcommands :: Global.Config -> String -> IO [String]
     findSubcommands cfg pat =
         List.filter (fmap Char.toLower pat `List.isPrefixOf`)
             <$> getSubcommands cfg
 
+    -- TODO: Generate these values instead of hard-coding them.
+    verbosityValues :: [String]
+    verbosityValues = ["silent", "quiet", "normal", "verbose", "annoying"]
+
+    -- TODO: Generate these values instead of hard-coding them.
+    supportedShells :: [String]
+    supportedShells = ["bash"]
+
     findOptions :: Global.Config -> String -> [String]
     findOptions cfg pat =
-        let verbosityValues =
-                ["silent", "quiet", "normal", "verbose", "annoying"]
-
+        let -- TODO: Generate these values instead of hard-coding them.
             colourWhences = ["always", "auto", "never"]
 
             shortOptions =
@@ -363,6 +435,18 @@ parseOptions appNames config arguments = do
             <*> optional shellOption
             <*> many aliasOption
 
+        , dualFoldEndo
+            <$> queryFlag
+            <*> optional
+                ( updateQueryOptions
+                    (   subcommandsFlag
+                    <|> subcommandAliasesFlag
+                    <|> verbosityValuesFlag
+                    <|> supportedShellsFlag
+                    )
+                )
+--          <*> optional (updateQueryOptions patternArgument)
+
         , helpFlag
 
         , updateCompletionOptions words
@@ -373,6 +457,7 @@ parseOptions appNames config arguments = do
   where
     switchTo = Endo . const
     switchToScriptMode = switchTo (ScriptMode defScriptOptions ())
+    switchToQueryMode = switchTo (QueryMode defQueryOptions ())
     switchToHelpMode = switchTo (HelpMode ())
 
     updateCompletionOptions words =
@@ -384,8 +469,41 @@ parseOptions appNames config arguments = do
                     }
             in CompletionMode (f defOpts) ()
 
+    updateQueryOptions
+        :: Options.Parser (Endo Query)
+        -> Options.Parser (Endo (CompletionMode ()))
+    updateQueryOptions = fmap . mapEndo $ \f -> \case
+        QueryMode q cfg -> QueryMode (f q) cfg
+        mode            -> mode
+
     scriptFlag :: Options.Parser (Endo (CompletionMode ()))
     scriptFlag = Options.flag mempty switchToScriptMode (Options.long "script")
+
+    queryFlag :: Options.Parser (Endo (CompletionMode ()))
+    queryFlag = Options.flag mempty switchToQueryMode (Options.long "query")
+
+    subcommandsFlag :: Options.Parser (Endo Query)
+    subcommandsFlag = Options.flag mempty f (Options.long "subcommands")
+      where
+        f = Endo $ \q -> q{what = QuerySubcommands}
+
+    subcommandAliasesFlag :: Options.Parser (Endo Query)
+    subcommandAliasesFlag =
+        Options.flag mempty f (Options.long "subcommand-aliases")
+      where
+        f = Endo $ \q -> q{what = QuerySubcommandAliases}
+
+    verbosityValuesFlag :: Options.Parser (Endo Query)
+    verbosityValuesFlag =
+        Options.flag mempty f (Options.long "verbosity-values")
+      where
+        f = Endo $ \q -> q{what = QueryVerbosityValues}
+
+    supportedShellsFlag :: Options.Parser (Endo Query)
+    supportedShellsFlag =
+        Options.flag mempty f (Options.long "supported-shells")
+      where
+        f = Endo $ \q -> q{what = QuerySupportedShells}
 
     indexOption :: Options.Parser (Endo CompletionOptions)
     indexOption =
@@ -460,11 +578,21 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
                 ( longOption "alias" <> "=" <> metavar "ALIAS" <+> "..."
                 )
 
+        , "completion"
+            <+> longOption "query"
+            <+> Pretty.brackets
+                ( longOption "subcommands"
+                <> "|" <> longOption "subcommand-aliases"
+                <> "|" <> longOption "verbosity-values"
+                <> "|" <> longOption "supported-shells"
+                )
+--          <+> Pretty.brackets (metavar "PATTERN")
+
         , "completion" <+> helpOptions
         , "help completion"
         ]
 
-    , section "Options:"
+    , section "Command line completion options:"
         [ optionDescription ["--index=NUM"]
             [ Pretty.reflow "Position of a", metavar "WORD"
             , Pretty.reflow "for which we want completion. In Bash this is the"
@@ -472,15 +600,28 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             ]
 
         , optionDescription ["--shell=SHELL"]
-            [ Pretty.reflow "Provide completion or generate script for"
-            , metavar "SHELL" <> "."
+            [ Pretty.reflow "Provide completion for", metavar "SHELL" <> "."
             , Pretty.reflow "Currently only supported value is"
             , value "bash" <> "."
             ]
 
-        , optionDescription ["--script"]
+        , optionDescription ["WORD"]
+            [ metavar "WORD" <> "s", Pretty.reflow "to complete. In Bash these"
+            , Pretty.reflow "are the elements of", value "COMP_WORDS", "array."
+            ]
+        ]
+
+    , section "Completion script options:"
+        [ optionDescription ["--script"]
             [ Pretty.reflow "Generate completion script suitable for sourcing"
             , Pretty.reflow "in your shell's *rc file."
+            ]
+
+        , optionDescription ["--shell=SHELL"]
+            [ Pretty.reflow "Generate completion script for"
+            , metavar "SHELL" <> "."
+            , Pretty.reflow "Currently only supported value is"
+            , value "bash" <> "."
             ]
 
         , optionDescription ["--alias=ALIAS"]
@@ -492,15 +633,67 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             , Pretty.reflow "for which we want command line completion to work"
             , Pretty.reflow "as well."
             ]
+        ]
 
-        , optionDescription ["--help", "-h"]
-            [ Pretty.reflow "Print this help and exit. Same as"
-            , Pretty.squotes (toolsetCommand usedName "help completion") <> "."
+    , section "Query options:"
+        [ optionDescription ["--query"]
+            [ Pretty.reflow "Query command line interface."
+            , Pretty.reflow "Useful for editor/IDE integration."
             ]
 
-        , optionDescription ["WORD"]
-            [ metavar "WORD" <> "s", Pretty.reflow "to complete. In Bash these"
-            , Pretty.reflow "are the elements of", value "COMP_WORDS", "array."
+        , optionDescription ["--subcommands"]
+            [ Pretty.reflow "Query all available subcommands. This includes\
+                \ internal subcommands, external subcommands, and subcommand\
+                \ aliases."
+            ]
+
+--      , optionDescription ["--fail-when-no-match"]
+--          [ Pretty.reflow "Terminate with exit code 3 if no match was found."
+--          ]
+
+--      , optionDescription ["--algorithm=ALGORITHM"]
+--          [ Pretty.reflow "Specify which pattern matching algorithm to use"
+--          , "when", metavar "PATTERN"
+--          , Pretty.reflow "is provided. Possible values are:"
+--          , value "prefix" <> ",", value "fuzzy" <> ",", "and"
+--          , value "equality."
+--          ]
+
+--      , optionDescription ["--external-subcommands"]
+--          [ Pretty.reflow "Query available external subcommands."
+--          ]
+
+--      , optionDescription ["--internal-subcommands"]
+--          [ Pretty.reflow "Query available internal subcommands."
+--          ]
+
+        , optionDescription ["--subcommand-aliases"]
+            [ Pretty.reflow "Query available subcommand aliases."
+            ]
+
+        , optionDescription ["--supported-shells"]
+            [ Pretty.reflow "Query shells supported by command line completion."
+            ]
+
+        , optionDescription ["--verbosity-values"]
+            [ Pretty.reflow "Query possible"
+            , metavar "VERBOSITY"
+            , Pretty.reflow "values. These can be set using global"
+            , longOption "verbosity" <> "=" <> metavar "VERBOSITY"
+            , Pretty.reflow "option, or are passed down to subcommands via"
+            , metavar "COMMAND_WRAPPER_VERBOSITY"
+            , Pretty.reflow "environment variable."
+            ]
+
+--      , optionDescription ["PATTERN"]
+--          [ Pretty.reflow "TODO: Document"
+--          ]
+        ]
+
+    , section "Other options:"
+        [ optionDescription ["--help", "-h"]
+            [ Pretty.reflow "Print this help and exit. Same as"
+            , Pretty.squotes (toolsetCommand usedName "help completion") <> "."
             ]
 
         , globalOptionsHelp usedName
