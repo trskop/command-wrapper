@@ -49,7 +49,6 @@ import System.IO (IO, putStrLn, stderr, stdout)
 import Text.Read (readMaybe)
 import Text.Show (Show)
 
-import Data.CaseInsensitive as CI (mk)
 import Data.Monoid.Endo (mapEndo)
 import Data.Monoid.Endo.Fold (dualFoldEndo, foldEndo)
 import Data.Text (Text)
@@ -106,10 +105,8 @@ import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     , splitArguments
     )
+import qualified CommandWrapper.Options.Shell as Options
 
-
-data Shell = Bash
-  deriving (Generic, Show)
 
 data Query = Query
     { what :: WhatToQuery
@@ -158,20 +155,20 @@ data CompletionMode a
 data CompletionOptions = CompletionOptions
     { words :: [String]
     , index :: Maybe Word
-    , shell :: Shell
+    , shell :: Options.Shell
     }
   deriving stock (Generic, Show)
 
 data ScriptOptions = ScriptOptions
     { aliases :: [String]
-    , shell :: Shell
+    , shell :: Options.Shell
     }
   deriving stock (Generic, Show)
 
 -- | We'll change this data type to:
 -- @
 -- newtype MkCompletionScript = MkCompletionScript
---     { mkCompletionScript :: 'Shell' -> Text -> Text -> Text
+--     { mkCompletionScript :: 'Options.Shell' -> Text -> Text -> Text
 --     }
 -- @
 newtype MkCompletionScript = MkCompletionScript
@@ -187,31 +184,28 @@ newtype Scripts = Scripts
   deriving stock (Generic, Show)
   deriving anyclass (Dhall.Interpret)
 
-class HasShell a where
-    updateShell :: Endo Shell -> Endo a
-
-instance HasShell CompletionOptions where
+instance Options.HasShell CompletionOptions where
     updateShell = mapEndo $ \f CompletionOptions{words, index, shell} ->
         CompletionOptions{words, index, shell = f shell}
 
-instance HasShell ScriptOptions where
+instance Options.HasShell ScriptOptions where
     updateShell = mapEndo $ \f ScriptOptions{aliases, shell} ->
         ScriptOptions{aliases, shell = f shell}
 
-instance HasShell (CompletionMode cfg) where
+instance Options.HasShell (CompletionMode cfg) where
     updateShell f = Endo $ \case
         CompletionMode opts cfg ->
-            CompletionMode (updateShell f `appEndo` opts) cfg
+            CompletionMode (Options.updateShell f `appEndo` opts) cfg
 
         ScriptMode opts cfg ->
-            ScriptMode (updateShell f `appEndo` opts) cfg
+            ScriptMode (Options.updateShell f `appEndo` opts) cfg
 
         mode ->
             mode
 
 defScriptOptions :: ScriptOptions
 defScriptOptions = ScriptOptions
-    { shell = Bash
+    { shell = Options.Bash
     , aliases = []
     }
 
@@ -254,7 +248,7 @@ completion appNames options config =
         --
         -- - By default it should be printed to `stdout`, but we should support
         --   writting it into a file without needing to redirect `stdout`.
-        ScriptMode ScriptOptions{shell = Bash, aliases} () -> do
+        ScriptMode ScriptOptions{shell = _, aliases} () -> do
             let mkCompletionScriptExpr =
                     $(Dhall.TH.staticDhallExpression
                         "./dhall/CommandWrapper/completion.dhall"
@@ -330,7 +324,7 @@ completion appNames options config =
         let opts = CompletionOptions
                 { words = []
                 , index = Nothing
-                , shell = Bash
+                , shell = Options.Bash
                 }
 
         in Mainplate.applySimpleDefaults (CompletionMode opts ())
@@ -432,7 +426,7 @@ parseOptions appNames config arguments = do
     execParser options $ asum
         [ dualFoldEndo
             <$> scriptFlag
-            <*> optional shellOption
+            <*> optional Options.shellOption
             <*> many aliasOption
 
         , dualFoldEndo
@@ -452,7 +446,7 @@ parseOptions appNames config arguments = do
         , updateCompletionOptions words
             $ foldEndo
                 <$> optional indexOption
-                <*> optional shellOption
+                <*> optional Options.shellOption
         ]
   where
     switchTo = Endo . const
@@ -465,7 +459,7 @@ parseOptions appNames config arguments = do
             let defOpts = CompletionOptions
                     { words
                     , index = Nothing
-                    , shell = Bash
+                    , shell = Options.Bash
                     }
             in CompletionMode (f defOpts) ()
 
@@ -524,15 +518,6 @@ parseOptions appNames config arguments = do
 
                 | otherwise ->
                     Left "Non-negative number expected"
-
-    shellOption :: HasShell a => Options.Parser (Endo a)
-    shellOption =
-        Options.option parse
-            (Options.long "shell" <> Options.metavar "SHELL")
-      where
-        parse = Options.eitherReader $ \s -> case CI.mk s of
-            "bash" -> Right $ updateShell (Endo $ const Bash)
-            _ -> Left "Unrecognised shell name"
 
     aliasOption :: Options.Parser (Endo (CompletionMode ()))
     aliasOption =

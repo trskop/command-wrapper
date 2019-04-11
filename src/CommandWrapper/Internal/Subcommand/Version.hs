@@ -21,7 +21,7 @@ module CommandWrapper.Internal.Subcommand.Version
 
 import Control.Applicative ((<|>))
 import Data.Maybe (fromMaybe)
-import Data.Monoid (Endo(Endo))
+import Data.Monoid (Endo(Endo, appEndo))
 import Data.String (fromString)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
@@ -56,7 +56,7 @@ import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
     , helpOptions
     , longOption
---  , metavar
+    , metavar
     , optionDescription
     , section
     , shortOption
@@ -76,6 +76,7 @@ import CommandWrapper.Message (Result, defaultLayoutOptions, message)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     )
+import qualified CommandWrapper.Options.Shell as Options
 
 
 data VersionMode a
@@ -84,7 +85,10 @@ data VersionMode a
     | VersionHelp a
   deriving stock (Functor, Generic, Show)
 
-data OutputFormat = PlainFormat | DhallFormat | BashFormat
+data OutputFormat
+    = PlainFormat
+    | DhallFormat
+    | ShellFormat Options.Shell
   deriving stock (Generic, Show)
 
 version
@@ -99,8 +103,10 @@ version versionInfo appNames options config =
             DhallFormat ->
                 Dhall.hPut colour Dhall.Unicode stdout Dhall.inject versionInfo
 
-            BashFormat ->
-                Text.putStr (versionInfoBash versionInfo)
+            ShellFormat shell -> (\f -> Text.putStr . f $ versionInfo) $ case shell of
+                Options.Bash -> versionInfoBash
+                Options.Fish -> versionInfoFish
+                Options.Zsh -> versionInfoBash -- Same syntax as Bash.
 
             PlainFormat ->
                 message defaultLayoutOptions verbosity colour stdout
@@ -138,27 +144,41 @@ versionInfoBash VersionInfo{..} = Text.unlines
   where
     showVersion' = fromString . showVersion . rawVersion
 
-    var n v = "COMMAND_WRAPPER_" <> n <> "_VERSION=\"" <> v <> "\""
+    var n v = "COMMAND_WRAPPER_" <> n <> "_VERSION='" <> v <> "'"
+
+versionInfoFish :: VersionInfo -> Text
+versionInfoFish VersionInfo{..} = Text.unlines
+    [ var "TOOL" (showVersion' commandWrapper)
+    , var "SUBCOMMAND_PROTOCOL" (showVersion' subcommandProtocol)
+    , var "DHALL_LIBRARY" (showVersion' dhallLibrary)
+    , var "DHALL_STANDARD" (showVersion' dhallStandard)
+    ]
+  where
+    showVersion' = fromString . showVersion . rawVersion
+
+    var n v = "set COMMAND_WRAPPER_" <> n <> "_VERSION '" <> v <> "'"
 
 parseOptions :: AppNames -> Config -> [String] -> IO (Endo (VersionMode ()))
 parseOptions appNames config options =
     execParser $ foldEndo
         <$> (   dhallFlag
-            <|> bashFlag
+            <|> shellOption
             <|> helpFlag
             )
-
   where
     switchTo = Endo . const
-    switchToBashFormat = switchTo (FullVersion BashFormat ())
     switchToDhallFormat = switchTo (FullVersion DhallFormat ())
     switchToHelpMode = switchTo (VersionHelp ())
 
-    dhallFlag, bashFlag, helpFlag :: Options.Parser (Endo (VersionMode ()))
+    switchToShellFormat f =
+        let shell = f `appEndo` Options.Bash
+        in  switchTo (FullVersion (ShellFormat shell) ())
+
+    dhallFlag, shellOption, helpFlag :: Options.Parser (Endo (VersionMode ()))
 
     dhallFlag = Options.flag mempty switchToDhallFormat (Options.long "dhall")
 
-    bashFlag = Options.flag mempty switchToBashFormat (Options.long "bash")
+    shellOption = switchToShellFormat <$> Options.shellOption
 
     execParser parser =
         Options.internalSubcommandParse appNames config "version"
@@ -174,7 +194,7 @@ versionSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
         [ "version" <+> Pretty.brackets
             ( longOption "dhall"
-            <> "|" <> longOption "bash"
+            <> "|" <> longOption "shell" <> "=" <> metavar "SHELL"
 --          <> "|" <> longOption "numeric"
 --              <> Pretty.brackets ("=" <> metavar "COMPONENT")
             )
@@ -188,11 +208,9 @@ versionSubcommandHelp AppNames{usedName} = Pretty.vsep
             [ Pretty.reflow "Print version information in Dhall format."
             ]
 
-        -- TODO: Consider having "--shell=SHELL" option instad. See `completion`
-        -- subcommand.
-        , optionDescription ["--bash"]
+        , optionDescription ["--shell=SHELL"]
             [ Pretty.reflow
-                "Print version information in format suitable for Bash."
+                "Print version information in format suitable for SHELL."
             ]
 
 --      , optionDescription ["--numeric[=COMPONENT]"]
