@@ -247,7 +247,6 @@ dieFailedToParseOptions
     -> IO a
 dieFailedToParseOptions name verbosity colour h
   Options.ParserHelp{Options.helpError} = do
-    -- TODO: Duplicity.
     when (verbosity > Silent) $ do
         useColours <- shouldUseColours h colour
         withColour useColours vividRed $ \h' -> do
@@ -262,7 +261,7 @@ dieFailedToParseOptions name verbosity colour h
             , "Error:"
             , fromChunk helpError <> Options.colon
             , Options.text "See"
-            , Options.text ("'" <> name <> " help'")
+            , Options.text ("'" <> name <> " --help'")
             , Options.text "for more details."
             ]
 
