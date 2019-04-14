@@ -4,17 +4,15 @@ let colourOutput = ./colour-output.dhall
 
 let helpMessage = ''
 
-Internal Subcommands:
+Global Subcommands:
 
-  help       (aliases: h, hlp)
-  config     (aliases: cfg)
-  completion
-
-External Subcommands:
-
-  cd
-  exec
-  skel
+  help       (internal, aliases: h, hlp)
+  config     (internal, aliases: cfg)
+  version    (internal)
+  completion (internal)
+  cd         (external)
+  exec       (external)
+  skel       (external)
 ''
 
 let mkDefault =
