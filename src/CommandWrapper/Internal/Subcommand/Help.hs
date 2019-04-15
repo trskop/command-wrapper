@@ -210,7 +210,6 @@ mainHelpMsg AppNames{usedName} = Pretty.vsep
             [ Pretty.reflow "Print this help and exit."
             ]
         ]
-    , ""
 
     , section (metavar "SUBCOMMAND" <> ":")
         [ Pretty.reflow "Name of either internal or external subcommand."
