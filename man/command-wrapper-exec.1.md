@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 9th April 2019
+% 15th April 2019
 
 
 # NAME
@@ -45,6 +45,9 @@ scripting language like Bash.
 :   Print command as it will be executed in Dhall format.  Can be used as
     dry-run functionality, for debugging, and for creating template when adding
     new command.
+
+\--help, -h
+:   Display help information and exit.  Same as `TOOLSET_COMMAND help exec`.
 
 `COMMAND`
 :   `COMMAND` is a symbolic command name as it is specified in configuration

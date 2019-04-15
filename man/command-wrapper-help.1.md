@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-HELP(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 9th April 2019
+% 15th April 2019
 
 
 # NAME
@@ -13,15 +13,23 @@ its subcommands.
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \[*SUBCOMMAND*]
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help {--help|-h}
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help help
 
 
 # DESCRIPTION
 
-**TODO**
+Display help information either for `TOOLSET_COMMAND`, or for a `SUBCOMMAND`.
+Help message is printed to standard output, and may contains ANSI escape codes
+if coloured output is allowed.  See `command-wrapper(1)` for more information
+on colour settings.
 
 
 # OPTIONS
+
+\--help, -h
+:   Display help information and exit.  Same as `TOOLSET_COMMAND help help`.
 
 *SUBCOMMAND*
 :   *SUBCOMMAND* for which to print help.  If *SUBCOMMAND* is an alias then it is

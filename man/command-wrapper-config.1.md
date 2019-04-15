@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 8th January 2019
+% 15th April 2019
 
 
 # NAME
@@ -23,6 +23,9 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
 
 
 # OPTIONS
+
+\--help, -h
+:   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
 
 *EXPRESSION*
 :   Dhall expression that either queries or updates configuration, depending

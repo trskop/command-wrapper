@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 23nd December 2018
+% 15th April 2019
 
 
 # NAME
@@ -43,6 +43,9 @@ there are other alternatives.
 
 \--terminal, -e
 :   Open a new terminal emulator window.
+
+\--help, -h
+:   Display help information and exit.  Same as `TOOLSET_COMMAND help cd`.
 
 
 # EXIT STATUS

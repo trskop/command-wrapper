@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SKEL(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 23nd December 2018
+% 15th April 2018
 
 
 # NAME
@@ -39,6 +39,9 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help skel
 \--no-edit, -E
 :   Inverse of `--edit` that is useful if `--edit` mode is configured to be the
     default.  **TODO: Currently not implemented!**
+
+\--help, -h
+:   Display help information and exit.  Same as `TOOLSET_COMMAND help skel`.
 
 `SUBCOMMAND`
 :   Name of the new subcommand.  Where and how the source code or executable
