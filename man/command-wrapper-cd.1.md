@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 15th April 2019
+% 20th April 2019
 
 
 # NAME
@@ -11,7 +11,7 @@ in a selected directory.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd \[\--shell|-s|\--tmux|-t|\--terminal|-e]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd \[\--shell|-s|\--tmux|-t|--kitty|-k|\--terminal|-e]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd {\--help|-h}
 
@@ -40,6 +40,9 @@ there are other alternatives.
 
 \--tmux, -t
 :   Create a new Tmux window, or fail if not in Tmux.
+
+\--kitty, -k
+:   Create a new Kitty window, or fail if not in Kitty.
 
 \--terminal, -e
 :   Open a new terminal emulator window.

@@ -65,17 +65,23 @@ data Config = Config
     , shell :: Text
     , terminalEmulator :: Text -> SimpleCommand
     }
-  deriving (Generic)
+  deriving stock (Generic)
+  deriving anyclass (Dhall.Interpret)
 
-instance Dhall.Interpret Config
+data Params config = Params
+    { config :: config
+    , inTmux :: Bool
+    , inKitty :: Bool
+    }
+  deriving stock (Functor)
 
 main :: IO ()
 main = do
-    (Environment.Params{config = configFile}, inTmuxSession) <- getEnvironment
+    params@Params{config = configFile} <- getEnvironment
 
     strategy <- options description parseOptions
-    Config{..} <- Dhall.inputFile Dhall.auto configFile
-    action <- evalStrategy terminalEmulator shell inTmuxSession strategy
+    config@Config{..} <- Dhall.inputFile Dhall.auto configFile
+    action <- evalStrategy (config <$ params) strategy
 
     sh $ do
         dir <- runMenuTool menuTool
@@ -105,16 +111,18 @@ runMenuTool SimpleCommand{..} input = do
     pure r
 
 -- | TODO: Refactor this in a way that can reuse "CommandWrapper.Prelude".
-getEnvironment :: IO (Environment.Params, Bool)
+getEnvironment :: IO (Params FilePath)
 getEnvironment = Environment.parseEnvIO (die . show)
-    $ (,)
-        <$> Environment.askParams
+    $ Params
+        <$> (Environment.config <$> Environment.askParams)
         <*> (isJust <$> Environment.optionalVar "TMUX")
+        <*> (isJust <$> Environment.optionalVar "KITTY_WINDOW_ID")
 
 data Strategy
     = Auto
     | ShellOnly
     | TmuxOnly
+    | KittyOnly
     | TerminalEmulatorOnly
 
 instance Semigroup Strategy where
@@ -123,34 +131,44 @@ instance Semigroup Strategy where
     _    <> x    = x
 
 evalStrategy
-    :: (Text -> SimpleCommand)
-    -> Text
-    -> Bool
+    :: Params Config
     -> Strategy
     -> IO Action
-evalStrategy term shell inTmuxSession = \case
+evalStrategy Params{config, inTmux, inKitty} = \case
     Auto
-      | inTmuxSession -> pure RunTmux
-      | otherwise     -> pure (RunShell shell)
+      | inTmux    -> pure RunTmux
+      | inKitty   -> pure (RunKitty shell)
+      | otherwise -> pure (RunShell shell)
 
-    ShellOnly -> pure (RunShell shell)
+    ShellOnly ->
+        pure (RunShell shell)
 
     TmuxOnly
-      | inTmuxSession -> pure RunTmux
-      | otherwise     ->
+      | inTmux    -> pure RunTmux
+      | otherwise ->
         die "Error: Not in a Tmux session and '--tmux' was specified."
 
-    TerminalEmulatorOnly -> pure (RunTerminalEmulator term)
+    KittyOnly
+      | inKitty   -> pure (RunKitty shell)
+      | otherwise ->
+        die "Error: Not runing in Kitty terminal and '--kitty was specified."
+
+    TerminalEmulatorOnly ->
+        pure (RunTerminalEmulator terminalEmulator)
+  where
+    Config{shell, terminalEmulator} = config
 
 parseOptions :: Parser Strategy
 parseOptions =
     go  <$> shellSwitch
         <*> tmuxSwitch
+        <*> kittySwitch
         <*> terminalEmulator
   where
-    go runShell noRunShell runTerminalEmulator =
+    go runShell runTmux runKitty runTerminalEmulator =
         (if runShell then ShellOnly else Auto)
-        <> (if noRunShell then TmuxOnly else Auto)
+        <> (if runTmux then TmuxOnly else Auto)
+        <> (if runKitty then KittyOnly else Auto)
         <> (if runTerminalEmulator then TerminalEmulatorOnly else Auto)
 
     shellSwitch =
@@ -160,6 +178,11 @@ parseOptions =
         switch "tmux" 't'
             "Create a new Tmux window, or fail if not in Tmux session."
 
+    kittySwitch =
+        switch "kitty" 'k'
+            "Create a new Kitty window, or fail if not runing in Kitty\
+            \ terminal."
+
     terminalEmulator =
         switch "terminal" 'e'
             "Open a new terminal emulator window."
@@ -167,12 +190,13 @@ parseOptions =
 data Action
     = RunShell Text
     | RunTmux
+    | RunKitty Text
     | RunTerminalEmulator (Text -> SimpleCommand)
 
 executeAction :: Line -> Action -> Shell ()
 executeAction directory = \case
     RunShell shell -> do
-        echo ("+ : cd " <> directory)
+        echo (": cd " <> directory)
         cd directoryPath
 
         exportEnvVariables (incrementLevel <$> need "CD_LEVEL")
@@ -186,6 +210,18 @@ executeAction directory = \case
         -- TODO: Find out how to define pass `CD_LEVEL` and `CD_DIRECTORY` to a
         -- Tmux window.
         executeCommand "tmux" ["new-window", "-c", directoryStr] []
+
+    RunKitty shell -> do
+        exists <- testdir directoryPath
+        unless exists . liftIO
+            $ die ("Error: '" <> directoryStr <> "': Directory doesn' exist.")
+
+        -- https://sw.kovidgoyal.net/kitty/remote-control.html#kitty-new-window
+        -- TODO: Find out how to define pass `CD_LEVEL` and `CD_DIRECTORY` to a
+        -- Kitty window.
+        executeCommand "kitty"
+            ["@", "new-window", "--cwd", directoryStr, "--", Text.unpack shell]
+            []
 
     RunTerminalEmulator term -> do
         exists <- testdir directoryPath
@@ -201,7 +237,7 @@ executeAction directory = \case
     directoryStr = Text.unpack directoryText
 
     executeCommand command arguments environment = do
-        echo $ "+ : " <> showCommand command arguments
+        echo $ ": " <> showCommand command arguments
 
         for_ environment $ \EnvironmentVariable{name, value} ->
             export name value
