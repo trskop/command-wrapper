@@ -135,6 +135,7 @@ data WhatToQuery
     = QuerySubcommands
     | QuerySubcommandAliases
     | QueryVerbosityValues
+    | QueryColourValues
     | QuerySupportedShells
   deriving (Generic, Show)
 
@@ -303,6 +304,16 @@ completion appNames options config =
                             caseSensitive
                         )
 
+            QueryColourValues
+              | null pattern ->
+                    mapM_ putStrLn colourValues
+
+              | otherwise ->
+                    mapM_ (putStrLn . Fuzzy.original)
+                        ( Fuzzy.filter pattern colourValues "" "" id
+                            caseSensitive
+                        )
+
             QuerySupportedShells
               | null pattern ->
                     mapM_ putStrLn supportedShells
@@ -363,14 +374,17 @@ completion appNames options config =
     verbosityValues = ["silent", "quiet", "normal", "verbose", "annoying"]
 
     -- TODO: Generate these values instead of hard-coding them.
+    colourValues :: [String]
+    colourValues = ["always", "auto", "never"]
+
+    -- TODO: Generate these values instead of hard-coding them.
     supportedShells :: [String]
     supportedShells = ["bash"]
 
     findOptions :: Global.Config -> String -> [String]
     findOptions cfg pat =
         let -- TODO: Generate these values instead of hard-coding them.
-            colourWhences = ["always", "auto", "never"]
-
+            shortOptions :: [String]
             shortOptions =
                 [ "-v", "-vv", "-vvv"
                 , "-s", "-q"
@@ -379,12 +393,13 @@ completion appNames options config =
 
             longOptions :: [(String, Maybe (String -> [String]))]
             longOptions =
-                [ ("--verbosity=", Just (findKeywords verbosityValues cfg))
-                , ("--color=", Just (findKeywords colourWhences cfg))
-                , ("--colour=", Just (findKeywords colourWhences cfg))
+                [ ("--color=", Just (findKeywords colourValues cfg))
+                , ("--colour=", Just (findKeywords colourValues cfg))
+                , ("--no-aliases", Nothing)
                 , ("--no-color", Nothing)
                 , ("--no-colour", Nothing)
                 , ("--version", Nothing)
+                , ("--verbosity=", Just (findKeywords verbosityValues cfg))
                 ]
 
         in  case List.takeWhile (== '-') pat of
@@ -435,8 +450,9 @@ parseOptions appNames config arguments = do
                 ( updateQueryOptions
                     (   subcommandsFlag
                     <|> subcommandAliasesFlag
-                    <|> verbosityValuesFlag
                     <|> supportedShellsFlag
+                    <|> verbosityValuesFlag
+                    <|> colourValuesFlag
                     )
                 )
 --          <*> optional (updateQueryOptions patternArgument)
@@ -492,6 +508,12 @@ parseOptions appNames config arguments = do
         Options.flag mempty f (Options.long "verbosity-values")
       where
         f = Endo $ \q -> q{what = QueryVerbosityValues}
+
+    colourValuesFlag :: Options.Parser (Endo Query)
+    colourValuesFlag = Options.flag mempty f
+        (Options.long "color-values" <> Options.long "colour-values")
+      where
+        f = Endo $ \q -> q{what = QueryColourValues}
 
     supportedShellsFlag :: Options.Parser (Endo Query)
     supportedShellsFlag =
@@ -568,8 +590,9 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             <+> Pretty.brackets
                 ( longOption "subcommands"
                 <> "|" <> longOption "subcommand-aliases"
-                <> "|" <> longOption "verbosity-values"
                 <> "|" <> longOption "supported-shells"
+                <> "|" <> longOption "verbosity-values"
+                <> "|" <> longOption "colo[u]r-values"
                 )
 --          <+> Pretty.brackets (metavar "PATTERN")
 
@@ -667,6 +690,16 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             , longOption "verbosity" <> "=" <> metavar "VERBOSITY"
             , Pretty.reflow "option, or are passed down to subcommands via"
             , metavar "COMMAND_WRAPPER_VERBOSITY"
+            , Pretty.reflow "environment variable."
+            ]
+
+        , optionDescription ["--colo[u]r-values"]
+            [ Pretty.reflow "Query possible"
+            , metavar "WHEN"
+            , Pretty.reflow "colour output values. These can be set using"
+            , "global", longOption "colo[u]r" <> "=" <> metavar "WHEN"
+            , Pretty.reflow "option, or are passed down to subcommands via"
+            , metavar "COMMAND_WRAPPER_COLOUR"
             , Pretty.reflow "environment variable."
             ]
 

@@ -93,6 +93,15 @@ interface for querying Command Wrapper's command line interface (CLI).
     `--verbosity=VERBOSITY` option, and `command-wrapper-subcommand-protocol(7)`
     regarding `COMMAND_WRAPPER_VERBOSITY` environment variable.
 
+\--colo[u]r-values*
+:   *Query possible *WHEN* colour output values.  These can be set using global
+    `--colo[u]r=WHEN` option, or are passed down to subcommands via
+    `COMMAND_WRAPPER_COLOUR` environment variable.
+
+    See `TOOLSET_COMMAND help` or `command-wrapper(1)` for more information on
+    `--colo[u]r=WHEN` option, and `command-wrapper-subcommand-protocol(7)`
+    regarding `COMMAND_WRAPPER_COLOUR` environment variable.
+
 
 # OTHER OPTIONS
 
