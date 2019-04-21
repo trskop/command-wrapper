@@ -1,8 +1,10 @@
+let Command = ./Command.dhall
+
 let CommandWithEnvironment = ./CommandWithEnvironment.dhall
 
 let TerminalEmulator =
-      { standard : CommandWithEnvironment
-      , inDirectory : ∀(directory : Text) → CommandWithEnvironment
-      }
+        Optional Text
+      → Optional Command
+      → CommandWithEnvironment
 
 in  TerminalEmulator : Type

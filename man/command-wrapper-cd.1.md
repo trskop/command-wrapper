@@ -24,15 +24,18 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help cd
 
 Like `cd` shell command, but allows the user to select a directory from a
 pre-defined list.  This speeds up access to commonly accessed directories.
-Normally it spawns a new shell, or a Tmux window, see *OPTIONS* for details.
+Normally it spawns a new shell, or a Tmux/Kitty window, see *OPTIONS* for
+details.
 
-When no option is specified, `cd` subcommand checks if it's running in Tmux,
-and if it is then it opens a new Tmux window.  If it's not executed inside Tmux
-session then it executes a new instance of `$SHELL` in a selected directory.
+When no option is specified, `cd` subcommand checks if it's running in Tmux or
+Kitty, and if it is then it opens a new Tmux or Kitty window, respectively.  If
+it's not executed inside Tmux session or Kitty terminal then it executes a new
+instance of `$SHELL` in a selected directory.
 
 Selecting directory from a list is implemented using external command.  Default
 configuration uses [`fzf` command](https://github.com/junegunn/fzf), however,
-there are other alternatives.
+there are other alternatives.  One of them is [`fzy`
+](https://github.com/jhawthorn/fzy) which is know to work with `cd` subcommand.
 
 
 # OPTIONS
@@ -53,8 +56,6 @@ there are other alternatives.
 :  Start the search for a directory with the given *QUERY*.  This option may be
    ignored if the underlying menu tool doesn't support this functionality.  FZF
    does support it, see FZF documentation of `--query` option.
-   (**TODO: This option is ignored at the moment, plan is to apply it in a next
-   commit.)
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help cd`.
@@ -68,8 +69,13 @@ there are other alternatives.
 # EXIT STATUS
 
 For documentation of generic *EXIT STATUS* codes see `command-wrapper(1)`
-manual page section *EXIT STATUS*.  Any *EXIT STATUS* codes specific to this
-subcommand will be listed below.
+manual page section *EXIT STATUS*.  Specific *EXIT STATUS* codes to this subcommand
+are listed below.
+
+`3`
+:  Command was unable to find targed directory or it was unable to determine
+   what shell to execute.  The later usually means that `SHELL` environment
+   variable is not present in the current environment.
 
 
 # BASH KEY BINDINGS
@@ -127,6 +133,22 @@ mentioned there applies to this subcommand as well.
     ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
     for more information on rationale behind this.
 
+`CD_LEVEL=`*DEPTH*
+:   This environment variable is passed to shell executed by `cd` subcommand.
+    It informs how many nested `cd` calls were made.  Very useful when trying
+    to figure out how many shells one needs to terminate.
+
+`CD_DIRECTORY=`*DIR*
+:   Another environment variable that is passed to shell executed by `cd`
+    subcommand.  It contains directory path that was selected when `cd` was
+    invoked.  It comes handy when one needs to jump back to that directory or
+    figure out what was the purpose of the last directory jump.  To jump back
+    into this directory one can use:
+
+    ```
+    cd "$CD_DIRECTORY"
+    ```
+
 
 # SEE ALSO
 
@@ -137,7 +159,8 @@ command-wrapper(1)
 * [FZF -- A command-line fuzzy finder](https://github.com/junegunn/fzf)
 * [FZF -- Related Projects](https://github.com/junegunn/fzf/wiki/Related-projects)
   page includes links to similar tools that could be used instead of FZF.
-
+* [fzy -- fast, simple fuzzy text selector for the terminal with an advanced
+  scoring algorithm](https://github.com/jhawthorn/fzy)
 
 # BUGS
 

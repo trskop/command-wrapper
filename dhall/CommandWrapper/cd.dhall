@@ -3,37 +3,30 @@ let CommandWrapper = ./Types.dhall
 let terminalEmulator = ./terminal-emulator.dhall
 
 let mkCd =
-        λ ( context
-              : { home : Text
-                }
-          )
-      → λ ( update
-              : ∀(default : CommandWrapper.CdConfig) → CommandWrapper.CdConfig
-          )
+        λ(update : CommandWrapper.CdConfig → CommandWrapper.CdConfig)
       → update
-          { directories =
-              [ "${context.home}/.config"
-              , "${context.home}/.local/lib/command-wrapper"
-              , "${context.home}/Downloads"
-              ] : List Text
+          { directories = [] : List Text
 
           -- Consider setting full path instead of just command name.
           , menuTool =
-              { command = "fzf"
-              , arguments = [] : List Text
-              , environment = [] : List CommandWrapper.EnvironmentVariable
-              }
+                λ(query : Optional Text)
+              → { command = "fzf"
+                , arguments =
+                      ["--reverse"]
+                    # Optional/fold Text query (List Text)
+                        (λ(query : Text) → ["--query=${query}"])
+                        ([] : List Text)
+                , environment = [] : List CommandWrapper.EnvironmentVariable
+                } : CommandWrapper.CommandWithEnvironment
 
-          -- Some systems may not have Bash in default search path. Consider
-          -- using absolute file path instead.
-          , shell = "bash"
+          -- System shell will be used by default.
+          , shell = None Text
 
-          , terminalEmulator = terminalEmulator.urxvt.inDirectory
+          , terminalEmulator =
+                λ(directory : Text)
+              → λ(command : Optional CommandWrapper.Command)
+              → terminalEmulator.urxvt (Some directory) command : CommandWrapper.CommandWithEnvironment
           }
+        : CommandWrapper.CdConfig
 
-in  mkCd
-      : ∀ ( context
-              : { home : Text
-                }
-          )
-      → CommandWrapper.CdMkConfig
+in  mkCd : CommandWrapper.CdMkConfig

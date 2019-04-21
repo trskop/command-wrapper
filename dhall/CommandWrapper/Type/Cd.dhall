@@ -1,17 +1,25 @@
-let CommandWithEnvironment = ./CommandWithEnvironment.dhall
+let Command : Type = ./Command.dhall
 
-let CdConfig =
+let CommandWithEnvironment : Type = ./CommandWithEnvironment.dhall
+
+let CdConfig : Type =
       { directories : List Text
-      , menuTool : CommandWithEnvironment
-      , shell : Text
-      , terminalEmulator : ∀(directory : Text) → CommandWithEnvironment
+
+      , menuTool
+          : ∀(query : Optional Text)
+          → CommandWithEnvironment
+
+      -- When specified as `None Text` system shell is used.
+      , shell : Optional Text
+
+      , terminalEmulator
+          : ∀(directory : Text)
+          → ∀(command : Optional Command)
+          → CommandWithEnvironment
       }
 
-let CdMkConfig =
-        ∀ ( update
-              : ∀(default : CdConfig) → CdConfig
-          )
-      → CdConfig
+let CdMkConfig : Type =
+      ∀(update : CdConfig → CdConfig) → CdConfig
 
 let Cd =
       { Config = CdConfig
