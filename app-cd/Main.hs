@@ -83,14 +83,14 @@ main :: IO ()
 main = do
     params@Params{config = configFile} <- getEnvironment
 
-    (strategy, directory) <- options description parseOptions
+    (strategy, query, directory) <- options description parseOptions
     config@Config{..} <- Dhall.inputFile Dhall.auto configFile
     action <- evalStrategy (config <$ params) strategy
 
     sh $ do
         dir <- case directory of
             Nothing ->
-                runMenuTool menuTool
+                runMenuTool menuTool query
                     $ select (unsafeTextToLine <$> List.nub directories)
 
             Just dir ->
@@ -107,8 +107,8 @@ main = do
     description =
         "Change directory by selecting one from preselected list"
 
-runMenuTool :: SimpleCommand -> Shell Line -> Shell Line
-runMenuTool SimpleCommand{..} input = do
+runMenuTool :: SimpleCommand -> Maybe Text -> Shell Line -> Shell Line
+runMenuTool SimpleCommand{..} _query input = do
     for_ environment $ \EnvironmentVariable{name, value} ->
         export name value
 
@@ -167,41 +167,41 @@ evalStrategy Params{config, inTmux, inKitty} = \case
   where
     Config{shell, terminalEmulator} = config
 
-parseOptions :: Parser (Strategy, Maybe Text)
+parseOptions :: Parser (Strategy, Maybe Text, Maybe Text)
 parseOptions =
     go  <$> shellSwitch
         <*> tmuxSwitch
         <*> kittySwitch
         <*> terminalEmulator
+        <*> optional queryOption
         <*> optional dirArgument
   where
-    go runShell runTmux runKitty runTerminalEmulator dir =
+    go runShell runTmux runKitty runTerminalEmulator query dir =
         (   (if runShell then ShellOnly else Auto)
             <> (if runTmux then TmuxOnly else Auto)
             <> (if runKitty then KittyOnly else Auto)
             <> (if runTerminalEmulator then TerminalEmulatorOnly else Auto)
+        , query
         , fromString . encodeString <$> dir
         )
 
-    shellSwitch =
-        switch "shell" 's' "Execute a subshell even if in a Tmux session."
+    shellSwitch = switch "shell" 's'
+        "Execute a subshell even if in a Tmux session or Kitty terminal."
 
-    tmuxSwitch =
-        switch "tmux" 't'
-            "Create a new Tmux window, or fail if not in Tmux session."
+    tmuxSwitch = switch "tmux" 't'
+        "Create a new Tmux window, or fail if not in Tmux session."
 
-    kittySwitch =
-        switch "kitty" 'k'
-            "Create a new Kitty window, or fail if not runing in Kitty\
-            \ terminal."
+    kittySwitch = switch "kitty" 'k'
+        "Create a new Kitty window, or fail if not runing in Kitty terminal."
 
-    terminalEmulator =
-        switch "terminal" 'e'
-            "Open a new terminal emulator window."
+    terminalEmulator = switch "terminal" 'e'
+        "Open a new terminal emulator window."
 
-    dirArgument =
-        argPath "DIR"
-            "Use DIR instead of searching for one in a configured list."
+    queryOption = optText "query" 'q'
+        "Start the search for a directory with the given QUERY."
+
+    dirArgument = argPath "DIR"
+        "Use DIR instead of searching for one in a configured list."
 
 data Action
     = RunShell Text

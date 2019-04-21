@@ -12,7 +12,8 @@ in a selected directory.
 # USAGE
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd
-\[\--shell|-s|\--tmux|-t|--kitty|-k|\--terminal|-e] [[--] DIR]
+\[\--shell|-s|\--tmux|-t|\--kitty|-k|\--terminal|-e] \[--query=QUERY|-q QUERY]
+\[\[\--] DIR]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd {\--help|-h}
 
@@ -37,7 +38,7 @@ there are other alternatives.
 # OPTIONS
 
 \--shell, -s
-:   Execute a subshell even if in a Tmux session.
+:   Execute a subshell even if in a Tmux session or in Kitty terminal.
 
 \--tmux, -t
 :   Create a new Tmux window, or fail if not in Tmux.
@@ -47,6 +48,13 @@ there are other alternatives.
 
 \--terminal, -e
 :   Open a new terminal emulator window.
+
+\--query=*QUERY*, \--query *QUERY*, -q *QUERY*
+:  Start the search for a directory with the given *QUERY*.  This option may be
+   ignored if the underlying menu tool doesn't support this functionality.  FZF
+   does support it, see FZF documentation of `--query` option.
+   (**TODO: This option is ignored at the moment, plan is to apply it in a next
+   commit.)
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help cd`.
