@@ -69,7 +69,7 @@ this manual.
       *EXIT STATUS*.
     * *normal* -- Print only important messages.
     * *verbose* -- Print anything that comes into mind.
-    * `annoying` -- Print debugging/tracing information.
+    * *annoying* -- Print debugging/tracing information.
 
     Be aware that *VERBOSITY* should not affect output that is part interactive
     session with the user.
@@ -147,8 +147,9 @@ subcommands are:
 
 Some external subcommands are bundled with Command Wrapper itself:
 
-* *cd* -- Start a new subshell / Tmux window / terminal emulator in a selected
-  directory.  See `command-wrapper-cd(1)` for more details.
+* *cd* -- Start a new subshell / Tmux window / Kitten terminal emulator window /
+  terminal emulator in a selected directory.  See `command-wrapper-cd(1)` for
+  more details.
 
 * *exec* -- Execute predefined command with a user specified environment.  See
   `command-wrapper-exec(1)` for more details.
@@ -229,7 +230,6 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     See also `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better
     understand how the location of the configuration file is determined.
 
-
 `${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/${toolset}-${subcommand}.dhall`
 :   Subcommand specific configuration file.  There is not much we can say about
     them, since every subcommand can have its own definition.
@@ -251,9 +251,9 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     See also description of `${HOME}/.local/lib/command-wrapper/`.
 
 `${HOME}/.local/lib/command-wrapper/command-wrapper-${subcommand}`
-:   Default installation path for a common/global *subcommand* executable.  It's
-    not expected to be in `$PATH`, hence the use of libexec-style directory.
-    See also description of `${HOME}/.local/lib/command-wrapper/`.
+:   Default installation path for a common/global *subcommand* executable.
+    It's not expected to be in `$PATH`, hence the use of libexec-style
+    directory.  See also description of `${HOME}/.local/lib/command-wrapper/`.
 
 `${HOME}/.local/lib/command-wrapper/`
 :   Directory where `command-wrapper` executable is installed along with its
@@ -319,9 +319,10 @@ locations.
 │   ├── ...
 │   ├── command-wrapper/
 │   │   ├── default.dhall
-│   │   ├── command-wrapper-${subcommand0}.dhall
-│   │   ├── ...
-│   │   └── command-wrapper-${subcommandN}.dhall
+│   │   ├── command-wrapper-cd.dhall
+│   │   ├── command-wrapper-exec.dhall
+│   │   ├── command-wrapper-skel.dhall
+│   │   └── ...
 │   └── ${toolset}/
 │       ├── default.dhall
 │       ├── ${toolset}-${toolsetSubcommand0}.dhall
@@ -334,9 +335,10 @@ locations.
 │   │   ├── ...
 │   │   ├── command-wrapper/
 │   │   │   ├── command-wrapper
-│   │   │   ├── command-wrapper-${subcommand0}
-│   │   │   ├── ...
-│   │   │   └── command-wrapper-${subcommandN}
+│   │   │   ├── command-wrapper-cd
+│   │   │   ├── command-wrapper-exec
+│   │   │   ├── command-wrapper-skel
+│   │   │   └── ...
 │   │   └── ${toolset}/
 │   │       ├── ${toolset}-${toolsetSubcommand0}
 │   │       ├── ...
@@ -347,8 +349,12 @@ locations.
 │       │   ├── man1
 │       │   │   ├── command-wrapper.1.gz
 │       │   │   ├── command-wrapper-cd.1.gz
+│       │   │   ├── command-wrapper-completion.1.gz
+│       │   │   ├── command-wrapper-config.1.gz
 │       │   │   ├── command-wrapper-exec.1.gz
+│       │   │   ├── command-wrapper-help.1.gz
 │       │   │   ├── command-wrapper-skel.1.gz
+│       │   │   ├── command-wrapper-version.1.gz
 │       │   │   └── ...
 │       │   ├── man7/
 │       │   │   ├── command-wrapper-subcommand-protocol.7.gz
@@ -497,8 +503,7 @@ let commandWrapper =
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 
-in
-    -- Subcommand aliases.  These can be used to invoke subcommand in
+in  -- Subcommand aliases.  These can be used to invoke subcommand in
     -- the form:
     --
     --     TOOLSET [GLOBAL_OPTIONS] ALIAS [EXTRA_ARGUMENTS]
