@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 20th April 2019
+% 21th April 2019
 
 
 # NAME
@@ -11,7 +11,8 @@ in a selected directory.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd \[\--shell|-s|\--tmux|-t|--kitty|-k|\--terminal|-e]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd
+\[\--shell|-s|\--tmux|-t|--kitty|-k|\--terminal|-e] [[--] DIR]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd {\--help|-h}
 
@@ -49,6 +50,11 @@ there are other alternatives.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help cd`.
+
+*DIR*
+:   Start a new shell, open Tmux window, or a new Kitty window in *DIR* instead
+    of requesting user to select one.  The value of *DIR* doesn't have to be a
+    directory preconfigured in configuration file.
 
 
 # EXIT STATUS

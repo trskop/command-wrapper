@@ -17,6 +17,7 @@
 module Main (main)
   where
 
+import Control.Applicative (optional)
 import Control.Exception (onException)
 import Control.Monad (unless)
 import Data.Foldable (for_)
@@ -36,8 +37,10 @@ import Turtle
     ( Line
     , Parser
     , Shell
+    , argPath
     , cd
     , echo
+    , encodeString
     , env
     , export
     , fromText
@@ -45,10 +48,11 @@ import Turtle
     , liftIO
     , lineToText
     , need
+    , optText
     , options
     , select
-    , switch
     , sh
+    , switch
     , testdir
     , unsafeTextToLine
     , unset
@@ -79,13 +83,18 @@ main :: IO ()
 main = do
     params@Params{config = configFile} <- getEnvironment
 
-    strategy <- options description parseOptions
+    (strategy, directory) <- options description parseOptions
     config@Config{..} <- Dhall.inputFile Dhall.auto configFile
     action <- evalStrategy (config <$ params) strategy
 
     sh $ do
-        dir <- runMenuTool menuTool
-            $ select (unsafeTextToLine <$> List.nub directories)
+        dir <- case directory of
+            Nothing ->
+                runMenuTool menuTool
+                    $ select (unsafeTextToLine <$> List.nub directories)
+
+            Just dir ->
+                pure (unsafeTextToLine dir)
 
         environment <- env
         for_ environment $ \(name, _) ->
@@ -158,18 +167,21 @@ evalStrategy Params{config, inTmux, inKitty} = \case
   where
     Config{shell, terminalEmulator} = config
 
-parseOptions :: Parser Strategy
+parseOptions :: Parser (Strategy, Maybe Text)
 parseOptions =
     go  <$> shellSwitch
         <*> tmuxSwitch
         <*> kittySwitch
         <*> terminalEmulator
+        <*> optional dirArgument
   where
-    go runShell runTmux runKitty runTerminalEmulator =
-        (if runShell then ShellOnly else Auto)
-        <> (if runTmux then TmuxOnly else Auto)
-        <> (if runKitty then KittyOnly else Auto)
-        <> (if runTerminalEmulator then TerminalEmulatorOnly else Auto)
+    go runShell runTmux runKitty runTerminalEmulator dir =
+        (   (if runShell then ShellOnly else Auto)
+            <> (if runTmux then TmuxOnly else Auto)
+            <> (if runKitty then KittyOnly else Auto)
+            <> (if runTerminalEmulator then TerminalEmulatorOnly else Auto)
+        , fromString . encodeString <$> dir
+        )
 
     shellSwitch =
         switch "shell" 's' "Execute a subshell even if in a Tmux session."
@@ -186,6 +198,10 @@ parseOptions =
     terminalEmulator =
         switch "terminal" 'e'
             "Open a new terminal emulator window."
+
+    dirArgument =
+        argPath "DIR"
+            "Use DIR instead of searching for one in a configured list."
 
 data Action
     = RunShell Text
