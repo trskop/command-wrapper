@@ -22,6 +22,9 @@ Each subcommand must support following options:
 * `--help` which prints subcommand specific help message. This is
   invoked by Command Wrapper's `help` internal subcommand.
 
+* `--completion-config` which prints a Dhall expression describing how
+  subcommand should be called to provide command line completion.
+
 * (*PROPOSED*) `--info` which prints program description in Dhall format.
 
 **TODO:** Define how help message should look like, especially *Usage* section.
