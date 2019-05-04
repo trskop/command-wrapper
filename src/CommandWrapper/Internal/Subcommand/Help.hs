@@ -102,7 +102,7 @@ help internalHelp appNames options config =
                     message defaultLayoutOptions verbosity colour stdout msg
 
                 Nothing ->
-                    External.executeCommand appNames cmd ["--help"] config
+                    External.executeCommand appNames config cmd ["--help"]
 
         ManPage _topic _config ->
             -- TODO: Implement this.

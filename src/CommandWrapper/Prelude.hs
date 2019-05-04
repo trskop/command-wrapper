@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TemplateHaskell #-}
 -- |
 -- Module:      CommandWrapper.Prelude
 -- Description: Give subcommands everything they need to seamlessly integrate.
@@ -31,6 +32,12 @@ module CommandWrapper.Prelude
     , ColourOutput(..)
     , shouldUseColours
 
+    -- ** Completion Info
+    , HaveCompletionInfo(..)
+    , completionInfoOptionFields
+    , completionInfoFlag
+    , printOptparseCompletionInfoExpression
+
     -- * Error Handling
     --
     -- | These functions respect 'verbosity' and 'colour'.
@@ -48,6 +55,7 @@ module CommandWrapper.Prelude
   where
 
 import Data.Bool ((||))
+import Data.Function (id)
 import Data.Int (Int)
 import Data.Monoid ((<>))
 import Data.Ord ((<=), (>))
@@ -59,9 +67,23 @@ import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import Data.Verbosity (Verbosity(..))
+import qualified Dhall.Core as Dhall (Expr)
+import qualified Dhall.Parser as Dhall (Src)
+import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
+import qualified Dhall.TH (staticDhallExpression)
+import qualified Dhall.TypeCheck as Dhall (X)
+import qualified Options.Applicative as Options
+    ( HasName
+    , Mod
+    , Parser
+    , flag
+    , internal
+    , long
+    )
 
-import CommandWrapper.Environment.Params(Params(..), askParams)
-import CommandWrapper.Environment.Parser(parseEnvIO)
+import qualified CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
+import CommandWrapper.Environment.Params (Params(..), askParams)
+import CommandWrapper.Environment.Parser (parseEnvIO)
 import qualified CommandWrapper.Message as Message
     ( errorMsg
     , warningMsg
@@ -119,6 +141,31 @@ dieWith params h n msg = do
         if n <= 0 || n > 255
             then 255
             else n
+
+class HaveCompletionInfo a where
+    completionInfoMode :: a -> a
+
+completionInfoFlag
+    :: HaveCompletionInfo a
+    => Options.Parser (a -> a)
+completionInfoFlag =
+    Options.flag id completionInfoMode completionInfoOptionFields
+
+completionInfoOptionFields :: Options.HasName f => Options.Mod f a
+completionInfoOptionFields =
+    Options.long "completion-info" <> Options.internal
+
+printOptparseCompletionInfoExpression
+    :: Handle
+    -- ^ Output handle.
+    -> IO ()
+printOptparseCompletionInfoExpression outHandle =
+    let completionInfo :: Dhall.Expr Dhall.Src Dhall.X =
+            $(Dhall.TH.staticDhallExpression
+                "./dhall/optparse-completion-info.dhall"
+            )
+
+     in Dhall.hPutExpr Never Dhall.Unicode outHandle completionInfo
 
 -- TODO:
 --

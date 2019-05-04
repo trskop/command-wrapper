@@ -14,6 +14,7 @@ category: Tools
 
 extra-source-files:
   - README.md
+  - dhall/*.dhall
   - dhall/CommandWrapper/*.dhall
   - dhall/CommandWrapper/Type/*.dhall
 
@@ -42,6 +43,7 @@ dependencies:
   - base
 
   - ansi-terminal
+  - bytestring
   - case-insensitive
   - comonad
   - dhall >=1.20
@@ -50,6 +52,7 @@ dependencies:
   - directory
   - endo
   - executable-path
+  - file-embed
   - filepath
   - fuzzy
   - generic-lens
@@ -59,6 +62,7 @@ dependencies:
   - optparse-applicative
   - prettyprinter
   - prettyprinter-ansi-terminal
+  - process
   - safe
   - template-haskell
   - terminal-size

@@ -14,6 +14,7 @@ module CommandWrapper.External
     ( Command
     , run
     , executeCommand
+    , executeCommandWith
     , findSubcommands
     )
   where
@@ -83,21 +84,35 @@ import CommandWrapper.Message
 type Command = Mainplate.ExternalCommand
 
 run :: Environment.AppNames -> Command -> Global.Config -> IO ()
-run appNames (Mainplate.ExternalCommand command arguments) =
-    executeCommand appNames command arguments
+run appNames (Mainplate.ExternalCommand command arguments) config =
+    executeCommand appNames config command arguments
 
 executeCommand
     :: Environment.AppNames
     -- ^ Names and paths under which this instance of @command-wrapper@ is
     -- known.
+    -> Global.Config
     -> String
     -- ^ Subcommand name.
     -> [String]
     -- ^ Command line arguments passed to the subcommand.
-    -> Global.Config
     -> IO a
-executeCommand appNames subcommand arguments globalConfig =
-    findSubcommandExecutable usedName commands globalConfig >>= \case
+executeCommand = executeCommandWith executeFile
+
+executeCommandWith
+    :: (FilePath -> Bool -> [String] -> Maybe [(String, String)] -> IO a)
+    -- ^ Use this function to execute the subcommand, if found.
+    -> Environment.AppNames
+    -- ^ Names and paths under which this instance of @command-wrapper@ is
+    -- known.
+    -> Global.Config
+    -> String
+    -- ^ Subcommand name.
+    -> [String]
+    -- ^ Command line arguments passed to the subcommand.
+    -> IO a
+executeCommandWith f appNames globalConfig subcommand arguments =
+    findSubcommandExecutable globalConfig usedName commands >>= \case
         Nothing ->
             dieUnableToFindSubcommandExecutable (fromString usedName) verbosity
                 colourOutput stderr (fromString subcommand)
@@ -114,7 +129,7 @@ executeCommand appNames subcommand arguments globalConfig =
                 envBuilder = extraEnvVars <> currentEnv
                 env = Environment.commandWrapperEnv appNames envBuilder
 
-            executeFile executable False arguments (Just env)
+            f executable False arguments (Just env)
                 `onException` dieUnableToExecuteSubcommand
                     (fromString usedName) verbosity colourOutput stderr
                     (fromString subcommand) (fromString executable)
@@ -140,11 +155,11 @@ executeCommand appNames subcommand arguments globalConfig =
             }
 
 findSubcommandExecutable
-    :: String
+    :: Global.Config
+    -> String
     -> NonEmpty (String, String)
-    -> Global.Config
     -> IO (Maybe (String, String, FilePath))
-findSubcommandExecutable usedName subcommands config = do
+findSubcommandExecutable config usedName subcommands = do
     searchPath <- getSearchPath config
     debugMsg (fromString usedName) verbosity colourOutput stderr
         $ "Using following subcommand executable search path: "

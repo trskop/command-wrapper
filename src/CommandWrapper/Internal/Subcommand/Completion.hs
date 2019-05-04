@@ -24,11 +24,11 @@ module CommandWrapper.Internal.Subcommand.Completion
 import Prelude ((+), (-), fromIntegral)
 
 import Control.Applicative ((<*>), (<|>), many, optional, pure)
-import Control.Monad ((>>=), join)
+import Control.Monad ((>>=), join, when)
 import Data.Bool (Bool(False), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
-import Data.Eq ((==))
+import Data.Eq ((/=), (==))
 import Data.Foldable (all, asum, forM_, length, mapM_, null)
 import Data.Function (($), (.), const, id)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
@@ -51,7 +51,8 @@ import Data.String (String, fromString)
 import Data.Tuple (fst)
 import Data.Word (Word)
 import GHC.Generics (Generic)
-import System.Exit (ExitCode(ExitFailure), exitWith)
+import Numeric.Natural (Natural)
+import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import System.IO (IO, putStrLn, stderr, stdout)
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
@@ -61,6 +62,7 @@ import Data.FileEmbed (embedFile)
 import Data.Monoid.Endo (mapEndo)
 import Data.Monoid.Endo.Fold (dualFoldEndo, foldEndo)
 import Data.Text (Text)
+import qualified Data.Text as Text (unpack)
 import qualified Data.Text.IO as Text (putStrLn)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
@@ -87,12 +89,17 @@ import qualified Options.Applicative as Options
     , strOption
     )
 import Safe (atMay, headMay)
+import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
-import qualified CommandWrapper.External as External (findSubcommands)
+import qualified CommandWrapper.External as External
+    ( executeCommand
+    , executeCommandWith
+    , findSubcommands
+    )
 import CommandWrapper.Internal.Subcommand.Config (configCompletion)
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
@@ -205,6 +212,8 @@ newtype Scripts = Scripts
   deriving stock (Generic, Show)
   deriving anyclass (Dhall.Interpret)
 
+type CompletionInfo = Options.Shell -> Natural -> [Text] -> [Text]
+
 instance Options.HasShell CompletionOptions where
     updateShell =
         mapEndo \f opts@CompletionOptions{shell} ->
@@ -268,7 +277,7 @@ completion appNames options config =
                     -- TODO: Figure out how to handle this better.
                     let Global.Config{colourOutput, verbosity} = config
                         colour = fromMaybe ColourOutput.Auto colourOutput
-                        subcommand = pretty (usedName <> " completion:")
+                        subcommand = pretty (usedName <> " completion")
                     errorMsg subcommand verbosity colour stderr
                         "Failed to generate completion script."
                     -- TODO: This is probably not the best exit code.
@@ -293,7 +302,7 @@ completion appNames options config =
             _    -> do
                 let Global.Config{colourOutput, verbosity} = config
                     colour = fromMaybe ColourOutput.Auto colourOutput
-                    subcommand = pretty (usedName appNames <> " completion:")
+                    subcommand = pretty (usedName appNames <> " completion")
 
                 errorMsg subcommand verbosity colour stderr
                     $ fromString (show shell) <> ": Unsupported SHELL value."
@@ -517,16 +526,49 @@ subcommandCompletion
     -> String
     -- ^ Subcommand name.
     -> IO [String]
-subcommandCompletion appNames config _shell index words _invokedAs = \case
+subcommandCompletion appNames config shell index words _invokedAs = \case
     "help" -> helpCompletion appNames config hadDashDash pat
     "config" -> configCompletion appNames config wordsBeforePattern pat
     "completion" -> completionCompletion appNames config wordsBeforePattern pat
     "version" -> versionCompletion appNames config wordsBeforePattern pat
-    _subcommand -> pure []
+    subcommand -> do
+        arguments <- completionInfo subcommand
+            <*> pure shell
+            <*> pure (fromIntegral index)
+            <*> pure (fromString <$> words)
+
+        External.executeCommand appNames config subcommand
+            (Text.unpack <$> arguments)
   where
     wordsBeforePattern = List.take (fromIntegral index) words
     hadDashDash = "--" `List.elem` wordsBeforePattern
     pat = fromMaybe "" $ atMay words (fromIntegral index)
+
+    completionInfo :: String -> IO CompletionInfo
+    completionInfo subcommand = do
+        -- TODO: Handle exit code correctly.
+        (exitCode, out, err)
+            <- External.executeCommandWith readProcess appNames config
+                subcommand ["--completion-info"]
+
+        when (exitCode /= ExitSuccess) $ do
+            let Global.Config{colourOutput, verbosity} = config
+                colour = fromMaybe ColourOutput.Auto colourOutput
+
+                subcommand' = pretty
+                    $ usedName appNames <> " completion"
+
+            errorMsg subcommand' verbosity colour stderr
+                $ fromString subcommand
+                <> ": Subcommand protocol violated when called with\
+                    \ '--completion-info':\n"
+                <> fromString err
+            exitWith (ExitFailure 2)
+
+        Dhall.input Dhall.auto (fromString out)
+      where
+        readProcess cmd _ args env =
+            readCreateProcessWithExitCode (proc cmd args){env} ""
 
 helpCompletion :: AppNames -> Global.Config -> Bool -> String -> IO [String]
 helpCompletion appNames config hadDashDash pat

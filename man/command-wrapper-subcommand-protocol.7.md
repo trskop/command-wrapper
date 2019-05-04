@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SUBCOMMAND-PROTOCOL(7) Subcommand Protocol | v1.0.0
 % Peter Trsko
-% 22nd of December 2018
+% 4th May 2019
 
 
 # NAME
@@ -19,13 +19,13 @@ described in this manual page.
 
 Each subcommand must support following options:
 
-* `--help` which prints subcommand specific help message. This is
-  invoked by Command Wrapper's `help` internal subcommand.
+*   `--help` which prints subcommand specific help message. This is
+    invoked by Command Wrapper's `help` internal subcommand.
 
-* `--completion-config` which prints a Dhall expression describing how
-  subcommand should be called to provide command line completion.
+*   `--completion-config` which prints a Dhall expression describing how
+    subcommand should be called to provide command line completion.
 
-* (*PROPOSED*) `--info` which prints program description in Dhall format.
+*   (*PROPOSED*) `--info` which prints program description in Dhall format.
 
 **TODO:** Define how help message should look like, especially *Usage* section.
 Plan is for it to look something like `TOOLSET SUBCOMMAND ...`.
@@ -176,6 +176,49 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 *OTHER*
 :   Subcommands are free to use other *EXIT STATUS* codes if there is no
     *EXIT STATUS* defined for that purpose.
+
+
+# COMMAND LINE COMPLETION
+
+Subcommand has to support `--completion-info` command line option which causes
+it to print to standard output a Dhall expression. That expression describes
+how it has to be called to provide command line completion.  Type signature of
+mentioned Dhall expression is:
+
+```
+  < Bash : {} | Fish : {} | Zsh : {} >  -- Shell under which completion was
+                                        --   invoked.
+
+→ Natural  -- Index of a word that is beeing completed.
+
+→ List Text  -- List of words as they are mentioned on current command line.
+             --   Only those deemed to be passed to subcommand are present.
+
+→ List Text  -- Command line arguments with which the subcommand should be
+             --   executed for the completion to work.
+```
+
+Algorithm:
+
+*   Command line completion is invoked on Command Wrapper toolset, which parses
+    current command line.  If it is able to respond it does so.
+
+*   If Command Wrapper needs to complete arguments for a subcommand it calls
+    the subcommand as:
+
+    ```
+    "/some/libexec/path/${COMMAND_WRAPPER_NAME}" --completion-info
+    ```
+
+    Which will produce a Dhall functintion which is then evaluated into a new
+    command line that should be called:
+
+    ```
+    "/some/libexec/path/${COMMAND_WRAPPER_NAME}" "${RESULT_OF_APPLIED_DHALL_EXPRESSION[@]}"
+    ```
+
+*   Subcommand provides list of possible completions which are returned to the
+    shell.
 
 
 # SEE ALSO
