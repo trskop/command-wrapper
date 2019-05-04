@@ -293,3 +293,16 @@ function exec_() {
     removeCommandWrapperEnvironmentVariables
     exec "$@"
 }
+
+# Run current toolset command.
+#
+# Usage
+#
+#   toolset [GLOBAL_OPTIONS] SUBCOMMAND [--] [SUBCOMMAND_ARGUMENTS]
+#   toolset {--help|-h}
+#   toolset {--version|-V}
+#
+# See `command-wrapper(1)` for details.
+function toolset() {
+    COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" ${COMMAND_WRAPPER_EXE} "$@"
+}
