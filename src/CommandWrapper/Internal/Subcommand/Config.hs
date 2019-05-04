@@ -14,14 +14,18 @@ module CommandWrapper.Internal.Subcommand.Config
     ( ConfigMode(..)
     , config
     , configSubcommandHelp
+    , configCompletion
     )
   where
 
 import Control.Applicative (pure)
+import Data.Bool ((||), not, otherwise)
+import Data.Foldable (null)
 import Data.Function (($))
 import Data.Functor (Functor)
+import qualified Data.List as List (elem, filter, isPrefixOf)
 import Data.Maybe (fromMaybe)
-import Data.Monoid (Endo, (<>))
+import Data.Monoid (Endo, (<>), mempty)
 import Data.String (String, fromString)
 import GHC.Generics (Generic)
 import System.IO (IO, stderr, stdout)
@@ -150,3 +154,23 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 
     , ""
     ]
+
+configCompletion
+    :: AppNames
+    -> Global.Config
+    -> [String]
+    -> String
+    -> IO [String]
+configCompletion _appNames _config wordsBeforePattern pat
+  | null pat  = pure possibleOptions
+  | otherwise = pure matchingOptions
+  where
+    hadHelp =
+        ("--help" `List.elem` wordsBeforePattern)
+        || ("-h" `List.elem` wordsBeforePattern)
+
+    munless p x = if not p then x else mempty
+
+    possibleOptions = munless hadHelp ["--help", "-h"]
+
+    matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions

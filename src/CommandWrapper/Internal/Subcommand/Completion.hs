@@ -87,6 +87,7 @@ import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
 import qualified CommandWrapper.External as External (findSubcommands)
+import CommandWrapper.Internal.Subcommand.Config (configCompletion)
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
     , helpOptions
@@ -98,6 +99,7 @@ import CommandWrapper.Internal.Subcommand.Help
     , usageSection
     , value
     )
+import CommandWrapper.Internal.Subcommand.Version (versionCompletion)
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message (Result, defaultLayoutOptions, errorMsg, message)
 import CommandWrapper.Options.Alias (Alias(alias))
@@ -447,13 +449,13 @@ subcommandCompletion
     -> IO [String]
 subcommandCompletion appNames config _shell index words = \case
     "help" -> helpCompletion appNames config hadDashDash pat
-    "config" -> pure []
-    "completion" -> pure []
-    "version" -> pure []
+    "config" -> configCompletion appNames config wordsBeforePattern pat
+    "completion" -> completionCompletion appNames config wordsBeforePattern pat
+    "version" -> versionCompletion appNames config wordsBeforePattern pat
     _subcommand -> pure []
   where
-    hadDashDash = "--" `List.elem` List.take (fromIntegral index + 1) words
-
+    wordsBeforePattern = List.take (fromIntegral index + 1) words
+    hadDashDash = "--" `List.elem` wordsBeforePattern
     pat = fromMaybe "" $ atMay words (fromIntegral index)
 
 helpCompletion :: AppNames -> Global.Config -> Bool -> String -> IO [String]
@@ -466,6 +468,14 @@ helpCompletion appNames config hadDashDash pat
     isOption = headMay pat == Just '-'
     helpOptions' = ["--help", "-h", "--"]
     subcmds = findSubcommands appNames config pat
+
+completionCompletion
+    :: AppNames
+    -> Global.Config
+    -> [String]
+    -> String
+    -> IO [String]
+completionCompletion _appNames _config _wordsBeforePattern _pat = pure []
 
 findSubcommands :: AppNames -> Global.Config -> String -> IO [String]
 findSubcommands appNames config pat =

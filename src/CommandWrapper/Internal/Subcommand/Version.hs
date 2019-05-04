@@ -16,10 +16,14 @@ module CommandWrapper.Internal.Subcommand.Version
     , version
     , versionSubcommandHelp
     , versionQQ
+    , versionCompletion
     )
   where
 
 import Control.Applicative ((<|>))
+import Data.Bool ((||), not, otherwise)
+import Data.Foldable (null)
+import qualified Data.List as List (elem, filter, isPrefixOf)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo))
 import Data.String (fromString)
@@ -47,6 +51,7 @@ import qualified Options.Applicative as Options
     , long
     , short
     )
+import Safe (headMay)
 
 import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
@@ -227,3 +232,42 @@ versionSubcommandHelp AppNames{usedName} = Pretty.vsep
 
     , ""
     ]
+
+versionCompletion
+    :: AppNames
+    -> Config
+    -> [String]
+    -> String
+    -> IO [String]
+versionCompletion _ _ wordsBeforePattern pat = pure versionCompletion'
+  where
+    versionCompletion'
+      | null pat = versionOptions
+
+      | "--shell=" `List.isPrefixOf` pat =
+          List.filter (pat `List.isPrefixOf`) shellOptions
+
+      | Just '-' <- headMay pat =
+          case List.filter (pat `List.isPrefixOf`) versionOptions of
+              ["--shell="] -> shellOptions
+              opts -> opts
+
+      | otherwise = []
+
+    hadHelp =
+        ("--help" `List.elem` wordsBeforePattern)
+        || ("-h" `List.elem` wordsBeforePattern)
+
+    hadDhall = "--dhall" `List.elem` wordsBeforePattern
+
+    hadShell =
+        not . null
+        $ List.filter ("--shell=" `List.isPrefixOf`) wordsBeforePattern
+
+    versionOptions =
+        munless (hadDhall || hadShell || hadHelp)
+            ["--help", "-h", "--dhall", "--shell="]
+
+    shellOptions = ("--shell=" <>) <$> ["bash"{-, "fish", "zsh"-}]
+
+    munless p x = if not p then x else mempty
