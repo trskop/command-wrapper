@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 2nd May 2019
+% 4th May 2019
 
 
 # NAME
@@ -16,6 +16,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \[\--index=*NUM*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
 \[\--alias=*ALIAS* ...]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library \[\--shell=*SHELL*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[QUERY\_OPTIONS]
 
@@ -41,7 +43,7 @@ interface for querying Command Wrapper's command line interface (CLI).
 
 \--shell=*SHELL*
 :   Provide completion or generate script for *SHELL*.  Currently only supported
-    value is bash.
+    value is *bash*.
 
 \--subcommand=*SUBCOMMAND*
 :   Do command line completion for a *SUBCOMMAND* instead.  This is useful for
@@ -66,12 +68,46 @@ interface for querying Command Wrapper's command line interface (CLI).
 
 \--shell=*SHELL*
 :   Provide completion or generate script for *SHELL*.  Currently only supported
-    value is bash.
+    value is *bash*.
 
 \--alias=*ALIAS*
 :   *ALIAS* under which Command Wrapper toolset is also known.  This is usually
     name of a shell alias, e.g. `alias ts=toolset` where ts is an *ALIAS* for
     which we want command line completion to work as well.
+
+
+# SUBCOMMAND LIBRARY OPTIONS
+
+\--library
+:   Print a library to standard output that can be used by a subcommand.  In
+    a subcommand implemented in Bash we can include a support library using:
+
+    ```
+    source <(COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" "${COMMAND_WRAPPER_EXE}" completion --library --shell=bash)
+    ```
+
+    Library itself is documented.  One can read through it by just printing it:
+
+    ```
+    TOOLSET completion --library [--shell=SHELL]
+    ```
+
+    Or piping it to pager:
+
+    ```
+    TOOLSET completion --library [--shell=SHELL] | less
+    ```
+
+    On Debian we can also use `sensible-pager` command instead of directly
+    calling specific one.  Commands like `bat` or other `cat`-like tool with
+    syntax highlighting support are also a great choice:
+
+    ```
+    TOOLSET completion --library --shell=bash | bat --language bash
+    ```
+
+\--shell=*SHELL*
+:   Print library for *SHELL*.  Currently only supported value is *bash*.
 
 
 # QUERY OPTIONS

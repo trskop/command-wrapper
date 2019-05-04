@@ -54,8 +54,10 @@ import GHC.Generics (Generic)
 import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (IO, putStrLn, stderr, stdout)
 import Text.Read (readMaybe)
-import Text.Show (Show)
+import Text.Show (Show, show)
 
+import qualified Data.ByteString as ByteString (putStr)
+import Data.FileEmbed (embedFile)
 import Data.Monoid.Endo (mapEndo)
 import Data.Monoid.Endo.Fold (dualFoldEndo, foldEndo)
 import Data.Text (Text)
@@ -160,6 +162,7 @@ defQueryOptions = Query
 data CompletionMode a
     = CompletionMode CompletionOptions a
     | ScriptMode ScriptOptions a
+    | LibraryMode LibraryOptions a
     | QueryMode Query a
     | HelpMode a
   deriving stock (Functor, Generic, Show)
@@ -175,6 +178,11 @@ data CompletionOptions = CompletionOptions
 data ScriptOptions = ScriptOptions
     { aliases :: [String]
     , shell :: Options.Shell
+    }
+  deriving stock (Generic, Show)
+
+data LibraryOptions = LibraryOptions
+    { shell :: Options.Shell
     }
   deriving stock (Generic, Show)
 
@@ -206,6 +214,10 @@ instance Options.HasShell ScriptOptions where
     updateShell = mapEndo \f ScriptOptions{aliases, shell} ->
         ScriptOptions{aliases, shell = f shell}
 
+instance Options.HasShell LibraryOptions where
+    updateShell = mapEndo \f LibraryOptions{shell} ->
+        LibraryOptions{shell = f shell}
+
 instance Options.HasShell (CompletionMode cfg) where
     updateShell f = Endo \case
         CompletionMode opts cfg ->
@@ -214,6 +226,9 @@ instance Options.HasShell (CompletionMode cfg) where
         ScriptMode opts cfg ->
             ScriptMode (Options.updateShell f `appEndo` opts) cfg
 
+        LibraryMode opts cfg ->
+            LibraryMode (Options.updateShell f `appEndo` opts) cfg
+
         mode ->
             mode
 
@@ -221,6 +236,11 @@ defScriptOptions :: ScriptOptions
 defScriptOptions = ScriptOptions
     { shell = Options.Bash
     , aliases = []
+    }
+
+defLibraryOptions :: LibraryOptions
+defLibraryOptions = LibraryOptions
+    { shell = Options.Bash
     }
 
 completion :: AppNames -> [String] -> Global.Config -> IO ()
@@ -262,6 +282,22 @@ completion appNames options config =
                                 (fromString exePath :: Text)
 
                         in Text.putStrLn bash
+
+        LibraryMode LibraryOptions{shell} () -> case shell of
+            -- TODO: We should consider piping the output to a pager or similar
+            -- tool when the stdout is attached to a terminal.  For example
+            -- `bat` would be a great choice if it is installed.
+            Options.Bash ->
+                ByteString.putStr $(embedFile "bash/lib.sh")
+
+            _    -> do
+                let Global.Config{colourOutput, verbosity} = config
+                    colour = fromMaybe ColourOutput.Auto colourOutput
+                    subcommand = pretty (usedName appNames <> " completion:")
+
+                errorMsg subcommand verbosity colour stderr
+                    $ fromString (show shell) <> ": Unsupported SHELL value."
+                exitWith (ExitFailure 125)
 
         QueryMode query@Query{..} () -> case what of
             QuerySubcommands
@@ -503,13 +539,32 @@ helpCompletion appNames config hadDashDash pat
     helpOptions' = ["--help", "-h", "--"]
     subcmds = findSubcommands appNames config pat
 
+-- TODO: This implementation needs refinement:
+--
+-- - Be contextual, i.e. if there is `--query` then ignore options tht do not
+--   apply.
+-- - Complete `SHELL` and `SUBCOMMAND` values.
 completionCompletion
     :: AppNames
     -> Global.Config
     -> [String]
     -> String
     -> IO [String]
-completionCompletion _appNames _config _wordsBeforePattern _pat = pure []
+completionCompletion _appNames _config _wordsBeforePattern pat
+    | null pat  = pure allOptions
+    | otherwise = pure $ List.filter (pat `List.isPrefixOf`) allOptions
+  where
+    allOptions = List.nub
+        [ "--index=", "--shell=", "--subcommand=", "--"
+
+        , "--library", "--shell="
+
+        , "--query", "--subcommands", "--subcommand-aliases"
+        , "--supported-shells", "--verbosity-values", "--colour-values"
+        , "--color-values"
+
+        , "--script", "--shell=", "--alias="
+        ]
 
 findSubcommands :: AppNames -> Global.Config -> String -> IO [String]
 findSubcommands appNames config pat =
@@ -540,6 +595,11 @@ parseOptions appNames config arguments = do
             <*> many aliasOption
 
         , dualFoldEndo
+            <$> libraryFlag
+            <*> optional Options.shellOption
+
+
+        , dualFoldEndo
             <$> queryFlag
             <*> optional
                 ( updateQueryOptions
@@ -563,6 +623,7 @@ parseOptions appNames config arguments = do
   where
     switchTo = Endo . const
     switchToScriptMode = switchTo (ScriptMode defScriptOptions ())
+    switchToLibraryMode = switchTo (LibraryMode defLibraryOptions ())
     switchToQueryMode = switchTo (QueryMode defQueryOptions ())
     switchToHelpMode = switchTo (HelpMode ())
 
@@ -585,6 +646,10 @@ parseOptions appNames config arguments = do
 
     scriptFlag :: Options.Parser (Endo (CompletionMode ()))
     scriptFlag = Options.flag mempty switchToScriptMode (Options.long "script")
+
+    libraryFlag :: Options.Parser (Endo (CompletionMode ()))
+    libraryFlag =
+        Options.flag mempty switchToLibraryMode (Options.long "library")
 
     queryFlag :: Options.Parser (Endo (CompletionMode ()))
     queryFlag = Options.flag mempty switchToQueryMode (Options.long "query")
@@ -699,6 +764,10 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
                 <> "|" <> longOption "colo[u]r-values"
                 )
 --          <+> Pretty.brackets (metavar "PATTERN")
+
+        , "completion"
+            <+> longOption "library"
+            <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
 
         , "completion" <+> helpOptions
         , "help completion"
@@ -815,6 +884,19 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
 --      , optionDescription ["PATTERN"]
 --          [ Pretty.reflow "TODO: Document"
 --          ]
+        ]
+
+    , section "Library options:"
+        [ optionDescription ["--library"]
+            [ Pretty.reflow "Print a library to standard output that can be\
+                \ used by a subcommand."
+            ]
+
+        , optionDescription ["--shell=SHELL"]
+            [ Pretty.reflow "Print library for", metavar "SHELL" <> "."
+            , Pretty.reflow "Currently only supported value is"
+            , value "bash" <> "."
+            ]
         ]
 
     , section "Other options:"
