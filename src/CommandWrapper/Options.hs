@@ -25,6 +25,7 @@ module CommandWrapper.Options
 
     -- ** Helper Functions
     , splitArguments
+    , splitArguments'
     , execParserPure
     , handleParseResult
     )
@@ -51,6 +52,7 @@ import CommandWrapper.Options.Optparse
     , handleParseResult
     , parse
     , splitArguments
+    , splitArguments'
     )
 
 

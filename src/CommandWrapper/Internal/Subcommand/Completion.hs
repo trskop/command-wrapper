@@ -3,7 +3,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion
--- Description: TODO: Module synopsis
+-- Description: Implementation of internal subcommand that provides command
+--              line completion and support for IDE-like functionality.
 -- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
@@ -11,7 +12,8 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions; POSIX.
 --
--- TODO: Module description.
+-- Implementation of internal subcommand that provides command line completion
+-- and support for IDE-like functionality.
 module CommandWrapper.Internal.Subcommand.Completion
     ( CompletionMode(..)
     , completion
@@ -32,6 +34,7 @@ import Data.Function (($), (.), const, id)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List
     ( break
+    , drop
     , elem
     , filter
     , isPrefixOf
@@ -40,8 +43,9 @@ import qualified Data.List as List
     , take
     , takeWhile
     )
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
+import Data.Ord ((>))
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
 import Data.Tuple (fst)
@@ -80,7 +84,7 @@ import qualified Options.Applicative as Options
     , short
     , strOption
     )
-import Safe (atMay, headMay, lastMay)
+import Safe (atMay, headMay)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 
@@ -106,9 +110,11 @@ import CommandWrapper.Options.Alias (Alias(alias))
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     ( ColourOutput(Auto)
     )
+import qualified CommandWrapper.Options.Alias as Options (applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     , splitArguments
+    , splitArguments'
     )
 import qualified CommandWrapper.Options.Shell as Options
 
@@ -220,47 +226,8 @@ defScriptOptions = ScriptOptions
 completion :: AppNames -> [String] -> Global.Config -> IO ()
 completion appNames options config =
     runMain (parseOptions appNames config options) defaults \case
-        -- TODO:
-        --
-        -- - This subcommand will need access to global parser definition to
-        --   provide completion for global options.
-        --
-        -- - When completing subcommand names we need to find possible
-        --   completions in:
-        --
-        --     - All possible external and internal subcommands.
-        --     - All aliases defined by `command-wrapper` and `TOOLSET` (if not
-        --       invoking `command-wrapper` directly).
-        --
-        -- - When completing option/argument of a subcommand we need to execute
-        --   the subcommand with bash completion options passed to it. This
-        --   will require us to extend `SUBCOMMAND_PROTOCOL.md`. Should we rely
-        --   on `optparse-applicative` for this?
-        CompletionMode CompletionOptions{..} () -> do
-            completions <- case subcommand of
-                Nothing -> do
-                    let pat = fromMaybe ""
-                            $ maybe (lastMay words)
-                                (atMay words . fromIntegral) index
-
-                    let subcmds = findSubcommands appNames config pat
-
-                    case headMay pat of
-                        Nothing  ->
-                            (findOptions config ('-' : pat) <>) <$> subcmds
-                        Just '-' ->
-                            pure (findOptions config pat)
-                        _ ->
-                            subcmds
-
-                Just subcommand' ->
-                    let index' = case length words of
-                            0 -> 0
-                            n -> fromIntegral n - 1
-                     in subcommandCompletion appNames config shell
-                            (fromMaybe index' index) words subcommand'
-
-            mapM_ putStrLn completions
+        CompletionMode opts () ->
+            getCompletions appNames config opts >>= mapM_ putStrLn
 
         -- TODO:
         --
@@ -375,67 +342,131 @@ completion appNames options config =
     findSubcommandAliasesFuzzy cfg Query{pattern, caseSensitive} =
         Fuzzy.filter pattern (getAliases cfg) "" "" id caseSensitive
 
-    -- TODO: Generate these values instead of hard-coding them.
-    verbosityValues :: [String]
-    verbosityValues = ["silent", "quiet", "normal", "verbose", "annoying"]
+-- TODO: Generate these values instead of hard-coding them.
+verbosityValues :: [String]
+verbosityValues = ["silent", "quiet", "normal", "verbose", "annoying"]
 
-    -- TODO: Generate these values instead of hard-coding them.
-    colourValues :: [String]
-    colourValues = ["always", "auto", "never"]
+-- TODO: Generate these values instead of hard-coding them.
+colourValues :: [String]
+colourValues = ["always", "auto", "never"]
 
-    -- TODO: Generate these values instead of hard-coding them.
-    supportedShells :: [String]
-    supportedShells = ["bash"]
+-- TODO: Generate these values instead of hard-coding them.
+supportedShells :: [String]
+supportedShells = ["bash"]
 
-    findOptions :: Global.Config -> String -> [String]
-    findOptions cfg pat =
-        let -- TODO: Generate these values instead of hard-coding them.
-            shortOptions :: [String]
-            shortOptions =
-                [ "-v", "-vv", "-vvv"
-                , "-s", "-q"
-                , "-V"
-                ]
+matchGlobalOptions :: String -> [String]
+matchGlobalOptions pat =
+    let -- TODO: Generate these values instead of hard-coding them.
+        shortOptions :: [String]
+        shortOptions =
+            [ "-v", "-vv", "-vvv"
+            , "-s", "-q"
+            , "-V"
+            ]
 
-            longOptions :: [(String, Maybe (String -> [String]))]
-            longOptions =
-                [ ("--color=", Just (findKeywords colourValues cfg))
-                , ("--colour=", Just (findKeywords colourValues cfg))
-                , ("--no-aliases", Nothing)
-                , ("--no-color", Nothing)
-                , ("--no-colour", Nothing)
-                , ("--version", Nothing)
-                , ("--verbosity=", Just (findKeywords verbosityValues cfg))
-                ]
+        longOptions :: [(String, Maybe (String -> [String]))]
+        longOptions =
+            [ ("--color=", Just (matchKeywords colourValues))
+            , ("--colour=", Just (matchKeywords colourValues))
+            , ("--no-aliases", Nothing)
+            , ("--no-color", Nothing)
+            , ("--no-colour", Nothing)
+            , ("--version", Nothing)
+            , ("--verbosity=", Just (matchKeywords verbosityValues))
+            ]
 
-        in  case List.takeWhile (== '-') pat of
-                -- Search for both, long and short option.
-                "-" ->
-                    (if pat == "-" then ("--" :) else id)
-                    $  List.filter (pat `List.isPrefixOf`) shortOptions
-                    <> List.filter (fmap Char.toLower pat `List.isPrefixOf`)
-                        (fmap fst longOptions)
+    in  case List.takeWhile (== '-') pat of
+            -- Search for both, long and short option.
+            "-" ->
+                (if pat == "-" then ("--" :) else id)
+                $  List.filter (pat `List.isPrefixOf`) shortOptions
+                <> List.filter (fmap Char.toLower pat `List.isPrefixOf`)
+                    (fmap fst longOptions)
 
-                -- Search for long option.
-                "--" ->
-                    (if pat == "--" then ("--" :) else id)
-                    $ case List.break (== '=') pat of
-                        (opt, '=' : pat') ->
-                            case join (List.lookup (opt <> "=") longOptions) of
-                                Just f -> ((opt <> "=") <>) <$> f pat'
-                                _ -> []
-                        _ ->
-                            List.filter
-                                (fmap Char.toLower pat `List.isPrefixOf`)
-                                (fst <$> longOptions)
+            -- Search for long option.
+            "--" ->
+                (if pat == "--" then ("--" :) else id)
+                $ case List.break (== '=') pat of
+                    (opt, '=' : pat') ->
+                        case join (List.lookup (opt <> "=") longOptions) of
+                            Just f -> ((opt <> "=") <>) <$> f pat'
+                            _ -> []
+                    _ ->
+                        List.filter
+                            (fmap Char.toLower pat `List.isPrefixOf`)
+                            (fst <$> longOptions)
 
-                -- No option starts with "---" or more.
-                _ -> []
+            -- No option starts with "---" or more.
+            _ -> []
+  where
+    matchKeywords :: [String] -> String -> [String]
+    matchKeywords keywords p =
+        List.filter (fmap Char.toLower p `List.isPrefixOf`) keywords
 
-    findKeywords :: [String] -> Global.Config -> String -> [String]
-    findKeywords keywords _cfg pat =
-        List.filter (fmap Char.toLower pat `List.isPrefixOf`) keywords
+-- TODO:
+--
+-- - This will need access to global parser definition to provide completion
+--   for global options without the need for hardcoded values.
+getCompletions :: AppNames -> Global.Config -> CompletionOptions -> IO [String]
+getCompletions appNames config CompletionOptions{..} = case subcommand of
+    Nothing -> do
+        let (_globalOptions, n, subcommandAndItsArguments) =
+                Options.splitArguments' (List.drop 1 words)
 
+            indexPointsBeyondSubcommandName = index' > (n + 1)
+
+        case headMay subcommandAndItsArguments of
+            Nothing ->
+                globalCompletion
+
+            Just subcommandName
+              | indexPointsBeyondSubcommandName ->
+                    let indexOfSubcommandArgument = index' - n - 2
+
+                        subcommandArguments =
+                            List.drop 1 subcommandAndItsArguments
+
+                     in subcommandCompletion' indexOfSubcommandArgument
+                            subcommandArguments subcommandName
+
+              | otherwise ->
+                    globalCompletion
+
+    Just subcommandName ->
+        subcommandCompletion' index' words subcommandName
+  where
+    index' = (`fromMaybe` index) case length words of
+        0 -> 0
+        n -> fromIntegral n - 1
+
+    subcommandCompletion' idx subcommandArgument subcommandName =
+        let -- TODO: Figure out how to take arguments into account when
+            -- applying aliases.
+            (realSubcommandName, _) =
+                Options.applyAlias (Global.aliases config)
+                    subcommandName []
+
+         in subcommandCompletion appNames config shell idx subcommandArgument
+                subcommandName realSubcommandName
+
+    globalCompletion =
+        let pat = fromMaybe "" $ atMay words (fromIntegral index')
+            subcommands = findSubcommands appNames config pat
+
+         in case headMay pat of
+                Nothing  ->
+                    (matchGlobalOptions ('-' : pat) <>) <$> subcommands
+                Just '-' ->
+                    pure (matchGlobalOptions pat)
+                _ ->
+                    subcommands
+
+-- TODO:
+--
+-- - When completing option/argument of a subcommand we need to execute
+--   the subcommand with bash completion options passed to it. This
+--   will require us to extend `SUBCOMMAND_PROTOCOL.md`. Should we rely
+--   on `optparse-applicative` for this?
 subcommandCompletion
     :: AppNames
     -> Global.Config
@@ -445,16 +476,19 @@ subcommandCompletion
     -> [String]
     -- ^ Subcommand arguments.
     -> String
+    -- ^ Name udner which the subcommand was invoked, i.e. name before
+    -- resolving aliases.
+    -> String
     -- ^ Subcommand name.
     -> IO [String]
-subcommandCompletion appNames config _shell index words = \case
+subcommandCompletion appNames config _shell index words _invokedAs = \case
     "help" -> helpCompletion appNames config hadDashDash pat
     "config" -> configCompletion appNames config wordsBeforePattern pat
     "completion" -> completionCompletion appNames config wordsBeforePattern pat
     "version" -> versionCompletion appNames config wordsBeforePattern pat
     _subcommand -> pure []
   where
-    wordsBeforePattern = List.take (fromIntegral index + 1) words
+    wordsBeforePattern = List.take (fromIntegral index) words
     hadDashDash = "--" `List.elem` wordsBeforePattern
     pat = fromMaybe "" $ atMay words (fromIntegral index)
 

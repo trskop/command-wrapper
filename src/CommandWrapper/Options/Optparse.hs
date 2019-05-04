@@ -19,22 +19,27 @@ module CommandWrapper.Options.Optparse
 
     -- ** Helper Functions
     , splitArguments
+    , splitArguments'
     , execParserPure
     , handleParseResult
     )
   where
+
+import Prelude ((+), fromIntegral)
 
 import Control.Applicative (pure)
 import Control.Monad ((>>=))
 import Data.Bool ((&&))
 import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
-import Data.Functor (Functor, (<$>))
+import Data.Foldable (length)
 import Data.Function (($), (.))
+import Data.Functor (Functor, (<$>))
 import qualified Data.List as List (span)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (Endo, (<>))
 import Data.String (String)
+import Data.Word (Word)
 import System.Environment (getArgs)
 import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (IO, stderr)
@@ -135,12 +140,43 @@ internalSubcommandParse appNames config subcommand parserPrefs parserInfo =
 splitArguments
     :: [String]
     -> ([String], [String])
-splitArguments args =
-    case List.span (\arg -> arg /= "--" && listToMaybe arg == pure '-') args of
-        (globalOptions, "--" : subcommandAndItsArguments) ->
-            (globalOptions, subcommandAndItsArguments)
+splitArguments args = (globalOptions, subcommandAndItsArguments)
+  where
+    (globalOptions, _, subcommandAndItsArguments) = splitArguments' args
 
-        args' -> args'
+-- | Split arguments into global options and the rest.
+--
+-- @
+-- COMMAND_WRAPPER [GLOBAL_OPTIONS] [[--] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]]
+-- @
+--
+-- >>> splitArguments' ["-i", "--help"]
+-- (["-i", "--help"], 2, [])
+-- >>> splitArguments' ["-i", "help", "build"]
+-- (["-i"], 1, ["help", "build"])
+-- >>> splitArguments' ["-i", "--", "help", "build"]
+-- (["-i"], 2, ["help", "build"])
+-- >>> splitArguments' ["-i", "--", "--foo"]
+-- (["-i"], 2, ["--foo"])
+--
+-- >>> let arguments = ["-i", "--", "help", "build"]
+-- >>> let (_, n, subcommandAndItsArguments) = splitArguments' arguments
+-- >>> drop n arguments == subcommandAndItsArguments
+-- True
+splitArguments'
+    :: [String]
+    -> ([String], Word, [String])
+splitArguments' args = case subcommandAndItsArguments' of
+    "--" : subcommandAndItsArguments ->
+        (globalOptions, n + 1, subcommandAndItsArguments)
+
+    subcommandAndItsArguments ->
+        (globalOptions, n, subcommandAndItsArguments)
+  where
+    (globalOptions, subcommandAndItsArguments') =
+        List.span (\arg -> arg /= "--" && listToMaybe arg == pure '-') args
+
+    n = fromIntegral (length globalOptions)
 
 -- | Variant of 'Options.Applicative.execParserPure' that doesn't provide shell
 -- completion.

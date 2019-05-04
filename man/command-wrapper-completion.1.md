@@ -44,7 +44,16 @@ interface for querying Command Wrapper's command line interface (CLI).
     value is bash.
 
 \--subcommand=*SUBCOMMAND*
-:   Do command line completion for a *SUBCOMMAND* instead.
+:   Do command line completion for a *SUBCOMMAND* instead.  This is useful for
+    example when debugging command line completion of a *SUBCOMMAND*.
+
+    ```
+    $ TOOLSET_COMMAND completion --subcommand=version -- --he
+    --help
+    ```
+
+    Value of *SUBCOMMAND* can be any internal subcommand, external subcommand,
+    or an alias to one of those.
 
 *WORD*
 :   *WORD*s to complete. In Bash these are the elements of `COMP_WORDS` array.
