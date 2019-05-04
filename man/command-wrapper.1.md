@@ -469,7 +469,7 @@ used by `man` run `manpath` command, which should print out something like:
 
     ```
     function toolset() {
-       COMMAND_WRAPPER_INVOKE_AS=${COMMAND_WRAPPER_NAME} ${COMMAND_WRAPPER_EXE} "$@"
+       COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" "${COMMAND_WRAPPER_EXE}" "$@"
     }
     ```
 

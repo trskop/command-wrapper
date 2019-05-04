@@ -1,12 +1,12 @@
 % COMMAND-WRAPPER-SKEL(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 15th April 2018
+% 4th May 2019
 
 
 # NAME
 
-`command-wrapper-skel` -- Generate subcommand skeleton for specific
-Command Wrapper environment, i.e. toolset.
+`command-wrapper-skel` -- Generate subcommand or configuration file skeleton
+for specific Command Wrapper environment, i.e. toolset.
 
 
 # USAGE
@@ -20,7 +20,15 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help skel
 
 # DESCRIPTION
 
-**TODO**
+Purpose of this Command Wrapper subcommand is to allow users to rapidly create
+or prototype new subcommands.
+
+Command Wrapper subcommand can be written in any language user chooses.  In the
+end it is just an executable that follows Command Wrapper's *SUBCOMMAND
+PROTOCOL*, which is documented in a separate manual page
+`command-wrapper-subcommand-protocol(7)`.  At the moment this subcommand
+provides skeletons only for a alimited number of languages, see
+`--language=`*LANGUAGE* option for more details.
 
 
 # OPTIONS

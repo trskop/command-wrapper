@@ -143,6 +143,8 @@ function msgf() {
 # Usage:
 #
 #   info FORMAT [ARGUMENTS]
+#
+# Message is by default printed to stdout.
 function info() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'info' "$@"
 }
@@ -150,6 +152,8 @@ function info() {
 # Usage:
 #
 #   notice FORMAT [ARGUMENTS]
+#
+# Message is by default printed to stdout.
 function notice() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'notice' "$@"
 }
@@ -157,6 +161,8 @@ function notice() {
 # Usage:
 #
 #   warn FORMAT [ARGUMENTS]
+#
+# Message is by default printed to stderr.
 function warn() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'warning' "$@" 1>&2
 }
@@ -164,6 +170,8 @@ function warn() {
 # Usage:
 #
 #   error FORMAT [ARGUMENTS]
+#
+# Message is by default printed to stderr.
 function error() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'error' "$@" 1>&2
 }
