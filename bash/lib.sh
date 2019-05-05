@@ -304,5 +304,9 @@ function exec_() {
 #
 # See `command-wrapper(1)` for details.
 function toolset() {
-    COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" "${COMMAND_WRAPPER_EXE}" "$@"
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" \
+        "${COMMAND_WRAPPER_EXE}" \
+        --no-aliases "$@"
 }
