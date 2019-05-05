@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 -- |
 -- Module:      Main
 -- Description: CommandWrapper subcommand for executing commands with a
@@ -15,10 +16,12 @@
 module Main (main)
   where
 
+import Control.Applicative (many)
 import Data.Bifunctor (bimap)
-import Data.Foldable (asum, for_)
+import Data.Foldable (asum, elem, for_)
+import Data.Function (on)
 import Data.Functor ((<&>))
-import qualified Data.List as List (filter, find, isPrefixOf)
+import qualified Data.List as List (filter, find, groupBy, isPrefixOf, sortBy)
 import Data.Monoid (Endo(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
@@ -26,8 +29,9 @@ import System.Environment (getArgs, getEnvironment)
 
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
-import qualified Data.Text as Text (unpack)
+import qualified Data.Text as Text (split, unpack)
 import qualified Data.Text.IO as Text (putStrLn)
+import Data.Tree (Forest, Tree(Node), drawTree, unfoldForest)
 import qualified Dhall (Interpret, auto, inject, inputFile)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
@@ -37,12 +41,16 @@ import qualified Options.Applicative as Options
     , flag'
     , fullDesc
     , handleParseResult
+    , help
     , helper
     , info
     , long
+    , metavar
     , progDesc
     , short
+    , strArgument
     )
+import Safe (headMay)
 import System.Directory (setCurrentDirectory)
 import qualified System.Posix as Posix (executeFile)
 
@@ -72,7 +80,7 @@ newtype Config = Config
   deriving stock (Generic)
   deriving anyclass (Dhall.Interpret)
 
-data Action = List | DryRun | Run | CompletionInfo
+data Action = List | Tree | DryRun | Run | CompletionInfo
 
 instance HaveCompletionInfo Action where
     completionInfoMode = const CompletionInfo
@@ -93,6 +101,26 @@ main = do
     case action of
         List ->
             mapM_ (Text.putStrLn . (name :: NamedCommand -> Text)) commands
+
+        Tree ->
+            let names :: [[Text]] =
+                    Text.split (== '.') . (name :: NamedCommand -> Text)
+                    <$> commands
+
+                groupNames :: [[Text]] -> [[[Text]]] =
+                    List.groupBy ((==) `on` headMay)
+                    . List.sortBy (compare `on` headMay)
+
+                forest :: Forest Text = (`unfoldForest` groupNames names) \case
+                    (n : r) : ns ->
+                        let rs = groupNames $ r : fmap (drop 1) ns
+                         in ( n <> if [[]] `elem` rs then "*" else ""
+                            , List.filter (/= [[]]) rs
+                            )
+
+                    _ -> ("", []) -- This should not happen.
+
+             in putStrLn $ drawTree (Text.unpack <$> Node "" forest)
 
         DryRun ->
             getExecutableCommand params commands commandAndItsArguments
@@ -116,7 +144,7 @@ main = do
     description = mconcat
         [ Options.fullDesc
         , Options.progDesc "Execute a command with predefined environment and\
-            \command line options"
+            \ command line options."
         ]
 
 getCommand
@@ -163,9 +191,38 @@ printCommand Params{colour} =
 parseOptions :: Options.Parser (Action -> Action)
 parseOptions = asum
     [ completionInfoFlag
-    , Options.flag' (const List) (Options.short 'l' <> Options.long "list")
-    , Options.flag' (const List) (Options.long "ls")
-    , Options.flag' (const DryRun) (Options.long "print")
+    , Options.flag' (const List) $ mconcat
+        [ Options.short 'l'
+        , Options.long "list"
+        , Options.long "ls"
+        , Options.help "List available COMMANDs."
+        ]
+    , Options.flag' (const Tree) $ mconcat
+        [ Options.long "tree"
+        , Options.short 't'
+        , Options.help
+            "List available COMMANDs in tree-like form treating dots (`.`) as\
+            \ separators."
+        ]
+    , Options.flag' (const DryRun) $ mconcat
+        [ Options.long "print"
+        , Options.help "Print command as it will be executed in Dhall format."
+        ]
+
+    -- This is here purely to provide better help message.
+    , (\(_ :: String) (_ :: [String]) -> id :: Action -> Action)
+        <$> ( Options.strArgument $ mconcat
+                [ Options.metavar "COMMAND"
+                , Options.help "COMMAND to execute."
+                ]
+            )
+        <*> many
+            ( Options.strArgument $ mconcat
+                [ Options.metavar "EXTRA_COMMAND_ARGUMENT"
+                , Options.help "Additional arguments passed to COMMAND."
+                ]
+            )
+
     , pure id
     ]
 
@@ -220,3 +277,6 @@ parseOptions = asum
 --        ]
 --    }
 --    ```
+--
+-- * Nicer `--tree` representation that uses colours to make the distinction
+--   between executable commands and purely organisation nodes more obvious.

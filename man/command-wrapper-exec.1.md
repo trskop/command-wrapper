@@ -11,7 +11,7 @@ environment.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l}
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|--tree|-t}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec COMMAND [\--] \[EXTRA\_COMMAND\_ARGUMENTS]
 
@@ -41,10 +41,58 @@ scripting language like Bash.
 \--list, \--ls, -l
 :   List available *COMMAND*s.
 
+\--tree, \-t
+:   List available *COMMAND*s in tree-like form treating dots (`.`) as
+    separators.
+
+    Let's say that we have following commands reported by `--list`:
+
+    ```
+    build.back-end
+    build.back-end.locally
+    build.back-end.remotely
+    build.front-end
+    build.back-end.locally
+    build.back-end.remotely
+    debug
+    echo
+    ```
+
+    These would be displayed as a following tree:
+
+    ```
+    |
+    +- build
+    |  |
+    |  +- back-end*
+    |  |  |
+    |  |  +- locally*
+    |  |  |
+    |  |  `- remotely*
+    |  |
+    |  `- front-end*
+    |     |
+    |     +- locally*
+    |     |
+    |     `- remotely*
+    |
+    +- debug*
+    |
+    `- echo*
+    ```
+
+    The star (`*`) character indicates which commands are executable, i.e. can
+    be called as:
+
+    ```
+    TOOLSET_COMMAND exec COMMAND [\--] \[EXTRA\_COMMAND\_ARGUMENTS]
+    ```
+
 \--print
 :   Print command as it will be executed in Dhall format.  Can be used as
     dry-run functionality, for debugging, and for creating template when adding
-    new command.
+    new command.  Any *EXTRA_COMMAND_ARGUMENTS* are passed to the Dhall
+    function before it being evaluated.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help exec`.
