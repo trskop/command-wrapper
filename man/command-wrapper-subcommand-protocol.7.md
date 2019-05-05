@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SUBCOMMAND-PROTOCOL(7) Subcommand Protocol | v1.0.0
 % Peter Trsko
-% 4th May 2019
+% 5th May 2019
 
 
 # NAME
@@ -22,13 +22,8 @@ Each subcommand must support following options:
 *   `--help` which prints subcommand specific help message. This is
     invoked by Command Wrapper's `help` internal subcommand.
 
-*   `--completion-config` which prints a Dhall expression describing how
+*   `--completion-info` which prints a Dhall expression describing how
     subcommand should be called to provide command line completion.
-
-*   (*PROPOSED*) `--info` which prints program description in Dhall format.
-
-**TODO:** Define how help message should look like, especially *Usage* section.
-Plan is for it to look something like `TOOLSET SUBCOMMAND ...`.
 
 
 # ENVIRONMENT VARIABLES
@@ -207,14 +202,14 @@ Algorithm:
     the subcommand as:
 
     ```
-    "/some/libexec/path/${COMMAND_WRAPPER_NAME}" --completion-info
+    "/some/path/${COMMAND_WRAPPER_SUBCOMMAND}" --completion-info
     ```
 
     Which will produce a Dhall functintion which is then evaluated into a new
     command line that should be called:
 
     ```
-    "/some/libexec/path/${COMMAND_WRAPPER_NAME}" "${RESULT_OF_APPLIED_DHALL_EXPRESSION[@]}"
+    "/some/path/${COMMAND_WRAPPER_SUBCOMMAND}" "${RESULT_OF_APPLIED_DHALL_EXPRESSION[@]}"
     ```
 
 *   Subcommand provides list of possible completions which are returned to the
