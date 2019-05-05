@@ -12,7 +12,7 @@ in a selected directory.
 # USAGE
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd
-\[\--shell|-s|\--tmux|-t|\--kitty|-k|\--terminal|-e] \[--query=QUERY|-q QUERY]
+\[\--shell|-s|\--tmux|-t|\--kitty|-k|\--terminal|-e] \[\--query=QUERY|-q QUERY]
 \[\[\--] DIR]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd {\--help|-h}
