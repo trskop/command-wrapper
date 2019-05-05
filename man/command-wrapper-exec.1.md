@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 15th April 2019
+% 5th May 2019
 
 
 # NAME
@@ -93,6 +93,48 @@ scripting language like Bash.
     dry-run functionality, for debugging, and for creating template when adding
     new command.  Any *EXTRA_COMMAND_ARGUMENTS* are passed to the Dhall
     function before it being evaluated.
+
+    Let's say that configuration contains following command definition:
+
+    ```
+    let CommandWrapper =
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
+
+    in  { commands =
+            [ { name = "echo"
+              , command =
+                    λ(_ : CommandWrapper.Verbosity)
+                  → λ(_ : CommandWrapper.ColourOutput)
+                  → λ(arguments : List Text)
+                  → { command = "echo"
+                    , arguments = arguments
+                    , environment = [] : List CommandWrapper.EnvironmentVariable
+                    , searchPath = True
+                    , workingDirectory = None Text
+                    } : CommandWrapper.ExecCommand
+              } : CommandWrapper.ExecNamedCommand
+            ]
+        }
+    ```
+
+    If we call following:
+
+    ```
+    TOOLSET_COMMAND exec --print echo foo bar
+    ```
+
+    Then we'll get output like this one:
+
+    ```
+    { command = "echo"
+    , arguments = ["foo", "bar"]
+    , environment = [] : List {name : Text, value : Text}
+    , searchPath = True
+    , workingDirectory = None Text
+    }
+    ```
+
+    See also *CONFIGURATION FILE* section for more information.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help exec`.
