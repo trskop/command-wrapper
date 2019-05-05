@@ -28,7 +28,6 @@ module CommandWrapper.Options.Optparse
 import Prelude ((+), fromIntegral)
 
 import Control.Applicative (pure)
-import Control.Monad ((>>=))
 import Data.Bool ((&&))
 import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
@@ -99,9 +98,11 @@ subcommandParse
     :: Params
     -> Options.ParserPrefs
     -> Options.ParserInfo (Endo (mode config))
+    -> [String]
+    -- ^ Command line arguments.  Usually obtained by 'getArgs'.
     -> IO (Endo (mode config))
 subcommandParse params parserPrefs parserInfo =
-    getArgs >>= handleParseResult' params . execParserPure'
+    handleParseResult' params . execParserPure'
   where
     execParserPure' = execParserPure parserPrefs parserInfo
 
