@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 4th May 2019
+% 5th May 2019
 
 
 # NAME
@@ -15,7 +15,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \[\--index=*NUM*]
 \[\--shell=*SHELL*] \[\--subcommand=*SUBCOMMAND*] \-- [*WORD* ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
-\[\--alias=*ALIAS* ...]
+\[\--subcommand=*SUBCOMMAND* \--alias=*ALIAS* \[\--alias=*ALIAS* ...]|\--alias=*ALIAS*
+...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library \[\--shell=*SHELL*]
 
@@ -69,6 +70,21 @@ interface for querying Command Wrapper's command line interface (CLI).
 \--shell=*SHELL*
 :   Provide completion or generate script for *SHELL*.  Currently only supported
     value is *bash*.
+
+\--subcommand=*SUBCOMMAND*
+:   Generate completion script for a *SUBCOMMAND* instead of the whole toolset.
+    At least one instance of `--alias=`*ALIAS* has to be specified:
+
+    ```
+    TOOLSET_COMMAND completion --script --subcommand=this --alias=this
+    ```
+
+    Completion will be generated for `this` command, therefore there should
+    also be an alias for it defined in e.g. `.bashrc`:
+
+    ```
+    alias this='TOOLSET_COMMAND this'
+    ```
 
 \--alias=*ALIAS*
 :   *ALIAS* under which Command Wrapper toolset is also known.  This is usually

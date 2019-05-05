@@ -23,7 +23,7 @@ module CommandWrapper.Internal.Subcommand.Completion
 
 import Prelude ((+), (-), fromIntegral)
 
-import Control.Applicative ((<*>), (<|>), many, optional, pure)
+import Control.Applicative ((<*>), (<|>), many, optional, pure, some)
 import Control.Monad ((>>=), join, when)
 import Data.Bool (Bool(False), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
@@ -185,6 +185,7 @@ data CompletionOptions = CompletionOptions
 data ScriptOptions = ScriptOptions
     { aliases :: [String]
     , shell :: Options.Shell
+    , subcommand :: Maybe String
     }
   deriving stock (Generic, Show)
 
@@ -200,7 +201,7 @@ data LibraryOptions = LibraryOptions
 --     }
 -- @
 newtype MkCompletionScript = MkCompletionScript
-    { mkCompletionScript :: Text -> Text -> Text -> Scripts
+    { mkCompletionScript :: Text -> Text -> Text -> Maybe Text -> Scripts
     }
   deriving stock (Generic)
 
@@ -220,8 +221,8 @@ instance Options.HasShell CompletionOptions where
             (opts :: CompletionOptions){shell = f shell}
 
 instance Options.HasShell ScriptOptions where
-    updateShell = mapEndo \f ScriptOptions{aliases, shell} ->
-        ScriptOptions{aliases, shell = f shell}
+    updateShell = mapEndo \f opts@ScriptOptions{shell} ->
+        (opts :: ScriptOptions){shell = f shell}
 
 instance Options.HasShell LibraryOptions where
     updateShell = mapEndo \f LibraryOptions{shell} ->
@@ -241,9 +242,34 @@ instance Options.HasShell (CompletionMode cfg) where
         mode ->
             mode
 
+class HasSubcommand a where
+    updateSubcommand :: Endo (Maybe String) -> Endo a
+
+instance HasSubcommand CompletionOptions where
+    updateSubcommand =
+        mapEndo \f opts@CompletionOptions{subcommand} ->
+            (opts :: CompletionOptions){subcommand = f subcommand}
+
+instance HasSubcommand ScriptOptions where
+    updateSubcommand =
+        mapEndo \f opts@ScriptOptions{subcommand} ->
+            (opts :: ScriptOptions){subcommand = f subcommand}
+
+instance HasSubcommand (CompletionMode cfg) where
+    updateSubcommand f = Endo \case
+        CompletionMode opts cfg ->
+            CompletionMode (updateSubcommand f `appEndo` opts) cfg
+
+        ScriptMode opts cfg ->
+            ScriptMode (updateSubcommand f `appEndo` opts) cfg
+
+        mode ->
+            mode
+
 defScriptOptions :: ScriptOptions
 defScriptOptions = ScriptOptions
     { shell = Options.Bash
+    , subcommand = Nothing
     , aliases = []
     }
 
@@ -264,10 +290,10 @@ completion appNames options config =
         --
         -- - By default it should be printed to `stdout`, but we should support
         --   writting it into a file without needing to redirect `stdout`.
-        ScriptMode ScriptOptions{shell = _, aliases} () -> do
+        ScriptMode ScriptOptions{shell = _, aliases, subcommand} () -> do
             let mkCompletionScriptExpr =
                     $(Dhall.TH.staticDhallExpression
-                        "./dhall/CommandWrapper/completion.dhall"
+                        "./dhall/completion.dhall"
                     )
 
                 AppNames{exePath, usedName} = appNames
@@ -277,20 +303,33 @@ completion appNames options config =
                     -- TODO: Figure out how to handle this better.
                     let Global.Config{colourOutput, verbosity} = config
                         colour = fromMaybe ColourOutput.Auto colourOutput
-                        subcommand = pretty (usedName <> " completion")
-                    errorMsg subcommand verbosity colour stderr
+                        subcommand' = pretty (usedName <> " completion")
+                    errorMsg subcommand' verbosity colour stderr
                         "Failed to generate completion script."
                     -- TODO: This is probably not the best exit code.
                     exitWith (ExitFailure 1)
 
-                Just (MkCompletionScript mkScript) ->
-                    forM_ (usedName : aliases) \name ->
-                        let Scripts{bash} = mkScript
-                                (fromString name :: Text)
-                                (fromString usedName :: Text)
-                                (fromString exePath :: Text)
+                -- TODO: Aliases should be passed to the Dhall expression so
+                -- that generated script can be more optimal.  It will also
+                -- reduce complexity of this code.
+                Just (MkCompletionScript mkScript) -> case subcommand of
+                    Nothing ->
+                        forM_ (usedName : aliases) \name ->
+                            let Scripts{bash} = mkScript
+                                    (fromString name :: Text)
+                                    (fromString usedName :: Text)
+                                    (fromString exePath :: Text)
+                                    Nothing
+                            in Text.putStrLn bash
 
-                        in Text.putStrLn bash
+                    Just subcmd ->
+                        forM_ aliases \name ->
+                            let Scripts{bash} = mkScript
+                                    (fromString name :: Text)
+                                    (fromString usedName :: Text)
+                                    (fromString exePath :: Text)
+                                    (Just (fromString subcmd :: Text))
+                            in Text.putStrLn bash
 
         LibraryMode LibraryOptions{shell} () -> case shell of
             -- TODO: We should consider piping the output to a pager or similar
@@ -634,7 +673,12 @@ parseOptions appNames config arguments = do
         [ dualFoldEndo
             <$> scriptFlag
             <*> optional Options.shellOption
-            <*> many aliasOption
+            <*> asum
+                [ dualFoldEndo
+                    <$> subcommandOption
+                    <*> some aliasOption
+                , dualFoldEndo <$> many aliasOption :: Options.Parser (Endo (CompletionMode ()))
+                ]
 
         , dualFoldEndo
             <$> libraryFlag
@@ -725,10 +769,10 @@ parseOptions appNames config arguments = do
       where
         f = Endo \q -> q{what = QuerySupportedShells}
 
-    subcommandOption :: Options.Parser (Endo CompletionOptions)
+    subcommandOption :: HasSubcommand a => Options.Parser (Endo a)
     subcommandOption =
         Options.strOption (Options.long "subcommand") <&> \subcommand ->
-            Endo \q -> q{subcommand = Just subcommand}
+            updateSubcommand (Endo \_ -> Just subcommand)
 
     indexOption :: Options.Parser (Endo CompletionOptions)
     indexOption =
@@ -753,13 +797,11 @@ parseOptions appNames config arguments = do
     aliasOption =
         Options.strOption (Options.long "alias" <> Options.metavar "ALIAS")
             <&> \alias -> Endo \case
-                    ScriptMode ScriptOptions{aliases, shell} cfg ->
+                    ScriptMode opts@ScriptOptions{aliases} cfg ->
                         ScriptMode
-                            ( ScriptOptions
+                            (opts :: ScriptOptions)
                                 { aliases = aliases <> [alias]
-                                , shell
                                 }
-                            )
                             cfg
                     mode ->
                         mode
@@ -793,7 +835,10 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             <+> longOption "script"
             <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
             <+> Pretty.brackets
-                ( longOption "alias" <> "=" <> metavar "ALIAS" <+> "..."
+                ( longOption "subcommand" <> "=" <> metavar "SUBCOMMAND"
+                    <+> longOption "alias" <> "=" <> metavar "ALIAS"
+                    <+> Pretty.brackets (longOption "alias" <> "=" <> metavar "ALIAS" <+> "...")
+                <> "|" <> (longOption "alias" <> "=" <> metavar "ALIAS" <+> "...")
                 )
 
         , "completion"
@@ -850,6 +895,15 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             , metavar "SHELL" <> "."
             , Pretty.reflow "Currently only supported value is"
             , value "bash" <> "."
+            ]
+
+        , optionDescription ["--subcommand=SUBCOMMAND"]
+            [ Pretty.reflow "Generate completion script for a"
+            , metavar "SUBCOMMAND"
+            , Pretty.reflow
+                "instead of the whole toolset. At least one instance of"
+            , value "--alias=ALIAS"
+            , Pretty.reflow "has to be specified."
             ]
 
         , optionDescription ["--alias=ALIAS"]
