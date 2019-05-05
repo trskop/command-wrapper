@@ -1,3 +1,5 @@
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      Main
 -- Description: CommandWrapper subcommand for generating subcommand skeletons
@@ -17,7 +19,7 @@ module Main (main)
   where
 
 import Control.Applicative (optional)
-import Control.Monad (when)
+import Control.Monad (unless, when)
 import Data.Foldable (asum)
 import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
@@ -25,12 +27,16 @@ import Data.String (fromString)
 import GHC.Generics (Generic)
 
 import Data.CaseInsensitive as CI (mk)
+import Data.Monoid.Endo (Endo(appEndo))
+import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
 import qualified Data.Text.IO as Text (writeFile)
 import qualified Dhall (Inject, Interpret, auto, inputFile)
 import qualified Data.Text as Text (unpack)
 import System.Directory
     ( createDirectoryIfMissing
+    , doesDirectoryExist
+    , doesPathExist
     , getPermissions
     , setPermissions
     )
@@ -42,9 +48,11 @@ import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
     , Params(Params, config, name)
     , completionInfoFlag
-    , subcommandParams
+    , dieWith
     , printOptparseCompletionInfoExpression
+    , stderr
     , stdout
+    , subcommandParams
     )
 
 
@@ -75,6 +83,7 @@ data DefaultModeOptions = DefaultModeOptions
     { subcommandName :: String
     , language :: Maybe Language
     , editAfterwards :: Maybe Bool
+    , createParents :: Bool
     }
 
 data Mode
@@ -98,11 +107,16 @@ main = do
         "Generate subcommand skeleton for specific command-wrapper environment"
 
 mainAction :: Params -> DefaultModeOptions -> IO ()
-mainAction Params{name = wrapperName, config = configFile}
+mainAction
+  params@Params
+    { name = wrapperName
+    , config = configFile
+    }
   DefaultModeOptions
     { subcommandName
     , language = possiblyLanguage
     , editAfterwards = possiblyEditAfterwards
+    , createParents
     }
   = do
         mkConfig <- Dhall.inputFile Dhall.auto configFile
@@ -116,18 +130,35 @@ mainAction Params{name = wrapperName, config = configFile}
 
             language = fromMaybe Haskell possiblyLanguage
 
-        createdFile <- generateSkeleton (template language)
+        createdFile <- generateSkeleton params createParents (template language)
 
         putStrLn ("Successfully created '" <> createdFile <> "'")
 
         when (fromMaybe editAfterwards possiblyEditAfterwards)
             $ startEditor createdFile
 
-generateSkeleton :: Template -> IO FilePath
-generateSkeleton Template{executable, targetFile, template} = do
-    -- This may be the first command of that specific toolset.
-    createDirectoryIfMissing True (takeDirectory targetFile)
-    Text.writeFile targetFile template
+generateSkeleton :: Params -> Bool -> Template -> IO FilePath
+generateSkeleton params createParents Template{..} = do
+    let targetDirectory = takeDirectory targetFile
+    if createParents
+        then createDirectoryIfMissing True targetDirectory
+        else do
+            targetDirectoryExists <- doesDirectoryExist targetDirectory
+            unless targetDirectoryExists $ do
+                dieWith params stderr 3
+                    $ fromString (show targetDirectory)
+                    <> ": Target directory doesn't exist, use '--parents' if\
+                        \ you want it to be created for you."
+
+    targetExists <- doesPathExist targetFile
+    if targetExists
+        then
+            dieWith params stderr 3
+                $ fromString (show targetFile)
+                <> ": Target already exists, refusing to overwrite it."
+        else
+            Text.writeFile targetFile template
+
     when executable $ do
         perms <- getPermissions targetFile
         setPermissions targetFile perms{Directory.executable = True}
@@ -144,6 +175,7 @@ parseOptions = asum
                     { subcommandName
                     , language = Nothing
                     , editAfterwards = Nothing
+                    , createParents = False
                     }
             )
 
@@ -155,10 +187,18 @@ parseOptions = asum
             )
 
         <*> ( optional
+                ( Turtle.switch "parents" 'p'
+                    "Create parent directories if they do not exist"
+                )
+                <&> maybe id \createParents opts ->
+                    (opts :: DefaultModeOptions){createParents}
+            )
+
+        <*> ( optional
                 ( Turtle.switch "edit" 'e'
                     "Open the created file in an editor afterwards"
                 )
-                <&> \editAfterwards opts@DefaultModeOptions{} ->
+                <&> \editAfterwards opts ->
                     (opts :: DefaultModeOptions){editAfterwards}
             )
 
@@ -173,7 +213,7 @@ parseOptions = asum
             )
     ]
   where
-    go m f g h = DefaultMode $ h (g (f m))  -- TODO: Switch to 'foldEndo'.
+    go m f g h i = DefaultMode $ foldEndo f g h i `appEndo` m
 
 parseSubcommandName :: Text -> Maybe String
 parseSubcommandName = \case

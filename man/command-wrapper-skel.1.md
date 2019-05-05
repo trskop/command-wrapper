@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SKEL(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 4th May 2019
+% 5th May 2019
 
 
 # NAME
@@ -41,6 +41,9 @@ provides skeletons only for a alimited number of languages, see
     * *bash*
     * *dhall* (configuration files)
 
+\--parents, -p
+:   Create parent directories if they do not exist.
+
 \--edit, -e
 :   Open the created file in an editor.  **TODO: Currently not implemented!**
 
@@ -65,6 +68,12 @@ provides skeletons only for a alimited number of languages, see
 For documentation of generic *EXIT STATUS* codes see `command-wrapper(1)`
 manual page section *EXIT STATUS*.  Any *EXIT STATUS* codes specific to this
 subcommand will be listed below.
+
+`3`
+:   Cannot create target file.  This can happen for multiple reasons:
+
+    *   Target directory doesn't exist and `--parens` option wasnt specified.
+    *   Target file exists and we don't want to overwrite it.
 
 
 # FILES
