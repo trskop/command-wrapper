@@ -15,9 +15,8 @@
 module Main (main)
   where
 
-import Control.Applicative ((<|>))
 import Data.Bifunctor (bimap)
-import Data.Foldable (for_)
+import Data.Foldable (asum, for_)
 import Data.Functor ((<&>))
 import qualified Data.List as List (filter, find, isPrefixOf)
 import Data.Monoid (Endo(..))
@@ -56,8 +55,11 @@ import qualified CommandWrapper.Config.Environment as EnvironmentVariable
 import qualified CommandWrapper.Options as Options (splitArguments)
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPut)
 import CommandWrapper.Prelude
-    ( Params(Params, colour, config, verbosity)
+    ( HaveCompletionInfo(completionInfoMode)
+    , Params(Params, colour, config, verbosity)
+    , completionInfoFlag
     , dieWith
+    , printOptparseCompletionInfoExpression
     , stderr
     , stdout
     , subcommandParams
@@ -70,7 +72,10 @@ newtype Config = Config
   deriving stock (Generic)
   deriving anyclass (Dhall.Interpret)
 
-data Action = List | DryRun | Run
+data Action = List | DryRun | Run | CompletionInfo
+
+instance HaveCompletionInfo Action where
+    completionInfoMode = const CompletionInfo
 
 main :: IO ()
 main = do
@@ -96,6 +101,9 @@ main = do
         Run ->
             getExecutableCommand params commands commandAndItsArguments
                 >>= executeCommand
+
+        CompletionInfo ->
+            printOptparseCompletionInfoExpression stdout
   where
     getExecutableCommand params commands commandAndItsArguments =
         case fromString <$> commandAndItsArguments of
@@ -153,11 +161,13 @@ printCommand Params{colour} =
     Dhall.hPut colour Dhall.Unicode stdout Dhall.inject
 
 parseOptions :: Options.Parser (Action -> Action)
-parseOptions =
-    Options.flag' (const List) (Options.short 'l' <> Options.long "list")
-    <|> Options.flag' (const List) (Options.long "ls")
-    <|> Options.flag' (const DryRun) (Options.long "print")
-    <|> pure id
+parseOptions = asum
+    [ completionInfoFlag
+    , Options.flag' (const List) (Options.short 'l' <> Options.long "list")
+    , Options.flag' (const List) (Options.long "ls")
+    , Options.flag' (const DryRun) (Options.long "print")
+    , pure id
+    ]
 
 -- TODO:
 --

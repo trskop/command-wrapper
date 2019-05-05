@@ -18,6 +18,7 @@ module Main (main)
 
 import Control.Applicative (optional)
 import Control.Monad (when)
+import Data.Foldable (asum)
 import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
 import Data.String (fromString)
@@ -38,8 +39,12 @@ import System.FilePath (takeDirectory)
 import qualified Turtle
 
 import CommandWrapper.Prelude
-    ( Params(Params, config, name)
+    ( HaveCompletionInfo(completionInfoMode)
+    , Params(Params, config, name)
+    , completionInfoFlag
     , subcommandParams
+    , printOptparseCompletionInfoExpression
+    , stdout
     )
 
 
@@ -66,34 +71,57 @@ data Template = Template
   deriving stock (Generic, Show)
   deriving anyclass (Dhall.Interpret)
 
+data DefaultModeOptions = DefaultModeOptions
+    { subcommandName :: String
+    , language :: Maybe Language
+    , editAfterwards :: Maybe Bool
+    }
+
+data Mode
+    = DefaultMode DefaultModeOptions
+    | CompletionInfo
+
+instance HaveCompletionInfo Mode where
+    completionInfoMode = const CompletionInfo
+
 main :: IO ()
 main = do
-    Params{name = wrapperName, config = configFile} <- subcommandParams
-    mkConfig <- Dhall.inputFile Dhall.auto configFile
-    Mode
-        { subcommandName
-        , language = possiblyLanguage
-        , editAfterwards = possiblyEditAfterwards
-        } <- Turtle.options description parseOptions
+    params <- subcommandParams
+    Turtle.options description parseOptions >>= \case
+        DefaultMode opts ->
+            mainAction params opts
 
-    let subcommand = wrapperName <> "-" <> subcommandName
-        Config{template, editAfterwards} =
-            mkConfig
-                (fromString @Text wrapperName)
-                (fromString @Text subcommandName)
-                (fromString @Text subcommand)
-
-        language = fromMaybe Haskell possiblyLanguage
-
-    createdFile <- generateSkeleton (template language)
-
-    putStrLn ("Successfully created '" <> createdFile <> "'")
-
-    when (fromMaybe editAfterwards possiblyEditAfterwards)
-        $ startEditor createdFile
+        CompletionInfo ->
+            printOptparseCompletionInfoExpression stdout
   where
     description =
         "Generate subcommand skeleton for specific command-wrapper environment"
+
+mainAction :: Params -> DefaultModeOptions -> IO ()
+mainAction Params{name = wrapperName, config = configFile}
+  DefaultModeOptions
+    { subcommandName
+    , language = possiblyLanguage
+    , editAfterwards = possiblyEditAfterwards
+    }
+  = do
+        mkConfig <- Dhall.inputFile Dhall.auto configFile
+
+        let subcommand = wrapperName <> "-" <> subcommandName
+            Config{template, editAfterwards} =
+                mkConfig
+                    (fromString @Text wrapperName)
+                    (fromString @Text subcommandName)
+                    (fromString @Text subcommand)
+
+            language = fromMaybe Haskell possiblyLanguage
+
+        createdFile <- generateSkeleton (template language)
+
+        putStrLn ("Successfully created '" <> createdFile <> "'")
+
+        when (fromMaybe editAfterwards possiblyEditAfterwards)
+            $ startEditor createdFile
 
 generateSkeleton :: Template -> IO FilePath
 generateSkeleton Template{executable, targetFile, template} = do
@@ -106,17 +134,13 @@ generateSkeleton Template{executable, targetFile, template} = do
 
     pure targetFile
 
-data Mode = Mode
-    { subcommandName :: String
-    , language :: Maybe Language
-    , editAfterwards :: Maybe Bool
-    }
-
 parseOptions :: Turtle.Parser Mode
-parseOptions =
-    go  <$> ( Turtle.arg parseSubcommandName "SUBCOMMAND"
+parseOptions = asum
+    [ completionInfoFlag <*> pure CompletionInfo
+    , go
+        <$> ( Turtle.arg parseSubcommandName "SUBCOMMAND"
                 "Name of the new subcommand"
-                <&> \subcommandName -> Mode
+                <&> \subcommandName -> DefaultModeOptions
                     { subcommandName
                     , language = Nothing
                     , editAfterwards = Nothing
@@ -134,24 +158,22 @@ parseOptions =
                 ( Turtle.switch "edit" 'e'
                     "Open the created file in an editor afterwards"
                 )
-                <&> \editAfterwards Mode{language, subcommandName} ->
-                    Mode{editAfterwards, language, subcommandName}
+                <&> \editAfterwards opts@DefaultModeOptions{} ->
+                    (opts :: DefaultModeOptions){editAfterwards}
             )
 
         <*> ( optional
                 ( Turtle.switch "no-edit" 'E'
                     "Don't open the created file in an editor afterwards"
                 )
-                <&> \doNotEditAfterwards Mode{language, subcommandName} ->
-                    Mode
-                        { subcommandName
-                        , language
-                        , editAfterwards = not <$> doNotEditAfterwards
+                <&> \doNotEditAfterwards opts ->
+                    (opts :: DefaultModeOptions)
+                        { editAfterwards = not <$> doNotEditAfterwards
                         }
             )
-
+    ]
   where
-    go m f g h = h (g (f m))    -- TODO: Switch to 'foldEndo'.
+    go m f g h = DefaultMode $ h (g (f m))  -- TODO: Switch to 'foldEndo'.
 
 parseSubcommandName :: Text -> Maybe String
 parseSubcommandName = \case

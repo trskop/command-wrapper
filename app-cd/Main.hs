@@ -61,8 +61,12 @@ import CommandWrapper.Config.Command (SimpleCommand(..))
 import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Environment as Environment
 import CommandWrapper.Prelude
-    ( dieWith
+    ( HaveCompletionInfo(completionInfoMode)
+    , completionInfoFlag
+    , dieWith
+    , printOptparseCompletionInfoExpression
     , stderr
+    , stdout
     , subcommandParams
     )
 
@@ -95,11 +99,28 @@ data Params config = Params
     }
   deriving stock (Functor)
 
+data Mode
+    = DefaultMode Strategy (Maybe Text) (Maybe Text)
+    | CompletionInfo
+
+instance HaveCompletionInfo Mode where
+  completionInfoMode = const CompletionInfo
+
 main :: IO ()
 main = do
-    params@Params{config = configFile} <- getEnvironment
+    params <- getEnvironment
+    options description (completionInfoFlag <*> parseOptions) >>= \case
+        DefaultMode strategy query directory ->
+            mainAction params strategy query directory
 
-    (strategy, query, directory) <- options description parseOptions
+        CompletionInfo ->
+            printOptparseCompletionInfoExpression stdout
+  where
+    description = "Change directory by selecting one from preselected list."
+
+mainAction :: Params FilePath -> Strategy -> Maybe Text -> Maybe Text -> IO ()
+mainAction params@Params{config = configFile} strategy query directory =
+  do
     config@Config{..} <- Dhall.inputFile Dhall.auto configFile
     action <- evalStrategy (config <$ params) strategy
 
@@ -119,9 +140,6 @@ main = do
                 else pure ()
 
         executeAction params dir action
-  where
-    description =
-        "Change directory by selecting one from preselected list"
 
 runMenuTool :: SimpleCommand -> Shell Line -> Shell Line
 runMenuTool SimpleCommand{..} input = do
@@ -184,7 +202,7 @@ evalStrategy params@Params{config, inTmux, inKitty} = \case
   where
     Config{shell, terminalEmulator} = config
 
-parseOptions :: Parser (Strategy, Maybe Text, Maybe Text)
+parseOptions :: Parser Mode
 parseOptions =
     go  <$> shellSwitch
         <*> tmuxSwitch
@@ -193,14 +211,14 @@ parseOptions =
         <*> optional queryOption
         <*> optional dirArgument
   where
-    go runShell runTmux runKitty runTerminalEmulator query dir =
+    go runShell runTmux runKitty runTerminalEmulator query dir = DefaultMode
         (   (if runShell then ShellOnly else Auto)
             <> (if runTmux then TmuxOnly else Auto)
             <> (if runKitty then KittyOnly else Auto)
             <> (if runTerminalEmulator then TerminalEmulatorOnly else Auto)
-        , query
-        , fromString . encodeString <$> dir
         )
+        query
+        (fromString . encodeString <$> dir)
 
     shellSwitch = switch "shell" 's'
         "Execute a subshell even if in a Tmux session or Kitty terminal."
