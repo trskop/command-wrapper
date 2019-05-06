@@ -6,7 +6,7 @@ let helpMessage = ''
 
 Global Subcommands:
 
-  help       (internal, aliases: h, hlp)
+  help       (internal, aliases: h, man)
   config     (internal, aliases: cfg)
   version    (internal)
   completion (internal)
@@ -30,9 +30,9 @@ let mkDefault =
                 , command = "help"
                 , arguments = [] : List Text
                 }
-              , { alias = "hlp"
+              , { alias = "man"
                 , command = "help"
-                , arguments = [] : List Text
+                , arguments = ["--man"] : List Text
                 }
               , { alias = "cfg"
                 , command = "config"
