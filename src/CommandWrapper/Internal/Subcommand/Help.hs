@@ -126,7 +126,13 @@ help internalHelp appNames options config =
             let internalCommandManPage =
                     Just ("command-wrapper-" <> subcommandName)
 
+            -- TODO:
+            -- - We need to take aliases into account.
+            -- - We need to extend completion to list "subcommand-protocol" and
+            --   "command-wrapper"
+
             possiblyManualPageName <- case subcommandName of
+                "command-wrapper" -> pure (Just "command-wrapper")
                 "completion" -> pure internalCommandManPage
                 "config" -> pure internalCommandManPage
                 "help" -> pure internalCommandManPage
