@@ -37,23 +37,31 @@ module CommandWrapper.Internal.Subcommand.Help
 import Control.Applicative ((<|>), optional)
 import Data.Foldable (traverse_)
 import Data.Functor ((<&>))
-import Data.Maybe (fromMaybe)
+import qualified Data.List.NonEmpty as NonEmpty (toList)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (Endo(Endo))
+import Data.String (fromString)
 import GHC.Generics (Generic)
-import System.IO (stdout)
+import System.IO (stderr, stdout)
 
 import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
 import qualified Data.Output.Colour as ColourOutput (ColourOutput(Auto))
 import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
-import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty --(AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
+    ( AnsiStyle
+    , Color(Green, Magenta)
+    , color
+    , colorDull
+    )
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Mainplate (applySimpleDefaults)
 import qualified Options.Applicative as Options
     ( Parser
     , defaultPrefs
     , flag
+    , help
     , info
     , long
     , metavar
@@ -61,12 +69,22 @@ import qualified Options.Applicative as Options
     , strArgument
     , strOption
     )
+import System.Directory (findExecutablesInDirectories)
+import System.Posix.Process (executeFile)
 
 import CommandWrapper.Config.Global (Config(..))
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
-import qualified CommandWrapper.External as External (executeCommand)
+import CommandWrapper.Environment (AppNames(AppNames, usedName, names))
+import qualified CommandWrapper.External as External
+    ( executeCommand
+    , getSearchPath
+    )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message (Result(..), defaultLayoutOptions, message)
+import CommandWrapper.Message
+    ( Result(..)
+    , debugMsg
+    , defaultLayoutOptions
+    , message
+    )
 import CommandWrapper.Options.Alias (applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
@@ -104,18 +122,71 @@ help internalHelp appNames options config =
                 Nothing ->
                     External.executeCommand appNames config cmd ["--help"]
 
-        ManPage _topic _config ->
-            -- TODO: Implement this.
-            pure ()
+        ManPage subcommandName _config -> do
+            let internalCommandManPage =
+                    Just ("command-wrapper-" <> subcommandName)
+
+            possiblyManualPageName <- case subcommandName of
+                "completion" -> pure internalCommandManPage
+                "config" -> pure internalCommandManPage
+                "help" -> pure internalCommandManPage
+                "subcommand-protocol" -> pure internalCommandManPage
+                "version" -> pure internalCommandManPage
+                -- TODO: Manual page for toolset itself.
+                _ -> findSubcommandManualPageName appNames config subcommandName
+
+            case possiblyManualPageName of
+                Nothing -> pure () -- TODO: Error message.
+                Just manPageName ->
+                    executeFile "man" True [manPageName] Nothing
   where
     defaults = Mainplate.applySimpleDefaults (MainHelp ())
 
     Config{colourOutput, extraHelpMessage, verbosity} = config
     colour = fromMaybe ColourOutput.Auto colourOutput
 
+-- TODO: Consider moving this function or core of its functionality into
+-- "CommandWrapper.External" module.
+findSubcommandManualPageName
+    :: AppNames
+    -> Config
+    -> String
+    -> IO (Maybe String)
+findSubcommandManualPageName
+  AppNames{usedName, names}
+  config@Config{verbosity, colourOutput = possiblyColourOutput}
+  subcommandName = do
+    searchPath <- External.getSearchPath config
+    debugMsg (fromString usedName) verbosity colourOutput stderr
+        $ "Using following subcommand executable search path: "
+        <> fromString (show searchPath)
+
+    loop searchPath (NonEmpty.toList subcommands)
+  where
+    loop searchPath = \case
+        [] -> pure Nothing
+        subcmd : untriedSubcmds ->
+            findSubcommandExecutable' searchPath subcmd >>= \case
+                Just _ -> do
+                    debugMsg (fromString usedName) verbosity colourOutput stderr
+                        $ fromString (show subcommandName)
+                        <> ": Manual page found: "
+                        <> fromString (show  subcmd)
+                    pure (Just subcmd)
+
+                Nothing -> loop searchPath untriedSubcmds
+
+    findSubcommandExecutable' searchPath =
+        fmap listToMaybe . findExecutablesInDirectories searchPath
+
+    colourOutput = fromMaybe ColourOutput.Auto possiblyColourOutput
+
+    subcommands = names <&> \prefix ->
+        prefix <> "-" <> subcommandName
+
 -- TODO:
 --
--- > TOOLSET [GLOBAL_OPTIONS] help --man TOPIC
+-- > TOOLSET [GLOBAL_OPTIONS] help [--man] [SUBCOMMAND]
 parseOptions :: AppNames -> Config -> [String] -> IO (Endo (HelpMode ()))
 parseOptions appNames config@Config{aliases} options =
     execParser $ foldEndo
@@ -129,9 +200,15 @@ parseOptions appNames config@Config{aliases} options =
 
     manFlag, helpFlag, subcommandArg :: Options.Parser (Endo (HelpMode ()))
 
+    -- TODO: '--man' should be a flag and not an option that takes an argument.
+    -- If 'SUBCOMMAND' is not present, then we want manual page for toolset.
     manFlag =
-        Options.strOption (Options.long "man" <> Options.metavar "TOPIC")
-            <&> \topic -> switchTo (ManPage topic ())
+        Options.strOption
+            ( Options.long "man"
+            <> Options.metavar "SUBCOMMAND"
+            <> Options.help "Show manual page for SUBCOMMAND."
+            )
+            <&> \subcommandName -> switchTo (ManPage subcommandName ())
 
     helpFlag =
         Options.flag mempty (switchTo $ SubcommandHelp "help" ())
@@ -228,7 +305,7 @@ helpSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
         [ "help" <+> subcommand
---      , "help" <+> longOption "man" <> "=" <> metavar "TOPIC"
+        , "help" <+> longOption "man" <> "=" <> metavar "SUBCOMMAND"
         , "help" <+> helpOptions
         , helpOptions
         ]
@@ -239,11 +316,11 @@ helpSubcommandHelp AppNames{usedName} = Pretty.vsep
             , Pretty.reflow "which to show help message."
             ]
 
---      , optionDescription ["--man=TOPIC"]
---          [ Pretty.reflow "Show manual page for"
---          , metavar "TOPIC"
---          , Pretty.reflow "instead of short help message."
---          ]
+        , optionDescription ["--man=SUBCOMMAND"]
+            [ Pretty.reflow "Show manual page for"
+            , metavar "TOPIC"
+            , Pretty.reflow "instead of short help message."
+            ]
 
         , optionDescription ["--help", "-h"]
             [ Pretty.reflow "Print this help and exit. Same as"

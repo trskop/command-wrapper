@@ -16,6 +16,9 @@ module CommandWrapper.External
     , executeCommand
     , executeCommandWith
     , findSubcommands
+
+    -- * Utilities
+    , getSearchPath
     )
   where
 

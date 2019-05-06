@@ -133,6 +133,7 @@ noticeMsg command verbosity colourOutput h msg =
     message defaultLayoutOptions verbosity colourOutput h
         $ noticeDoc (command <> Pretty.colon <+> msg) <> Pretty.line
 
+-- TODO: Debug message should include source code location.
 debugMsg
     :: (forall ann. Pretty.Doc ann)
     -- ^ Command that is being executed.  It should either be @TOOLSET@ or
