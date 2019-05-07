@@ -675,9 +675,13 @@ parseOptions appNames config arguments = do
             <*> optional Options.shellOption
             <*> asum
                 [ dualFoldEndo
+                    <$> aliasOption
+                    <*> many aliasOption
+                    :: Options.Parser (Endo (CompletionMode ()))
+                , dualFoldEndo
                     <$> subcommandOption
                     <*> some aliasOption
-                , dualFoldEndo <$> many aliasOption :: Options.Parser (Endo (CompletionMode ()))
+                , pure mempty
                 ]
 
         , dualFoldEndo
