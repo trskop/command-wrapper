@@ -22,6 +22,7 @@ import Data.Foldable (asum, elem, for_)
 import Data.Function (on)
 import Data.Functor ((<&>))
 import qualified Data.List as List (filter, find, groupBy, isPrefixOf, sortBy)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
@@ -36,6 +37,7 @@ import qualified Dhall (Interpret, auto, inject, inputFile)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
     ( Parser
+    , auto
     , defaultPrefs
     , execParserPure
     , flag'
@@ -44,13 +46,16 @@ import qualified Options.Applicative as Options
     , help
     , helper
     , info
+    , internal
     , long
     , metavar
+    , option
     , progDesc
     , short
     , strArgument
+    , strOption
     )
-import Safe (headMay)
+import Safe (atMay, headMay, lastDef)
 import System.Directory (setCurrentDirectory)
 import qualified System.Posix as Posix (executeFile)
 
@@ -67,7 +72,7 @@ import CommandWrapper.Prelude
     , Params(Params, colour, config, verbosity)
     , completionInfoFlag
     , dieWith
-    , printOptparseCompletionInfoExpression
+    , printCommandWrapperStyleCompletionInfoExpression
     , stderr
     , stdout
     , subcommandParams
@@ -80,7 +85,13 @@ newtype Config = Config
   deriving stock (Generic)
   deriving anyclass (Dhall.Interpret)
 
-data Action = List | Tree | DryRun | Run | CompletionInfo
+data Action
+    = List
+    | Tree
+    | DryRun
+    | Run
+    | CompletionInfo
+    | Completion Word
 
 instance HaveCompletionInfo Action where
     completionInfoMode = const CompletionInfo
@@ -131,7 +142,25 @@ main = do
                 >>= executeCommand
 
         CompletionInfo ->
-            printOptparseCompletionInfoExpression stdout
+            printCommandWrapperStyleCompletionInfoExpression stdout
+
+        Completion index ->
+            let pat =
+                    fromMaybe (lastDef "" commandAndItsArguments)
+                        (atMay commandAndItsArguments (fromIntegral index))
+
+                commandNames =
+                    Text.unpack . (name :: NamedCommand -> Text) <$> commands
+
+                allOptions =
+                    [ "-l", "--ls", "--list"
+                    , "-t", "--tree"
+                    , "--print"
+                    , "-h", "--help"
+                    ]
+
+             in mapM_ putStrLn . List.filter (pat `List.isPrefixOf`)
+                    $ allOptions <> commandNames
   where
     getExecutableCommand params commands commandAndItsArguments =
         case fromString <$> commandAndItsArguments of
@@ -208,6 +237,16 @@ parseOptions = asum
         [ Options.long "print"
         , Options.help "Print command as it will be executed in Dhall format."
         ]
+
+    -- Command line completion.
+    , const
+        <$> ( Options.flag' Completion
+                (Options.long "completion" <> Options.internal)
+            <*> Options.option Options.auto
+                (Options.long "index" <> Options.internal)
+            <*  Options.strOption @String
+                (Options.long "shell" <> Options.internal)
+            )
 
     -- This is here purely to provide better help message.
     , (\(_ :: String) (_ :: [String]) -> id :: Action -> Action)

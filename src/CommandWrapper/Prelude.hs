@@ -37,6 +37,7 @@ module CommandWrapper.Prelude
     , completionInfoOptionFields
     , completionInfoFlag
     , printOptparseCompletionInfoExpression
+    , printCommandWrapperStyleCompletionInfoExpression
 
     -- * Error Handling
     --
@@ -163,6 +164,22 @@ printOptparseCompletionInfoExpression outHandle =
     let completionInfo :: Dhall.Expr Dhall.Src Dhall.X =
             $(Dhall.TH.staticDhallExpression
                 "./dhall/optparse-completion-info.dhall"
+            )
+
+     in Dhall.hPutExpr Never Dhall.Unicode outHandle completionInfo
+
+-- | Style of calling a subcommand completion functionality that is similar to
+-- how Command Wrapper's own @completion@ subcommand works.
+--
+-- > --completion --index=NUM --shell=SHELL -- [WORD ...]
+printCommandWrapperStyleCompletionInfoExpression
+    :: Handle
+    -- ^ Output handle.
+    -> IO ()
+printCommandWrapperStyleCompletionInfoExpression outHandle =
+    let completionInfo :: Dhall.Expr Dhall.Src Dhall.X =
+            $(Dhall.TH.staticDhallExpression
+                "./dhall/command-wrapper-style-completion-info.dhall"
             )
 
      in Dhall.hPutExpr Never Dhall.Unicode outHandle completionInfo

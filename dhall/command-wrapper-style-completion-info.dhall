@@ -12,5 +12,9 @@
         }
         shell
 
-  in    [ "--index=${Natural/show index}", "--shell=${shellName}", "--" ]
+  in    [ "--completion"
+        , "--index=${Natural/show index}"
+        , "--shell=${shellName}"
+        , "--"
+        ]
       # arguments
