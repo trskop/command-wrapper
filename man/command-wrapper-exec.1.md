@@ -11,13 +11,13 @@ environment.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|\--tree|-t}
-
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec COMMAND [\--]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec [\--] COMMAND
 \[EXTRA\_COMMAND\_ARGUMENTS]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--print COMMAND [\--]
 \[EXTRA\_COMMAND\_ARGUMENTS]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|\--tree|-t}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--help|-h}
 

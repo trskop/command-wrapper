@@ -16,7 +16,8 @@
 module Main (main)
   where
 
-import Control.Applicative (many)
+import Prelude hiding (words)
+
 import Data.Bifunctor (bimap)
 import Data.Foldable (asum, elem, for_)
 import Data.Function (on)
@@ -32,6 +33,10 @@ import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
 import qualified Data.Text as Text (split, unpack)
 import qualified Data.Text.IO as Text (putStrLn)
+import Data.Text.Prettyprint.Doc ((<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Tree (Forest, Tree(Node), drawTree, unfoldForest)
 import qualified Dhall (Interpret, auto, inject, inputFile)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
@@ -41,18 +46,12 @@ import qualified Options.Applicative as Options
     , defaultPrefs
     , execParserPure
     , flag'
-    , fullDesc
     , handleParseResult
-    , help
-    , helper
     , info
     , internal
     , long
-    , metavar
     , option
-    , progDesc
     , short
-    , strArgument
     , strOption
     )
 import Safe (atMay, headMay, lastDef)
@@ -65,11 +64,13 @@ import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Config.Environment as EnvironmentVariable
     ( toTuple
     )
+import CommandWrapper.Message (Result, defaultLayoutOptions, message)
 import qualified CommandWrapper.Options as Options (splitArguments)
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPut)
+import qualified CommandWrapper.Internal.Subcommand.Help as Help
 import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
-    , Params(Params, colour, config, verbosity)
+    , Params(Params, colour, config, name, subcommand, verbosity)
     , completionInfoFlag
     , dieWith
     , printCommandWrapperStyleCompletionInfoExpression
@@ -92,6 +93,7 @@ data Action
     | Run
     | CompletionInfo
     | Completion Word
+    | Help
 
 instance HaveCompletionInfo Action where
     completionInfoMode = const CompletionInfo
@@ -102,11 +104,12 @@ main = do
 
     (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
 
-    Config{commands} <- Dhall.inputFile Dhall.auto configFile
+    config@Config{commands} <- Dhall.inputFile Dhall.auto configFile
     action <- fmap ($ Run) . Options.handleParseResult
+        -- TODO: Switch to custom parser so that errors are printed correctly.
         $ Options.execParserPure
             Options.defaultPrefs
-            (Options.info (Options.helper <*> parseOptions) description)
+            (Options.info parseOptions mempty)
             options
 
     case action of
@@ -145,22 +148,12 @@ main = do
             printCommandWrapperStyleCompletionInfoExpression stdout
 
         Completion index ->
-            let pat =
-                    fromMaybe (lastDef "" commandAndItsArguments)
-                        (atMay commandAndItsArguments (fromIntegral index))
+            mapM_ putStrLn (completion config index commandAndItsArguments)
 
-                commandNames =
-                    Text.unpack . (name :: NamedCommand -> Text) <$> commands
-
-                allOptions =
-                    [ "-l", "--ls", "--list"
-                    , "-t", "--tree"
-                    , "--print"
-                    , "-h", "--help"
-                    ]
-
-             in mapM_ putStrLn . List.filter (pat `List.isPrefixOf`)
-                    $ allOptions <> commandNames
+        Help ->
+            let Params{verbosity, colour} = params
+             in message defaultLayoutOptions verbosity colour stdout
+                    (helpMsg params)
   where
     getExecutableCommand params commands commandAndItsArguments =
         case fromString <$> commandAndItsArguments of
@@ -169,12 +162,6 @@ main = do
 
             name : arguments ->
                 getCommand params commands name arguments
-
-    description = mconcat
-        [ Options.fullDesc
-        , Options.progDesc "Execute a command with predefined environment and\
-            \ command line options."
-        ]
 
 getCommand
     :: Params
@@ -224,21 +211,12 @@ parseOptions = asum
         [ Options.short 'l'
         , Options.long "list"
         , Options.long "ls"
-        , Options.help "List available COMMANDs."
         ]
-    , Options.flag' (const Tree) $ mconcat
-        [ Options.long "tree"
-        , Options.short 't'
-        , Options.help
-            "List available COMMANDs in tree-like form treating dots (`.`) as\
-            \ separators."
-        ]
-    , Options.flag' (const DryRun) $ mconcat
-        [ Options.long "print"
-        , Options.help "Print command as it will be executed in Dhall format."
-        ]
+    , Options.flag' (const Tree) (Options.long "tree" <> Options.short 't')
+    , Options.flag' (const DryRun) (Options.long "print")
+    , Options.flag' (const Help) (Options.short 'h' <> Options.long "help")
 
-    -- Command line completion.
+    -- Command line completion:
     , const
         <$> ( Options.flag' Completion
                 (Options.long "completion" <> Options.internal)
@@ -248,30 +226,95 @@ parseOptions = asum
                 (Options.long "shell" <> Options.internal)
             )
 
-    -- This is here purely to provide better help message.
-    , (\(_ :: String) (_ :: [String]) -> id :: Action -> Action)
-        <$> ( Options.strArgument $ mconcat
-                [ Options.metavar "COMMAND"
-                , Options.help "COMMAND to execute."
-                ]
-            )
-        <*> many
-            ( Options.strArgument $ mconcat
-                [ Options.metavar "EXTRA_COMMAND_ARGUMENT"
-                , Options.help "Additional arguments passed to COMMAND."
-                ]
-            )
-
     , pure id
     ]
+
+completion :: Config -> Word -> [String] -> [String]
+completion Config{commands} index words =
+    List.filter (pat `List.isPrefixOf`) $ allOptions <> commandNames
+  where
+    pat = fromMaybe (lastDef "" words) (atMay words (fromIntegral index))
+
+    commandNames = Text.unpack . (name :: NamedCommand -> Text) <$> commands
+
+    allOptions =
+        [ "-l", "--ls", "--list"
+        , "-t", "--tree"
+        , "--print"
+        , "-h", "--help"
+        ]
+
+helpMsg :: Params -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpMsg Params{name, subcommand} = Pretty.vsep
+    [ Pretty.reflow "Execute a command with predefined environment and command\
+        \ line options."
+    , ""
+
+    , Help.usageSection name
+        [ subcommand'
+            <+> Pretty.brackets (Help.longOption "print")
+            <+> Pretty.brackets (Help.metavar "--")
+            <+> Help.metavar "COMMAND"
+            <+> Pretty.brackets (Help.metavar "EXTRA_COMMAND_ARGUMENT")
+
+        , subcommand' <+> Pretty.braces
+            ( Help.longOption "list"
+            <> "|"
+            <> Help.longOption "ls"
+            <> "|"
+            <> Help.shortOption 'l'
+            <> "|"
+            <> Help.longOption "tree"
+            <> "|"
+            <> Help.shortOption 't'
+            )
+
+        , subcommand' <+> Help.helpOptions
+
+        , "help" <+> Pretty.brackets (Help.longOption "man") <+> subcommand'
+        ]
+
+    , Help.section ("Options" <> ":")
+        [ Help.optionDescription ["--list", "--ls", "-l"]
+            [ Pretty.reflow "List available", Help.metavar "COMMAND" <> "s."
+            ]
+
+        , Help.optionDescription ["--tree", "-t"]
+            [ Pretty.reflow "List available", Help.metavar "COMMAND" <> "s"
+            , Pretty.reflow
+                "in tree-like form treating dots (`.`) as separators."
+            ]
+
+        , Help.optionDescription ["--print"]
+            [ Pretty.reflow
+                "Print command as it will be executed in Dhall format."
+            ]
+
+        , Help.optionDescription ["--help", "-h"]
+            [ Pretty.reflow "Print this help and exit. Same as"
+            , Pretty.squotes
+                (Help.toolsetCommand name ("help" <+> subcommand')) <> "."
+            ]
+        ]
+
+    , Help.section (Help.metavar "COMMAND")
+        [ Help.metavar "COMMAND" <+> Pretty.reflow "to execute."
+        ]
+    , ""
+
+    , Help.section (Help.metavar "EXTRA_COMMAND_ARGUMENT")
+        [ Pretty.reflow "Additional arguments passed to"
+        <+> Help.metavar "COMMAND" <> "."
+        ]
+    , ""
+    ]
+  where
+    subcommand' = fromString subcommand
 
 -- TODO:
 --
 -- *  Allow alternatives, i.e. have a list of commands for one `NAME` and the
 --    first one that is available is used.  (Just an idea.)
---
--- *  Implement command-line completion, when available in `command-wrapper`
---    itself.
 --
 -- *  Evaluate command with and without extra arguments.  If the result is the
 --    same then print warning to the user.  Dual case would be interesting as
