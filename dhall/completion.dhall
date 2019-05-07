@@ -26,7 +26,6 @@
           complete -o filenames -F _${name} ${name}
           ''
 
-  -- TODO: This code is just a best guess, it was never tested.
   , fish =
       let subcommandOption = Optional/fold Text subcommand Text
             (λ(cmd : Text) → "--subcommand='${cmd}'") ""
@@ -37,8 +36,8 @@ function _${name}
     # Hack around fish issue #3934
     set -l cn (commandline --tokenize --cut-at-cursor --current-process)
     set -l cn (count $cn)
-    set -l tmpline --index $cn ${subcommandOption} --shell=fish -- $cl
-    for opt in (COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion $tmpline)
+    set -l tmpline --index=$cn ${subcommandOption} --shell=fish -- $cl
+    for opt in (env COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion $tmpline)
       if test -d $opt
         echo -E "$opt/"
       else
@@ -93,4 +92,4 @@ for word in $completions; do
   fi
 done
 ''
-  }.{bash}  -- Temporary until other shells are supported.
+  }

@@ -64,8 +64,9 @@ shellOption =
     Options.option parse' (Options.long "shell" <> Options.metavar "SHELL")
   where
     parse' = Options.eitherReader $ \s -> case parse (CI.mk s) of
-        Just Bash -> Right (setShell Bash)
-        _         -> Left "Unrecognised shell name"
+        Just Zsh -> Left "Zsh not supported at the moment"
+        Just sh  -> Right (setShell sh)
+        _        -> Left "Unrecognised shell name"
 
 class HasShell a where
     updateShell :: Endo Shell -> Endo a

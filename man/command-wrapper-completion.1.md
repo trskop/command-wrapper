@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 5th May 2019
+% 7th May 2019
 
 
 # NAME
@@ -43,8 +43,8 @@ interface for querying Command Wrapper's command line interface (CLI).
     of `COMP_CWORD` variable.
 
 \--shell=*SHELL*
-:   Provide completion or generate script for *SHELL*.  Currently only supported
-    value is *bash*.
+:   Provide completion or generate script for *SHELL*. Supported *SHELL* values
+    are: *bash* and *fish*.
 
 \--subcommand=*SUBCOMMAND*
 :   Do command line completion for a *SUBCOMMAND* instead.  This is useful for
@@ -68,8 +68,8 @@ interface for querying Command Wrapper's command line interface (CLI).
 :   Generate completion script suitable for sourcing in your shell's \*rc file.
 
 \--shell=*SHELL*
-:   Provide completion or generate script for *SHELL*.  Currently only supported
-    value is *bash*.
+:   Provide completion or generate script for *SHELL*.  Supported *SHELL* values
+    are: *bash* and *fish*.
 
 \--subcommand=*SUBCOMMAND*
 :   Generate completion script for a *SUBCOMMAND* instead of the whole toolset.

@@ -207,8 +207,10 @@ newtype MkCompletionScript = MkCompletionScript
 
 -- We'll get rid of this type once Dhall function is redefined to accept sum
 -- type representing shell variant.
-newtype Scripts = Scripts
+data Scripts = Scripts
     { bash :: Text
+    , fish :: Text
+    , zsh :: Text
     }
   deriving stock (Generic, Show)
   deriving anyclass (Dhall.Interpret)
@@ -290,7 +292,7 @@ completion appNames options config =
         --
         -- - By default it should be printed to `stdout`, but we should support
         --   writting it into a file without needing to redirect `stdout`.
-        ScriptMode ScriptOptions{shell = _, aliases, subcommand} () -> do
+        ScriptMode ScriptOptions{shell, aliases, subcommand} () -> do
             let mkCompletionScriptExpr =
                     $(Dhall.TH.staticDhallExpression
                         "./dhall/completion.dhall"
@@ -309,27 +311,40 @@ completion appNames options config =
                     -- TODO: This is probably not the best exit code.
                     exitWith (ExitFailure 1)
 
-                -- TODO: Aliases should be passed to the Dhall expression so
-                -- that generated script can be more optimal.  It will also
-                -- reduce complexity of this code.
+                -- TODO:
+                --
+                -- - Aliases should be passed to the Dhall expression so that
+                --   generated script can be more optimal.  It will also reduce
+                --   complexity of this code.
+                --
+                -- - There's a lot of duplication in here.
+                --
+                -- - Maybe we should consider passing Shell to the Dhall
+                --   function instead of expecting multiple results.
                 Just (MkCompletionScript mkScript) -> case subcommand of
                     Nothing ->
                         forM_ (usedName : aliases) \name ->
-                            let Scripts{bash} = mkScript
+                            let Scripts{..} = mkScript
                                     (fromString name :: Text)
                                     (fromString usedName :: Text)
                                     (fromString exePath :: Text)
                                     Nothing
-                            in Text.putStrLn bash
+                             in Text.putStrLn case shell of
+                                    Options.Bash -> bash
+                                    Options.Fish -> fish
+                                    Options.Zsh  -> zsh
 
                     Just subcmd ->
                         forM_ aliases \name ->
-                            let Scripts{bash} = mkScript
+                            let Scripts{..} = mkScript
                                     (fromString name :: Text)
                                     (fromString usedName :: Text)
                                     (fromString exePath :: Text)
                                     (Just (fromString subcmd :: Text))
-                            in Text.putStrLn bash
+                             in Text.putStrLn case shell of
+                                    Options.Bash -> bash
+                                    Options.Fish -> fish
+                                    Options.Zsh  -> zsh
 
         LibraryMode LibraryOptions{shell} () -> case shell of
             -- TODO: We should consider piping the output to a pager or similar
@@ -636,15 +651,15 @@ completionCompletion _appNames _config _wordsBeforePattern pat
     | otherwise = pure $ List.filter (pat `List.isPrefixOf`) allOptions
   where
     allOptions = List.nub
-        [ "--index=", "--shell=", "--subcommand=", "--"
+        [ "--index=", "--shell=bash", "--shell=fish", "--subcommand=", "--"
 
-        , "--library", "--shell="
+        , "--library", "--shell=bash", "--shell=fish"
 
         , "--query", "--subcommands", "--subcommand-aliases"
         , "--supported-shells", "--verbosity-values", "--colour-values"
         , "--color-values"
 
-        , "--script", "--shell=", "--alias="
+        , "--script", "--shell=bash", "--alias="
         ]
 
 findSubcommands :: AppNames -> Global.Config -> String -> IO [String]
@@ -841,8 +856,12 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             <+> Pretty.brackets
                 ( longOption "subcommand" <> "=" <> metavar "SUBCOMMAND"
                     <+> longOption "alias" <> "=" <> metavar "ALIAS"
-                    <+> Pretty.brackets (longOption "alias" <> "=" <> metavar "ALIAS" <+> "...")
-                <> "|" <> (longOption "alias" <> "=" <> metavar "ALIAS" <+> "...")
+                    <+> Pretty.brackets
+                        ( longOption "alias" <> "=" <> metavar "ALIAS"
+                        <+> "..."
+                        )
+                <> "|"
+                <> (longOption "alias" <> "=" <> metavar "ALIAS" <+> "...")
                 )
 
         , "completion"
@@ -873,8 +892,8 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
 
         , optionDescription ["--shell=SHELL"]
             [ Pretty.reflow "Provide completion for", metavar "SHELL" <> "."
-            , Pretty.reflow "Currently only supported value is"
-            , value "bash" <> "."
+            , Pretty.reflow "Supported", metavar "SHELL", "values are: "
+            , value "bash", "and", value "fish" <> "."
             ]
 
         , optionDescription ["--subcommand=SUBCOMMAND"]
@@ -897,8 +916,8 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
         , optionDescription ["--shell=SHELL"]
             [ Pretty.reflow "Generate completion script for"
             , metavar "SHELL" <> "."
-            , Pretty.reflow "Currently only supported value is"
-            , value "bash" <> "."
+            , Pretty.reflow "Supported", metavar "SHELL", "values are: "
+            , value "bash", "and", value "fish" <> "."
             ]
 
         , optionDescription ["--subcommand=SUBCOMMAND"]
