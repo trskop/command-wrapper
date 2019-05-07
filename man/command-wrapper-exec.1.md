@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 5th May 2019
+% 7th May 2019
 
 
 # NAME
@@ -11,11 +11,13 @@ environment.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|--tree|-t}
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|\--tree|-t}
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec COMMAND [\--] \[EXTRA\_COMMAND\_ARGUMENTS]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec COMMAND [\--]
+\[EXTRA\_COMMAND\_ARGUMENTS]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec --print COMMAND [\--] \[EXTRA\_COMMAND\_ARGUMENTS]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--print COMMAND [\--]
+\[EXTRA\_COMMAND\_ARGUMENTS]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--help|-h}
 
@@ -85,7 +87,7 @@ scripting language like Bash.
     be called as:
 
     ```
-    TOOLSET_COMMAND exec COMMAND [\--] \[EXTRA\_COMMAND\_ARGUMENTS]
+    TOOLSET_COMMAND exec COMMAND [--] [EXTRA_COMMAND_ARGUMENTS]
     ```
 
 \--print

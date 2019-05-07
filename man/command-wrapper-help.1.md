@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-HELP(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 5th May 2019
+% 7th May 2019
 
 
 # NAME
@@ -11,9 +11,9 @@ its subcommands.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \[--man] \[*SUBCOMMAND*]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \[\--man] \[*SUBCOMMAND*]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help {--help|-h}
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help {\--help|-h}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help help
 
