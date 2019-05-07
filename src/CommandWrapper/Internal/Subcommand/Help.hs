@@ -61,13 +61,13 @@ import qualified Options.Applicative as Options
     ( Parser
     , defaultPrefs
     , flag
+    , flag'
     , help
     , info
     , long
     , metavar
     , short
     , strArgument
-    , strOption
     )
 import System.Directory (findExecutablesInDirectories)
 import System.Posix.Process (executeFile)
@@ -94,7 +94,7 @@ import qualified CommandWrapper.Options.Optparse as Options
 data HelpMode a
     = MainHelp a
     | SubcommandHelp String a
-    | ManPage String a
+    | ManPage (Maybe String) a
   deriving stock (Functor, Generic, Show)
 
 help
@@ -107,7 +107,7 @@ help
     -> [String]
     -> Config
     -> IO ()
-help internalHelp appNames options config =
+help internalHelp appNames@AppNames{usedName} options config =
     runMain (parseOptions appNames config options) defaults $ \case
         MainHelp _config -> do
             message defaultLayoutOptions verbosity colour stdout
@@ -122,24 +122,33 @@ help internalHelp appNames options config =
                 Nothing ->
                     External.executeCommand appNames config cmd ["--help"]
 
-        ManPage subcommandName _config -> do
+        -- TODO:
+        -- - We need to take aliases into account.
+        -- - We need to extend completion to list "subcommand-protocol",
+        --   "command-wrapper", etc.
+        -- - We need to generalise our approach so that any other
+        --   "command-wrapper-${TOPIC}" or "${TOOLSET}-${TOPIC}" manual
+        --   pages are also accessible.
+        -- - When no subcommand/topic name is give we should be able to default
+        --   to "command-wrapper" if a more concrete manual page desn't exist.
+        --   At the moment we assume that manual page for toolset is always
+        --   present.
+        ManPage topic _config -> do
             let internalCommandManPage =
-                    Just ("command-wrapper-" <> subcommandName)
+                    ("command-wrapper-" <>) <$> topic
 
-            -- TODO:
-            -- - We need to take aliases into account.
-            -- - We need to extend completion to list "subcommand-protocol" and
-            --   "command-wrapper"
+            possiblyManualPageName <- case topic of
+                Nothing -> pure (Just usedName)
 
-            possiblyManualPageName <- case subcommandName of
-                "command-wrapper" -> pure (Just "command-wrapper")
-                "completion" -> pure internalCommandManPage
-                "config" -> pure internalCommandManPage
-                "help" -> pure internalCommandManPage
-                "subcommand-protocol" -> pure internalCommandManPage
-                "version" -> pure internalCommandManPage
-                -- TODO: Manual page for toolset itself.
-                _ -> findSubcommandManualPageName appNames config subcommandName
+                Just "command-wrapper" -> pure (Just "command-wrapper")
+                Just "completion" -> pure internalCommandManPage
+                Just "config" -> pure internalCommandManPage
+                Just "help" -> pure internalCommandManPage
+                Just "subcommand-protocol" -> pure internalCommandManPage
+                Just "version" -> pure internalCommandManPage
+
+                Just subcommandName ->
+                    findSubcommandManualPageName appNames config subcommandName
 
             case possiblyManualPageName of
                 Nothing -> pure () -- TODO: Error message.
@@ -192,34 +201,36 @@ findSubcommandManualPageName
 
 -- TODO:
 --
--- > TOOLSET [GLOBAL_OPTIONS] help [--man] [SUBCOMMAND]
+-- > TOOLSET [GLOBAL_OPTIONS] help [SUBCOMMAND]
+-- > TOOLSET [GLOBAL_OPTIONS] help --man [SUBCOMMAND|TOPIC]
 parseOptions :: AppNames -> Config -> [String] -> IO (Endo (HelpMode ()))
 parseOptions appNames config@Config{aliases} options =
     execParser $ foldEndo
         <$> optional
-                ( helpFlag
-                <|> manFlag
-                <|> subcommandArg
+                ( subcommandArg
+                <|> (manFlag <*> optional subcommandOrTopicArg)
+                <|> helpFlag
                 )
   where
     switchTo = Endo . const
 
-    manFlag, helpFlag, subcommandArg :: Options.Parser (Endo (HelpMode ()))
-
-    -- TODO: '--man' should be a flag and not an option that takes an argument.
-    -- If 'SUBCOMMAND' is not present, then we want manual page for toolset.
+    manFlag :: Options.Parser (Maybe String -> Endo (HelpMode ()))
     manFlag =
-        Options.strOption
+        Options.flag' (\n -> switchTo (ManPage n ()))
             ( Options.long "man"
-            <> Options.metavar "SUBCOMMAND"
-            <> Options.help "Show manual page for SUBCOMMAND."
+            <> Options.help "Show manual page for a SUBCOMMAND or a TOPIC."
             )
-            <&> \subcommandName -> switchTo (ManPage subcommandName ())
 
+    subcommandOrTopicArg :: Options.Parser String
+    subcommandOrTopicArg =
+        Options.strArgument (Options.metavar "SUBCOMMAND|TOPIC")
+
+    helpFlag :: Options.Parser (Endo (HelpMode ()))
     helpFlag =
         Options.flag mempty (switchTo $ SubcommandHelp "help" ())
             (Options.long "help" <> Options.short 'h')
 
+    subcommandArg :: Options.Parser (Endo (HelpMode ()))
     subcommandArg =
         Options.strArgument (Options.metavar "SUBCOMMAND") <&> \cmd ->
             let (realCmd, _) = applyAlias aliases cmd []
@@ -310,8 +321,13 @@ mainHelpMsg AppNames{usedName} = Pretty.vsep
 helpSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
-        [ "help" <+> subcommand
-        , "help" <+> longOption "man" <> "=" <> metavar "SUBCOMMAND"
+        [ "help" <+> Pretty.brackets subcommand
+        , "help" <+> longOption "man"
+            <+> Pretty.brackets
+                ( metavar "SUBCOMMAND"
+                <> "|"
+                <> metavar "TOPIC"
+                )
         , "help" <+> helpOptions
         , helpOptions
         ]
@@ -322,9 +338,9 @@ helpSubcommandHelp AppNames{usedName} = Pretty.vsep
             , Pretty.reflow "which to show help message."
             ]
 
-        , optionDescription ["--man=SUBCOMMAND"]
+        , optionDescription ["--man [SUBCOMMAND|TOPIC]"]
             [ Pretty.reflow "Show manual page for"
-            , metavar "TOPIC"
+            , metavar "SUBCOMMAND" <> "|" <> metavar "TOPIC"
             , Pretty.reflow "instead of short help message."
             ]
 

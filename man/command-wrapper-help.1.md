@@ -11,7 +11,9 @@ its subcommands.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \[\--man] \[*SUBCOMMAND*]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \[*SUBCOMMAND*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \--man \[*SUBCOMMAND*|*TOPIC*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help {\--help|-h}
 
@@ -28,8 +30,9 @@ on colour settings.
 
 # OPTIONS
 
-\--man
-:   Display manual page instead of short help message.
+\--man \[*SUBCOMMAND*|*TOPIC*]
+:   Show manual page for *SUBCOMMAND*|*TOPIC* instead of short help message.  If
+    neither is specified then manual page for current toolset is displayed.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help help`.
