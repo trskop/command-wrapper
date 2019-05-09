@@ -31,10 +31,8 @@ import System.IO (FilePath, IO)
 import Text.Show (Show, show)
 
 import Data.Verbosity (Verbosity)
-import qualified Data.Verbosity as Verbosity (Verbosity(..))
+import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 import Data.Verbosity.Class (HasVerbosity)
-import qualified Data.Verbosity.Class (HasVerbosity(verbosity))
-import Data.Generics.Product.Typed (typed)
 import qualified Dhall (Interpret, InvalidType, auto, inputFile)
 import qualified Dhall.Parser as Dhall (ParseError, Src)
 import qualified Dhall.TypeCheck as Dhall (TypeError, X)
@@ -50,12 +48,8 @@ data Config = Config
     , verbosity :: Verbosity
     , colourOutput :: Maybe ColourOutput
     }
-  deriving (Generic, Show)
-
-instance Dhall.Interpret Config
-
-instance HasVerbosity Config where
-    verbosity = typed
+  deriving stock (Generic, Show)
+  deriving anyclass (Dhall.Interpret, HasVerbosity)
 
 instance Semigroup Config where
     c1 <> c2@Config{verbosity} = Config

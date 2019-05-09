@@ -51,8 +51,8 @@ data AppNames = AppNames
     { exePath :: FilePath
     -- ^ Full path to the executable, symlinks are resolved.
     --
-    -- For example, default installation path of Command Wrapper for @\"neo\"@
-    -- result in:
+    -- For example, default installation path of Command Wrapper for user
+    -- @\"neo\"@ is:
     --
     -- @
     -- 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
@@ -113,7 +113,7 @@ data AppNames = AppNames
     , commandWrapperPrefix :: CommandWrapperPrefix
     -- ^ Prefix shared by all Command Wrapper environment variables.
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
 
 -- | Smart constructor for 'AppNames'.
 --

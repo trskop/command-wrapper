@@ -81,12 +81,73 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput (parse)
 -- page for more details.
 data Params = Params
     { exePath :: FilePath
+    -- ^ Full path to Command Wrapper's executable, symlinks are resolved.
+    --
+    -- For example, default installation path of Command Wrapper for user
+    -- @\"neo\"@ is:
+    --
+    -- @
+    -- 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+    -- @
+    --
+    -- This value is passed via @COMMAND_WRAPPER_EXE@ environment variable.
+    -- See @command-wrapper-subcommand-protocol(7)@ manual page for details.
+
     , name :: String
+    -- ^ Name under which the 'exePath' executable was executed.
+    --
+    -- For example if user invoked command @yx SOMETHING@, which was resolved
+    -- by shell into a symlink:
+    --
+    -- @
+    -- \"/home/neo/bin/yx\" -> \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+    -- @
+    --
+    -- Then:
+    --
+    -- @
+    -- 'name' = \"yx\"
+    -- @
+    --
+    -- This value is passed via @COMMAND_WRAPPER_NAME@ environment variable.
+    -- See @command-wrapper-subcommand-protocol(7)@ manual page for details.
+
     , subcommand :: String
+    -- ^ Name of the subcommand that is being executed from the perspective
+    -- of Command Wrapper.  This is not a file path.
+    --
+    -- For example if user invoked command @yx SOMETHING@ then 'subcommand'
+    -- will contain @SOMETHING@.
+    --
+    -- This value is passed via @COMMAND_WRAPPER_SUBCOMMAND@ environment
+    -- variable.  See @command-wrapper-subcommand-protocol(7)@ manual page for
+    -- details.
+
     , config :: FilePath
+    -- ^ Contains a file path to subcommand configuration file.
+    --
+    -- This value is passed via @COMMAND_WRAPPER_CONFIG@ environment variable.
+    -- See @command-wrapper-subcommand-protocol(7)@ manual page for details.
+
     , verbosity :: Verbosity
+    -- ^ Verbosity settings passed down from Command Wrapper.
+    --
+    -- This value is passed via @COMMAND_WRAPPER_VERBOSITY@ environment
+    -- variable.  See @command-wrapper-subcommand-protocol(7)@ manual page for
+    -- details.
+
     , colour :: ColourOutput
+    -- ^ Colour output settings passed down from Command Wrapper.
+    --
+    -- This value is passed via @COMMAND_WRAPPER_COLOUR@ environment variable.
+    -- See @command-wrapper-subcommand-protocol(7)@ manual page for details.
+
     , version :: Version
+    -- ^ Version of subcommand protocol that Command Wrapper expects the
+    -- subcommand to respect.
+    --
+    -- This value is passed via @COMMAND_WRAPPER_VERSION@ environment variable.
+    -- See @command-wrapper-subcommand-protocol(7)@ manual page for details.
     }
   deriving stock (Generic, Show)
 

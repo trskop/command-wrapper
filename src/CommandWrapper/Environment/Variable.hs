@@ -53,7 +53,8 @@ defaultCommandWrapperPrefix :: CommandWrapperPrefix
 defaultCommandWrapperPrefix = "COMMAND_WRAPPER"
 
 -- | Enumeration of variables that are part of Command Wrapper subcommand
--- environment\/protocol.
+-- environment\/protocol.  See @command-wrapper-subcommand-protocol(7)@ manual
+-- page for more information.
 data CommandWrapperVarName
     = CommandWrapperExe
     -- ^ Full path to Command Wrapper executable, all symbolic links should be
@@ -62,37 +63,58 @@ data CommandWrapperVarName
     --
     -- > <prefix>_EXE
     --
-    -- See also module "CommandWrapper.Environment.AppNames", especially
-    -- 'CommandWrapper.Environment.AppNames.exePath'.
+    -- See also documentation of 'CommandWrapper.Environment.AppNames.exePath'
+    -- and 'CommandWrapper.Environment.Params.exePath'.
 
     | CommandWrapperName
     -- ^ Name under which the executable was executed.
     --
     -- > <prefix>_NAME
     --
-    -- See also module "CommandWrapper.Environment.AppNames", especially
-    -- 'CommandWrapper.Environment.AppNames.usedName'.
+    -- See also documentation of 'CommandWrapper.Environment.AppNames.usedName'
+    -- and 'CommandWrapper.Environment.Params.name'.
 
     | CommandWrapperSubcommand
-    -- ^
+    -- ^ Contains name of the subcommand that is being executed from the
+    -- perspective of Command Wrapper.
+    --
     -- > <prefix>_SUBCOMMAND
+    --
+    -- See also documentation of 'CommandWrapper.Environment.Params.subcommand'.
+
     | CommandWrapperConfig
-    -- ^
+    -- ^ Contains a file path to subcommand configuration file.
+    --
     -- > <prefix>_CONFIG
+    --
+    -- See also documentation of 'CommandWrapper.Environment.Params.config.
+
     | CommandWrapperVerbosity
-    -- ^
+    -- ^ Verbosity configuration passed down from Command Wrapper.
+    --
     -- > <prefix>_VERBOSITY
+    --
+    -- See also documentation of 'CommandWrapper.Environment.Params.verbosity.
+
     | CommandWrapperColour
-    -- ^
+    -- ^ Colour output configuration passed down from Command Wrapper.
+    --
     -- > <prefix>_COLOUR
+    --
+    -- See also documentation of 'CommandWrapper.Environment.Params.colour.
+
     | CommandWrapperVersion
-    -- ^
+    -- ^ Version of subcommand protocol that Command Wrapper expects the
+    -- subcommand to respect.
+    --
     -- > <prefix>_VERSION
+    --
+    -- See also documentation of 'CommandWrapper.Environment.Params.version.
   deriving stock (Generic, Show)
 
 -- | Get fully formed Command Wrapper variable name:
 --
--- > <prefix>_{EXE|NAME|SUBCOMMAND|CONFIG|VERBOSITY|COLOUR}
+-- > <prefix>_{EXE|NAME|SUBCOMMAND|CONFIG|VERBOSITY|COLOUR|VERSION}
 getCommandWrapperVarName
     :: CommandWrapperPrefix
     -> CommandWrapperVarName

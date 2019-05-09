@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SUBCOMMAND-PROTOCOL(7) Subcommand Protocol | v1.0.0
 % Peter Trsko
-% 5th May 2019
+% 9th May 2019
 
 
 # NAME
@@ -37,11 +37,8 @@ are available to it:
     `/home/joe/.local/lib/command-wrapper/command-wrapper`.
 
 `COMMAND_WRAPPER_VERSION`
-:   Contains version of Command Wrapper executable.
-
-    **TODO**: In the future this will be a version of *SUBCOMMAND PROTOCOL*, at
-    the moment the version of Command Wrapper and *SUBCOMMAND PROTOCOL* are one
-    and the same.
+:   Version of subcommand protocol that Command Wrapper expects the subcommand
+    to respect.
 
 `COMMAND_WRAPPER_NAME`
 :   Contains name under which Command Wrapper was executed.  This is not a file
