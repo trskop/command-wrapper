@@ -87,7 +87,7 @@ data Params = Params
     -- @\"neo\"@ is:
     --
     -- @
-    -- 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+    -- 'exePath' = \"\/home\/neo\/.local\/lib\/command-wrapper\/command-wrapper\"
     -- @
     --
     -- This value is passed via @COMMAND_WRAPPER_EXE@ environment variable.
@@ -99,9 +99,7 @@ data Params = Params
     -- For example if user invoked command @yx SOMETHING@, which was resolved
     -- by shell into a symlink:
     --
-    -- @
-    -- \"/home/neo/bin/yx\" -> \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
-    -- @
+    -- > "/home/neo/bin/yx" -> "/home/neo/.local/lib/command-wrapper/command-wrapper"
     --
     -- Then:
     --

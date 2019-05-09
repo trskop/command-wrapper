@@ -55,7 +55,7 @@ data AppNames = AppNames
     -- @\"neo\"@ is:
     --
     -- @
-    -- 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+    -- 'exePath' = \"\/home\/neo\/.local\/lib\/command-wrapper\/command-wrapper\"
     -- @
 
     , exeName :: String
@@ -64,7 +64,7 @@ data AppNames = AppNames
     -- For example, if
     --
     -- @
-    -- 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+    -- 'exePath' = \"\/home\/neo\/.local\/lib\/command-wrapper\/command-wrapper\"
     -- @
     --
     -- Then
@@ -83,9 +83,7 @@ data AppNames = AppNames
     -- For example if user invoked command @yx SOMETHING@, which was resolved
     -- by shell into a symlink:
     --
-    -- @
-    -- \"/home/neo/bin/yx\" -> \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
-    -- @
+    -- > "/home/neo/bin/yx" -> "/home/neo/.local/lib/command-wrapper/command-wrapper"
     --
     -- Then:
     --
@@ -133,7 +131,7 @@ data AppNames = AppNames
 --
 -- @
 -- 'AppNames'
---     { 'exePath' = \"/home/neo/.local/lib/command-wrapper/command-wrapper\"
+--     { 'exePath' = \"/home\/neo\/.local\/lib\/command-wrapper\/command-wrapper\"
 --     , 'exeName' = \"command-wrapper\"
 --     , 'exeVersion' = ... -- Whatever the second argument of 'getAppNames' returned.
 --     , 'usedName' = \"yx\"
