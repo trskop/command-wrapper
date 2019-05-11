@@ -162,6 +162,7 @@ command-wrapper(1)
 * [fzy -- fast, simple fuzzy text selector for the terminal with an advanced
   scoring algorithm](https://github.com/jhawthorn/fzy)
 
+
 # BUGS
 
 <https://github.com/trskop/command-wrapper/issues>

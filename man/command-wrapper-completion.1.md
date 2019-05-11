@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 7th May 2019
+% 12th May 2019
 
 
 # NAME
@@ -15,12 +15,14 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \[\--index=*NUM*]
 \[\--shell=*SHELL*] \[\--subcommand=*SUBCOMMAND*] \-- [*WORD* ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
-\[\--subcommand=*SUBCOMMAND* \--alias=*ALIAS* \[\--alias=*ALIAS* ...]|\--alias=*ALIAS*
-...]
+\[\--alias=*ALIAS* ...]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
+\--subcommand=*SUBCOMMAND* \--alias=*ALIAS* \[\--alias=*ALIAS* ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library \[\--shell=*SHELL*]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[QUERY\_OPTIONS]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[*QUERY\_OPTIONS*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion {\--help|-h}
 
@@ -141,11 +143,12 @@ interface for querying Command Wrapper's command line interface (CLI).
     in `command-wrapper(1)`.
 
 \--supported-shells
-:   Query shells supported by command line completion.  (Currently only Bash is
-    supported.)
+:   Query shells supported by command line completion.  Supported *SHELL* values
+    at the moment are: *bash* and *fish*.
 
-\--verbosity-values*
-:   *Query possible *VERBOSITY* values.  These can be set using global
+
+\--verbosity-values
+:   Query possible *VERBOSITY* values.  These can be set using global
     `--verbosity=VERBOSITY` option, or are passed down to subcommands via
     `COMMAND_WRAPPER_VERBOSITY` environment variable.
 
@@ -153,8 +156,8 @@ interface for querying Command Wrapper's command line interface (CLI).
     `--verbosity=VERBOSITY` option, and `command-wrapper-subcommand-protocol(7)`
     regarding `COMMAND_WRAPPER_VERBOSITY` environment variable.
 
-\--colo[u]r-values*
-:   *Query possible *WHEN* colour output values.  These can be set using global
+\--colo[u]r-values
+:   Query possible *WHEN* colour output values.  These can be set using global
     `--colo[u]r=WHEN` option, or are passed down to subcommands via
     `COMMAND_WRAPPER_COLOUR` environment variable.
 
@@ -201,6 +204,36 @@ aliases for `toolset` are used we can provide completion for them as well:
 alias ts=toolset
 # shellcheck source=/dev/null
 source <(toolset completion --script --shell=bash --alias='ts')
+```
+
+It is also possible to get completion for an alias to a subcommand:
+
+```
+alias this='toolset this'
+source <(toolset completion --script --subcommand=this --alias=this)
+```
+
+
+# FISH CONFIGURATION
+
+```
+toolset completion --script --shell=bash | source
+```
+
+Where `toolset` is the name under which `command-wrapper` is used.  If any
+aliases for `toolset` are used we can provide completion for them as well:
+
+```
+alias ts toolset
+# shellcheck source=/dev/null
+source <(toolset completion --script --shell=bash --alias='ts')
+```
+
+It is also possible to get completion for an alias to a subcommand:
+
+```
+alias this 'toolset this'
+toolset completion --script --subcommand=this --alias=this | source
 ```
 
 
