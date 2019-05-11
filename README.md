@@ -64,8 +64,8 @@ Is documented in [`command-wrapper-subcommand-protocol(7)`
 Install `command-wrapper`:
 
 ```Bash
-git clone https://github.com/trskop/command-wrapper.git ~/.local/src/trskop/command-wrapper
-~/.local/src/trskop/command-wrapper/install
+git clone https://github.com/trskop/command-wrapper.git ~/.local/src/github.com/trskop/command-wrapper
+~/.local/src/github.com/trskop/command-wrapper/install
 mkdir ~/.config/command-wrapper
 ```
 

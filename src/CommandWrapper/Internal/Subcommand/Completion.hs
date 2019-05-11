@@ -560,12 +560,8 @@ getCompletions appNames config CompletionOptions{..} = case subcommand of
                 _ ->
                     subcommands
 
--- TODO:
---
--- - When completing option/argument of a subcommand we need to execute
---   the subcommand with bash completion options passed to it. This
---   will require us to extend `SUBCOMMAND_PROTOCOL.md`. Should we rely
---   on `optparse-applicative` for this?
+-- | Complete subcommand options\/arguments.  For external commands we call the
+-- binary and use protocol defined in `command-wrapper-subcommand-protocol(7)`.
 subcommandCompletion
     :: AppNames
     -> Global.Config
@@ -598,9 +594,10 @@ subcommandCompletion appNames config shell index words _invokedAs = \case
     hadDashDash = "--" `List.elem` wordsBeforePattern
     pat = fromMaybe "" $ atMay words (fromIntegral index)
 
+    -- Implementation of `command-wrapper-subcommand-protocol(7)` for command
+    -- line completion.
     completionInfo :: String -> IO CompletionInfo
     completionInfo subcommand = do
-        -- TODO: Handle exit code correctly.
         (exitCode, out, err)
             <- External.executeCommandWith readProcess appNames config
                 subcommand ["--completion-info"]
@@ -624,6 +621,7 @@ subcommandCompletion appNames config shell index words _invokedAs = \case
         readProcess cmd _ args env =
             readCreateProcessWithExitCode (proc cmd args){env} ""
 
+-- | Command line completion for internal @help@ subcommand.
 helpCompletion :: AppNames -> Global.Config -> Bool -> String -> IO [String]
 helpCompletion appNames config hadDashDash pat
   | hadDashDash = subcmds
@@ -635,11 +633,7 @@ helpCompletion appNames config hadDashDash pat
     helpOptions' = ["--help", "-h", "--"]
     subcmds = findSubcommands appNames config pat
 
--- TODO: This implementation needs refinement:
---
--- - Be contextual, i.e. if there is `--query` then ignore options tht do not
---   apply.
--- - Complete `SHELL` and `SUBCOMMAND` values.
+-- | Command line completion for the @completion@ subcommand itself.
 completionCompletion
     :: AppNames
     -> Global.Config
@@ -650,6 +644,11 @@ completionCompletion _appNames _config _wordsBeforePattern pat
     | null pat  = pure allOptions
     | otherwise = pure $ List.filter (pat `List.isPrefixOf`) allOptions
   where
+    -- TODO: This implementation needs refinement:
+    --
+    -- - Be contextual, i.e. if there is `--query` then ignore options that do
+    --   not apply.
+    -- - Complete `SHELL` and `SUBCOMMAND` values.
     allOptions = List.nub
         [ "--index=", "--shell=bash", "--shell=fish", "--subcommand=", "--"
 
@@ -662,11 +661,18 @@ completionCompletion _appNames _config _wordsBeforePattern pat
         , "--script", "--shell=bash", "--alias="
         ]
 
-findSubcommands :: AppNames -> Global.Config -> String -> IO [String]
+-- | Lookup external and internal subcommands matching pattern (prefix).
+findSubcommands
+    :: AppNames
+    -> Global.Config
+    -> String
+    -- ^ Pattern (prefix) to match subcommand name against.
+    -> IO [String]
 findSubcommands appNames config pat =
     List.filter (fmap Char.toLower pat `List.isPrefixOf`)
         <$> getSubcommands appNames config
 
+-- | List all available external and internal subcommands.
 getSubcommands :: AppNames -> Global.Config -> IO [String]
 getSubcommands appNames config = do
     extCmds <- External.findSubcommands appNames config
