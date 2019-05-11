@@ -268,6 +268,6 @@ versionCompletion _ _ wordsBeforePattern pat = pure versionCompletion'
         munless (hadDhall || hadShell || hadHelp)
             ["--help", "-h", "--dhall", "--shell="]
 
-    shellOptions = ("--shell=" <>) <$> ["bash"{-, "fish", "zsh"-}]
+    shellOptions = ("--shell=" <>) <$> ["bash", "fish"{-, "zsh"-}]
 
     munless p x = if not p then x else mempty
