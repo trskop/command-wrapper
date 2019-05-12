@@ -72,6 +72,9 @@ dependencies:
   - unordered-containers
   - verbosity >=0.3
 
+  # For `config`, may be redesigned:
+  - projectroot
+
 ghc-options: -Wall
 
 library:
