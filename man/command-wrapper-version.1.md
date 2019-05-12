@@ -10,7 +10,8 @@
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] version \[\--dhall|\--shell=*SHELL*]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] version \[\--dhall|\--shell=*FILE*]
+\[\--output=*SHELL*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] {\--version|-V}
 
@@ -32,6 +33,9 @@ Display version information.
 \--shell=*SHELL*
 :   Print version information in format suitable for *SHELL*.  Supported *SHELL*
     values are: *bash* and *fish*.
+
+\--output=*FILE*, -o *FILE*
+:   Write optput into FILE instead of standard output.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help version`.

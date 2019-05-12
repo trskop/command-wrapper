@@ -1,3 +1,5 @@
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE PatternSynonyms #-}
 -- |
 -- Module:      CommandWrapper.Internal.Version
 -- Description: Implementation of internal command named version
@@ -20,22 +22,29 @@ module CommandWrapper.Internal.Subcommand.Version
     )
   where
 
-import Control.Applicative ((<|>))
+import Control.Applicative ((<|>), optional)
 import Data.Bool ((||), not, otherwise)
 import Data.Foldable (null)
+import Data.Functor ((<&>))
 import qualified Data.List as List (elem, filter, isPrefixOf)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo))
 import Data.String (fromString)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
-import System.IO (stdout)
+import System.IO (Handle, IOMode(WriteMode), stdout, withFile)
 
 import Data.Monoid.Endo.Fold (foldEndo)
+import Data.Output
+    ( OutputFile(OutputFile)
+    , OutputHandle(OutputHandle, OutputNotHandle)
+    , OutputStdoutOrFile
+    , pattern OutputStdoutOnly
+    )
 import qualified Data.Output.Colour as ColourOutput (ColourOutput(Auto))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines)
-import qualified Data.Text.IO as Text (putStr)
+import qualified Data.Text.IO as Text (hPutStr)
 import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
@@ -51,7 +60,10 @@ import qualified Options.Applicative as Options
     , long
     , short
     )
-import Safe (headMay)
+import qualified Options.Applicative.Builder.Completer as Options (bashCompleter)
+import qualified Options.Applicative.Standard as Options (outputOption)
+import qualified Options.Applicative.Types as Options (Completer(runCompleter))
+import Safe (headMay, lastMay)
 
 import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
@@ -85,8 +97,8 @@ import qualified CommandWrapper.Options.Shell as Options
 
 
 data VersionMode a
-    = FullVersion OutputFormat a
-    | NumericVersion (Maybe VersionInfoField) a
+    = FullVersion OutputFormat OutputStdoutOrFile a
+    | NumericVersion (Maybe VersionInfoField) OutputStdoutOrFile a
     | VersionHelp a
   deriving stock (Functor, Generic, Show)
 
@@ -104,31 +116,41 @@ version
     -> IO ()
 version versionInfo appNames options config =
     runMain (parseOptions appNames config options) defaults $ \case
-        FullVersion format _config -> case format of
-            DhallFormat ->
-                Dhall.hPut colour Dhall.Unicode stdout Dhall.inject versionInfo
+        FullVersion format output _config ->
+            withOutputHandle output \handle -> case format of
+                DhallFormat ->
+                    Dhall.hPut colour Dhall.Unicode handle Dhall.inject
+                        versionInfo
 
-            ShellFormat shell -> (\f -> Text.putStr . f $ versionInfo) $ case shell of
-                Options.Bash -> versionInfoBash
-                Options.Fish -> versionInfoFish
-                Options.Zsh -> versionInfoBash -- Same syntax as Bash.
+                ShellFormat shell ->
+                    (\f -> Text.hPutStr handle $ f versionInfo) case shell of
+                        Options.Bash -> versionInfoBash
+                        Options.Fish -> versionInfoFish
+                        Options.Zsh -> versionInfoBash -- Same syntax as Bash.
 
-            PlainFormat ->
-                message defaultLayoutOptions verbosity colour stdout
-                    (versionInfoDoc versionInfo)
+                PlainFormat ->
+                    message defaultLayoutOptions verbosity colour handle
+                        (versionInfoDoc versionInfo)
 
-        NumericVersion _field _config ->
-            message defaultLayoutOptions verbosity colour stdout
-                ("TODO" :: Pretty.Doc (Result Pretty.AnsiStyle))
+        NumericVersion _field output _config ->
+            withOutputHandle output \handle ->
+                message defaultLayoutOptions verbosity colour handle
+                    ("TODO" :: Pretty.Doc (Result Pretty.AnsiStyle))
 
         VersionHelp _config ->
             message defaultLayoutOptions verbosity colour stdout
                 (versionSubcommandHelp appNames)
   where
-    defaults = Mainplate.applySimpleDefaults (FullVersion PlainFormat ())
+    defaults = Mainplate.applySimpleDefaults
+        (FullVersion PlainFormat OutputStdoutOnly ())
 
     Config{colourOutput, verbosity} = config
     colour = fromMaybe ColourOutput.Auto colourOutput
+
+    withOutputHandle :: OutputStdoutOrFile -> (Handle -> IO a) -> IO a
+    withOutputHandle = \case
+        OutputHandle _ -> ($ stdout)
+        OutputNotHandle (OutputFile fn) -> withFile fn WriteMode
 
 versionInfoDoc :: VersionInfo -> Pretty.Doc (Result Pretty.AnsiStyle)
 versionInfoDoc VersionInfo{..} = Pretty.vsep
@@ -170,20 +192,31 @@ parseOptions appNames config options =
             <|> shellOption
             <|> helpFlag
             )
+        <*> optional outputOption
   where
-    switchTo = Endo . const
-    switchToDhallFormat = switchTo (FullVersion DhallFormat ())
-    switchToHelpMode = switchTo (VersionHelp ())
+    switchTo f = Endo \case
+        FullVersion _ o a -> f o a
+        NumericVersion _ o a -> f o a
+        VersionHelp a -> f OutputStdoutOnly a
+
+    switchToDhallFormat = switchTo (FullVersion DhallFormat)
+    switchToHelpMode = switchTo (const VersionHelp)
 
     switchToShellFormat f =
         let shell = f `appEndo` Options.Bash
-        in  switchTo (FullVersion (ShellFormat shell) ())
+        in  switchTo (FullVersion (ShellFormat shell))
 
     dhallFlag, shellOption, helpFlag :: Options.Parser (Endo (VersionMode ()))
 
     dhallFlag = Options.flag mempty switchToDhallFormat (Options.long "dhall")
 
     shellOption = switchToShellFormat <$> Options.shellOption
+
+    outputOption :: Options.Parser (Endo (VersionMode ()))
+    outputOption = Options.outputOption <&> \o -> Endo \case
+        FullVersion format _ a -> FullVersion format o a
+        NumericVersion field _ a -> NumericVersion field o a
+        VersionHelp a -> VersionHelp a
 
     execParser parser =
         Options.internalSubcommandParse appNames config "version"
@@ -197,12 +230,14 @@ parseOptions appNames config options =
 versionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 versionSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
-        [ "version" <+> Pretty.brackets
-            ( longOption "dhall"
-            <> "|" <> longOption "shell" <> "=" <> metavar "SHELL"
---          <> "|" <> longOption "numeric"
---              <> Pretty.brackets ("=" <> metavar "COMPONENT")
-            )
+        [ "version"
+            <+> Pretty.brackets
+                ( longOption "dhall"
+                <> "|" <> longOption "shell" <> "=" <> metavar "SHELL"
+--              <> "|" <> longOption "numeric"
+--                  <> Pretty.brackets ("=" <> metavar "COMPONENT")
+                )
+            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
         , "version" <+> helpOptions
         , "help version"
         , Pretty.braces (longOption "version" <> "|" <> shortOption 'V')
@@ -218,8 +253,14 @@ versionSubcommandHelp AppNames{usedName} = Pretty.vsep
                 "Print version information in format suitable for SHELL."
             ]
 
---      , optionDescription ["--numeric[=COMPONENT]"]
---          [ "Print version of COMPONENT in machine readable form."
+        , optionDescription ["--output=FILE", "-o FILE"]
+            [ Pretty.reflow "Write optput into", metavar "FILE"
+            , Pretty.reflow "instead of standard output."
+            ]
+
+--      , optionDescription ["--numeric=COMPONENT"]
+--          [ Pretty.reflow "Print version of ", metavar "COMPONENT"
+--          , Pretty.reflow " in machine readable form."
 --          ]
 
         , optionDescription ["--help", "-h"]
@@ -239,21 +280,30 @@ versionCompletion
     -> [String]
     -> String
     -> IO [String]
-versionCompletion _ _ wordsBeforePattern pat = pure versionCompletion'
+versionCompletion _ _ wordsBeforePattern pat
+  | Just "-o" <- lastMay wordsBeforePattern =
+        bashCompleter "file" ""
+
+  | Just "--output" <- lastMay wordsBeforePattern =
+        bashCompleter "file" ""
+
+  | null pat =
+        pure versionOptions
+
+  | "--shell=" `List.isPrefixOf` pat =
+        pure $ List.filter (pat `List.isPrefixOf`) shellOptions
+
+  | "--output=" `List.isPrefixOf` pat =
+        bashCompleter "file" "--output="
+
+  | Just '-' <- headMay pat =
+        pure case List.filter (pat `List.isPrefixOf`) versionOptions of
+            ["--shell="] -> shellOptions
+            opts -> opts
+
+  | otherwise =
+        pure []
   where
-    versionCompletion'
-      | null pat = versionOptions
-
-      | "--shell=" `List.isPrefixOf` pat =
-          List.filter (pat `List.isPrefixOf`) shellOptions
-
-      | Just '-' <- headMay pat =
-          case List.filter (pat `List.isPrefixOf`) versionOptions of
-              ["--shell="] -> shellOptions
-              opts -> opts
-
-      | otherwise = []
-
     hadHelp =
         ("--help" `List.elem` wordsBeforePattern)
         || ("-h" `List.elem` wordsBeforePattern)
@@ -267,7 +317,15 @@ versionCompletion _ _ wordsBeforePattern pat = pure versionCompletion'
     versionOptions =
         munless (hadDhall || hadShell || hadHelp)
             ["--help", "-h", "--dhall", "--shell="]
+        <> munless hadHelp ["-o", "--output="]
 
     shellOptions = ("--shell=" <>) <$> ["bash", "fish"{-, "zsh"-}]
 
     munless p x = if not p then x else mempty
+
+    -- TODO: If there is only one completion option and it is a directory we
+    -- need to append "/" to it, or it will break the completion flow.
+    bashCompleter :: String -> String -> IO [String]
+    bashCompleter action prefix = fmap (prefix <>)
+        <$> Options.runCompleter (Options.bashCompleter action)
+            (drop (length prefix) pat)
