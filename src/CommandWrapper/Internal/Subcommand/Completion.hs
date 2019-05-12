@@ -119,6 +119,7 @@ import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
     , helpOptions
     , longOption
+    , longOptionWithArgument
     , metavar
     , optionDescription
     , section
@@ -922,38 +923,37 @@ completionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 completionSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
         [ "completion"
-            <+> Pretty.brackets (longOption "index" <> "=" <> metavar "NUM")
-            <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
-            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "index" "NUM")
+            <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
             <+> Pretty.brackets
-                ( longOption "subcommand" <> "=" <> metavar "SUBCOMMAND"
-                )
+                (longOptionWithArgument "subcommand" "SUBCOMMAND")
             <+> value "--"
             <+> Pretty.brackets (metavar "WORD" <+> "...")
 
         , "completion"
             <+> longOption "script"
-            <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
-            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
             <+> Pretty.brackets
-                ( longOption "alias" <> "=" <> metavar "ALIAS"
+                ( longOptionWithArgument "alias" "ALIAS"
                 <+> "..."
                 )
 
         , "completion"
             <+> longOption "script"
-            <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
-            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
-            <+> longOption "subcommand" <> "=" <> metavar "SUBCOMMAND"
-            <+> longOption "alias" <> "=" <> metavar "ALIAS"
+            <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> longOptionWithArgument "subcommand" "SUBCOMMAND"
+            <+> longOptionWithArgument "alias" "ALIAS"
             <+> Pretty.brackets
-                ( longOption "alias" <> "=" <> metavar "ALIAS"
+                ( longOptionWithArgument "alias" "ALIAS"
                 <+> "..."
                 )
 
         , "completion"
             <+> longOption "query"
-            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
             <+> Pretty.brackets
                 ( longOption "subcommands"
                 <> "|" <> longOption "subcommand-aliases"
@@ -965,8 +965,8 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
 
         , "completion"
             <+> longOption "library"
-            <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
-            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "completion" <+> helpOptions
         , "help completion"
@@ -1073,7 +1073,7 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             [ Pretty.reflow "Query possible"
             , metavar "VERBOSITY"
             , Pretty.reflow "values. These can be set using global"
-            , longOption "verbosity" <> "=" <> metavar "VERBOSITY"
+            , longOptionWithArgument "verbosity" "VERBOSITY"
             , Pretty.reflow "option, or are passed down to subcommands via"
             , metavar "COMMAND_WRAPPER_VERBOSITY"
             , Pretty.reflow "environment variable."
@@ -1083,7 +1083,7 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             [ Pretty.reflow "Query possible"
             , metavar "WHEN"
             , Pretty.reflow "colour output values. These can be set using"
-            , "global", longOption "colo[u]r" <> "=" <> metavar "WHEN"
+            , "global", longOptionWithArgument "colo[u]r" "WHEN"
             , Pretty.reflow "option, or are passed down to subcommands via"
             , metavar "COMMAND_WRAPPER_COLOUR"
             , Pretty.reflow "environment variable."

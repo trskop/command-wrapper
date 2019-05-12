@@ -22,6 +22,7 @@ module CommandWrapper.Internal.Subcommand.Help
     , globalOptionsHelp
     , helpOptions
     , longOption
+    , longOptionWithArgument
     , metavar
     , optionDescription
     , optionalMetavar
@@ -421,6 +422,9 @@ shortOption o = Pretty.annotate dullGreen ("-" <> pretty o)
 
 longOption :: Text -> Pretty.Doc (Result Pretty.AnsiStyle)
 longOption o = Pretty.annotate dullGreen ("--" <> pretty o)
+
+longOptionWithArgument :: Text -> Text -> Pretty.Doc (Result Pretty.AnsiStyle)
+longOptionWithArgument o a = longOption o <> "=" <> metavar a
 
 metavar :: Text -> Pretty.Doc (Result Pretty.AnsiStyle)
 metavar = Pretty.annotate dullGreen . pretty

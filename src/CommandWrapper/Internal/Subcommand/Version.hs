@@ -73,6 +73,7 @@ import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
     , helpOptions
     , longOption
+    , longOptionWithArgument
     , metavar
     , optionDescription
     , section
@@ -233,9 +234,8 @@ versionSubcommandHelp AppNames{usedName} = Pretty.vsep
         [ "version"
             <+> Pretty.brackets
                 ( longOption "dhall"
-                <> "|" <> longOption "shell" <> "=" <> metavar "SHELL"
---              <> "|" <> longOption "numeric"
---                  <> Pretty.brackets ("=" <> metavar "COMPONENT")
+                <> "|" <> longOptionWithArgument "shell" "SHELL"
+--              <> "|" <> longOptionWithArgument "numeric" "COMPONENT"
                 )
             <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
         , "version" <+> helpOptions
