@@ -89,6 +89,8 @@ data DefaultModeOptions = DefaultModeOptions
 data Mode
     = DefaultMode DefaultModeOptions
     | CompletionInfo
+    | Completion Word [String]
+    | Help
 
 instance HaveCompletionInfo Mode where
     completionInfoMode = const CompletionInfo
@@ -102,9 +104,18 @@ main = do
 
         CompletionInfo ->
             printOptparseCompletionInfoExpression stdout
+
+        Completion _ _ ->
+            notYetImplemented params
+
+        Help ->
+            notYetImplemented params
   where
     description =
         "Generate subcommand skeleton for specific command-wrapper environment"
+
+    notYetImplemented params =
+        dieWith params stderr 125 "Bug: This is not yet implemented."
 
 mainAction :: Params -> DefaultModeOptions -> IO ()
 mainAction
@@ -248,3 +259,9 @@ startEditor _ = pure () -- TODO: Implement
 --     ```
 --     TOOLSET skel {--config|-c} {--toolset|SUBCOMMAND}
 --     ```
+--
+-- - Toolset skeleton, i.e. create:
+--
+--     - Toolset symbolic link to Command Wrapper.
+--     - Lib and config directories.
+--     - Initial configuration.

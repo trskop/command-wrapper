@@ -102,6 +102,8 @@ data Params config = Params
 data Mode
     = DefaultMode Strategy (Maybe Text) (Maybe Text)
     | CompletionInfo
+    | Completion Word [String]
+    | Help
 
 instance HaveCompletionInfo Mode where
   completionInfoMode = const CompletionInfo
@@ -115,8 +117,17 @@ main = do
 
         CompletionInfo ->
             printOptparseCompletionInfoExpression stdout
+
+        Completion _ _ ->
+            notYetImplemented params
+
+        Help ->
+            notYetImplemented params
   where
     description = "Change directory by selecting one from preselected list."
+
+    notYetImplemented Params{params} =
+        dieWith params stderr 125 "Bug: This is not yet implemented."
 
 mainAction :: Params FilePath -> Strategy -> Maybe Text -> Maybe Text -> IO ()
 mainAction params@Params{config = configFile} strategy query directory =
