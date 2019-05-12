@@ -12,17 +12,19 @@ support.
 # USAGE
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \[\--index=*NUM*]
-\[\--shell=*SHELL*] \[\--subcommand=*SUBCOMMAND*] \-- [*WORD* ...]
+\[\--shell=*SHELL*] \[\--output=*FILE*] \[\--subcommand=*SUBCOMMAND*] \-- [*WORD* ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
-\[\--alias=*ALIAS* ...]
+\[\--output=*FILE*] \[\--alias=*ALIAS* ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
-\--subcommand=*SUBCOMMAND* \--alias=*ALIAS* \[\--alias=*ALIAS* ...]
+\[\--output=*FILE*] \--subcommand=*SUBCOMMAND* \--alias=*ALIAS* \[\--alias=*ALIAS* ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library \[\--shell=*SHELL*]
+\[\--output=*FILE*]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[*QUERY\_OPTIONS*]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[\--output=*FILE*]
+\[*QUERY\_OPTIONS*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion {\--help|-h}
 
@@ -164,6 +166,14 @@ interface for querying Command Wrapper's command line interface (CLI).
     See `TOOLSET_COMMAND help` or `command-wrapper(1)` for more information on
     `--colo[u]r=WHEN` option, and `command-wrapper-subcommand-protocol(7)`
     regarding `COMMAND_WRAPPER_COLOUR` environment variable.
+
+
+# COMMON OPTIONS
+
+These options are shared by all the above usage modes.
+
+\--output=*FILE*, -o *FILE*
+:   Write output into *FILE* instead of standard output.
 
 
 # OTHER OPTIONS

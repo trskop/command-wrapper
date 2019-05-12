@@ -1,6 +1,8 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion
 -- Description: Implementation of internal subcommand that provides command
@@ -42,6 +44,7 @@ import qualified Data.List as List
     , nub
     , take
     , takeWhile
+    , unlines
     )
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
@@ -53,17 +56,27 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
-import System.IO (IO, putStrLn, stderr, stdout)
+import System.IO (IO, putStrLn, stderr, stdout, writeFile)
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
-import qualified Data.ByteString as ByteString (putStr)
+import qualified Data.ByteString as ByteString (putStr, writeFile)
 import Data.FileEmbed (embedFile)
+import Data.Generics.Product.Typed (typed)
 import Data.Monoid.Endo (mapEndo)
 import Data.Monoid.Endo.Fold (dualFoldEndo, foldEndo)
+import Data.Output
+    ( HasOutput(Output)
+    , OutputFile(OutputFile)
+    , OutputHandle(OutputHandle, OutputNotHandle)
+    , OutputStdoutOrFile
+    , pattern OutputStdoutOnly
+    , setOutput
+    )
+import qualified Data.Output as Output (HasOutput(output))
 import Data.Text (Text)
-import qualified Data.Text as Text (unpack)
-import qualified Data.Text.IO as Text (putStrLn)
+import qualified Data.Text as Text (unlines, unpack)
+import qualified Data.Text.IO as Text (putStrLn, writeFile)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -88,6 +101,7 @@ import qualified Options.Applicative as Options
     , short
     , strOption
     )
+import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, headMay)
 import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
@@ -131,7 +145,7 @@ import qualified CommandWrapper.Options.Shell as Options
 data Query = Query
     { what :: WhatToQuery
 
-    , pattern :: String
+    , patternToMatch :: String
     -- ^ TODO: This conflates pattern not present and empty pattern.  Maybe we
     -- should support multiple patterns, in which case this will nicely unite
     -- with 'CompletionOptions'.
@@ -141,6 +155,7 @@ data Query = Query
     --
     -- * @False@: don't be case sensitive when pattern matching.
     -- * @True@: be case sensitive when pattern matching.
+    , output :: OutputStdoutOrFile
     }
   deriving (Generic, Show)
     -- TODO: Extend this data type to be able to list various combinations of
@@ -150,6 +165,10 @@ data Query = Query
     -- - Internal subcommands
     -- - Aliases
     -- - Global options
+
+instance HasOutput Query where
+    type Output Query = OutputStdoutOrFile
+    output = typed
 
 data WhatToQuery
     = QuerySubcommands
@@ -162,8 +181,9 @@ data WhatToQuery
 defQueryOptions :: Query
 defQueryOptions = Query
     { what = QuerySubcommands
-    , pattern = ""
+    , patternToMatch = ""
     , caseSensitive = False
+    , output = OutputStdoutOnly
     }
 
 data CompletionMode a
@@ -174,25 +194,48 @@ data CompletionMode a
     | HelpMode a
   deriving stock (Functor, Generic, Show)
 
+updateOutput :: OutputStdoutOrFile -> Endo (CompletionMode b)
+updateOutput o = Endo \case
+    CompletionMode opts a -> CompletionMode (setOutput o opts) a
+    ScriptMode opts a -> ScriptMode (setOutput o opts) a
+    LibraryMode opts a -> LibraryMode (setOutput o opts) a
+    QueryMode opts a -> QueryMode (setOutput o opts) a
+    HelpMode a -> HelpMode a
+
 data CompletionOptions = CompletionOptions
     { words :: [String]
     , index :: Maybe Word
     , shell :: Options.Shell
     , subcommand :: Maybe String
+    , output :: OutputStdoutOrFile
     }
   deriving stock (Generic, Show)
+
+instance HasOutput CompletionOptions where
+    type Output CompletionOptions = OutputStdoutOrFile
+    output = typed
 
 data ScriptOptions = ScriptOptions
     { aliases :: [String]
     , shell :: Options.Shell
     , subcommand :: Maybe String
+    , output :: OutputStdoutOrFile
     }
   deriving stock (Generic, Show)
 
+instance HasOutput ScriptOptions where
+    type Output ScriptOptions = OutputStdoutOrFile
+    output = typed
+
 data LibraryOptions = LibraryOptions
     { shell :: Options.Shell
+    , output :: OutputStdoutOrFile
     }
   deriving stock (Generic, Show)
+
+instance HasOutput LibraryOptions where
+    type Output LibraryOptions = OutputStdoutOrFile
+    output = typed
 
 -- | We'll change this data type to:
 -- @
@@ -227,8 +270,8 @@ instance Options.HasShell ScriptOptions where
         (opts :: ScriptOptions){shell = f shell}
 
 instance Options.HasShell LibraryOptions where
-    updateShell = mapEndo \f LibraryOptions{shell} ->
-        LibraryOptions{shell = f shell}
+    updateShell = mapEndo \f opts@LibraryOptions{shell} ->
+        (opts :: LibraryOptions){shell = f shell}
 
 instance Options.HasShell (CompletionMode cfg) where
     updateShell f = Endo \case
@@ -273,26 +316,25 @@ defScriptOptions = ScriptOptions
     { shell = Options.Bash
     , subcommand = Nothing
     , aliases = []
+    , output = OutputStdoutOnly
     }
 
 defLibraryOptions :: LibraryOptions
 defLibraryOptions = LibraryOptions
     { shell = Options.Bash
+    , output = OutputStdoutOnly
     }
 
 completion :: AppNames -> [String] -> Global.Config -> IO ()
 completion appNames options config =
     runMain (parseOptions appNames config options) defaults \case
-        CompletionMode opts () ->
-            getCompletions appNames config opts >>= mapM_ putStrLn
+        CompletionMode opts@CompletionOptions{output} () ->
+            getCompletions appNames config opts >>= outputStringLines output
 
         -- TODO:
         --
         -- - Completion script should be configurable.
-        --
-        -- - By default it should be printed to `stdout`, but we should support
-        --   writting it into a file without needing to redirect `stdout`.
-        ScriptMode ScriptOptions{shell, aliases, subcommand} () -> do
+        ScriptMode ScriptOptions{shell, aliases, subcommand, output} () -> do
             let mkCompletionScriptExpr =
                     $(Dhall.TH.staticDhallExpression
                         "./dhall/completion.dhall"
@@ -305,7 +347,10 @@ completion appNames options config =
                     -- TODO: Figure out how to handle this better.
                     let Global.Config{colourOutput, verbosity} = config
                         colour = fromMaybe ColourOutput.Auto colourOutput
+
+                        subcommand' :: forall ann. Pretty.Doc ann
                         subcommand' = pretty (usedName <> " completion")
+
                     errorMsg subcommand' verbosity colour stderr
                         "Failed to generate completion script."
                     -- TODO: This is probably not the best exit code.
@@ -329,7 +374,7 @@ completion appNames options config =
                                     (fromString usedName :: Text)
                                     (fromString exePath :: Text)
                                     Nothing
-                             in Text.putStrLn case shell of
+                             in outputTextLines output $ pure case shell of
                                     Options.Bash -> bash
                                     Options.Fish -> fish
                                     Options.Zsh  -> zsh
@@ -341,21 +386,29 @@ completion appNames options config =
                                     (fromString usedName :: Text)
                                     (fromString exePath :: Text)
                                     (Just (fromString subcmd :: Text))
-                             in Text.putStrLn case shell of
+                             in outputTextLines output $ pure case shell of
                                     Options.Bash -> bash
                                     Options.Fish -> fish
                                     Options.Zsh  -> zsh
 
-        LibraryMode LibraryOptions{shell} () -> case shell of
+        LibraryMode LibraryOptions{shell, output} () -> case shell of
             -- TODO: We should consider piping the output to a pager or similar
             -- tool when the stdout is attached to a terminal.  For example
             -- `bat` would be a great choice if it is installed.
             Options.Bash ->
-                ByteString.putStr $(embedFile "bash/lib.sh")
+                let lib = $(embedFile "bash/lib.sh")
+                 in case output of
+                        OutputHandle _ ->
+                            ByteString.putStr lib
+
+                        OutputNotHandle (OutputFile fn) ->
+                            ByteString.writeFile fn lib
 
             _    -> do
                 let Global.Config{colourOutput, verbosity} = config
                     colour = fromMaybe ColourOutput.Auto colourOutput
+
+                    subcommand :: forall ann. Pretty.Doc ann
                     subcommand = pretty (usedName appNames <> " completion")
 
                 errorMsg subcommand verbosity colour stderr
@@ -364,48 +417,48 @@ completion appNames options config =
 
         QueryMode query@Query{..} () -> case what of
             QuerySubcommands
-              | null pattern ->
-                    getSubcommands appNames config >>= mapM_ putStrLn
+              | null patternToMatch ->
+                    getSubcommands appNames config >>= outputStringLines output
 
               | otherwise ->
                     findSubcommandsFuzzy config query
-                        >>= mapM_ (putStrLn . Fuzzy.original)
+                        >>= outputStringLines output . fmap Fuzzy.original
 
             QuerySubcommandAliases
-              | null pattern ->
-                    mapM_ putStrLn (getAliases config)
+              | null patternToMatch ->
+                    outputStringLines output (getAliases config)
 
               | otherwise ->
-                    mapM_ (putStrLn . Fuzzy.original)
+                    outputStringLines output $ fmap Fuzzy.original
                         (findSubcommandAliasesFuzzy config query)
 
             QueryVerbosityValues
-              | null pattern ->
-                    mapM_ putStrLn verbosityValues
+              | null patternToMatch ->
+                    outputStringLines output verbosityValues
 
               | otherwise ->
-                    mapM_ (putStrLn . Fuzzy.original)
-                        ( Fuzzy.filter pattern verbosityValues "" "" id
+                    outputStringLines output $ fmap Fuzzy.original
+                        ( Fuzzy.filter patternToMatch verbosityValues "" "" id
                             caseSensitive
                         )
 
             QueryColourValues
-              | null pattern ->
-                    mapM_ putStrLn colourValues
+              | null patternToMatch ->
+                    outputStringLines output colourValues
 
               | otherwise ->
-                    mapM_ (putStrLn . Fuzzy.original)
-                        ( Fuzzy.filter pattern colourValues "" "" id
+                    outputStringLines output $ fmap Fuzzy.original
+                        ( Fuzzy.filter patternToMatch colourValues "" "" id
                             caseSensitive
                         )
 
             QuerySupportedShells
-              | null pattern ->
-                    mapM_ putStrLn supportedShells
+              | null patternToMatch ->
+                    outputStringLines output supportedShells
 
               | otherwise ->
-                    mapM_ (putStrLn . Fuzzy.original)
-                        ( Fuzzy.filter pattern supportedShells "" "" id
+                    outputStringLines output $ fmap Fuzzy.original
+                        ( Fuzzy.filter patternToMatch supportedShells "" "" id
                             caseSensitive
                         )
 
@@ -422,6 +475,7 @@ completion appNames options config =
                 , index = Nothing
                 , shell = Options.Bash
                 , subcommand = Nothing
+                , output = OutputStdoutOnly
                 }
 
         in Mainplate.applySimpleDefaults (CompletionMode opts ())
@@ -430,16 +484,26 @@ completion appNames options config =
     getAliases = List.nub . fmap alias . Global.aliases
 
     findSubcommandsFuzzy :: Global.Config -> Query -> IO [Fuzzy String String]
-    findSubcommandsFuzzy cfg Query{pattern, caseSensitive} = do
+    findSubcommandsFuzzy cfg Query{patternToMatch, caseSensitive} = do
         cmds <- getSubcommands appNames cfg
-        pure (Fuzzy.filter pattern cmds "" "" id caseSensitive)
+        pure (Fuzzy.filter patternToMatch cmds "" "" id caseSensitive)
 
     findSubcommandAliasesFuzzy
         :: Global.Config
         -> Query
         -> [Fuzzy String String]
-    findSubcommandAliasesFuzzy cfg Query{pattern, caseSensitive} =
-        Fuzzy.filter pattern (getAliases cfg) "" "" id caseSensitive
+    findSubcommandAliasesFuzzy cfg Query{patternToMatch, caseSensitive} =
+        Fuzzy.filter patternToMatch (getAliases cfg) "" "" id caseSensitive
+
+    outputStringLines :: OutputStdoutOrFile -> [String] -> IO ()
+    outputStringLines = \case
+        OutputHandle _ -> mapM_ putStrLn
+        OutputNotHandle (OutputFile fn) -> writeFile fn . List.unlines
+
+    outputTextLines :: OutputStdoutOrFile -> [Text] -> IO ()
+    outputTextLines = \case
+        OutputHandle _ -> mapM_ Text.putStrLn
+        OutputNotHandle (OutputFile fn) -> Text.writeFile fn . Text.unlines
 
 -- TODO: Generate these values instead of hard-coding them.
 verbosityValues :: [String]
@@ -606,6 +670,7 @@ subcommandCompletion appNames config shell index words _invokedAs = \case
             let Global.Config{colourOutput, verbosity} = config
                 colour = fromMaybe ColourOutput.Auto colourOutput
 
+                subcommand' :: forall ann. Pretty.Doc ann
                 subcommand' = pretty
                     $ usedName appNames <> " completion"
 
@@ -638,7 +703,9 @@ completionCompletion
     :: AppNames
     -> Global.Config
     -> [String]
+    -- ^ Options and arguments before the one that we are completing.
     -> String
+    -- ^ Pattern (prefix), i.e. option\/argument that we are completing.
     -> IO [String]
 completionCompletion _appNames _config _wordsBeforePattern pat
     | null pat  = pure allOptions
@@ -649,6 +716,7 @@ completionCompletion _appNames _config _wordsBeforePattern pat
     -- - Be contextual, i.e. if there is `--query` then ignore options that do
     --   not apply.
     -- - Complete `SHELL` and `SUBCOMMAND` values.
+    -- - Complete files/directories for --output=
     allOptions = List.nub
         [ "--index=", "--shell=bash", "--shell=fish", "--subcommand=", "--"
 
@@ -659,6 +727,10 @@ completionCompletion _appNames _config _wordsBeforePattern pat
         , "--color-values"
 
         , "--script", "--shell=bash", "--alias="
+
+        , "--output=", "-o"
+
+        , "--help", "-h"
         ]
 
 -- | Lookup external and internal subcommands matching pattern (prefix).
@@ -694,6 +766,7 @@ parseOptions appNames config arguments = do
         [ dualFoldEndo
             <$> scriptFlag
             <*> optional Options.shellOption
+            <*> optional outputOption
             <*> asum
                 [ dualFoldEndo
                     <$> aliasOption
@@ -708,10 +781,11 @@ parseOptions appNames config arguments = do
         , dualFoldEndo
             <$> libraryFlag
             <*> optional Options.shellOption
-
+            <*> optional outputOption
 
         , dualFoldEndo
             <$> queryFlag
+            <*> optional outputOption
             <*> optional
                 ( updateQueryOptions
                     (   subcommandsFlag
@@ -725,11 +799,11 @@ parseOptions appNames config arguments = do
 
         , helpFlag
 
-        , updateCompletionOptions words
-            $ foldEndo
-                <$> optional indexOption
-                <*> optional Options.shellOption
-                <*> optional subcommandOption
+        , updateCompletionOptions words $ foldEndo
+            <$> optional indexOption
+            <*> optional Options.shellOption
+            <*> optional (setOutput <$> Options.outputOption)
+            <*> optional subcommandOption
         ]
   where
     switchTo = Endo . const
@@ -745,6 +819,7 @@ parseOptions appNames config arguments = do
                     , index = Nothing
                     , shell = Options.Bash
                     , subcommand = Nothing
+                    , output = OutputStdoutOnly
                     }
             in CompletionMode (f defOpts) ()
 
@@ -831,6 +906,9 @@ parseOptions appNames config arguments = do
                     mode ->
                         mode
 
+    outputOption :: Options.Parser (Endo (CompletionMode ()))
+    outputOption = updateOutput <$> Options.outputOption
+
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
         , Options.long "help"
@@ -844,12 +922,9 @@ completionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 completionSubcommandHelp AppNames{usedName} = Pretty.vsep
     [ usageSection usedName
         [ "completion"
-            <+> Pretty.brackets
-                ( longOption "index" <> "=" <> metavar "NUM"
-                )
-            <+> Pretty.brackets
-                ( longOption "shell" <> "=" <> metavar "SHELL"
-                )
+            <+> Pretty.brackets (longOption "index" <> "=" <> metavar "NUM")
+            <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
+            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
             <+> Pretty.brackets
                 ( longOption "subcommand" <> "=" <> metavar "SUBCOMMAND"
                 )
@@ -859,19 +934,26 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
         , "completion"
             <+> longOption "script"
             <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
+            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
             <+> Pretty.brackets
-                ( longOption "subcommand" <> "=" <> metavar "SUBCOMMAND"
-                    <+> longOption "alias" <> "=" <> metavar "ALIAS"
-                    <+> Pretty.brackets
-                        ( longOption "alias" <> "=" <> metavar "ALIAS"
-                        <+> "..."
-                        )
-                <> "|"
-                <> (longOption "alias" <> "=" <> metavar "ALIAS" <+> "...")
+                ( longOption "alias" <> "=" <> metavar "ALIAS"
+                <+> "..."
+                )
+
+        , "completion"
+            <+> longOption "script"
+            <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
+            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
+            <+> longOption "subcommand" <> "=" <> metavar "SUBCOMMAND"
+            <+> longOption "alias" <> "=" <> metavar "ALIAS"
+            <+> Pretty.brackets
+                ( longOption "alias" <> "=" <> metavar "ALIAS"
+                <+> "..."
                 )
 
         , "completion"
             <+> longOption "query"
+            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
             <+> Pretty.brackets
                 ( longOption "subcommands"
                 <> "|" <> longOption "subcommand-aliases"
@@ -884,6 +966,7 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
         , "completion"
             <+> longOption "library"
             <+> Pretty.brackets (longOption "shell" <> "=" <> metavar "SHELL")
+            <+> Pretty.brackets (longOption "output" <> "=" <> metavar "FILE")
 
         , "completion" <+> helpOptions
         , "help completion"
@@ -1021,6 +1104,13 @@ completionSubcommandHelp AppNames{usedName} = Pretty.vsep
             [ Pretty.reflow "Print library for", metavar "SHELL" <> "."
             , Pretty.reflow "Currently only supported value is"
             , value "bash" <> "."
+            ]
+        ]
+
+    , section "Common options:"
+        [ optionDescription ["--output=FILE", "-o FILE"]
+            [ Pretty.reflow "Write output into", metavar "FILE"
+            , Pretty.reflow "instead of standard output."
             ]
         ]
 
