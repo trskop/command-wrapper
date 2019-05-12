@@ -1,16 +1,23 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 15th April 2019
+% 12th May 2019
 
 
 # NAME
 
-`command-wrapper-config` -- **TODO**
+`command-wrapper-config` -- Initialise, query, and update Command Wrapper
+toolset configuration.
 
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \[*EXPRESSION*]
+**TODO: Currently not implemented! With the notable exception of `--help`**
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \[OPTIONS] \[\--] \[*EXPRESSION*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init \--toolset=*NAME*
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} \[\--global|-g|*SUBCOMMAND*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 
@@ -24,15 +31,40 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
 
 # OPTIONS
 
+**TODO: Currently not implemented! With the notable exception of `--help`**
+
+\--type, -t
+:   Print type of final Dhall expression instead of its value.
+
+\--plain, -p
+:   Plain output, final Dhall expression must result in one of:
+
+    * `Text`, `Natural`, or `Integer`
+    * `List Text`, `List Natural`, or `List Integer`
+    * `Optional Text`, or `Optional Natural`, or `Optional Integer`
+
+\--fail-when-none
+:   If result expression is an `Optional` value then it has to be `Some`.
+
+\--fail-when-empty
+:   If result expression is a `List` value then it has to be non-empty.
+
+\--edit
+:   Edit configuration file.  If *SUBCOMMAND* is specified then configuration
+    file for that *SUBCOMMAND* is modified instead, and if `--global` then
+    toolset configuration file is opened.
+
+\--init \--toolset=*NAME*
+:   Initialise a new toolset *NAME*.  It will create symbolic link to Command
+    Wrapper executable named *NAME*, initial configuration, and directory for
+    its subcommands.
+
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
 
 *EXPRESSION*
 :   Dhall expression that either queries or updates configuration, depending
     if the `--update` option is present.
-
-\--update, -u
-:   Update configuration instead of querying it.
 
 
 # EXIT STATUS
