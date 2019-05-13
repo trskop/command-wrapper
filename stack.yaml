@@ -11,7 +11,7 @@ packages:
     extra-dep: True
   - location:
       git: https://github.com/trskop/mainplate.git
-      commit: 34bc37da5bf31fd158aeda28d3297fc7e0062ce8
+      commit: 118acdb919e7bd7aaa07e7554a2d1eabde86acf5
     extra-dep: True
 
 extra-deps:
@@ -19,7 +19,7 @@ extra-deps:
   - fuzzy-0.1.0.0
   - verbosity-0.3.0.0
 
-  - dhall-1.22.0
+  - dhall-1.23.0
   - dhall-bash-1.0.20
   - dhall-json-1.2.8
   - dhall-text-1.0.17

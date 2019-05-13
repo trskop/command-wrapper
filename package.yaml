@@ -46,7 +46,7 @@ dependencies:
   - bytestring
   - case-insensitive
   - comonad
-  - dhall >=1.20
+  - dhall >=1.23  # Functioning support of Dhall Standard 7.0.0
   - dhall-bash
   - dhall-json
   - directory

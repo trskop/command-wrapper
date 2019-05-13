@@ -1,9 +1,9 @@
-let foldVerbosity =
-      https://raw.githubusercontent.com/trskop/verbosity/e6c643d9e39fac2f512d4c76594807ba14339b4a/dhall/Verbosity/fold
-      sha256:d75266e224b698e607681b50e9f49bc35f95b749493d239b6a8758a26ad7a3c9
+let Verbosity/fold =
+      https://raw.githubusercontent.com/trskop/verbosity/9dd482bfbd767c2a79e5bdec8e3d0bd4812b75c0/dhall/Verbosity/fold
+      sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
 
 in  { verbosity =
-        { fold = foldVerbosity
+        { fold = Verbosity/fold
         }
     , colourOutput = ./colour-output.dhall
     , mkDefaultConfig = ./default.dhall

@@ -46,7 +46,7 @@ let mkDefault =
 
           , description = None Text
           , extraHelpMessage = Some helpMessage
-          , verbosity = CommandWrapper.Verbosity.Normal {=}
+          , verbosity = CommandWrapper.Verbosity.Normal
           , colourOutput = None CommandWrapper.ColourOutput
           }
 

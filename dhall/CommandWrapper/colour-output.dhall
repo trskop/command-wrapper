@@ -1,2 +1,2 @@
-https://raw.githubusercontent.com/trskop/mainplate/master/dhall/colour-output.dhall
-sha256:d2f69f89b01fb28ace81e53d67e523e11dbb8e18e8ce2f25d4418b57f6a9892e
+https://raw.githubusercontent.com/trskop/mainplate/118acdb919e7bd7aaa07e7554a2d1eabde86acf5/dhall/colour-output.dhall
+sha256:f66e910d18c36af88dc30795d7e243e6c553f0ac623667cd5c524e8554a4bed9

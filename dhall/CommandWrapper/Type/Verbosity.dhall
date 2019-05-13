@@ -1,2 +1,2 @@
-https://raw.githubusercontent.com/trskop/verbosity/master/dhall/Verbosity/Type
-sha256:5d3150b2ea1edae4b5667a3d89be2f7084bca593f17d3e7779000f28a0a56546
+https://raw.githubusercontent.com/trskop/verbosity/9dd482bfbd767c2a79e5bdec8e3d0bd4812b75c0/dhall/Verbosity/Type
+sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6

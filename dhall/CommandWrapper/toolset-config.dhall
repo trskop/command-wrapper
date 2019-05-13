@@ -22,7 +22,7 @@ let mkToolsetConfig =
           , description = None Text
           , extraHelpMessage = None Text
 
-          , verbosity = CommandWrapper.Verbosity.Normal {=}
+          , verbosity = CommandWrapper.Verbosity.Normal
           , colourOutput = None CommandWrapper.ColourOutput
           }
 
