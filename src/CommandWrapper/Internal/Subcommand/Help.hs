@@ -39,7 +39,7 @@ import Control.Applicative ((<|>), optional)
 import Data.Foldable (traverse_)
 import Data.Functor ((<&>))
 import qualified Data.List.NonEmpty as NonEmpty (toList)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (fromMaybe, listToMaybe, maybe)
 import Data.Monoid (Endo(Endo))
 import Data.String (fromString)
 import GHC.Generics (Generic)
@@ -112,7 +112,7 @@ help internalHelp appNames@AppNames{usedName} options config =
     runMain (parseOptions appNames config options) defaults $ \case
         MainHelp _config -> do
             message defaultLayoutOptions verbosity colour stdout
-                (mainHelpMsg appNames)
+                (mainHelpMsg appNames config)
             traverse_ putStrLn extraHelpMessage
 
         SubcommandHelp cmd _config ->
@@ -241,9 +241,12 @@ parseOptions appNames config@Config{aliases} options =
         Options.internalSubcommandParse appNames config "help"
             Options.defaultPrefs (Options.info parser mempty) options
 
-mainHelpMsg :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
-mainHelpMsg AppNames{usedName} = Pretty.vsep
-    [ usageSection usedName
+mainHelpMsg :: AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle)
+mainHelpMsg AppNames{usedName} Config{description} = Pretty.vsep
+    [ Pretty.reflow (maybe defaultDescription fromString description)
+    , ""
+
+    , usageSection usedName
         [ subcommand <+> subcommandArguments
         , "help" <+> optionalMetavar "HELP_OPTIONS" <+> optionalSubcommand
         , "config" <+> optionalMetavar "CONFIG_OPTIONS" <+> optionalSubcommand
@@ -318,6 +321,8 @@ mainHelpMsg AppNames{usedName} = Pretty.vsep
         , Pretty.squotes (longOption altOpt) <> ",", "and"
         , Pretty.squotes (longOption "verbosity=silent") <> "."
         ]
+
+    defaultDescription = "Toolset of commands for working developer."
 
 helpSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpSubcommandHelp AppNames{usedName} = Pretty.vsep

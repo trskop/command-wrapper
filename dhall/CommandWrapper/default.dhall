@@ -44,6 +44,7 @@ let mkDefault =
               [ "${context.home}/.local/lib/command-wrapper"
               ] : List Text
 
+          , description = None Text
           , extraHelpMessage = Some helpMessage
           , verbosity = CommandWrapper.Verbosity.Normal {=}
           , colourOutput = None CommandWrapper.ColourOutput

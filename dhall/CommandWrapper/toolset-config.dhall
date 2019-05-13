@@ -19,6 +19,7 @@ let mkToolsetConfig =
               [ "${context.home}/.local/lib/${context.toolset}"
               ] : List Text
 
+          , description = None Text
           , extraHelpMessage = None Text
 
           , verbosity = CommandWrapper.Verbosity.Normal {=}
@@ -39,6 +40,7 @@ let addSubcommandAliases
       → λ(helpMessage : Text)
       → λ(defaults : CommandWrapper.DefaultConfig)
       → { aliases = defaults.aliases # aliases
+        , description = defaults.description
         , extraHelpMessage =
             Some "${mkPrefix defaults.extraHelpMessage}${helpMessage}"
         , searchPath = defaults.searchPath

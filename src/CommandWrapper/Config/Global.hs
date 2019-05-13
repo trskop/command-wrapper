@@ -44,6 +44,7 @@ import CommandWrapper.Options.ColourOutput (ColourOutput)
 data Config = Config
     { aliases :: [Alias]
     , searchPath :: [FilePath]
+    , description :: Maybe String
     , extraHelpMessage :: Maybe String
     , verbosity :: Verbosity
     , colourOutput :: Maybe ColourOutput
@@ -56,16 +57,17 @@ instance Semigroup Config where
         { aliases = ((<>) `on` aliases) c1 c2
         , searchPath = ((<>) `on` searchPath) c2 c1
             -- Reverse order, more specific search path comes first.
+        , description = getLast $ ((<>) `on` (Last . description)) c1 c2
         , extraHelpMessage = ((<>) `on` extraHelpMessage) c1 c2
         , verbosity
         , colourOutput = getLast $ ((<>) `on` (Last . colourOutput)) c1 c2
-
         }
 
 def :: Config
 def = Config
     { aliases = []
     , searchPath = []
+    , description = Nothing
     , extraHelpMessage = Nothing
     , verbosity = Verbosity.Normal
     , colourOutput = Nothing

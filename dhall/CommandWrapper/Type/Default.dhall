@@ -10,6 +10,7 @@ let DefaultConfig =
               , arguments : List Text
               }
       , searchPath : List Text
+      , description : Optional Text
       , extraHelpMessage : Optional Text
       , verbosity : Verbosity
       , colourOutput : Optional ColourOutput
