@@ -321,7 +321,11 @@ mainHelpMsg AppNames{usedName} = Pretty.vsep
 
 helpSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpSubcommandHelp AppNames{usedName} = Pretty.vsep
-    [ usageSection usedName
+    [ Pretty.reflow
+        "Display help message for Commnad Wrapper or one of its subcommands."
+    , ""
+
+    , usageSection usedName
         [ "help" <+> Pretty.brackets subcommand
         , "help" <+> longOption "man"
             <+> Pretty.brackets

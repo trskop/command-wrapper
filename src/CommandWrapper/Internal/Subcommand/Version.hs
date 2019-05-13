@@ -230,7 +230,10 @@ parseOptions appNames config options =
 
 versionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 versionSubcommandHelp AppNames{usedName} = Pretty.vsep
-    [ usageSection usedName
+    [ Pretty.reflow "Display version information."
+    , ""
+
+    , usageSection usedName
         [ "version"
             <+> Pretty.brackets
                 ( longOption "dhall"

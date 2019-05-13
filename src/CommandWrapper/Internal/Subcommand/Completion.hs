@@ -921,7 +921,10 @@ parseOptions appNames config arguments = do
 
 completionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 completionSubcommandHelp AppNames{usedName} = Pretty.vsep
-    [ usageSection usedName
+    [ Pretty.reflow "Command line completion, editor, and IDE support."
+    , ""
+
+    , usageSection usedName
         [ "completion"
             <+> Pretty.brackets (longOptionWithArgument "index" "NUM")
             <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")

@@ -213,7 +213,11 @@ parseOptions AppNames{usedName} globalConfig =
 
 configSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 configSubcommandHelp AppNames{usedName} = Pretty.vsep
-    [ usageSection usedName
+    [ Pretty.reflow
+        "Initialise, query, and update Command Wrapper toolset configuration."
+    , ""
+
+    , usageSection usedName
         [ "config" <+> optionalMetavar "EXPRESSION"
 
         , "config"
