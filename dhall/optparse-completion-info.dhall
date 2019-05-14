@@ -1,4 +1,4 @@
-  λ(_ : < Bash : {} | Fish : {} | Zsh : {} >)
+  λ(_ : < Bash | Fish | Zsh >)
 → λ(index : Natural)
 → λ(arguments : List Text)
 →   [ "--bash-completion-index=${Natural/show index}" ]
