@@ -73,7 +73,7 @@ Define new toolset:
 
 ```Bash
 toolset='INSERT_COMMAND_NAME_HERE'
-~/.local/lib/command-wrapper/command-wrapper --init --toolset="${toolset}"
+~/.local/lib/command-wrapper/command-wrapper config --init --toolset="${toolset}"
 mkdir ~/.config/"${toolset}" ~/.local/lib/"${toolset}"
 ```
 
