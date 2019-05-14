@@ -385,3 +385,8 @@ die Params{params} n m = liftIO (dieWith params stderr n m)
 --
 -- - Support directory specific commands.  For example we may want a specific
 --   shell for a certain directory.
+--
+-- - Support Neovim remote.  See `yx jmp` for more information.
+--
+-- - Make it aware of Vim/Neovim terminal, which can prevent us to create new
+--   terminal window.
