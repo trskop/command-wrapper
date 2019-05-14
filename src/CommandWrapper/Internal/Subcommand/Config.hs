@@ -19,42 +19,60 @@ module CommandWrapper.Internal.Subcommand.Config
     )
   where
 
-import Control.Applicative (pure)
+import Control.Applicative ((<*>), optional, pure)
 import Control.Monad ((>>=))
 import Data.Bool ((||), not, otherwise)
-import Data.Foldable (null)
-import Data.Function (($))
-import Data.Functor (Functor, (<$>))
+import Data.Foldable (asum, null)
+import Data.Function (($), (.), const)
+import Data.Functor (Functor, (<$>), (<&>))
 import Data.Int (Int)
 import qualified Data.List as List (elem, filter, intercalate, isPrefixOf)
 --import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
-import Data.Monoid (Endo, (<>), mempty)
+import Data.Monoid (Endo(Endo), (<>), mconcat, mempty)
 import Data.String (String, fromString)
 import GHC.Generics (Generic)
 import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (FilePath, IO, stderr, stdout)
 import Text.Show (Show, show)
 
+import Data.Monoid.Endo.Fold (dualFoldEndo)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
-import qualified Data.Text.Prettyprint.Doc as Pretty (Doc, squotes, vsep)
+import qualified Data.Text.Prettyprint.Doc as Pretty
+    ( Doc
+    , hsep
+    , line
+    , squotes
+    , vsep
+    )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Mainplate (applySimpleDefaults)
-import System.Directory (doesDirectoryExist, getHomeDirectory)
+import qualified Options.Applicative as Options
+    ( Parser
+    , defaultPrefs
+    , flag
+    , info
+    , long
+    , metavar
+    , short
+    , strOption
+    )
+import System.Directory (doesDirectoryExist, findExecutable, getHomeDirectory)
 import System.FilePath ((</>))
 import System.Posix.Files (createSymbolicLink)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
 import CommandWrapper.Internal.Subcommand.Help
-    ( globalOptionsHelp
+    ( command
+    , globalOptionsHelp
     , helpOptions
     , longOption
     , longOptionWithArgument
     , metavar
     , optionDescription
-    , optionalMetavar
+--  , optionalMetavar
     , section
     , toolsetCommand
     , usageSection
@@ -63,9 +81,13 @@ import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message
     ( Result
     , defaultLayoutOptions
-    , dieSubcommandNotYetImplemented
     , errorMsg
     , message
+    )
+import qualified CommandWrapper.Options.Optparse as Options
+    ( internalSubcommandParse
+--  , splitArguments
+--  , splitArguments'
     )
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     ( ColourOutput(Auto)
@@ -73,10 +95,10 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput
 
 
 data ConfigMode a
-    = InitConfig InitOptions a
+    = Init InitOptions a
     | ConfigLib a
     | Dhall a
-    | ConfigHelp a
+    | Help a
   deriving (Functor, Generic, Show)
 
 data InitOptions = InitOptions
@@ -85,10 +107,18 @@ data InitOptions = InitOptions
     }
   deriving (Generic, Show)
 
+defInitOptions :: String -> InitOptions
+defInitOptions toolsetName = InitOptions
+    { toolsetName
+    , binDir = Nothing
+    }
+
 config :: AppNames -> [String] -> Global.Config -> IO ()
-config appNames@AppNames{exePath, usedName} _options globalConfig =
-    runMain (parseOptions appNames globalConfig) defaults $ \case
-        InitConfig InitOptions{..} cfg -> do
+config appNames@AppNames{exePath, usedName} options globalConfig =
+    runMain (parseOptions appNames globalConfig options) defaults $ \case
+        Init InitOptions{..} cfg@Global.Config{colourOutput, verbosity} -> do
+            let colourOutput' = fromMaybe ColourOutput.Auto colourOutput
+
             destination <- case binDir of
                 Just dir -> do
                     checkDir dir >>= \case
@@ -110,7 +140,31 @@ config appNames@AppNames{exePath, usedName} _options globalConfig =
                                 )
                         Just dir -> pure dir
 
-            createSymbolicLink exePath (destination </> toolsetName)
+            -- TODO: Handle correctly case when:
+            -- usedName == toolsetName == takeFileName exePath == "command-wrapper"
+            -- make toolsetName a Maybe String?
+            findExecutable toolsetName >>= \case
+                Nothing -> do
+                    let dst = destination </> toolsetName
+                    createSymbolicLink exePath dst
+                    message defaultLayoutOptions verbosity colourOutput' stdout
+                        $ Pretty.hsep
+                            [ command (fromString dst) <> ":"
+                            , Pretty.reflow "Symbolic link to"
+                            , command (fromString exePath)
+                            , "created successfully."
+                            ]
+                        <> Pretty.line
+
+                Just _ ->
+                    message defaultLayoutOptions verbosity colourOutput' stdout
+                        $ Pretty.hsep
+                            [ command (fromString toolsetName) <> ":"
+                            , Pretty.reflow "Executable already exist,\
+                                \ skipping symlinking"
+                            , command (fromString exePath) <> "."
+                            ]
+                        <> Pretty.line
 
             -- TODO:
             --
@@ -122,10 +176,9 @@ config appNames@AppNames{exePath, usedName} _options globalConfig =
 
         ConfigLib _ -> pure ()
 
-        ConfigHelp cfg ->
-            let Global.Config{colourOutput, verbosity} = cfg
-                colour = fromMaybe ColourOutput.Auto colourOutput
-            in message defaultLayoutOptions verbosity colour stdout
+        Help Global.Config{colourOutput, verbosity} ->
+            message defaultLayoutOptions verbosity
+                (fromMaybe ColourOutput.Auto colourOutput) stdout
                 (configSubcommandHelp appNames)
 
         -- TODO:
@@ -166,7 +219,7 @@ config appNames@AppNames{exePath, usedName} _options globalConfig =
         --     ```
         Dhall _ -> pure ()
   where
-    defaults = Mainplate.applySimpleDefaults (ConfigHelp globalConfig)
+    defaults = Mainplate.applySimpleDefaults (Help globalConfig)
 
     dieWith :: Global.Config -> Int -> (forall ann. Pretty.Doc ann) -> IO a
     dieWith cfg exitCode msg = do
@@ -201,15 +254,50 @@ unlist = List.intercalate ", "
 parseOptions
     :: AppNames
     -> Global.Config
+    -> [String]
     -> IO (Endo (ConfigMode Global.Config))
-parseOptions AppNames{usedName} globalConfig =
-    let Global.Config
-            { Global.verbosity
-            , Global.colourOutput = possiblyColourOutput
-            } = globalConfig
+parseOptions appNames@AppNames{usedName} globalConfig options = execParser
+    [ dualFoldEndo
+        <$> initFlag
+        <*> optional toolsetOption
 
-    in dieSubcommandNotYetImplemented (fromString usedName) verbosity
-        (fromMaybe ColourOutput.Auto possiblyColourOutput) stderr "config"
+    , helpFlag
+
+    , pure mempty
+    ]
+  where
+    switchTo :: ConfigMode Global.Config -> Endo (ConfigMode Global.Config)
+    switchTo = Endo . const
+
+    switchToHelpMode, switchToInitMode :: Endo (ConfigMode Global.Config)
+
+    switchToHelpMode = switchTo (Help globalConfig)
+    switchToInitMode = switchTo (Init (defInitOptions usedName) globalConfig)
+
+    initFlag :: Options.Parser (Endo (ConfigMode Global.Config))
+    initFlag = Options.flag mempty switchToInitMode (Options.long "init")
+
+    toolsetOption :: Options.Parser (Endo (ConfigMode Global.Config))
+    toolsetOption =
+        Options.strOption (Options.long "toolset" <> Options.metavar "NAME")
+            <&> \toolsetName -> Endo \case
+                    Init opts cfg ->
+                        Init (opts :: InitOptions){toolsetName} cfg
+                    mode ->
+                        mode
+
+    helpFlag :: Options.Parser (Endo (ConfigMode Global.Config))
+    helpFlag = Options.flag mempty switchToHelpMode $ mconcat
+        [ Options.short 'h'
+        , Options.long "help"
+        ]
+
+    execParser
+        :: [Options.Parser (Endo (ConfigMode Global.Config))]
+        -> IO (Endo (ConfigMode Global.Config))
+    execParser parser =
+        Options.internalSubcommandParse appNames globalConfig "config"
+            Options.defaultPrefs (Options.info (asum parser) mempty) options
 
 configSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
 configSubcommandHelp AppNames{usedName} = Pretty.vsep
@@ -218,9 +306,9 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
     , ""
 
     , usageSection usedName
-        [ "config" <+> optionalMetavar "EXPRESSION"
+--      [ "config" <+> optionalMetavar "EXPRESSION"
 
-        , "config"
+        [ "config"
             <+> longOption "init"
             <+> longOptionWithArgument "toolset" "NAME"
 
@@ -229,9 +317,19 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
         ]
 
     , section "Options:"
-        [ optionDescription ["EPRESSION"]
-            [ "Dhall", metavar "EXPRESSION"
-            , Pretty.reflow "that will be applied to configuration."
+--      [ optionDescription ["EPRESSION"]
+--          [ "Dhall", metavar "EXPRESSION"
+--          , Pretty.reflow "that will be applied to configuration."
+--          ]
+
+        [ optionDescription ["--init"]
+            [ Pretty.reflow "Initialise configuration of a toolset."
+            ]
+
+        , optionDescription ["--toolset=NAME"]
+            [ Pretty.reflow "When specified allong with", longOption "init"
+            , Pretty.reflow "then configuration for toolset", metavar "NAME"
+            , Pretty.reflow "is initialised."
             ]
 
         , optionDescription ["--help", "-h"]
@@ -259,8 +357,12 @@ configCompletion _appNames _config wordsBeforePattern pat
         ("--help" `List.elem` wordsBeforePattern)
         || ("-h" `List.elem` wordsBeforePattern)
 
+    hadInit = "--init" `List.elem` wordsBeforePattern
+
     munless p x = if not p then x else mempty
 
-    possibleOptions = munless hadHelp ["--help", "-h"]
+    possibleOptions =
+        munless (hadHelp || hadInit) ["--help", "-h", "--init"]
+        <> munless (hadHelp || not hadInit) ["--toolset="]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions

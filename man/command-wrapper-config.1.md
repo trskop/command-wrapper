@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 12th May 2019
+% 14th May 2019
 
 
 # NAME
@@ -11,17 +11,17 @@ toolset configuration.
 
 # USAGE
 
-**TODO: Currently not implemented! With the notable exception of `--help`**
-
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \[OPTIONS] \[\--] \[*EXPRESSION*]
-
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init \--toolset=*NAME*
-
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} \[\--global|-g|*SUBCOMMAND*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
+
+**TODO: Following usages aren't currently implemented!**
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \[OPTIONS] \[\--] \[*EXPRESSION*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} \[\--global|-g|*SUBCOMMAND*]
 
 
 # DESCRIPTION
@@ -31,7 +31,18 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
 
 # OPTIONS
 
-**TODO: Currently not implemented! With the notable exception of `--help`**
+\--init
+:   Initialise configuration of a toolset.  This includes symlinking command
+    wrapper under the toolset's name.  See also `--toolset=`*NAME* option.
+
+ \--toolset=*NAME*
+:   When specified allong with `--init` then configuration for toolset *NAME*
+    is initialised.
+
+\--help, -h
+:   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
+
+**TODO: Following options aren't currently implemented!**
 
 \--type, -t
 :   Print type of final Dhall expression instead of its value.
@@ -53,14 +64,6 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
 :   Edit configuration file.  If *SUBCOMMAND* is specified then configuration
     file for that *SUBCOMMAND* is modified instead, and if `--global` then
     toolset configuration file is opened.
-
-\--init \--toolset=*NAME*
-:   Initialise a new toolset *NAME*.  It will create symbolic link to Command
-    Wrapper executable named *NAME*, initial configuration, and directory for
-    its subcommands.
-
-\--help, -h
-:   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
 
 *EXPRESSION*
 :   Dhall expression that either queries or updates configuration, depending

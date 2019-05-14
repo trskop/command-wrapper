@@ -73,9 +73,19 @@ Define new toolset:
 
 ```Bash
 toolset='INSERT_COMMAND_NAME_HERE'
-ln -s ../.local/lib/command-wrapper/command-wrapper ~/bin/"${toolset}"
+~/.local/lib/command-wrapper/command-wrapper --init --toolset="${toolset}"
 mkdir ~/.config/"${toolset}" ~/.local/lib/"${toolset}"
 ```
+
+
+## How To Choose a Toolset Name
+
+Good toolset name should be:
+
+* Short
+* Memorable (to you)
+* Easy to type on your keyboard layout
+
 
 
 [Haskell.org]:
