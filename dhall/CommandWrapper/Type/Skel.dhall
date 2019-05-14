@@ -1,4 +1,4 @@
-let SkelLanguage : Type = <Bash : {} | Dhall : {} | Haskell : {}>
+let SkelLanguage : Type = <Bash | Dhall | Haskell >
 
 let SkelTemplate : Type =
       { targetFile : Text
