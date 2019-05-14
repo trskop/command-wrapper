@@ -178,7 +178,7 @@ generateSkeleton params createParents Template{..} = do
 
 parseOptions :: Turtle.Parser Mode
 parseOptions = asum
-    [ completionInfoFlag <*> pure CompletionInfo
+    [ completionInfoFlag <*> pure Help
     , go
         <$> ( Turtle.arg parseSubcommandName "SUBCOMMAND"
                 "Name of the new subcommand"
