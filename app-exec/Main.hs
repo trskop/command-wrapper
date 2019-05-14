@@ -313,15 +313,15 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 
 -- TODO:
 --
--- *  Allow alternatives, i.e. have a list of commands for one `NAME` and the
+-- -  Allow alternatives, i.e. have a list of commands for one `NAME` and the
 --    first one that is available is used.  (Just an idea.)
 --
--- *  Evaluate command with and without extra arguments.  If the result is the
+-- -  Evaluate command with and without extra arguments.  If the result is the
 --    same then print warning to the user.  Dual case would be interesting as
 --    well.  Having the ability to tell when the command requires additional
 --    arguments, but there is no obvious simple solution.
 --
--- *  Ability to take Dhall function of the following type:
+-- -  Ability to take Dhall function of the following type:
 --
 --    ```
 --    Verbosity -> ColourOutput -> [Text] -> Command
@@ -336,7 +336,7 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 --    Since Dhall supports imports, the above will work for files and URLs as
 --    well.
 --
--- *  Support desktop notifications:
+-- -  Support desktop notifications:
 --
 --    ```
 --    { commands =
@@ -360,5 +360,19 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 --    }
 --    ```
 --
--- * Nicer `--tree` representation that uses colours to make the distinction
---   between executable commands and purely organisation nodes more obvious.
+-- -  Nicer `--tree` representation that uses colours to make the distinction
+--    between executable commands and purely organisation nodes more obvious.
+--
+-- -  Commands should have description that is printed as part of help/list:
+--
+--    ```
+--    { commands =
+--        [ ...
+--        , { name = "build"
+--          , description = Some "Build the project"
+--          , command = ./build-command.dhall
+--          }
+--        , ...
+--        ]
+--    }
+--    ```
