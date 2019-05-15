@@ -69,12 +69,18 @@ git clone https://github.com/trskop/command-wrapper.git ~/.local/src/github.com/
 mkdir ~/.config/command-wrapper
 ```
 
-Define new toolset:
+Define new toolset.  In this example we'll name it `yx`, you can name it
+however you like:
 
 ```Bash
-toolset='INSERT_COMMAND_NAME_HERE'
-~/.local/lib/command-wrapper/command-wrapper config --init --toolset="${toolset}"
-mkdir ~/.config/"${toolset}" ~/.local/lib/"${toolset}"
+~/.local/lib/command-wrapper/command-wrapper config --init --toolset=yx
+mkdir ~/.config/yx ~/.local/lib/yx
+```
+
+Include in `~/.bashrc`:
+
+```
+source <(yx completion --script --shell=bash)
 ```
 
 
