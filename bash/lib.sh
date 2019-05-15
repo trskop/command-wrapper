@@ -139,7 +139,7 @@ function msgf() {
 
     if (( typeNum <= verbosity )); then
         local -r cmd="${COMMAND_WRAPPER_NAME:+"${COMMAND_WRAPPER_NAME} "}${COMMAND_WRAPPER_SUBCOMMAND:-${0##*/}}"
-        local -r fullFormat="${cmd}: ${messageType}${messageType:+ :}${format}"
+        local -r fullFormat="${cmd}: ${messageType}${messageType:+: }${format}"
 
         # shellcheck disable=SC2059
         printf "${colour}${fullFormat}${colour:+${resetColour}}\n" "$@"
