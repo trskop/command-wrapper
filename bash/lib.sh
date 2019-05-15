@@ -85,10 +85,12 @@ function useColours() {
 #
 # Arguments:
 #
-#   VERBOSITY is one of 'silent', 'normal', 'verbose', and 'annoying'.  Value
+#   VERBOSITY
+#     Can be one of 'silent', 'normal', 'verbose', and 'annoying'.  Value
 #     of ${COMMAND_WRAPPER_VERBOSITY} should be used when available.
 #
-#   MESSAGE_TYPE is one of 'info', 'notice', 'warning', and 'error'.
+#   MESSAGE_TYPE
+#     Can be one of 'info', 'notice', 'output', 'warning', and 'error'.
 function msgf() {
     local -r verbosity="$(verbosityToNum "$1")"; shift
     local -r type="$1"; shift
@@ -115,6 +117,10 @@ function msgf() {
             local -r messageType='Notice'
             local -r -i typeNum=2
             ;;
+        'output')
+            local -r messageType=''
+            local -r -i typeNum=1
+            ;;
         'warning')
             if useColours_; then
                 local -r colour='\033[0;33m'
@@ -133,7 +139,7 @@ function msgf() {
 
     if (( typeNum <= verbosity )); then
         local -r cmd="${COMMAND_WRAPPER_NAME:+"${COMMAND_WRAPPER_NAME} "}${COMMAND_WRAPPER_SUBCOMMAND:-${0##*/}}"
-        local -r fullFormat="${cmd}: ${messageType}: ${format}"
+        local -r fullFormat="${cmd}: ${messageType}${messageType:+ :}${format}"
 
         # shellcheck disable=SC2059
         printf "${colour}${fullFormat}${colour:+${resetColour}}\n" "$@"
@@ -156,6 +162,15 @@ function info() {
 # Message is by default printed to stdout.
 function notice() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'notice' "$@"
+}
+
+# Usage:
+#
+#   out FORMAT [ARGUMENTS]
+#
+# Message is by default printed to stdout.
+function out() {
+    msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'output' "$@"
 }
 
 # Usage:
