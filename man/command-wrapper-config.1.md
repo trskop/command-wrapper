@@ -11,7 +11,7 @@ toolset configuration.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init \--toolset=*NAME*
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init \[\--toolset=*NAME*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 
@@ -37,7 +37,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} \[\--global|-g|*SUBCOMMA
 
  \--toolset=*NAME*
 :   When specified allong with `--init` then configuration for toolset *NAME*
-    is initialised.
+    is initialised.  Alternatively `COMMAND_WRAPPER_INVOKE_AS=`*NAME* can be
+    used.  See `command-wrapper(1) section *ENVIRONMENT VARIABLES* for details.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.

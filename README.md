@@ -30,7 +30,9 @@ First subcommand that was introduced was `help`, obviously, but the one right
 after that was `skel`.  Which allows you to create a new subcommand skeleton,
 see `command-wrapper-skel(1)` manual page for more details.  Subcommand can be
 written in any language user chooses.  It just needs to be an executable, and
-follow Command Wrapper's [*SUBCOMMAND PROTOCOL*](#subcommand-protocol).
+follow Command Wrapper's Subcommand Protocol, which is described in its own
+manual page [`command-wrapper-subcommand-protocol(7)`
+](man/command-wrapper-subcommand-protocol.7.md).
 
 
 ## Documentation
@@ -53,11 +55,6 @@ TOOLSET_COMMAND [GLOBAL_OPTIONS] {--help|-h}
 More can be found in [`command-wrapper(1)`](man/command-wrapper.1.md) manual
 page, including list of external subcommands installed along with it.
 
-### Subcommand Protocol
-
-Is documented in [`command-wrapper-subcommand-protocol(7)`
-](man/command-wrapper-subcommand-protocol.7.md) a separate manual page.
-
 
 ## Install
 
@@ -66,7 +63,7 @@ Install `command-wrapper`:
 ```Bash
 git clone https://github.com/trskop/command-wrapper.git ~/.local/src/github.com/trskop/command-wrapper
 ~/.local/src/github.com/trskop/command-wrapper/install
-mkdir ~/.config/command-wrapper
+~/.local/lib/command-wrapper/command-wrapper config --init
 ```
 
 Define new toolset.  In this example we'll name it `yx`, you can name it
@@ -74,7 +71,6 @@ however you like:
 
 ```Bash
 ~/.local/lib/command-wrapper/command-wrapper config --init --toolset=yx
-mkdir ~/.config/yx ~/.local/lib/yx
 ```
 
 Include in `~/.bashrc`:

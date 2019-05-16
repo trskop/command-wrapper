@@ -20,9 +20,11 @@ module CommandWrapper.Internal.Subcommand.Config
   where
 
 import Control.Applicative ((<*>), optional, pure)
-import Control.Monad ((>>=))
-import Data.Bool ((||), not, otherwise)
-import Data.Foldable (asum, null)
+import Control.Monad ((>>=), unless)
+import Data.Bool (Bool(True), (||), not, otherwise)
+import Data.Either (Either(Left, Right))
+import Data.Eq ((==))
+import Data.Foldable (asum, for_, null)
 import Data.Function (($), (.), const)
 import Data.Functor (Functor, (<$>), (<&>))
 import Data.Int (Int)
@@ -58,7 +60,15 @@ import qualified Options.Applicative as Options
     , short
     , strOption
     )
-import System.Directory (doesDirectoryExist, findExecutable, getHomeDirectory)
+import System.Directory
+    ( XdgDirectory(XdgConfig)
+    , createDirectoryIfMissing
+    , doesDirectoryExist
+    , findExecutable
+    , getHomeDirectory
+    , getHomeDirectory
+    , getXdgDirectory
+    )
 import System.FilePath ((</>))
 import System.Posix.Files (createSymbolicLink)
 
@@ -119,6 +129,11 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
         Init InitOptions{..} cfg@Global.Config{colourOutput, verbosity} -> do
             let colourOutput' = fromMaybe ColourOutput.Auto colourOutput
 
+                messageLn fragments =
+                    message defaultLayoutOptions verbosity colourOutput' stdout
+                        (Pretty.hsep fragments <> Pretty.line)
+
+
             destination <- case binDir of
                 Just dir -> do
                     checkDir dir >>= \case
@@ -140,31 +155,42 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
                                 )
                         Just dir -> pure dir
 
-            -- TODO: Handle correctly case when:
-            -- usedName == toolsetName == takeFileName exePath == "command-wrapper"
-            -- make toolsetName a Maybe String?
-            findExecutable toolsetName >>= \case
-                Nothing -> do
-                    let dst = destination </> toolsetName
-                    createSymbolicLink exePath dst
-                    message defaultLayoutOptions verbosity colourOutput' stdout
-                        $ Pretty.hsep
+            unless (usedName == "command-wrapper")
+                $ findExecutable toolsetName >>= \case
+                    Nothing -> do
+                        let dst = destination </> toolsetName
+                        createSymbolicLink exePath dst
+                        messageLn
                             [ command (fromString dst) <> ":"
                             , Pretty.reflow "Symbolic link to"
                             , command (fromString exePath)
                             , "created successfully."
                             ]
-                        <> Pretty.line
 
-                Just _ ->
-                    message defaultLayoutOptions verbosity colourOutput' stdout
-                        $ Pretty.hsep
+                    Just _ ->
+                        messageLn
                             [ command (fromString toolsetName) <> ":"
                             , Pretty.reflow "Executable already exist,\
                                 \ skipping symlinking"
                             , command (fromString exePath) <> "."
                             ]
-                        <> Pretty.line
+
+            configDir <- getXdgDirectory XdgConfig toolsetName
+            libDir <- (</> (".local/lib" </> toolsetName)) <$> getHomeDirectory
+            dirs <- dirsExistence [configDir, libDir]
+            for_ dirs \case
+                Left dir -> do
+                    createDirectoryIfMissing True dir
+                    messageLn
+                        [ command (fromString dir) <> ":"
+                        , Pretty.reflow "Directory created successfully."
+                        ]
+                Right dir ->
+                    messageLn
+                        [ command (fromString dir) <> ":"
+                        , Pretty.reflow "Directory already exists, skipping\
+                            \ its creation."
+                        ]
 
             -- TODO:
             --
@@ -247,6 +273,13 @@ checkDirs = \case
         checkDir dir >>= \case
             r@(Just _) -> pure r
             Nothing -> checkDirs dirs
+
+dirsExistence :: [FilePath] -> IO [Either FilePath FilePath]
+dirsExistence = \case
+    [] -> pure []
+    dir : dirs -> do
+        doesExist <- doesDirectoryExist dir
+        ((if doesExist then Right else Left) dir :) <$> dirsExistence dirs
 
 unlist :: [String] -> String
 unlist = List.intercalate ", "
