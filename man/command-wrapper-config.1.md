@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 14th May 2019
+% 18th May 2019
 
 
 # NAME
@@ -10,6 +10,10 @@ toolset configuration.
 
 
 # USAGE
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init \[\--toolset=*NAME*]
 
@@ -26,10 +30,17 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} \[\--global|-g|*SUBCOMMA
 
 # DESCRIPTION
 
-**TODO**
+Command Wrapper's configuration swiss army knife.  On of its many purposes is
+to provide Dhall functionality without the need to install external tools.
 
 
 # OPTIONS
+
+\--dhall-diff
+:   Render the difference between the normal form of two Dhall expressions.
+
+\--dhall-repl
+:   Interpret Dhall expressions in a REPL.
 
 \--init
 :   Initialise configuration of a toolset.  This includes symlinking command
@@ -42,6 +53,9 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} \[\--global|-g|*SUBCOMMA
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
+
+*EXPRESSION*
+:   Dhall expression.
 
 **TODO: Following options aren't currently implemented!**
 

@@ -31,6 +31,7 @@ import qualified Data.List as List (elem, filter, intercalate, isPrefixOf)
 --import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Data.Monoid (Endo(Endo), (<>), mconcat, mempty)
+import Data.Ord ((>))
 import Data.String (String, fromString)
 import GHC.Generics (Generic)
 import System.Exit (ExitCode(ExitFailure), exitWith)
@@ -38,9 +39,11 @@ import System.IO (FilePath, IO, stderr, stdout)
 import Text.Show (Show, show)
 
 import Data.Monoid.Endo.Fold (dualFoldEndo)
+import Data.Text (Text)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
+--  , brackets
     , hsep
     , line
     , squotes
@@ -48,6 +51,7 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 import qualified Mainplate (applySimpleDefaults)
 import qualified Options.Applicative as Options
     ( Parser
@@ -57,6 +61,7 @@ import qualified Options.Applicative as Options
     , long
     , metavar
     , short
+    , strArgument
     , strOption
     )
 import System.Directory
@@ -100,13 +105,27 @@ import qualified CommandWrapper.Options.Optparse as Options
     )
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     ( ColourOutput(Auto)
+    , shouldUseColours
+    )
+
+import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
+    ( Diff(..)
+    , Options(..)
+    , Repl(..)
+    , command
+    , defDiff
+    , defRepl
+    , diff
+    , repl
     )
 
 
 data ConfigMode a
     = Init InitOptions a
     | ConfigLib a
-    | Dhall a
+    | Dhall Dhall.Options a
+    | DhallDiff Dhall.Diff a
+    | DhallRepl Dhall.Repl a
     | Help a
   deriving (Functor, Generic, Show)
 
@@ -124,15 +143,8 @@ defInitOptions toolsetName = InitOptions
 
 config :: AppNames -> [String] -> Global.Config -> IO ()
 config appNames@AppNames{exePath, usedName} options globalConfig =
-    runMain (parseOptions appNames globalConfig options) defaults $ \case
-        Init InitOptions{..} cfg@Global.Config{colourOutput, verbosity} -> do
-            let colourOutput' = fromMaybe ColourOutput.Auto colourOutput
-
-                messageLn fragments =
-                    message defaultLayoutOptions verbosity colourOutput' stdout
-                        (Pretty.hsep fragments <> Pretty.line)
-
-
+    runMain (parseOptions appNames globalConfig options) defaults \case
+        Init InitOptions{..} cfg -> do
             destination <- case binDir of
                 Just dir -> do
                     checkDir dir >>= \case
@@ -159,7 +171,7 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
                     Nothing -> do
                         let dst = destination </> toolsetName
                         createSymbolicLink exePath dst
-                        messageLn
+                        messageLn cfg
                             [ command (fromString dst) <> ":"
                             , Pretty.reflow "Symbolic link to"
                             , command (fromString exePath)
@@ -167,7 +179,7 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
                             ]
 
                     Just _ ->
-                        messageLn
+                        messageLn cfg
                             [ command (fromString toolsetName) <> ":"
                             , Pretty.reflow "Executable already exist,\
                                 \ skipping symlinking"
@@ -180,12 +192,12 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
             for_ dirs \case
                 Left dir -> do
                     createDirectoryIfMissing True dir
-                    messageLn
+                    messageLn cfg
                         [ command (fromString dir) <> ":"
                         , Pretty.reflow "Directory created successfully."
                         ]
                 Right dir ->
-                    messageLn
+                    messageLn cfg
                         [ command (fromString dir) <> ":"
                         , Pretty.reflow "Directory already exists, skipping\
                             \ its creation."
@@ -242,7 +254,17 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
         --     export FOO=foo
         --     export FOO=bar
         --     ```
-        Dhall _ -> pure ()
+        Dhall opts _cfg ->
+            Dhall.command opts
+
+        DhallDiff diffOpts Global.Config{colourOutput} -> do
+            plain <- not <$> ColourOutput.shouldUseColours stdout
+                (fromMaybe ColourOutput.Auto colourOutput)
+
+            Dhall.diff diffOpts{Dhall.plain}
+
+        DhallRepl replOpts Global.Config{verbosity} ->
+            Dhall.repl replOpts{Dhall.explain = verbosity > Verbosity.Normal}
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
 
@@ -256,6 +278,12 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
 
         errorMsg subcommand verbosity colour stderr msg
         exitWith (ExitFailure exitCode)
+
+    messageLn Global.Config{colourOutput, verbosity} fragments =
+        let colourOutput' = fromMaybe ColourOutput.Auto colourOutput
+
+         in message defaultLayoutOptions verbosity colourOutput' stdout
+                (Pretty.hsep fragments <> Pretty.line)
 
 checkDir :: FilePath -> IO (Maybe FilePath)
 checkDir dir = do
@@ -293,6 +321,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <$> initFlag
         <*> optional toolsetOption
 
+    , dhallReplFlag
+
+    , dhallDiffFlag
+        <*> Options.strArgument mempty
+        <*> Options.strArgument mempty
+
     , helpFlag
 
     , pure mempty
@@ -301,13 +335,34 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchTo :: ConfigMode Global.Config -> Endo (ConfigMode Global.Config)
     switchTo = Endo . const
 
-    switchToHelpMode, switchToInitMode :: Endo (ConfigMode Global.Config)
+    switchToHelpMode, switchToInitMode, switchToDhallReplMode :: Endo (ConfigMode Global.Config)
 
     switchToHelpMode = switchTo (Help globalConfig)
     switchToInitMode = switchTo (Init (defInitOptions usedName) globalConfig)
+    switchToDhallReplMode = switchTo (DhallRepl Dhall.defRepl globalConfig)
+
+    switchToDhallMode opts = switchTo (Dhall opts globalConfig)
+
+    switchToDhallDiffMode :: Text -> Text -> Endo (ConfigMode Global.Config)
+    switchToDhallDiffMode expr1 expr2 =
+        switchTo (DhallDiff (Dhall.defDiff expr1 expr2) globalConfig)
 
     initFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
+
+    dhallFlag
+        :: Options.Parser (Dhall.Options -> Endo (ConfigMode Global.Config))
+    dhallFlag =
+        Options.flag mempty switchToDhallMode (Options.long "dhall")
+
+    dhallDiffFlag
+        :: Options.Parser (Text -> Text -> Endo (ConfigMode Global.Config))
+    dhallDiffFlag =
+        Options.flag mempty switchToDhallDiffMode (Options.long "dhall-diff")
+
+    dhallReplFlag :: Options.Parser (Endo (ConfigMode Global.Config))
+    dhallReplFlag =
+        Options.flag mempty switchToDhallReplMode (Options.long "dhall-repl")
 
     toolsetOption :: Options.Parser (Endo (ConfigMode Global.Config))
     toolsetOption =
@@ -339,8 +394,42 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 
     , usageSection usedName
 --      [ "config" <+> optionalMetavar "EXPRESSION"
+--
+        [ {-"config"
+            <+> longOption "dhall"
+            <+> Pretty.brackets
+                    ( longOption "resolve"
+                    <> "|" <> longOption "type"
+                    <> "|" <> longOption "normalize"
+                    <> "|" <> longOption "hash"
+                    <> "|" <> longOption "lint"
+                    <> "|" <> longOption "format"
+                    <> "|" <> longOption "freeze"
+                    )
+            <+> Pretty.brackets
+                    -- cbor, cbor-json, json, text,
+                    ( longOptionWithArgument "input-encoding" "INPUT_ENCODING"
+                    <> "|" <> longOptionWithArgument "output-encoding" "OUTPUT_ENCODING"
 
-        [ "config"
+                    <> "|" <> longOptionWithArgument "input" "FILE"
+                    <> "|" <> longOptionWithArgument "output" "FILE"
+                    )
+
+        ,-} "config"
+            <+> longOption "dhall-diff"
+            <+> metavar "EXPRESSION"
+            <+> metavar "EXPRESSION"
+
+        , "config"
+            <+> longOption "dhall-repl"
+--          <+> Pretty.brackets
+--                  -- TODO: Consider having COMMAND_WRAPPER_DHALL_REPL_HISTORY
+--                  -- environment variable as well.
+--                  ( longOptionWithArgument "history-file" "FILE"
+--                  <> "|" <> longOption "no-history-file"
+--                  )
+
+        , "config"
             <+> longOption "init"
             <+> longOptionWithArgument "toolset" "NAME"
 
@@ -349,12 +438,24 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
         ]
 
     , section "Options:"
---      [ optionDescription ["EPRESSION"]
---          [ "Dhall", metavar "EXPRESSION"
---          , Pretty.reflow "that will be applied to configuration."
+        [ optionDescription ["--dhall-repl"]
+            [ Pretty.reflow "Interpret Dhall expressions in a REPL."
+            ]
+
+--      , optionDescription ["--history-file=FILE"]
+--          [ Pretty.reflow "TODO"
 --          ]
 
-        [ optionDescription ["--init"]
+--      , optionDescription ["--no-history-file"]
+--          [ Pretty.reflow "TODO"
+--          ]
+
+        , optionDescription ["--dhall-diff"]
+            [ Pretty.reflow "Render the difference between the normal form of\
+                \ two Dhall expressions."
+            ]
+
+        , optionDescription ["--init"]
             [ Pretty.reflow "Initialise configuration of a toolset."
             ]
 
@@ -367,6 +468,11 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
         , optionDescription ["--help", "-h"]
             [ Pretty.reflow "Print this help and exit. Same as"
             , Pretty.squotes (toolsetCommand usedName "help config") <> "."
+            ]
+
+        , optionDescription ["EPRESSION"]
+            [ "Dhall", metavar "EXPRESSION"
+            , Pretty.reflow "that will be applied to configuration."
             ]
 
         , globalOptionsHelp usedName
@@ -391,10 +497,20 @@ configCompletion _appNames _config wordsBeforePattern pat
 
     hadInit = "--init" `List.elem` wordsBeforePattern
 
+    hadDhall = "--dhall" `List.elem` wordsBeforePattern
+    hadDhallRepl = "--dhall-repl" `List.elem` wordsBeforePattern
+    hadDhallDiff = "--dhall-diff" `List.elem` wordsBeforePattern
+
+    hadSomeDhall = hadDhall || hadDhallDiff || hadDhallRepl
+
     munless p x = if not p then x else mempty
 
     possibleOptions =
-        munless (hadHelp || hadInit) ["--help", "-h", "--init"]
-        <> munless (hadHelp || not hadInit) ["--toolset="]
+        munless (hadHelp || hadInit || hadSomeDhall)
+            [ "--help", "-h"
+            , "--init"
+            , "--dhall", "--dhall-diff", "--dhall-repl"
+            ]
+        <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions

@@ -47,6 +47,7 @@ dependencies:
   - bytestring
   - case-insensitive
   - comonad
+  - containers
   - dhall >=1.23  # Functioning support of Dhall Standard 7.0.0
   - dhall-bash
   - dhall-json
@@ -75,6 +76,15 @@ dependencies:
 
   # For `config`, may be redesigned:
   - projectroot
+
+  # `config --dhall[-repl]`
+  - aeson
+  - aeson-pretty
+  - cborg
+  - cborg-json
+# - dotgen
+  - serialise
+  - transformers
 
 ghc-options: -Wall
 
@@ -107,11 +117,3 @@ executables:
     main: Main.hs
     dependencies:
       - *this
-      - containers
-
-# command-wrapper-daemon:
-#   source-dirs: app-daemon
-#   main: Main.hs
-#   dependencies:
-#     - *this
-#     - containers
