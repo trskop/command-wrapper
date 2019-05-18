@@ -19,6 +19,7 @@ extra-source-files:
   - dhall/CommandWrapper/Type/*.dhall
 
 default-extensions:
+  - BlockArguments
   - DefaultSignatures
   - DeriveAnyClass
   - DeriveFunctor

@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      Main

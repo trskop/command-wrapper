@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 -- |
 -- Module:      Main
 -- Description: CommandWrapper subcommand for executing commands with a

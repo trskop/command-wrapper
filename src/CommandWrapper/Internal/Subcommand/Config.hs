@@ -1,7 +1,6 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal
+-- Module:      $Header$
 -- Description: Implementation of internal command named config
 -- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
