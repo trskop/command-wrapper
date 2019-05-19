@@ -107,13 +107,16 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput
 
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Diff(..)
-    , Options(..)
+    , Freeze(..)
     , Mode(..)
+    , Options(..)
     , Repl(..)
     , defDiff
+    , defFreeze
     , defOptions
     , defRepl
     , diff
+    , freeze
     , hash
     , interpreter
     , repl
@@ -125,6 +128,7 @@ data ConfigMode a
     | ConfigLib a
     | Dhall Dhall.Options a
     | DhallDiff Dhall.Diff a
+    | DhallFreeze Dhall.Freeze a
     | DhallHash a
     | DhallRepl Dhall.Repl a
     | Help a
@@ -261,6 +265,9 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
         DhallDiff diffOpts cfg ->
             Dhall.diff appNames cfg diffOpts
 
+        DhallFreeze freezeOpts cfg ->
+            Dhall.freeze appNames cfg freezeOpts
+
         DhallHash cfg ->
             Dhall.hash appNames cfg
 
@@ -338,6 +345,9 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , dhallHashFlag
 
+    , dhallFreezeFlag
+        <*> (remoteOnlyFlag <|> noRemoteOnlyFlag)
+
     , helpFlag
 
     , pure mempty
@@ -360,6 +370,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchToDhallDiffMode :: Text -> Text -> Endo (ConfigMode Global.Config)
     switchToDhallDiffMode expr1 expr2 =
         switchTo (DhallDiff (Dhall.defDiff expr1 expr2) globalConfig)
+
+    switchToDhallFreezeMode
+        :: Endo Dhall.Freeze
+        -> Endo (ConfigMode Global.Config)
+    switchToDhallFreezeMode f =
+        switchTo (DhallFreeze (f `appEndo` Dhall.defFreeze) globalConfig)
 
     initFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
@@ -438,6 +454,24 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     dhallDiffFlag =
         Options.flag mempty switchToDhallDiffMode (Options.long "dhall-diff")
 
+    dhallFreezeFlag
+        :: Options.Parser (Endo Dhall.Freeze -> Endo (ConfigMode Global.Config))
+    dhallFreezeFlag =
+        Options.flag mempty switchToDhallFreezeMode
+            (Options.long "dhall-freeze")
+
+    remoteOnlyFlag :: Options.Parser (Endo Dhall.Freeze)
+    remoteOnlyFlag =
+        Options.flag mempty (setRemoteOnly True) (Options.long "remote-only")
+
+    noRemoteOnlyFlag :: Options.Parser (Endo Dhall.Freeze)
+    noRemoteOnlyFlag =
+        Options.flag mempty (setRemoteOnly False)
+            (Options.long "no-remote-only")
+
+    setRemoteOnly :: Bool -> Endo Dhall.Freeze
+    setRemoteOnly remoteOnly = Endo \opts -> opts{Dhall.remoteOnly}
+
     dhallHashFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     dhallHashFlag =
         Options.flag mempty switchToDhallHashMode (Options.long "dhall-hash")
@@ -497,11 +531,16 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 --      , "config"
 --          <+> longOption "dhall-resolve"
 
---      , "config"
---          <+> longOption "dhall-freeze"
+        , "config"
+            <+> longOption "dhall-freeze"
+            <+> Pretty.brackets (longOption "[no-]remote-only")
+--          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+--          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-hash"
+--          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+--          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
 {-          <+> Pretty.brackets
                     -- cbor, cbor-json, json, text,
@@ -538,15 +577,17 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 
         , optionDescription ["--[no-]allow-imports"]
             [ Pretty.reflow "Controls whether imports in the input expression\
-                \ are allowed or not."
+                \ are allowed or not. By default imports are allowed."
             ]
 
         , optionDescription ["--[no-]alpha"]
-            [ Pretty.reflow "Perform α-normalisation of Dhall expression."
+            [ Pretty.reflow "Perform α-normalisation of Dhall expression. By\
+                \ default α-normalisation is not performed."
             ]
 
         , optionDescription ["--[no-]annotate"]
-            [ Pretty.reflow "Add a type annotation to the output."
+            [ Pretty.reflow "Add a type annotation to the output. Type\
+                \ annotations aren't included by default."
             ]
 
         , optionDescription ["--dhall-repl"]
@@ -564,6 +605,17 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
         , optionDescription ["--dhall-diff"]
             [ Pretty.reflow "Render the difference between the normal form of\
                 \ two Dhall expressions."
+            ]
+
+        , optionDescription ["--dhall-freeze"]
+            [ Pretty.reflow "Add integrity checks to import statements of a\
+                \ Dhall expression."
+            ]
+
+        , optionDescription ["--[no-]remote-only"]
+            [ Pretty.reflow "Specifies if integrity checks should be added to\
+                \ only remote imports or to all imports. By default they are\
+                \ added only to remote imports."
             ]
 
         , optionDescription ["--dhall-hash"]

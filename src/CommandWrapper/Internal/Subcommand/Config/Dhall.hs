@@ -19,6 +19,11 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , defOptions
     , interpreter
 
+    -- * Freeze
+    , Freeze(..)
+    , defFreeze
+    , freeze
+
     -- * Hash
     , hash
 
@@ -37,30 +42,35 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
 import Control.Exception (SomeException)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
+import qualified GHC.IO.Encoding as IO (setLocaleEncoding)
 import System.Exit (exitFailure)
-import System.IO (Handle)
+import System.IO (Handle, hPutStrLn, stderr, stdout)
+import qualified System.IO as IO (utf8)
 
 import Data.Text (Text)
+import qualified Data.Text.IO as Text (getContents, hPutStrLn, readFile)
 import Data.Text.Prettyprint.Doc (Doc, Pretty)
+import qualified Data.Map as Map (keys)
 import Dhall.Binary (defaultStandardVersion)
 import Dhall.Core (Expr(..), Import)
+import qualified Dhall.Freeze as Dhall (freezeImport, freezeRemoteImport)
 import Dhall.Import (Imported(..))
 import Dhall.Parser (Src)
 import Dhall.Pretty (Ann, CharacterSet(..), annToAnsiStyle, layoutOpts)
 import Dhall.TypeCheck (DetailedTypeError(..), TypeError, X)
+import System.FilePath (takeDirectory)
 
 import qualified Codec.CBOR.JSON
 import qualified Codec.CBOR.Read
 import qualified Codec.CBOR.Write
 import qualified Codec.Serialise
 import qualified Control.Exception
-import qualified Control.Monad.Trans.State.Strict          as State
+import qualified Control.Monad.Trans.State.Strict as State
 import qualified Data.Aeson
 import qualified Data.Aeson.Encode.Pretty
 import qualified Data.ByteString.Lazy
 import qualified Data.ByteString.Lazy.Char8
 --import qualified Data.Text
-import qualified Data.Text.IO
 import qualified Data.Text.Prettyprint.Doc                 as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import qualified Dhall
@@ -68,7 +78,6 @@ import qualified Dhall.Binary
 import qualified Dhall.Core
 import qualified Dhall.Diff
 import qualified Dhall.Format
-import qualified Dhall.Freeze
 import qualified Dhall.Hash
 import qualified Dhall.Import
 --import qualified Dhall.Import.Types
@@ -77,11 +86,7 @@ import qualified Dhall.Parser
 import qualified Dhall.Pretty
 import qualified Dhall.Repl
 import qualified Dhall.TypeCheck
-import qualified GHC.IO.Encoding
-import qualified System.Console.ANSI
-import qualified System.IO
 --import qualified Text.Dot
-import qualified Data.Map
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
@@ -172,8 +177,6 @@ data Mode
 --  | Decode { json :: Bool }
   deriving (Show)
 
-deriving instance Show Dhall.Format.FormatMode  -- TODO: Get rid of orphan
-
 data ResolveMode
     = Dot
     | ListTransitiveDependencies
@@ -183,10 +186,10 @@ data ResolveMode
 readExpression :: Input -> IO (Expr Src Import, Dhall.Import.Status IO)
 readExpression = \case
     InputStdin ->
-        Data.Text.IO.getContents >>= parseExpr "(stdin)" "."
+        Text.getContents >>= parseExpr "(stdin)" "."
 
     InputFile file ->
-        Data.Text.IO.readFile file >>= parseExpr file file
+        Text.readFile file >>= parseExpr file file
   where
     parseExpr f c txt =
         (,) <$> Dhall.Core.throws (Dhall.Parser.exprFromText f txt)
@@ -206,7 +209,7 @@ interpreter
   AppNames{usedName}
   Config{colourOutput, verbosity}
   Options{input, mode} = do
-    GHC.IO.Encoding.setLocaleEncoding System.IO.utf8
+    IO.setLocaleEncoding IO.utf8
 
     (expression, status) <- readExpression input
 
@@ -256,7 +259,7 @@ interpreter
                         status
 
                 mapM_ (print . Pretty.pretty . Dhall.Core.importType . Dhall.Core.importHashed)
-                     (Data.Map.keys cache)
+                     (Map.keys cache)
 
             Nothing -> do
                 (resolvedExpression, _) <- State.runStateT
@@ -267,7 +270,7 @@ interpreter
     characterSet = Unicode -- TODO: This should be configurable.
 
     putExpr = Dhall.hPutExpr (fromMaybe ColourOutput.Auto colourOutput)
-        characterSet System.IO.stdout
+        characterSet stdout
 
     handle =
         Control.Exception.handle handler2
@@ -278,22 +281,22 @@ interpreter
 
     handler0 :: TypeError Src X -> IO ()
     handler0 e = do
-        System.IO.hPutStrLn System.IO.stderr ""
+        hPutStrLn stderr ""
         if explain
             then Control.Exception.throwIO (DetailedTypeError e)
             else do
                 -- TODO: Wrong message.
-                Data.Text.IO.hPutStrLn System.IO.stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
+                Text.hPutStrLn stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
                 Control.Exception.throwIO e
 
     handler1 :: Imported (TypeError Src X) -> IO ()
     handler1 (Imported ps e) = do
-        System.IO.hPutStrLn System.IO.stderr ""
+        hPutStrLn stderr ""
         if explain
             then Control.Exception.throwIO (Imported ps (DetailedTypeError e))
             else do
                 -- TODO: Wrong message.
-                Data.Text.IO.hPutStrLn System.IO.stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
+                Text.hPutStrLn stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
                 Control.Exception.throwIO (Imported ps e)
 
     handler2 :: SomeException -> IO ()
@@ -302,7 +305,7 @@ interpreter
 
         if not (null string)
             -- TODO: Use errorMsg
-            then System.IO.hPutStrLn System.IO.stderr string
+            then hPutStrLn stderr string
             else return ()
 
         System.Exit.exitFailure
@@ -314,77 +317,13 @@ command :: Options -> IO ()
 command Options{..} = do
     -- ...
     let renderDoc :: Handle -> Doc Ann -> IO ()
-        renderDoc h doc = do
-            let stream = Pretty.layoutSmart layoutOpts doc
+        renderDoc = -- ...
 
-            supportsANSI <- System.Console.ANSI.hSupportsANSI h
-            let ansiStream =
-                    if supportsANSI && not plain
-                    then fmap annToAnsiStyle stream
-                    else Pretty.unAnnotateS stream
-
-            Pretty.renderIO h ansiStream
-            Data.Text.IO.hPutStrLn h ""
-
-    let render :: Pretty a => Handle -> Expr s a -> IO ()
+        render :: Pretty a => Handle -> Expr s a -> IO ()
         render = -- ...
 
     handle $ case mode of
-        Default {..} -> do
-            -- Not relevant any more.
-
-        -- TODO: _dot field of Status is not available.
-        Resolve { resolveMode = Just Dot, ..} -> pure () -- do
---          expression <- getExpression file
-
---          (Dhall.Import.Types.Status { _dot}) <-
---              State.execStateT (Dhall.Import.loadWith expression) (toStatus file)
-
---          putStr . ("strict " <>) . Text.Dot.showDot $
---                 Text.Dot.attribute ("rankdir", "LR") >>
---                 _dot
-
-        Resolve { resolveMode = Just ListImmediateDependencies, ..} -> do
-            expression <- getExpression file
-
-            mapM_ (print
-                        . Pretty.pretty
-                        . Dhall.Core.importHashed) expression
-
-        Resolve { resolveMode = Just ListTransitiveDependencies, ..} -> do
-            expression <- getExpression file
-
-            status <- State.execStateT (Dhall.Import.loadWith expression) (toStatus file)
-
-            mapM_ print
-                 .   fmap (   Pretty.pretty
-                          .   Dhall.Core.importType
-                          .   Dhall.Core.importHashed )
-                 .   Data.Map.keys
-                 $   status ^. Dhall.Import.cache
-
-        Resolve { resolveMode = Nothing, ..} -> do
-            expression <- getExpression file
-
-            (resolvedExpression, _) <-
-                State.runStateT (Dhall.Import.loadWith expression) (toStatus file)
-            render System.IO.stdout resolvedExpression
-
-        Normalize {..} -> do
-            -- Not relevant any more.
-
-        Type {..} -> do
-            -- Not relevant any more.
-
-        Format {..} -> do
-            Dhall.Format.format (Dhall.Format.Format {..})
-
-        Freeze {..} -> do
-            Dhall.Freeze.freeze inplace all_ characterSet defaultStandardVersion
-
-        Hash -> do
-            Dhall.Hash.hash defaultStandardVersion
-
+        -- ...
         Lint {..} -> do
             case inplace of
                 Just file -> do
@@ -410,7 +349,7 @@ command Options{..} = do
                     let doc =   Pretty.pretty header
                             <>  Dhall.Pretty.prettyCharacterSet characterSet lintedExpression
 
-                    renderDoc System.IO.stdout doc
+                    renderDoc stdout doc
 
         Encode {..} -> do
             expression <- getExpression file
@@ -459,6 +398,65 @@ command Options{..} = do
             renderDoc System.IO.stdout doc
 -}
 
+{-
+data Format = Format
+
+format :: AppNames -> Config -> Format -> IO ()
+format _appNames _config Format{} =
+            Dhall.Format.format (Dhall.Format.Format {..})
+-}
+
+-- {{{ Freeze -----------------------------------------------------------------
+
+data Freeze = Freeze
+    { remoteOnly :: Bool
+    , input :: Input
+    , output :: Output -- TODO: Actually implement.
+    , characterSet :: CharacterSet
+    }
+  deriving (Show)
+
+defFreeze :: Freeze
+defFreeze = Freeze
+    { remoteOnly = True
+    , input = InputStdin
+    , output = () -- TODO: Actually implement.
+    , characterSet = Unicode
+    }
+
+freeze
+    :: AppNames
+    -> Config
+    -> Freeze
+    -> IO ()
+freeze _appNames config Freeze{..} = do
+    (header, expression, directory) <- case input of
+        InputStdin -> do
+            (header, expression) <- Text.getContents
+                >>= parseExpr "(stdin)"
+            pure (header, expression, ".")
+
+        InputFile file -> do
+            (header, expression) <- Text.readFile file
+                >>= parseExpr file
+            pure (header, expression, takeDirectory file)
+
+    let freezeFunction =
+            ( if remoteOnly
+                then Dhall.freezeRemoteImport
+                else Dhall.freezeImport
+            ) directory defaultStandardVersion
+
+    frozenExpression <- traverse freezeFunction expression
+    renderDoc config stdout
+        ( Pretty.pretty header
+        <> Dhall.Pretty.prettyCharacterSet characterSet frozenExpression
+        )
+  where
+    parseExpr f = Dhall.Core.throws . Dhall.Parser.exprAndHeaderFromText f
+
+-- }}} Freeze -----------------------------------------------------------------
+
 -- {{{ Hash -------------------------------------------------------------------
 
 hash :: AppNames -> Config -> IO ()
@@ -480,28 +478,12 @@ defDiff :: Text -> Text -> Diff
 defDiff expr1 expr2 = Diff{expr1, expr2}
 
 diff :: AppNames -> Config -> Diff -> IO ()
-diff _appNames Config{colourOutput} Diff{..} = do
+diff _appNames config Diff{..} = do
     diffDoc <- Dhall.Diff.diffNormalized
         <$> Dhall.inputExpr expr1
         <*> Dhall.inputExpr expr2
 
-    renderDoc System.IO.stdout diffDoc
-  where
-    colourOutput' = fromMaybe ColourOutput.Auto colourOutput
-
-    -- TODO: Merge with other functions that we have for this purpose?
-    renderDoc :: Handle -> Doc Ann -> IO ()
-    renderDoc h doc = do
-        let stream = Pretty.layoutSmart layoutOpts doc
-
-        useColours <- shouldUseColours h
-            (fromMaybe ColourOutput.Auto colourOutput)
-
-        Pretty.renderIO h
-            if useColours
-                then annToAnsiStyle <$> stream
-                else Pretty.unAnnotateS stream
-        Data.Text.IO.hPutStrLn h ""
+    renderDoc config stdout diffDoc
 
 -- }}} Diff -------------------------------------------------------------------
 
@@ -531,3 +513,21 @@ repl _appNames Config{verbosity} Repl{..} =
     explain = verbosity > Verbosity.Normal
 
 -- }}} REPL -------------------------------------------------------------------
+
+-- {{{ Helper Functions -------------------------------------------------------
+
+-- TODO: Merge with other functions that we have for this purpose?
+renderDoc :: Config -> Handle -> Doc Ann -> IO ()
+renderDoc Config{colourOutput} h doc = do
+    let stream = Pretty.layoutSmart layoutOpts doc
+
+    useColours <- shouldUseColours h
+        (fromMaybe ColourOutput.Auto colourOutput)
+
+    Pretty.renderIO h
+        if useColours
+            then annToAnsiStyle <$> stream
+            else Pretty.unAnnotateS stream
+    Text.hPutStrLn h ""
+
+-- }}} Helper Functions -------------------------------------------------------

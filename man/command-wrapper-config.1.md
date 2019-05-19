@@ -18,6 +18,9 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-freeze
+\[\--\[no-]remote-only]
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-hash
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init \[\--toolset=*NAME*]
@@ -45,19 +48,29 @@ to provide Dhall functionality without the need to install external tools.
 :   Run as interpreter for the Dhall language.
 
 \--\[no-]allow-imports
-:   Controls whether imports in the input expression are allowed or not.
+:   Controls whether imports in the input expression are allowed or not.  By
+    default imports are allowed.
 
 \--\[no-]alpha
-:   Perform α-normalisation of Dhall expression.
+:   Perform α-normalisation of Dhall expression.  By default α-normalisation is
+    not performed.
 
 \--\[no-]annotate
-:   Add a type annotation to the output.
+:   Add a type annotation to the output.  Type annotations aren't included by
+    default.
 
 \--dhall-repl
 :   Interpret Dhall expressions in a REPL.
 
 \--dhall-diff
 :   Render the difference between the normal form of two Dhall expressions.
+
+\--dhall-freeze
+:   Add integrity checks to import statements of a Dhall expression.
+
+\--\[no-]remote-only
+:   Specifies if integrity checks should be added to only remote imports or to
+    all imports.  By default they are added only to remote imports.
 
 \--dhall-hash
 :   Compute semantic hashes for Dhall expressions.
