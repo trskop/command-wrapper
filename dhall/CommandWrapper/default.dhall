@@ -7,7 +7,7 @@ let helpMessage = ''
 Global Subcommands:
 
   help       (internal, aliases: h, man)
-  config     (internal, aliases: cfg)
+  config     (internal, aliases: cfg, dhall, dhall-repl)
   version    (internal)
   completion (internal)
   cd         (external)
@@ -37,6 +37,14 @@ let mkDefault =
               , { alias = "cfg"
                 , command = "config"
                 , arguments = [] : List Text
+                }
+              , { alias = "dhall"
+                , command = "config"
+                , arguments = ["--dhall"] : List Text
+                }
+              , { alias = "dhall-repl"
+                , command = "config"
+                , arguments = ["--dhall-repl"] : List Text
                 }
               ] : List CommandWrapper.SubcommandAlias
 
