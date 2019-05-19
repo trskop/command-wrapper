@@ -28,10 +28,11 @@ sense to have one for personal tooling, and one for work tooling.
 
 First subcommand that was introduced was `help`, obviously, but the one right
 after that was `skel`.  Which allows you to create a new subcommand skeleton,
-see `command-wrapper-skel(1)` manual page for more details.  Subcommand can be
-written in any language user chooses.  It just needs to be an executable, and
-follow Command Wrapper's Subcommand Protocol, which is described in its own
-manual page [`command-wrapper-subcommand-protocol(7)`
+see [`command-wrapper-skel(1)`](man/command-wrapper-skel.1.md) manual page for
+more details.  Subcommand can be written in any language user chooses.  It just
+needs to be an executable, and follow Command Wrapper's Subcommand Protocol,
+which is described in its own manual page
+[`command-wrapper-subcommand-protocol(7)`
 ](man/command-wrapper-subcommand-protocol.7.md).
 
 
