@@ -1,5 +1,5 @@
 -- |
--- Module:      CommandWrapper.Options.Colour
+-- Module:      $Header$
 -- Description: Colourised output preferences
 -- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
@@ -45,6 +45,8 @@ import qualified Options.Applicative as Options
 import System.Console.Terminfo (setupTermFromEnv)
 
 
+-- |
+-- > [--[no-]colo[u]r --colo[u]r=WHEN]
 options :: Options.Parser (Maybe ColourOutput)
 options = go
     <$> noColourFlag
@@ -54,9 +56,13 @@ options = go
   where
     go a b c d = getLast . mconcat $ map Last [a, b, c, d]
 
+-- |
+-- > [--no-colo[u]r]
 noColourFlag :: Options.Parser (Maybe ColourOutput)
 noColourFlag = noColourFlag' "no-colour"
 
+-- |
+-- > [--no-color]
 noColorFlag :: Options.Parser (Maybe ColourOutput)
 noColorFlag = noColourFlag' "no-color"
 
@@ -66,9 +72,13 @@ noColourFlag' name = Options.flag Nothing (Just Never) $ mconcat
     , Options.help "Never use colourised output. Same as '--colour=never'."
     ]
 
+-- |
+-- > --colour=WHEN
 colourOption :: Options.Parser ColourOutput
 colourOption = colourOption' "colour"
 
+-- |
+-- > --color=WHEN
 colorOption :: Options.Parser ColourOutput
 colorOption = colourOption' "color"
 

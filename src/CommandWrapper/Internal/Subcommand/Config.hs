@@ -31,7 +31,6 @@ import qualified Data.List as List (elem, filter, intercalate, isPrefixOf)
 --import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
-import Data.Ord ((>))
 import Data.String (String, fromString)
 import GHC.Generics (Generic)
 import System.Exit (ExitCode(ExitFailure), exitWith)
@@ -51,7 +50,6 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
-import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 import qualified Mainplate (applySimpleDefaults)
 import qualified Options.Applicative as Options
     ( Parser
@@ -105,7 +103,6 @@ import qualified CommandWrapper.Options.Optparse as Options
     )
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     ( ColourOutput(Auto)
-    , shouldUseColours
     )
 
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
@@ -117,6 +114,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defOptions
     , defRepl
     , diff
+    , hash
     , interpreter
     , repl
     )
@@ -127,6 +125,7 @@ data ConfigMode a
     | ConfigLib a
     | Dhall Dhall.Options a
     | DhallDiff Dhall.Diff a
+    | DhallHash a
     | DhallRepl Dhall.Repl a
     | Help a
   deriving (Functor, Generic, Show)
@@ -259,14 +258,14 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
         Dhall opts cfg ->
             Dhall.interpreter appNames cfg opts
 
-        DhallDiff diffOpts Global.Config{colourOutput} -> do
-            plain <- not <$> ColourOutput.shouldUseColours stdout
-                (fromMaybe ColourOutput.Auto colourOutput)
+        DhallDiff diffOpts cfg ->
+            Dhall.diff appNames cfg diffOpts
 
-            Dhall.diff diffOpts{Dhall.plain}
+        DhallHash cfg ->
+            Dhall.hash appNames cfg
 
-        DhallRepl replOpts Global.Config{verbosity} ->
-            Dhall.repl replOpts{Dhall.explain = verbosity > Verbosity.Normal}
+        DhallRepl replOpts cfg ->
+            Dhall.repl appNames cfg replOpts
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
 
@@ -337,6 +336,8 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> Options.strArgument mempty
         <*> Options.strArgument mempty
 
+    , dhallHashFlag
+
     , helpFlag
 
     , pure mempty
@@ -345,11 +346,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchTo :: ConfigMode Global.Config -> Endo (ConfigMode Global.Config)
     switchTo = Endo . const
 
-    switchToHelpMode, switchToInitMode, switchToDhallReplMode
-        :: Endo (ConfigMode Global.Config)
+    switchToHelpMode, switchToInitMode, switchToDhallHashMode,
+        switchToDhallReplMode :: Endo (ConfigMode Global.Config)
 
     switchToHelpMode = switchTo (Help globalConfig)
     switchToInitMode = switchTo (Init (defInitOptions usedName) globalConfig)
+    switchToDhallHashMode = switchTo (DhallHash globalConfig)
     switchToDhallReplMode = switchTo (DhallRepl Dhall.defRepl globalConfig)
 
     switchToDhallMode f =
@@ -436,6 +438,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     dhallDiffFlag =
         Options.flag mempty switchToDhallDiffMode (Options.long "dhall-diff")
 
+    dhallHashFlag :: Options.Parser (Endo (ConfigMode Global.Config))
+    dhallHashFlag =
+        Options.flag mempty switchToDhallHashMode (Options.long "dhall-hash")
+
     dhallReplFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     dhallReplFlag =
         Options.flag mempty switchToDhallReplMode (Options.long "dhall-repl")
@@ -479,26 +485,31 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
                     <> "|" <> longOption "[no-]annotate"
                     <> "|" <> longOption "[no-]type"
                     )
+--          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+--          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+
+--      , "config"
+--          <+> longOption "dhall-format"
+
+--      , "config"
+--          <+> longOption "dhall-lint"
+
+--      , "config"
+--          <+> longOption "dhall-resolve"
+
+--      , "config"
+--          <+> longOption "dhall-freeze"
+
+        , "config"
+            <+> longOption "dhall-hash"
 
 {-          <+> Pretty.brackets
-                    ( longOption "resolve"
-                    <> "|" <> longOption "type"
-                    <> "|" <> longOption "normalize"
-                    <> "|" <> longOption "hash"
-                    <> "|" <> longOption "lint"
-                    <> "|" <> longOption "format"
-                    <> "|" <> longOption "freeze"
-                    )
-            <+> Pretty.brackets
                     -- cbor, cbor-json, json, text,
                     ( longOptionWithArgument "input-encoding" "INPUT_ENCODING"
                     <> "|" <> longOptionWithArgument "output-encoding" "OUTPUT_ENCODING"
-
-                    <> "|" <> longOptionWithArgument "input" "FILE"
-                    <> "|" <> longOptionWithArgument "output" "FILE"
                     )
 -}
-        ,   "config"
+        , "config"
             <+> longOption "dhall-diff"
             <+> metavar "EXPRESSION"
             <+> metavar "EXPRESSION"
@@ -555,6 +566,10 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
                 \ two Dhall expressions."
             ]
 
+        , optionDescription ["--dhall-hash"]
+            [ Pretty.reflow "Compute semantic hashes for Dhall expressions."
+            ]
+
         , optionDescription ["--init"]
             [ Pretty.reflow "Initialise configuration of a toolset."
             ]
@@ -598,19 +613,28 @@ configCompletion _appNames _config wordsBeforePattern pat
     hadInit = "--init" `List.elem` wordsBeforePattern
 
     hadDhall = "--dhall" `List.elem` wordsBeforePattern
-    hadDhallRepl = "--dhall-repl" `List.elem` wordsBeforePattern
     hadDhallDiff = "--dhall-diff" `List.elem` wordsBeforePattern
+    hadDhallHash = "--dhall-hash" `List.elem` wordsBeforePattern
+    hadDhallRepl = "--dhall-repl" `List.elem` wordsBeforePattern
 
-    hadSomeDhall = hadDhall || hadDhallDiff || hadDhallRepl
+    hadSomeDhall = hadDhall || hadDhallDiff || hadDhallHash || hadDhallRepl
 
-    munless p x = if not p then x else mempty
+    mwhen p x = if p then x else mempty
+    munless p = mwhen (not p)
 
     possibleOptions =
         munless (hadHelp || hadInit || hadSomeDhall)
             [ "--help", "-h"
             , "--init"
-            , "--dhall", "--dhall-diff", "--dhall-repl"
+            , "--dhall", "--dhall-diff", "--dhall-hash", "--dhall-repl"
             ]
         <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
+        <> munless
+            (hadHelp || not hadDhall || hadDhallHash || hadDhallHash || hadInit)
+            [ "--alpha", "--no-alpha"
+            , "--allow-imports", "--no-allow-imports"
+            , "--annotate", "--no-annotate"
+            , "--type", "--no-type"
+            ]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions

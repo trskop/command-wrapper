@@ -14,9 +14,11 @@ toolset configuration.
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 \[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type]
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-hash
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init \[\--toolset=*NAME*]
 
@@ -51,11 +53,14 @@ to provide Dhall functionality without the need to install external tools.
 \--\[no-]annotate
 :   Add a type annotation to the output.
 
+\--dhall-repl
+:   Interpret Dhall expressions in a REPL.
+
 \--dhall-diff
 :   Render the difference between the normal form of two Dhall expressions.
 
-\--dhall-repl
-:   Interpret Dhall expressions in a REPL.
+\--dhall-hash
+:   Compute semantic hashes for Dhall expressions.
 
 \--init
 :   Initialise configuration of a toolset.  This includes symlinking command

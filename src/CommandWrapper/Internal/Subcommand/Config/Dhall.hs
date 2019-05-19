@@ -19,6 +19,9 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , defOptions
     , interpreter
 
+    -- * Hash
+    , hash
+
     -- * Diff
     , Diff(..)
     , defDiff
@@ -83,7 +86,7 @@ import qualified Data.Map
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
-import CommandWrapper.Options.ColourOutput (ColourOutput)
+import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput (ColourOutput(Auto))
 import Data.Generics.Internal.VL.Lens ((^.))
 import Data.Verbosity (Verbosity)
@@ -456,39 +459,48 @@ command Options{..} = do
             renderDoc System.IO.stdout doc
 -}
 
+-- {{{ Hash -------------------------------------------------------------------
+
+hash :: AppNames -> Config -> IO ()
+hash _appNames _config =
+    Dhall.Hash.hash defaultStandardVersion
+
+-- }}} Hash -------------------------------------------------------------------
+
 -- {{{ Diff -------------------------------------------------------------------
 
 data Diff = Diff
     { expr1 :: Text
     , expr2 :: Text
 --  , output :: Maybe FilePath  -- TODO Ist this a correct type?
-    , plain :: Bool  -- TODO This should be handled by ColourOutput.
     }
   deriving (Show)
 
 defDiff :: Text -> Text -> Diff
-defDiff expr1 expr2 = Diff{expr1, expr2, plain = False}
+defDiff expr1 expr2 = Diff{expr1, expr2}
 
-diff :: Diff -> IO ()
-diff Diff{..} = do
+diff :: AppNames -> Config -> Diff -> IO ()
+diff _appNames Config{colourOutput} Diff{..} = do
     diffDoc <- Dhall.Diff.diffNormalized
         <$> Dhall.inputExpr expr1
         <*> Dhall.inputExpr expr2
 
     renderDoc System.IO.stdout diffDoc
   where
+    colourOutput' = fromMaybe ColourOutput.Auto colourOutput
+
     -- TODO: Merge with other functions that we have for this purpose?
     renderDoc :: Handle -> Doc Ann -> IO ()
     renderDoc h doc = do
         let stream = Pretty.layoutSmart layoutOpts doc
 
-        supportsANSI <- System.Console.ANSI.hSupportsANSI h
-        let ansiStream =
-                if supportsANSI && not plain
-                then fmap annToAnsiStyle stream
-                else Pretty.unAnnotateS stream
+        useColours <- shouldUseColours h
+            (fromMaybe ColourOutput.Auto colourOutput)
 
-        Pretty.renderIO h ansiStream
+        Pretty.renderIO h
+            if useColours
+                then annToAnsiStyle <$> stream
+                else Pretty.unAnnotateS stream
         Data.Text.IO.hPutStrLn h ""
 
 -- }}} Diff -------------------------------------------------------------------
@@ -497,7 +509,6 @@ diff Diff{..} = do
 
 data Repl = Repl
     { characterSet :: CharacterSet
-    , explain :: Bool
 
     , historyFile :: Maybe FilePath -- TODO Is this a correct type?
     -- ^ This is not currently supported by neither @dhall@ library nor by
@@ -510,12 +521,13 @@ deriving instance Show CharacterSet -- TODO Get rid of orphan
 defRepl :: Repl
 defRepl = Repl
     { characterSet = Unicode
-    , explain = False
     , historyFile = Nothing
     }
 
-repl :: Repl -> IO ()
-repl Repl{..} =
+repl :: AppNames -> Config -> Repl -> IO ()
+repl _appNames Config{verbosity} Repl{..} =
     Dhall.Repl.repl characterSet explain defaultStandardVersion
+  where
+    explain = verbosity > Verbosity.Normal
 
 -- }}} REPL -------------------------------------------------------------------
