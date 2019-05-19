@@ -18,9 +18,9 @@ module CommandWrapper.Internal.Subcommand.Config
     )
   where
 
-import Control.Applicative ((<*>), optional, pure)
+import Control.Applicative ((<*>), (<|>), optional, pure)
 import Control.Monad ((>>=), unless)
-import Data.Bool (Bool(True), (||), not, otherwise)
+import Data.Bool (Bool(False, True), (||), not, otherwise)
 import Data.Either (Either(Left, Right))
 import Data.Eq ((==))
 import Data.Foldable (asum, for_, null)
@@ -30,7 +30,7 @@ import Data.Int (Int)
 import qualified Data.List as List (elem, filter, intercalate, isPrefixOf)
 --import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
-import Data.Monoid (Endo(Endo), (<>), mconcat, mempty)
+import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
 import Data.Ord ((>))
 import Data.String (String, fromString)
 import GHC.Generics (Generic)
@@ -43,7 +43,7 @@ import Data.Text (Text)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
---  , brackets
+    , brackets
     , hsep
     , line
     , squotes
@@ -111,11 +111,13 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Diff(..)
     , Options(..)
+    , Mode(..)
     , Repl(..)
-    , command
     , defDiff
+    , defOptions
     , defRepl
     , diff
+    , interpreter
     , repl
     )
 
@@ -254,8 +256,8 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
         --     export FOO=foo
         --     export FOO=bar
         --     ```
-        Dhall opts _cfg ->
-            Dhall.command opts
+        Dhall opts cfg ->
+            Dhall.interpreter appNames cfg opts
 
         DhallDiff diffOpts Global.Config{colourOutput} -> do
             plain <- not <$> ColourOutput.shouldUseColours stdout
@@ -321,6 +323,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <$> initFlag
         <*> optional toolsetOption
 
+    , dhallFlag
+        <*> ( dualFoldEndo
+                <$> (allowImportsFlag <|> noAllowImportsFlag)
+                <*> (alphaFlag <|> noAlphaFlag)
+                <*> (annotateFlag <|> noAnnotateFlag)
+                <*> (typeFlag <|> noTypeFlag)
+            )
+
     , dhallReplFlag
 
     , dhallDiffFlag
@@ -335,13 +345,15 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchTo :: ConfigMode Global.Config -> Endo (ConfigMode Global.Config)
     switchTo = Endo . const
 
-    switchToHelpMode, switchToInitMode, switchToDhallReplMode :: Endo (ConfigMode Global.Config)
+    switchToHelpMode, switchToInitMode, switchToDhallReplMode
+        :: Endo (ConfigMode Global.Config)
 
     switchToHelpMode = switchTo (Help globalConfig)
     switchToInitMode = switchTo (Init (defInitOptions usedName) globalConfig)
     switchToDhallReplMode = switchTo (DhallRepl Dhall.defRepl globalConfig)
 
-    switchToDhallMode opts = switchTo (Dhall opts globalConfig)
+    switchToDhallMode f =
+        switchTo (Dhall (f `appEndo` Dhall.defOptions) globalConfig)
 
     switchToDhallDiffMode :: Text -> Text -> Endo (ConfigMode Global.Config)
     switchToDhallDiffMode expr1 expr2 =
@@ -351,9 +363,73 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
 
     dhallFlag
-        :: Options.Parser (Dhall.Options -> Endo (ConfigMode Global.Config))
+        :: Options.Parser (Endo Dhall.Options -> Endo (ConfigMode Global.Config))
     dhallFlag =
         Options.flag mempty switchToDhallMode (Options.long "dhall")
+
+    alphaFlag :: Options.Parser (Endo Dhall.Options)
+    alphaFlag = Options.flag mempty (setAlpha True) (Options.long "alpha")
+
+    noAlphaFlag :: Options.Parser (Endo Dhall.Options)
+    noAlphaFlag = Options.flag mempty (setAlpha False) (Options.long "no-alpha")
+
+    setAlpha :: Bool -> Endo Dhall.Options
+    setAlpha alpha = Endo \Dhall.Options{..} -> Dhall.Options
+        { mode = case mode of
+            m@Dhall.Default{} -> m{Dhall.alpha}
+            m -> m
+        , ..
+        }
+
+    annotateFlag :: Options.Parser (Endo Dhall.Options)
+    annotateFlag =
+        Options.flag mempty (setAnnotate True) (Options.long "annotate")
+
+    noAnnotateFlag :: Options.Parser (Endo Dhall.Options)
+    noAnnotateFlag =
+        Options.flag mempty (setAnnotate False) (Options.long "no-annotate")
+
+    setAnnotate :: Bool -> Endo Dhall.Options
+    setAnnotate annotate = Endo \Dhall.Options{..} -> Dhall.Options
+        { mode = case mode of
+            m@Dhall.Default{} -> m{Dhall.annotate}
+            m -> m
+        , ..
+        }
+
+    allowImportsFlag :: Options.Parser (Endo Dhall.Options)
+    allowImportsFlag =
+        Options.flag mempty (setAllowImports True)
+            (Options.long "allow-imports")
+
+    noAllowImportsFlag :: Options.Parser (Endo Dhall.Options)
+    noAllowImportsFlag =
+        Options.flag mempty (setAllowImports False)
+            (Options.long "no-allow-imports")
+
+    setAllowImports :: Bool -> Endo Dhall.Options
+    setAllowImports allowImports = Endo \Dhall.Options{..} -> Dhall.Options
+        { mode = case mode of
+            m@Dhall.Default{} -> m{Dhall.allowImports}
+            m -> m
+        , ..
+        }
+
+    typeFlag :: Options.Parser (Endo Dhall.Options)
+    typeFlag =
+        Options.flag mempty (setType True) (Options.long "type")
+
+    noTypeFlag :: Options.Parser (Endo Dhall.Options)
+    noTypeFlag =
+        Options.flag mempty (setType False) (Options.long "no-type")
+
+    setType :: Bool -> Endo Dhall.Options
+    setType showType = Endo \Dhall.Options{..} -> Dhall.Options
+        { mode = case mode of
+            m@Dhall.Default{} -> m{Dhall.showType}
+            m -> m
+        , ..
+        }
 
     dhallDiffFlag
         :: Options.Parser (Text -> Text -> Endo (ConfigMode Global.Config))
@@ -395,9 +471,16 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
     , usageSection usedName
 --      [ "config" <+> optionalMetavar "EXPRESSION"
 --
-        [ {-"config"
+        [ "config"
             <+> longOption "dhall"
             <+> Pretty.brackets
+                    ( longOption "[no-]alpha"
+                    <> "|" <> longOption "[no-]allow-imports"
+                    <> "|" <> longOption "[no-]annotate"
+                    <> "|" <> longOption "[no-]type"
+                    )
+
+{-          <+> Pretty.brackets
                     ( longOption "resolve"
                     <> "|" <> longOption "type"
                     <> "|" <> longOption "normalize"
@@ -414,8 +497,8 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
                     <> "|" <> longOptionWithArgument "input" "FILE"
                     <> "|" <> longOptionWithArgument "output" "FILE"
                     )
-
-        ,-} "config"
+-}
+        ,   "config"
             <+> longOption "dhall-diff"
             <+> metavar "EXPRESSION"
             <+> metavar "EXPRESSION"
@@ -438,7 +521,24 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
         ]
 
     , section "Options:"
-        [ optionDescription ["--dhall-repl"]
+        [ optionDescription ["--dhall"]
+            [ Pretty.reflow "Run as interpreter for the Dhall language."
+            ]
+
+        , optionDescription ["--[no-]allow-imports"]
+            [ Pretty.reflow "Controls whether imports in the input expression\
+                \ are allowed or not."
+            ]
+
+        , optionDescription ["--[no-]alpha"]
+            [ Pretty.reflow "Perform α-normalisation of Dhall expression."
+            ]
+
+        , optionDescription ["--[no-]annotate"]
+            [ Pretty.reflow "Add a type annotation to the output."
+            ]
+
+        , optionDescription ["--dhall-repl"]
             [ Pretty.reflow "Interpret Dhall expressions in a REPL."
             ]
 

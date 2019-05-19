@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 18th May 2019
+% 19th May 2019
 
 
 # NAME
@@ -10,6 +10,9 @@ toolset configuration.
 
 
 # USAGE
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
+\[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
 
@@ -35,6 +38,18 @@ to provide Dhall functionality without the need to install external tools.
 
 
 # OPTIONS
+
+\--dhall
+:   Run as interpreter for the Dhall language.
+
+\--\[no-]allow-imports
+:   Controls whether imports in the input expression are allowed or not.
+
+\--\[no-]alpha
+:   Perform α-normalisation of Dhall expression.
+
+\--\[no-]annotate
+:   Add a type annotation to the output.
 
 \--dhall-diff
 :   Render the difference between the normal form of two Dhall expressions.

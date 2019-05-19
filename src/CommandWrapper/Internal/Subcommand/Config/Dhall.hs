@@ -12,12 +12,12 @@
 --
 -- Modified version of @Dhall.Main@ from @dhall-haskell@ package.
 module CommandWrapper.Internal.Subcommand.Config.Dhall
-    ( -- * Options
+    (
+    -- * Interpreter
       Options(..)
     , Mode(..)
-
-      -- * Execution
-    , command
+    , defOptions
+    , interpreter
 
     -- * Diff
     , Diff(..)
@@ -32,7 +32,11 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
   where
 
 import Control.Exception (SomeException)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
+import System.Exit (exitFailure)
+import System.IO (Handle)
+
 import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Doc, Pretty)
 import Dhall.Binary (defaultStandardVersion)
@@ -41,8 +45,6 @@ import Dhall.Import (Imported(..))
 import Dhall.Parser (Src)
 import Dhall.Pretty (Ann, CharacterSet(..), annToAnsiStyle, layoutOpts)
 import Dhall.TypeCheck (DetailedTypeError(..), TypeError, X)
-import System.Exit (exitFailure)
-import System.IO (Handle)
 
 import qualified Codec.CBOR.JSON
 import qualified Codec.CBOR.Read
@@ -78,21 +80,47 @@ import qualified System.IO
 --import qualified Text.Dot
 import qualified Data.Map
 
+import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
+import CommandWrapper.Environment (AppNames(AppNames, usedName))
+import qualified CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
+import CommandWrapper.Options.ColourOutput (ColourOutput)
+import qualified CommandWrapper.Options.ColourOutput as ColourOutput (ColourOutput(Auto))
 import Data.Generics.Internal.VL.Lens ((^.))
+import Data.Verbosity (Verbosity)
+import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 
 
 -- | Top-level program options
 data Options = Options
     { mode            :: Mode
-    , explain         :: Bool
-    , plain           :: Bool
-    , inputEncoding   :: InputEncoding
-    , outputEncoding  :: OutputEncoding
+--  , inputEncoding   :: InputEncoding
+--  , outputEncoding  :: OutputEncoding
 
-    , input           :: ()
-    , output          :: ()
+    , input           :: Input
+    , output          :: Output
     }
   deriving (Show)
+
+defOptions :: Options
+defOptions = Options
+    { mode = Default
+        { annotate = False
+        , alpha = False
+        , allowImports = True
+        , showType = False
+        }
+--  , inputEncoding   =
+--  , outputEncoding  =
+    , input = InputStdin
+    , output = ()
+    }
+
+data Input
+    = InputStdin
+    | InputFile FilePath
+  deriving (Show)
+
+type Output = () -- TODO Implement
 
 -- TODO: Alternative to simple (input, output) product we should consider:
 --
@@ -126,49 +154,22 @@ data OutputEncoding
 
 -- | The subcommands for the @dhall@ executable
 data Mode
-    = Default { file :: Maybe FilePath, annotate :: Bool, alpha :: Bool }
-    | Resolve { file :: Maybe FilePath, resolveMode :: Maybe ResolveMode }
-    | Type { file :: Maybe FilePath }
-    | Normalize { file :: Maybe FilePath, alpha :: Bool }
-    | Format { formatMode :: Dhall.Format.FormatMode }
-    | Freeze { inplace :: Maybe FilePath, all_ :: Bool }
-    | Hash
-    | Lint { inplace :: Maybe FilePath }
-    | Encode { file :: Maybe FilePath, json :: Bool }
-    | Decode { file :: Maybe FilePath, json :: Bool }
+    = Default
+        { allowImports :: Bool
+        , alpha :: Bool
+        , annotate :: Bool
+        , showType :: Bool
+        }
+    | Resolve { resolveMode :: Maybe ResolveMode }
+--  | Format { formatMode :: Dhall.Format.FormatMode }
+--  | Freeze { inplace :: Maybe FilePath, all_ :: Bool }
+--  | Hash
+--  | Lint { inplace :: Maybe FilePath }
+--  | Encode { json :: Bool }
+--  | Decode { json :: Bool }
   deriving (Show)
 
 deriving instance Show Dhall.Format.FormatMode  -- TODO: Get rid of orphan
-
-data Diff = Diff
-    { expr1 :: Text
-    , expr2 :: Text
---  , output :: Maybe FilePath  -- TODO Ist this a correct type?
-    , plain :: Bool  -- TODO This should be handled by ColourOutput.
-    }
-  deriving (Show)
-
-defDiff :: Text -> Text -> Diff
-defDiff expr1 expr2 = Diff{expr1, expr2, plain = False}
-
-data Repl = Repl
-    { characterSet :: CharacterSet
-    , explain :: Bool
-
-    , historyFile :: Maybe FilePath -- TODO Is this a correct type?
-    -- ^ This is not currently supported by neither @dhall@ library nor by
-    -- @repline@ which is used by @dhall@ to implement REPL functionality.
-    }
-  deriving (Show)
-
-deriving instance Show CharacterSet -- TODO Get rid of orphan
-
-defRepl :: Repl
-defRepl = Repl
-    { characterSet = Unicode
-    , explain = False
-    , historyFile = Nothing
-    }
 
 data ResolveMode
     = Dot
@@ -176,74 +177,139 @@ data ResolveMode
     | ListImmediateDependencies
   deriving (Show)
 
-getExpression :: Maybe FilePath -> IO (Expr Src Import)
-getExpression maybeFile = do
-    inText <- do
-        case maybeFile of
-            Just "-"  -> Data.Text.IO.getContents
-            Just file -> Data.Text.IO.readFile file
-            Nothing   -> Data.Text.IO.getContents
+readExpression :: Input -> IO (Expr Src Import, Dhall.Import.Status IO)
+readExpression = \case
+    InputStdin ->
+        Data.Text.IO.getContents >>= parseExpr "(stdin)" "."
 
-    Dhall.Core.throws (Dhall.Parser.exprFromText "(stdin)" inText)
+    InputFile file ->
+        Data.Text.IO.readFile file >>= parseExpr file file
+  where
+    parseExpr f c txt =
+        (,) <$> Dhall.Core.throws (Dhall.Parser.exprFromText f txt)
+            <*> pure (Dhall.Import.emptyStatus c)
 
--- TODO: In principle this (command) should be implemented as:
+-- TODO: In principle this should be implemented as:
 --
 -- ```
--- readInput options >>= runMode mode >>= writeOutput options
+-- readExpression options >>= runMode mode >>= writeExpression options
 -- ```
 --
 -- Main idea is that input and output reading/writing and encoding should be
 -- orthogonal to the mode that we are running in.
 
+interpreter :: AppNames -> Config -> Options -> IO ()
+interpreter
+  AppNames{usedName}
+  Config{colourOutput, verbosity}
+  Options{input, mode} = do
+    GHC.IO.Encoding.setLocaleEncoding System.IO.utf8
+
+    (expression, status) <- readExpression input
+
+    handle case mode of
+        Default{allowImports, alpha, annotate, showType} -> do
+            (resolvedExpression, inferredType) <- do
+                expr <- if allowImports
+                    then
+                        State.evalStateT (Dhall.Import.loadWith expression)
+                            status
+                    else
+                        Dhall.Import.assertNoImports expression
+
+                exprType <- Dhall.Core.throws (Dhall.TypeCheck.typeOf expr)
+
+                if showType
+                    then
+                        (exprType,) <$> Dhall.Core.throws
+                            (Dhall.TypeCheck.typeOf exprType)
+                    else
+                        pure (expr, exprType)
+
+            let normalizedExpression = Dhall.Core.normalize resolvedExpression
+
+                alphaNormalizedExpression =
+                    if alpha
+                        then Dhall.Core.alphaNormalize normalizedExpression
+                        else normalizedExpression
+
+                annotatedExpression =
+                    if annotate
+                        then Annot alphaNormalizedExpression inferredType
+                        else alphaNormalizedExpression
+
+            putExpr annotatedExpression
+
+        Resolve{resolveMode} -> case resolveMode of
+            Just Dot -> pure () -- TODO: Die with proper error message.
+
+            Just ListImmediateDependencies ->
+                mapM_ (print . Pretty.pretty . Dhall.Core.importHashed)
+                    expression
+
+            Just ListTransitiveDependencies -> do
+                cache <- (^. Dhall.Import.cache)
+                    <$> State.execStateT (Dhall.Import.loadWith expression)
+                        status
+
+                mapM_ (print . Pretty.pretty . Dhall.Core.importType . Dhall.Core.importHashed)
+                     (Data.Map.keys cache)
+
+            Nothing -> do
+                (resolvedExpression, _) <- State.runStateT
+                    (Dhall.Import.loadWith expression) status
+
+                putExpr resolvedExpression
+  where
+    characterSet = Unicode -- TODO: This should be configurable.
+
+    putExpr = Dhall.hPutExpr (fromMaybe ColourOutput.Auto colourOutput)
+        characterSet System.IO.stdout
+
+    handle =
+        Control.Exception.handle handler2
+        . Control.Exception.handle handler1
+        . Control.Exception.handle handler0
+
+    explain = verbosity > Verbosity.Normal
+
+    handler0 :: TypeError Src X -> IO ()
+    handler0 e = do
+        System.IO.hPutStrLn System.IO.stderr ""
+        if explain
+            then Control.Exception.throwIO (DetailedTypeError e)
+            else do
+                -- TODO: Wrong message.
+                Data.Text.IO.hPutStrLn System.IO.stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
+                Control.Exception.throwIO e
+
+    handler1 :: Imported (TypeError Src X) -> IO ()
+    handler1 (Imported ps e) = do
+        System.IO.hPutStrLn System.IO.stderr ""
+        if explain
+            then Control.Exception.throwIO (Imported ps (DetailedTypeError e))
+            else do
+                -- TODO: Wrong message.
+                Data.Text.IO.hPutStrLn System.IO.stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
+                Control.Exception.throwIO (Imported ps e)
+
+    handler2 :: SomeException -> IO ()
+    handler2 e = do
+        let string = show e
+
+        if not (null string)
+            -- TODO: Use errorMsg
+            then System.IO.hPutStrLn System.IO.stderr string
+            else return ()
+
+        System.Exit.exitFailure
+
+{- TODO: Reimplement the rest of Dhall commands/actions
+
 -- | Run the command specified by the `Options` type
 command :: Options -> IO ()
 command Options{..} = do
-    -- TODO: Handle unicode/ascii correctly.
-    let characterSet = Unicode -- case ascii of
---          True  -> ASCII
---          False -> Unicode
-
-    GHC.IO.Encoding.setLocaleEncoding System.IO.utf8
-
-    let toStatus maybeFile = Dhall.Import.emptyStatus file
-          where
-            file = case maybeFile of
-                Just "-" -> "."
-                Just f   -> f
-                Nothing  -> "."
-
-    let handle =
-                Control.Exception.handle handler2
-            .   Control.Exception.handle handler1
-            .   Control.Exception.handle handler0
-          where
-            handler0 e = do
-                let _ = e :: TypeError Src X
-                System.IO.hPutStrLn System.IO.stderr ""
-                if explain
-                    then Control.Exception.throwIO (DetailedTypeError e)
-                    else do
-                        Data.Text.IO.hPutStrLn System.IO.stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
-                        Control.Exception.throwIO e
-
-            handler1 (Imported ps e) = do
-                let _ = e :: TypeError Src X
-                System.IO.hPutStrLn System.IO.stderr ""
-                if explain
-                    then Control.Exception.throwIO (Imported ps (DetailedTypeError e))
-                    else do
-                        Data.Text.IO.hPutStrLn System.IO.stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
-                        Control.Exception.throwIO (Imported ps e)
-
-            handler2 e = do
-                let string = show (e :: SomeException)
-
-                if not (null string)
-                    then System.IO.hPutStrLn System.IO.stderr string
-                    else return ()
-
-                System.Exit.exitFailure
-
+    -- ...
     let renderDoc :: Handle -> Doc Ann -> IO ()
         renderDoc h doc = do
             let stream = Pretty.layoutSmart layoutOpts doc
@@ -258,32 +324,11 @@ command Options{..} = do
             Data.Text.IO.hPutStrLn h ""
 
     let render :: Pretty a => Handle -> Expr s a -> IO ()
-        render h expression = do
-            let doc = Dhall.Pretty.prettyCharacterSet characterSet expression
-
-            renderDoc h doc
+        render = -- ...
 
     handle $ case mode of
         Default {..} -> do
-            expression <- getExpression file
-
-            resolvedExpression <- State.evalStateT (Dhall.Import.loadWith expression) (toStatus file)
-
-            inferredType <- Dhall.Core.throws (Dhall.TypeCheck.typeOf resolvedExpression)
-
-            let normalizedExpression = Dhall.Core.normalize resolvedExpression
-
-            let alphaNormalizedExpression =
-                    if alpha
-                    then Dhall.Core.alphaNormalize normalizedExpression
-                    else normalizedExpression
-
-            let annotatedExpression =
-                    if annotate
-                        then Annot alphaNormalizedExpression inferredType
-                        else alphaNormalizedExpression
-
-            render System.IO.stdout annotatedExpression
+            -- Not relevant any more.
 
         -- TODO: _dot field of Status is not available.
         Resolve { resolveMode = Just Dot, ..} -> pure () -- do
@@ -323,29 +368,10 @@ command Options{..} = do
             render System.IO.stdout resolvedExpression
 
         Normalize {..} -> do
-            expression <- getExpression file
-
-            resolvedExpression <- Dhall.Import.assertNoImports expression
-
-            _ <- Dhall.Core.throws (Dhall.TypeCheck.typeOf resolvedExpression)
-
-            let normalizedExpression = Dhall.Core.normalize resolvedExpression
-
-            let alphaNormalizedExpression =
-                    if alpha
-                    then Dhall.Core.alphaNormalize normalizedExpression
-                    else normalizedExpression
-
-            render System.IO.stdout alphaNormalizedExpression
+            -- Not relevant any more.
 
         Type {..} -> do
-            expression <- getExpression file
-
-            resolvedExpression <- Dhall.Import.assertNoImports expression
-
-            inferredType <- Dhall.Core.throws (Dhall.TypeCheck.typeOf resolvedExpression)
-
-            render System.IO.stdout (Dhall.Core.normalize inferredType)
+            -- Not relevant any more.
 
         Format {..} -> do
             Dhall.Format.format (Dhall.Format.Format {..})
@@ -428,6 +454,20 @@ command Options{..} = do
             let doc = Dhall.Pretty.prettyCharacterSet characterSet expression
 
             renderDoc System.IO.stdout doc
+-}
+
+-- {{{ Diff -------------------------------------------------------------------
+
+data Diff = Diff
+    { expr1 :: Text
+    , expr2 :: Text
+--  , output :: Maybe FilePath  -- TODO Ist this a correct type?
+    , plain :: Bool  -- TODO This should be handled by ColourOutput.
+    }
+  deriving (Show)
+
+defDiff :: Text -> Text -> Diff
+defDiff expr1 expr2 = Diff{expr1, expr2, plain = False}
 
 diff :: Diff -> IO ()
 diff Diff{..} = do
@@ -437,6 +477,7 @@ diff Diff{..} = do
 
     renderDoc System.IO.stdout diffDoc
   where
+    -- TODO: Merge with other functions that we have for this purpose?
     renderDoc :: Handle -> Doc Ann -> IO ()
     renderDoc h doc = do
         let stream = Pretty.layoutSmart layoutOpts doc
@@ -450,6 +491,31 @@ diff Diff{..} = do
         Pretty.renderIO h ansiStream
         Data.Text.IO.hPutStrLn h ""
 
+-- }}} Diff -------------------------------------------------------------------
+
+-- {{{ REPL -------------------------------------------------------------------
+
+data Repl = Repl
+    { characterSet :: CharacterSet
+    , explain :: Bool
+
+    , historyFile :: Maybe FilePath -- TODO Is this a correct type?
+    -- ^ This is not currently supported by neither @dhall@ library nor by
+    -- @repline@ which is used by @dhall@ to implement REPL functionality.
+    }
+  deriving (Show)
+
+deriving instance Show CharacterSet -- TODO Get rid of orphan
+
+defRepl :: Repl
+defRepl = Repl
+    { characterSet = Unicode
+    , explain = False
+    , historyFile = Nothing
+    }
+
 repl :: Repl -> IO ()
 repl Repl{..} =
     Dhall.Repl.repl characterSet explain defaultStandardVersion
+
+-- }}} REPL -------------------------------------------------------------------
