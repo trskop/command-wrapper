@@ -27,7 +27,7 @@ import Data.Foldable (asum, for_, null)
 import Data.Function (($), (.), const)
 import Data.Functor (Functor, (<$>), (<&>))
 import Data.Int (Int)
-import qualified Data.List as List (elem, filter, intercalate, isPrefixOf)
+import qualified Data.List as List (elem, filter, intercalate, isPrefixOf, or)
 --import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
@@ -666,10 +666,17 @@ configCompletion _appNames _config wordsBeforePattern pat
 
     hadDhall = "--dhall" `List.elem` wordsBeforePattern
     hadDhallDiff = "--dhall-diff" `List.elem` wordsBeforePattern
+    hadDhallFreeze = "--dhall-freeze" `List.elem` wordsBeforePattern
     hadDhallHash = "--dhall-hash" `List.elem` wordsBeforePattern
     hadDhallRepl = "--dhall-repl" `List.elem` wordsBeforePattern
 
-    hadSomeDhall = hadDhall || hadDhallDiff || hadDhallHash || hadDhallRepl
+    hadSomeDhall = List.or
+        [ hadDhall
+        , hadDhallDiff
+        , hadDhallFreeze
+        , hadDhallHash
+        , hadDhallRepl
+        ]
 
     mwhen p x = if p then x else mempty
     munless p = mwhen (not p)
@@ -679,14 +686,26 @@ configCompletion _appNames _config wordsBeforePattern pat
             [ "--help", "-h"
             , "--init"
             , "--dhall", "--dhall-diff", "--dhall-hash", "--dhall-repl"
+            , "--dhall-freeze"
             ]
         <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
         <> munless
-            (hadHelp || not hadDhall || hadDhallHash || hadDhallHash || hadInit)
+            ( List.or
+                [ hadHelp, not hadDhall, hadDhallHash, hadDhallFreeze
+                , hadDhallHash, hadInit
+                ]
+            )
             [ "--alpha", "--no-alpha"
             , "--allow-imports", "--no-allow-imports"
             , "--annotate", "--no-annotate"
             , "--type", "--no-type"
             ]
+        <> munless
+            ( List.or
+                [ hadHelp, hadDhall, hadDhallHash, not hadDhallFreeze
+                , hadDhallHash, hadInit
+                ]
+            )
+            ["--remote-only", "--no-remote-only"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
