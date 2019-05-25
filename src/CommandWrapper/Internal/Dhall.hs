@@ -12,24 +12,41 @@
 module CommandWrapper.Internal.Dhall
     ( hPut
     , hPutExpr
+    , hPutDoc
     )
   where
 
-import System.IO (Handle, hPutStrLn)
+import Data.Functor ((<&>))
+import System.IO (Handle)
 
 import Data.Text.Prettyprint.Doc (Pretty)
+import qualified Data.Text.Prettyprint.Doc as Pretty
+    ( Doc
+    , LayoutOptions(LayoutOptions)
+    , PageWidth(AvailablePerLine)
+    , layoutSmart
+    , line
+    , unAnnotateS
+    )
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (renderIO)
 import qualified Dhall (InputType(InputType, embed))
 import qualified Dhall.Core as Dhall (Expr)
 import qualified Dhall.Pretty as Dhall
-    ( CharacterSet
+    ( Ann
+    , CharacterSet
     , annToAnsiStyle
+    , layoutOpts
     , prettyCharacterSet
     )
+import qualified System.Console.Terminal.Size as Terminal
+    ( Window(Window, width)
+    , hSize
+    )
 
-import CommandWrapper.Message (hPutDoc, defaultLayoutOptions)
-import CommandWrapper.Options.ColourOutput (ColourOutput)
+import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
 
 
+-- | Print haskell value as a Dhall expression.
 hPut
     :: ColourOutput
     -> Dhall.CharacterSet
@@ -40,6 +57,7 @@ hPut
 hPut colour charset handle Dhall.InputType{embed = toExpr} =
     hPutExpr colour charset handle . toExpr
 
+-- | Print dhall expression.
 hPutExpr
     :: Pretty a
     => ColourOutput
@@ -47,7 +65,25 @@ hPutExpr
     -> Handle
     -> Dhall.Expr s a
     -> IO ()
-hPutExpr colour charset handle expr = do
-    hPutDoc defaultLayoutOptions Dhall.annToAnsiStyle colour handle
-        $ Dhall.prettyCharacterSet charset expr
-    hPutStrLn handle ""
+hPutExpr colour charset handle expr =
+    hPutDoc colour handle (Dhall.prettyCharacterSet charset expr <> Pretty.line)
+
+-- | Print Dhall-style 'Pretty.Doc' to specified handle.  Respects terminal
+-- size and all.
+hPutDoc :: ColourOutput -> Handle -> Pretty.Doc Dhall.Ann -> IO ()
+hPutDoc colourOutput h doc = do
+    layoutOpts <- Terminal.hSize h <&> \case
+        Nothing ->
+            Dhall.layoutOpts
+
+        Just Terminal.Window{width} ->
+            Pretty.LayoutOptions (Pretty.AvailablePerLine width 1.0)
+
+    useColours <- shouldUseColours h colourOutput
+
+    let stream = Pretty.layoutSmart layoutOpts doc
+
+    Pretty.renderIO h
+        if useColours
+            then Dhall.annToAnsiStyle <$> stream
+            else Pretty.unAnnotateS stream

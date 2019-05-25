@@ -56,8 +56,17 @@ import Dhall.Core (Expr(..), Import)
 import qualified Dhall.Freeze as Dhall (freezeImport, freezeRemoteImport)
 import Dhall.Import (Imported(..))
 import Dhall.Parser (Src)
-import Dhall.Pretty (Ann, CharacterSet(..), annToAnsiStyle, layoutOpts)
+import qualified Dhall.Pretty as Dhall
+    ( Ann
+    , CharacterSet(..)
+    , annToAnsiStyle
+    , layoutOpts
+    )
 import Dhall.TypeCheck (DetailedTypeError(..), TypeError, X)
+import qualified System.Console.Terminal.Size as Terminal
+    ( Window(Window, width)
+    , hSize
+    )
 import System.FilePath (takeDirectory)
 
 import qualified Codec.CBOR.JSON
@@ -90,7 +99,7 @@ import qualified Dhall.TypeCheck
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
-import qualified CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
+import qualified CommandWrapper.Internal.Dhall as Dhall (hPutDoc, hPutExpr)
 import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput (ColourOutput(Auto))
 import Data.Generics.Internal.VL.Lens ((^.))
@@ -267,7 +276,7 @@ interpreter
 
                 putExpr resolvedExpression
   where
-    characterSet = Unicode -- TODO: This should be configurable.
+    characterSet = Dhall.Unicode -- TODO: This should be configurable.
 
     putExpr = Dhall.hPutExpr (fromMaybe ColourOutput.Auto colourOutput)
         characterSet stdout
@@ -412,7 +421,7 @@ data Freeze = Freeze
     { remoteOnly :: Bool
     , input :: Input
     , output :: Output -- TODO: Actually implement.
-    , characterSet :: CharacterSet
+    , characterSet :: Dhall.CharacterSet
     }
   deriving (Show)
 
@@ -421,7 +430,7 @@ defFreeze = Freeze
     { remoteOnly = True
     , input = InputStdin
     , output = () -- TODO: Actually implement.
-    , characterSet = Unicode
+    , characterSet = Dhall.Unicode
     }
 
 freeze
@@ -490,7 +499,7 @@ diff _appNames config Diff{..} = do
 -- {{{ REPL -------------------------------------------------------------------
 
 data Repl = Repl
-    { characterSet :: CharacterSet
+    { characterSet :: Dhall.CharacterSet
 
     , historyFile :: Maybe FilePath -- TODO Is this a correct type?
     -- ^ This is not currently supported by neither @dhall@ library nor by
@@ -498,11 +507,11 @@ data Repl = Repl
     }
   deriving (Show)
 
-deriving instance Show CharacterSet -- TODO Get rid of orphan
+deriving instance Show Dhall.CharacterSet -- TODO Get rid of orphan
 
 defRepl :: Repl
 defRepl = Repl
-    { characterSet = Unicode
+    { characterSet = Dhall.Unicode
     , historyFile = Nothing
     }
 
@@ -516,18 +525,9 @@ repl _appNames Config{verbosity} Repl{..} =
 
 -- {{{ Helper Functions -------------------------------------------------------
 
--- TODO: Merge with other functions that we have for this purpose?
-renderDoc :: Config -> Handle -> Doc Ann -> IO ()
-renderDoc Config{colourOutput} h doc = do
-    let stream = Pretty.layoutSmart layoutOpts doc
-
-    useColours <- shouldUseColours h
-        (fromMaybe ColourOutput.Auto colourOutput)
-
-    Pretty.renderIO h
-        if useColours
-            then annToAnsiStyle <$> stream
-            else Pretty.unAnnotateS stream
-    Text.hPutStrLn h ""
+renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
+renderDoc Config{colourOutput} h doc =
+    Dhall.hPutDoc (fromMaybe ColourOutput.Auto colourOutput) h
+        (doc <> Pretty.line)
 
 -- }}} Helper Functions -------------------------------------------------------
