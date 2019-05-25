@@ -1,0 +1,7 @@
+let DockerExecOptions = ./DockerExecOptions
+
+let DockerRunOptions = DockerExecOptions
+      ⩓ { remove : Bool
+        }
+
+in  DockerRunOptions

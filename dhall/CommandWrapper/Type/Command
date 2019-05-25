@@ -4,3 +4,5 @@ let Command =
       }
 
 in  Command : Type
+
+-- vim: filetype=dhall

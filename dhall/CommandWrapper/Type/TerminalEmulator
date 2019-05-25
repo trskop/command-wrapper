@@ -1,6 +1,6 @@
-let Command = ./Command.dhall
+let Command = ./Command
 
-let CommandWithEnvironment = ./CommandWithEnvironment.dhall
+let CommandWithEnvironment = ./CommandWithEnvironment
 
 let TerminalEmulator =
         Optional Text
@@ -8,3 +8,5 @@ let TerminalEmulator =
       → CommandWithEnvironment
 
 in  TerminalEmulator : Type
+
+-- vim: filetype=dhall

@@ -1,14 +1,69 @@
-let Verbosity/fold =
-      https://raw.githubusercontent.com/trskop/verbosity/9dd482bfbd767c2a79e5bdec8e3d0bd4812b75c0/dhall/Verbosity/fold
-      sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
+{ colourOutput = ./colour-output
 
-in  { verbosity =
-        { fold = Verbosity/fold
-        }
-    , colourOutput = ./colour-output.dhall
-    , mkDefaultConfig = ./default.dhall
-    , mkCdConfig = ./cd.dhall
-    , command = ./command.dhall
-    , terminalEmulator = ./terminal-emulator.dhall
-    , toolsetConfig = ./toolset-config.dhall
+, command =
+    { emptyArguments = ./command/emptyArguments
+    , emptyEnvironment = ./command/emptyEnvironment
+    , simple = ./command/simple
+    , withExtraArguments = ./command/withExtraArguments
     }
+
+-- HTTP/HTTPS URL schemas
+, schema =
+    { fold = ./schema/fold
+    , show = ./schema/show
+    }
+
+-- These are some known terminal emulators that support setting working
+-- directory via command line option.
+, terminalEmulator =
+    { urxvt = ./terminal-emulator/urxvt
+    , kitty = ./terminal-emulator/kitty
+    }
+
+, verbosity =
+    { fold = ./verbosity/fold
+    }
+
+-- Defaults and library of useful tools for toolset and external subcommands
+-- bundled with Command Wrapper.
+, config =
+    { cd = ./cd-config
+
+    , exec =
+        { defaults = ./exec/defaults
+        , emptyCommands = ./exec/emptyCommands
+        , bazel = ./exec/bazel
+        , direnv = ./exec/direnv
+        , docker = ./exec/docker
+        , firefox = ./exec/firefox
+        , pg_dump = ./exec/pg_dump
+        , psql = ./exec/psql
+        , run-mailcap = ./exec/run-mailcap
+        , stack = ./exec/stack
+        , tmux = ./exec/tmux
+        , xdg-open = ./exec/xdg-open
+        } 
+
+    , skel =
+        { default-bash-skel = ./skel/default-bash-skel
+        , default-dhall-skel = ./skel/default-dhall-skel
+        , default-haskell-skel = ./skel/default-haskell-skel
+        }
+
+    , toolset = ./toolset-config
+    }
+
+, utils =
+    { `List` =
+        { head-and-tail = ./List/head-and-tail
+        }
+    , url =
+        { defaultPort = ./url/defaultPort
+        , emptyPath = ./url/emptyPath
+        , mk = ./url/mk
+        , port = ./url/port
+        , portToText = ./url/portToText
+        }
+
+    }
+}

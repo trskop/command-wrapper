@@ -1,0 +1,24 @@
+let Schema = (../Types.dhall).Schema
+
+let foldSchema
+      : ∀(r : Type)
+      → ∀ (handler
+            : { Http : r
+              , Https : r
+              }
+          )
+      → ∀(schema : Schema)
+      → r
+
+      = λ(r : Type)
+      → λ(handler
+            : { Http : r
+              , Https : r
+              }
+          )
+      → λ(schema : Schema)
+      → merge handler schema
+
+in foldSchema
+
+-- vim: filetype=dhall

@@ -1,0 +1,6 @@
+λ(port : Optional Natural)
+→ Optional/fold Natural port Text
+  (λ(p : Natural) → ":${Natural/show p}")
+  ""
+
+-- vim: filetype=dhall

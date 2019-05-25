@@ -1,8 +1,10 @@
-let Command : Type = ./Command.dhall
+let Command : Type = ./Command
 
-let EnvironmentVariable : Type = ./EnvironmentVariable.dhall
+let EnvironmentVariable : Type = ./EnvironmentVariable
 
 let CommandWithEnvironment : Type =
       Command ⩓ {environment : List EnvironmentVariable}
 
 in CommandWithEnvironment : Type
+
+-- vim: filetype=dhall

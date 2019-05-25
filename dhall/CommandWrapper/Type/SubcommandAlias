@@ -1,9 +1,9 @@
-  let
-    SubcommandAlias =
+let SubcommandAlias =
       { alias : Text
       , command : Text
       , arguments : List Text
       }
 
-in
-    SubcommandAlias : Type
+in  SubcommandAlias : Type
+
+-- vim: filetype=dhall

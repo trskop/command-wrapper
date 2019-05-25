@@ -1,0 +1,15 @@
+let Schema = (../Types.dhall).Schema
+
+let Schema/fold = ../schema/fold
+
+let Schema/show = ../schema/show
+
+let portToText = ./portToText
+
+in    λ(s : Schema)
+    → λ(host : Text)
+    → λ(port : Optional Natural)
+    → λ(path : Text)
+    → "${Schema/show s}://${host}${portToText port}${path}"
+
+-- vim: filetype=dhall

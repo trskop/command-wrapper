@@ -1,0 +1,17 @@
+let CommandWrapper = ../Types.dhall
+
+in    λ(fileOrUrl : Optional Text)
+    → λ(environment : List CommandWrapper.EnvironmentVariable)
+    → λ(verbosity : CommandWrapper.Verbosity)
+    → λ(colourOutput : CommandWrapper.ColourOutput)
+    → λ(arguments : List Text)
+    → { command = "xdg-open"
+      , arguments =
+            Optional/fold Text fileOrUrl (List Text)
+              (λ(value : Text) → [value] : List Text)
+              ([] : List Text)
+          # arguments
+      , environment = environment
+      , searchPath = True
+      , workingDirectory = None Text
+      } : CommandWrapper.ExecCommand

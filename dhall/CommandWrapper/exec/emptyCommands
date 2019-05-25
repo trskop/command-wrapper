@@ -1,0 +1,5 @@
+let CommandWrapper = ../Types.dhall
+
+in  [] : List CommandWrapper.ExecNamedCommand
+
+-- vim: filetype=dhall

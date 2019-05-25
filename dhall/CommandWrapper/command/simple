@@ -1,0 +1,12 @@
+let CommandWrapper = ../Types.dhall
+
+let simple =
+        λ(command : Text)
+      → { command = command
+        , arguments = [] : List Text
+        }
+      : CommandWrapper.Command
+
+in  simple
+
+-- vim: filetype=dhall

@@ -1,6 +1,6 @@
-let Command : Type = ./Command.dhall
+let Command : Type = ./Command
 
-let CommandWithEnvironment : Type = ./CommandWithEnvironment.dhall
+let CommandWithEnvironment : Type = ./CommandWithEnvironment
 
 let CdConfig : Type =
       { directories : List Text
@@ -18,15 +18,6 @@ let CdConfig : Type =
           → CommandWithEnvironment
       }
 
-let CdMkConfig : Type =
-      ∀(update : CdConfig → CdConfig) → CdConfig
+in  CdConfig
 
-let Cd =
-      { Config = CdConfig
-      , MkConfig = CdMkConfig
-      }
-
-in  Cd
-      : { Config : Type
-        , MkConfig : Type
-        }
+-- vim: filetype=dhall

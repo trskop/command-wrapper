@@ -1,0 +1,18 @@
+let Verbosity = ./Verbosity
+
+let ColourOutput = ./ColourOutput
+
+let SubcommandAlias = ./SubcommandAlias
+
+let ToolsetConfig =
+      { aliases : List SubcommandAlias
+      , searchPath : List Text
+      , description : Optional Text
+      , extraHelpMessage : Optional Text
+      , verbosity : Verbosity
+      , colourOutput : Optional ColourOutput
+      }
+
+in  ToolsetConfig
+
+-- vim: filetype=dhall

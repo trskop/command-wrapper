@@ -1,2 +1,4 @@
 https://raw.githubusercontent.com/trskop/mainplate/master/dhall/Type/EnvironmentVariable.dhall
 sha256:458933c782788ede6d771b58c2b400af65860abb745c71c14ddc8056812a7c73
+
+-- vim: filetype=dhall

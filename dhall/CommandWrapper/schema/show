@@ -1,0 +1,18 @@
+let Schema = (../Types.dhall).Schema
+
+let Schema/fold = ./fold
+
+let Schema/show
+      : ∀(schema : Schema)
+      → Text
+
+      = λ(s : Schema)
+      → Schema/fold Text
+          { Http = "http"
+          , Https = "https"
+          }
+          s
+
+in  Schema/show
+
+-- vim: filetype=dhall

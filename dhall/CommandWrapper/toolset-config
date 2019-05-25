@@ -1,0 +1,46 @@
+let CommandWrapper = ./Types.dhall
+
+let colourOutput = ./colour-output
+
+let mkPrefix =
+      λ(optionalText : Optional Text)
+      → Optional/fold Text optionalText Text
+          (λ(t : Text) → "${t}\n") ""
+
+let addSubcommandAliases
+      = λ(aliases : List CommandWrapper.SubcommandAlias)
+      → λ(helpMessage : Text)
+      → λ(defaults : CommandWrapper.ToolsetConfig)
+      → { aliases = defaults.aliases # aliases
+        , description = defaults.description
+        , extraHelpMessage =
+            Some "${mkPrefix defaults.extraHelpMessage}${helpMessage}"
+        , searchPath = defaults.searchPath
+        , verbosity = defaults.verbosity
+        , colourOutput = defaults.colourOutput
+        }
+
+let emptyAliases = [] : List CommandWrapper.SubcommandAlias
+
+let emptySearchPath = [] : List Text
+
+in  { defaults =
+        { aliases = emptyAliases
+        , searchPath = emptySearchPath
+        , description = None Text
+        , extraHelpMessage = None Text
+        , verbosity = CommandWrapper.Verbosity.Normal
+        , colourOutput = None CommandWrapper.ColourOutput
+        }
+
+    , emptyAliases = emptyAliases
+    , emptySearchPath = emptySearchPath
+    , addSubcommandAliases = addSubcommandAliases
+
+    , defaultSearchPath =
+          λ(home : Text)
+        → λ(toolsetName : Text)
+        → ["${home}/.local/lib/${toolsetName}"]
+    }
+
+-- vim: filetype=dhall

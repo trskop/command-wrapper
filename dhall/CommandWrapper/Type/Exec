@@ -1,8 +1,8 @@
-let CommandWithEnvironment : Type = ./CommandWithEnvironment.dhall
+let CommandWithEnvironment : Type = ./CommandWithEnvironment
 
-let Verbosity : Type = ./Verbosity.dhall
+let Verbosity : Type = ./Verbosity
 
-let ColourOutput : Type = ./ColourOutput.dhall
+let ColourOutput : Type = ./ColourOutput
 
 let ExecCommand : Type = CommandWithEnvironment
       ⩓ { searchPath : Bool
@@ -22,3 +22,5 @@ in
     { Command = ExecCommand : Type
     , NamedCommand = NamedCommand : Type
     }
+
+-- vim: filetype=dhall
