@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 19th May 2019
+% 25th May 2019
 
 
 # NAME
@@ -40,6 +40,21 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} \[\--global|-g|*SUBCOMMA
 
 Command Wrapper's configuration swiss army knife.  On of its many purposes is
 to provide Dhall functionality without the need to install external tools.
+
+We can organise `config` subcommand abilities into following categories:
+
+**Dhall** (`--dhall*`)
+:   All the functionality of:
+
+    *   [dhall](http://hackage.haskell.org/package/dhall)
+    *   [dhall-bash](http://hackage.haskell.org/package/dhall-bash) (**TODO**)
+    *   [dhall-json](http://hackage.haskell.org/package/dhall-json) (**TODO**)
+    *   [dhall-text](http://hackage.haskell.org/package/dhall-text) (**TODO**)
+
+    Which is integrated with Command Wrapper and with a nicer command line UX.
+
+**Initialisation** (`--init`)
+:   Initialise toolset configuration.
 
 
 # OPTIONS

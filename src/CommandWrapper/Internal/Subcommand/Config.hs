@@ -19,32 +19,30 @@ module CommandWrapper.Internal.Subcommand.Config
   where
 
 import Control.Applicative ((<*>), (<|>), optional, pure)
-import Control.Monad ((>>=), unless)
+--import Control.Monad ((>>=), unless)
 import Data.Bool (Bool(False, True), (||), not, otherwise)
-import Data.Either (Either(Left, Right))
-import Data.Eq ((==))
-import Data.Foldable (asum, for_, null)
+--import Data.Either (Either(Left, Right))
+import Data.Foldable (asum, null)
 import Data.Function (($), (.), const)
 import Data.Functor (Functor, (<$>), (<&>))
-import Data.Int (Int)
-import qualified Data.List as List (elem, filter, intercalate, isPrefixOf, or)
+import qualified Data.List as List (elem, filter, isPrefixOf, or)
 --import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
-import Data.String (String, fromString)
+import Data.String (String)
 import GHC.Generics (Generic)
-import System.Exit (ExitCode(ExitFailure), exitWith)
-import System.IO (FilePath, IO, stderr, stdout)
-import Text.Show (Show, show)
+--import System.Exit (ExitCode(ExitFailure), exitWith)
+import System.IO (IO{-, stderr-}, stdout)
+import Text.Show (Show)
 
 import Data.Monoid.Endo.Fold (dualFoldEndo)
 import Data.Text (Text)
-import Data.Text.Prettyprint.Doc ((<+>), pretty)
+import Data.Text.Prettyprint.Doc ((<+>){-, pretty-})
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
     , brackets
-    , hsep
-    , line
+--  , hsep
+--  , line
     , squotes
     , vsep
     )
@@ -62,23 +60,11 @@ import qualified Options.Applicative as Options
     , strArgument
     , strOption
     )
-import System.Directory
-    ( XdgDirectory(XdgConfig)
-    , createDirectoryIfMissing
-    , doesDirectoryExist
-    , findExecutable
-    , getHomeDirectory
-    , getHomeDirectory
-    , getXdgDirectory
-    )
-import System.FilePath ((</>))
-import System.Posix.Files (createSymbolicLink)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
-import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
+import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Internal.Subcommand.Help
-    ( command
-    , globalOptionsHelp
+    ( globalOptionsHelp
     , helpOptions
     , longOption
     , longOptionWithArgument
@@ -93,7 +79,7 @@ import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message
     ( Result
     , defaultLayoutOptions
-    , errorMsg
+--  , errorMsg
     , message
     )
 import qualified CommandWrapper.Options.Optparse as Options
@@ -121,6 +107,12 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , interpreter
     , repl
     )
+import CommandWrapper.Internal.Subcommand.Config.Init
+    ( InitOptions(..)
+    , defInitOptions
+    , init
+    )
+
 
 
 data ConfigMode a
@@ -134,87 +126,11 @@ data ConfigMode a
     | Help a
   deriving (Functor, Generic, Show)
 
-data InitOptions = InitOptions
-    { toolsetName :: String
-    , binDir :: Maybe FilePath
-    }
-  deriving (Generic, Show)
-
-defInitOptions :: String -> InitOptions
-defInitOptions toolsetName = InitOptions
-    { toolsetName
-    , binDir = Nothing
-    }
-
 config :: AppNames -> [String] -> Global.Config -> IO ()
-config appNames@AppNames{exePath, usedName} options globalConfig =
+config appNames options globalConfig =
     runMain (parseOptions appNames globalConfig options) defaults \case
-        Init InitOptions{..} cfg -> do
-            destination <- case binDir of
-                Just dir -> do
-                    checkDir dir >>= \case
-                        Nothing -> do
-                            dieWith cfg 1
-                                ( fromString (show dir)
-                                <> ": Directory doesn't exist."
-                                )
-                        Just d -> pure d
-
-                Nothing -> do
-                    home <- getHomeDirectory
-                    let binDirs = (home </>) <$> [".local/bin", "bin"]
-                    checkDirs binDirs >>= \case
-                        Nothing -> do
-                            dieWith cfg 1
-                                ( "None of these directories exist: "
-                                <> fromString (unlist (show <$> binDirs))
-                                )
-                        Just dir -> pure dir
-
-            unless (usedName == "command-wrapper")
-                $ findExecutable toolsetName >>= \case
-                    Nothing -> do
-                        let dst = destination </> toolsetName
-                        createSymbolicLink exePath dst
-                        messageLn cfg
-                            [ command (fromString dst) <> ":"
-                            , Pretty.reflow "Symbolic link to"
-                            , command (fromString exePath)
-                            , "created successfully."
-                            ]
-
-                    Just _ ->
-                        messageLn cfg
-                            [ command (fromString toolsetName) <> ":"
-                            , Pretty.reflow "Executable already exist,\
-                                \ skipping symlinking"
-                            , command (fromString exePath) <> "."
-                            ]
-
-            configDir <- getXdgDirectory XdgConfig toolsetName
-            libDir <- (</> (".local/lib" </> toolsetName)) <$> getHomeDirectory
-            dirs <- dirsExistence [configDir, libDir]
-            for_ dirs \case
-                Left dir -> do
-                    createDirectoryIfMissing True dir
-                    messageLn cfg
-                        [ command (fromString dir) <> ":"
-                        , Pretty.reflow "Directory created successfully."
-                        ]
-                Right dir ->
-                    messageLn cfg
-                        [ command (fromString dir) <> ":"
-                        , Pretty.reflow "Directory already exists, skipping\
-                            \ its creation."
-                        ]
-
-            -- TODO:
-            --
-            -- - Lib and config directories.
-            -- - Initial configuration.
-            -- - Support for initialisation of core Command Wrapper
-            --   configuration and directories.  Make `--toolset=NAME`
-            --   Optional?
+        Init opts cfg ->
+            init appNames cfg opts
 
         ConfigLib _ -> pure ()
 
@@ -276,6 +192,7 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
 
+    {-
     dieWith :: Global.Config -> Int -> (forall ann. Pretty.Doc ann) -> IO a
     dieWith cfg exitCode msg = do
         let Global.Config{colourOutput, verbosity} = cfg
@@ -292,32 +209,7 @@ config appNames@AppNames{exePath, usedName} options globalConfig =
 
          in message defaultLayoutOptions verbosity colourOutput' stdout
                 (Pretty.hsep fragments <> Pretty.line)
-
-checkDir :: FilePath -> IO (Maybe FilePath)
-checkDir dir = do
-    doesExist <- doesDirectoryExist dir
-    pure if doesExist
-        then Just dir
-        else Nothing
-
--- | Find first directory that exists, or return 'Nothing' of none.
-checkDirs :: [FilePath] -> IO (Maybe FilePath)
-checkDirs = \case
-    [] -> pure Nothing
-    dir : dirs ->
-        checkDir dir >>= \case
-            r@(Just _) -> pure r
-            Nothing -> checkDirs dirs
-
-dirsExistence :: [FilePath] -> IO [Either FilePath FilePath]
-dirsExistence = \case
-    [] -> pure []
-    dir : dirs -> do
-        doesExist <- doesDirectoryExist dir
-        ((if doesExist then Right else Left) dir :) <$> dirsExistence dirs
-
-unlist :: [String] -> String
-unlist = List.intercalate ", "
+    -}
 
 parseOptions
     :: AppNames
