@@ -8,6 +8,7 @@
     --
 -}
 
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -89,10 +90,10 @@ main :: IO ()
 main = do
     projectRoot <- getScriptPath >>= \case
         Executable executable ->
-            pure $ takeDirectory executable
+            pure (takeDirectory executable)
 
         RunGHC script ->
-            pure $ takeDirectory script
+            pure (takeDirectory script)
 
         Interactive ->
             die "Interactive mode not supported; call shakeMain directly."
@@ -106,7 +107,7 @@ main = do
     shakeMain Directories{..} shakeOptions
 
 shakeMain :: Directories -> ShakeOptions -> IO ()
-shakeMain Directories{..} opts = shakeArgs opts $ do
+shakeMain Directories{..} opts = shakeArgs opts do
     let localLibDir = localDir </> "lib"
         localBinDir = localDir </> "bin"
 

@@ -121,9 +121,6 @@ run appNames = \case
         , subcommandProtocol =
             Subcommand.PrettyVersion subcommandProtocolVersion
 
-        -- TODO: We would like to use PrettyVersion, however, that would
-        -- require parsing the version string.  Best approach would probably be
-        -- TemplateHaskell, so that we can fail during compilation time.
         , dhallLibrary =
             Subcommand.PrettyVersion [Subcommand.versionQQ|VERSION_dhall|]
 
