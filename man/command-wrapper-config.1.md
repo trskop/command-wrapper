@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 26th May 2019
+% 27th May 2019
 
 
 # NAME
@@ -17,6 +17,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-freeze
 \[\--\[no-]remote-only]
@@ -141,6 +143,9 @@ We can organise `config` subcommand abilities into following categories:
 
 \--dhall-diff
 :   Render the difference between the normal form of two Dhall expressions.
+
+\--dhall-format
+:   Format Dhall expression.
 
 \--dhall-freeze
 :   Add integrity checks to import statements of a Dhall expression.

@@ -93,11 +93,13 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput
 
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Diff(..)
+    , Format(..)
     , Freeze(..)
     , Mode(..)
     , Options(..)
     , Repl(..)
     , defDiff
+    , defFormat
     , defFreeze
     , defOptions
     , defRepl
@@ -106,6 +108,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , hash
     , interpreter
     , repl
+    , format
     )
 import CommandWrapper.Internal.Subcommand.Config.Init
     ( InitOptions(..)
@@ -120,6 +123,7 @@ data ConfigMode a
     | ConfigLib a
     | Dhall Dhall.Options a
     | DhallDiff Dhall.Diff a
+    | DhallFormat Dhall.Format a
     | DhallFreeze Dhall.Freeze a
     | DhallHash a
     | DhallRepl Dhall.Repl a
@@ -181,6 +185,9 @@ config appNames options globalConfig =
         DhallDiff diffOpts cfg ->
             Dhall.diff appNames cfg diffOpts
 
+        DhallFormat formatOpts cfg ->
+            Dhall.format appNames cfg formatOpts
+
         DhallFreeze freezeOpts cfg ->
             Dhall.freeze appNames cfg freezeOpts
 
@@ -240,6 +247,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallFreezeFlag
         <*> (remoteOnlyFlag <|> noRemoteOnlyFlag)
 
+    , dhallFormatFlag
+        <*> pure mempty
+--      <*> (checkFlag <|> noCheckFlag)
+
     , helpFlag
 
     , pure mempty
@@ -268,6 +279,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         -> Endo (ConfigMode Global.Config)
     switchToDhallFreezeMode f =
         switchTo (DhallFreeze (f `appEndo` Dhall.defFreeze) globalConfig)
+
+    switchToDhallFormatMode
+        :: Endo Dhall.Format
+        -> Endo (ConfigMode Global.Config)
+    switchToDhallFormatMode f =
+        switchTo (DhallFormat (f `appEndo` Dhall.defFormat) globalConfig)
 
     initFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
@@ -372,6 +389,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     dhallReplFlag =
         Options.flag mempty switchToDhallReplMode (Options.long "dhall-repl")
 
+    dhallFormatFlag
+        :: Options.Parser (Endo Dhall.Format -> Endo (ConfigMode Global.Config))
+    dhallFormatFlag =
+        Options.flag mempty switchToDhallFormatMode
+            (Options.long "dhall-format")
+
     toolsetOption :: Options.Parser (Endo (ConfigMode Global.Config))
     toolsetOption =
         Options.strOption (Options.long "toolset" <> Options.metavar "NAME")
@@ -414,8 +437,9 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 --          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
 --          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
---      , "config"
---          <+> longOption "dhall-format"
+        , "config"
+            <+> longOption "dhall-format"
+--          <+> Pretty.brackets (longOption "[no-]check")
 
 --      , "config"
 --          <+> longOption "dhall-lint"
@@ -482,16 +506,13 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
                 \ annotations aren't included by default."
             ]
 
-        , optionDescription ["--dhall-repl"]
-            [ Pretty.reflow "Interpret Dhall expressions in a REPL."
+        , optionDescription ["--dhall-format"]
+            [ Pretty.reflow "Format Dhall expression."
             ]
 
---      , optionDescription ["--history-file=FILE"]
---          [ Pretty.reflow "TODO"
---          ]
-
---      , optionDescription ["--no-history-file"]
---          [ Pretty.reflow "TODO"
+--      , optionDescription ["--[no-]check"]
+--          [ Pretty.reflow "If enabled it only checks if the input is\
+--              \ formatted."
 --          ]
 
         , optionDescription ["--dhall-diff"]
@@ -513,6 +534,18 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
         , optionDescription ["--dhall-hash"]
             [ Pretty.reflow "Compute semantic hashes for Dhall expressions."
             ]
+
+        , optionDescription ["--dhall-repl"]
+            [ Pretty.reflow "Interpret Dhall expressions in a REPL."
+            ]
+
+--      , optionDescription ["--history-file=FILE"]
+--          [ Pretty.reflow "TODO"
+--          ]
+
+--      , optionDescription ["--no-history-file"]
+--          [ Pretty.reflow "TODO"
+--          ]
 
         , optionDescription ["--init"]
             [ Pretty.reflow "Initialise configuration of a toolset."
@@ -558,6 +591,7 @@ configCompletion _appNames _config wordsBeforePattern pat
 
     hadDhall = "--dhall" `List.elem` wordsBeforePattern
     hadDhallDiff = "--dhall-diff" `List.elem` wordsBeforePattern
+    hadDhallFormat = "--dhall-format" `List.elem` wordsBeforePattern
     hadDhallFreeze = "--dhall-freeze" `List.elem` wordsBeforePattern
     hadDhallHash = "--dhall-hash" `List.elem` wordsBeforePattern
     hadDhallRepl = "--dhall-repl" `List.elem` wordsBeforePattern
@@ -565,6 +599,7 @@ configCompletion _appNames _config wordsBeforePattern pat
     hadSomeDhall = List.or
         [ hadDhall
         , hadDhallDiff
+        , hadDhallFormat
         , hadDhallFreeze
         , hadDhallHash
         , hadDhallRepl
@@ -578,13 +613,13 @@ configCompletion _appNames _config wordsBeforePattern pat
             [ "--help", "-h"
             , "--init"
             , "--dhall", "--dhall-diff", "--dhall-hash", "--dhall-repl"
-            , "--dhall-freeze"
+            , "--dhall-format", "--dhall-freeze"
             ]
         <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
         <> munless
             ( List.or
                 [ hadHelp, not hadDhall, hadDhallHash, hadDhallFreeze
-                , hadDhallHash, hadInit
+                , hadDhallFormat, hadDhallHash, hadInit
                 ]
             )
             [ "--alpha", "--no-alpha"
@@ -595,9 +630,16 @@ configCompletion _appNames _config wordsBeforePattern pat
         <> munless
             ( List.or
                 [ hadHelp, hadDhall, hadDhallHash, not hadDhallFreeze
-                , hadDhallHash, hadInit
+                , hadDhallFormat, hadDhallHash, hadInit
                 ]
             )
             ["--remote-only", "--no-remote-only"]
+--      <> munless
+--          ( List.or
+--              [ hadHelp, hadDhall, hadDhallHash, hadDhallFreeze
+--              , not hadDhallFormat, hadDhallHash, hadInit
+--              ]
+--          )
+--          ["--check", "--no-check"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions

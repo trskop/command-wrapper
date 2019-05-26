@@ -19,6 +19,12 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , defOptions
     , interpreter
 
+    -- * Format
+    , Dhall.Format.Format(..)
+    , Dhall.Format.FormatMode(..)
+    , defFormat
+    , format
+
     -- * Freeze
     , Freeze(..)
     , defFreeze
@@ -178,12 +184,6 @@ data Mode
         , showType :: Bool
         }
     | Resolve { resolveMode :: Maybe ResolveMode }
---  | Format { formatMode :: Dhall.Format.FormatMode }
---  | Freeze { inplace :: Maybe FilePath, all_ :: Bool }
---  | Hash
---  | Lint { inplace :: Maybe FilePath }
---  | Encode { json :: Bool }
---  | Decode { json :: Bool }
   deriving (Show)
 
 data ResolveMode
@@ -407,13 +407,21 @@ command Options{..} = do
             renderDoc System.IO.stdout doc
 -}
 
-{-
-data Format = Format
+-- {{{ Format -----------------------------------------------------------------
 
-format :: AppNames -> Config -> Format -> IO ()
-format _appNames _config Format{} =
-            Dhall.Format.format (Dhall.Format.Format {..})
--}
+deriving instance Show Dhall.Format.Format -- TODO Get rid of orphan
+deriving instance Show Dhall.Format.FormatMode -- TODO Get rid of orphan
+
+defFormat :: Dhall.Format.Format
+defFormat = Dhall.Format.Format
+    { characterSet = Dhall.Unicode
+    , formatMode = Dhall.Format.Modify Nothing
+    }
+
+format :: AppNames -> Config -> Dhall.Format.Format -> IO ()
+format _appNames _config = Dhall.Format.format
+
+-- }}} Format -----------------------------------------------------------------
 
 -- {{{ Freeze -----------------------------------------------------------------
 
