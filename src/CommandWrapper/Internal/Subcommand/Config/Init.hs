@@ -182,12 +182,21 @@ init
         dirsExistence [cdConfigDir, execConfigDir, skelConfigDir]
             >>= createOrSkipDirectories
 
-        let cdConfig = configDir </> "command-wrapper-cd.dhall"
---          execConfig = configDir </> "command-wrapper-exec.dhall"
---          skelConfig = configDir </> "command-wrapper-skel.dhall"
+        let libraryTypesDhall = configDir </> "Types.dhall"
+            libraryDhall = configDir </> "library.dhall"
+
+            cdConfig = configDir </> "command-wrapper-cd.dhall"
+            execConfig = configDir </> "command-wrapper-exec.dhall"
+            skelConfig = configDir </> "command-wrapper-skel.dhall"
 
             commonDirsConfig = cdConfigDir </> "directories-common.dhall"
---          commonCommandsConfig = execConfigDir </> "commands-common.dhall"
+            commonCommandsConfig = execConfigDir </> "commands-common.dhall"
+
+        checkFile libraryTypesDhall
+            >>= createOrSkipFile (configFileContent LibraryTypes)
+
+        checkFile libraryDhall
+            >>= createOrSkipFile (configFileContent Library)
 
         checkFile cdConfig
             >>= createOrSkipFile (configFileContent CdConfig)
@@ -195,14 +204,14 @@ init
         checkFile commonDirsConfig
             >>= createOrSkipFile (configFileContent CommonDirectoriesConfig)
 
---      checkFile execConfig
---          >>= createOrSkipFile (configFileContent ExecConfig)
+        checkFile execConfig
+            >>= createOrSkipFile (configFileContent ExecConfig)
 
---      checkFile commonCommandsConfig
---          >>= createOrSkipFile (configFileContent CommonCommandsConfig)
+        checkFile commonCommandsConfig
+            >>= createOrSkipFile (configFileContent CommonCommandsConfig)
 
---      checkFile skelConfig
---          >>= createOrSkipFile (configFileContent SkelConfig)
+        checkFile skelConfig
+            >>= createOrSkipFile (configFileContent SkelConfig)
   where
     colourOutput' = fromMaybe ColourOutput.Auto colourOutput
 
@@ -314,9 +323,14 @@ checkFile file = do
 data ConfigFile
     = DefaultConfig String FilePath
     | CommonAliasesConfig String
+    | CommonHelpTxt String
     | CdConfig
     | CommonDirectoriesConfig
-    | CommonHelpTxt String
+    | ExecConfig
+    | CommonCommandsConfig
+    | SkelConfig
+    | Library
+    | LibraryTypes
 
 -- TODO: It would be best to embed these values using 'staticDhallExpression',
 -- however, that would strip away comments.
@@ -360,7 +374,9 @@ configFileContent = Text.unlines . \case
     DefaultConfig _ libDir ->
         [ "let CommandWrapper = ../command-wrapper/Types.dhall"
         , ""
-        , "let emptyAliases = commandWrapper.config.toolset"
+        , "let commandWrapper = ../command-wrapper/library.dhall"
+        , ""
+        , "let emptyAliases = commandWrapper.config.toolset.emptyAliases"
         , ""
         , "let aliases : List CommandWrapper.SubcommandAlias ="
         , "        ./default/aliases-common.dhall"
@@ -537,63 +553,82 @@ configFileContent = Text.unlines . \case
 
     CommonHelpTxt _ ->
         [ ""
-        , "TODO: Custom help message, please, edit `common-help.txt`."
+        , "TODO: Custom help message, please, edit `help-common.txt`."
         ]
 
--- ${configDir}/command-wrapper/
--- │
--- ├── README.md
--- │
--- ├── default/
--- │   ├── aliases-common.dhall
--- │   ├── aliases-local.dhall    <-- Should not be created automatically.
--- │   └── help-common.txt
--- ├── default.dhall
--- │
--- ├── cd/
--- │   ├── directories-common.dhall
--- │   ├── directories-local.dhall    <-- Should not be created automatically.
--- │   └── finder.dhall
--- ├── command-wrapper-cd.dhall
--- │
--- ├── exec/
--- │   ├── commands-common.dhall
--- │   └── commands-local.dhall    <-- Should not be created automatically.
--- ├── command-wrapper-exec.dhall
--- │
--- ├── skel/
--- ├── command-wrapper-skel.dhall
--- │
--- ├── Types.dhall
--- └── library.dhall
---
--- ${configDir}/${toolset}/
--- │
--- ├── README.md
--- │
--- ├── default/
--- │   ├── aliases-common.dhall
--- │   ├── aliases-local.dhall    <-- Should not be created automatically.
--- │   └── help-common.txt
--- ├── default.dhall
--- │
--- └── toolset/                   <-- Maybe leave this to `skel`?
---     ├── dhall/
---     │   └── *.dhall
---     ├── haskell/
---     │   ├── app-${toolset}-${subcommand0}
---     │   │   └── Main.hs
---     │   ├── ...
---     │   ├── command-wrapper-toolset-${toolset}.cabal
---     │   └── {package.yaml,stack.yaml}
---     ├── scripts/
---     │   ├── ${toolset}-${subcommand0}
---     │   └── ...
---     ├── man/
---     │   ├── ${toolset}-${subcommand0}.1.md
---     │   ├── ...
---     │   ├── ${toolset}-${topic0}.{5,7}.md
---     │   └── ...
---     ├── README.md
---     ├── Shakefile.hs
---     └── install
+    ExecConfig ->
+        [ "let CommandWrapper = ./Types.dhall"
+        , ""
+        , "let empty = [] : List CommandWrapper.ExecNamedCommand"
+        , ""
+        , "in  { commands ="
+        , "          ./exec/commands-common.dhall"
+        , "        # (./exec/commands.dhall ? empty)"
+        , "        # (./exec/commands-local.dhall ? empty)"
+        , "    }"
+        ]
+
+    CommonCommandsConfig ->
+        [ "let CommandWrapper = ../Types.dhall"
+        , ""
+        , "in  ["
+        , "    ] : List CommandWrapper.ExecNamedCommand"
+        ]
+
+    SkelConfig ->
+        [ "let CommandWrapper = ./Types.dhall"
+        , ""
+        , "let commandWrapper = ./library.dhall"
+        , ""
+        , "let home = env:HOME as Text"
+        , ""
+        , "let config = env:XDG_CONFIG_HOME as Text ? \"${home}/.config\""
+        , ""
+        , "let lib = \"${home}/.local/lib\""
+        , ""
+        , "in    λ(toolset : Text)"
+        , "    → λ(subcommand : Text)"
+        , "    → λ(command : Text)"
+        , "    →   { template ="
+        , "              λ(language : < Bash | Dhall | Haskell >)"
+        , "            → merge"
+        , "              { Haskell ="
+        , "                  { targetFile ="
+        , "                      \"${config}/${toolset}/toolset/app-${command}/Main.hs\""
+        , "                  , executable = False"
+        , "                  , template ="
+        , "                        ./haskell-skel.dhall"
+        , "                      ? commandWrapper.config.skel.default-haskell-skel"
+        , "                  }"
+        , "              , Bash ="
+        , "                  { targetFile = \"${lib}/${toolset}/${command}\""
+        , "                  , executable = True"
+        , "                  , template ="
+        , "                        ./bash-skel.dhall"
+        , "                      ? commandWrapper.config.skel.default-bash-skel"
+        , "                  }"
+        , "              , Dhall ="
+        , "                  { targetFile = \"${config}/${toolset}/${command}.dhall\""
+        , "                  , executable = False"
+        , "                  , template ="
+        , "                      (   ./dhall-skel.dhall"
+        , "                        ? commandWrapper.config.skel.default-dhall-skel"
+        , "                      )"
+        , "                      toolset"
+        , "                      subcommand"
+        , "                  }"
+        , "              }"
+        , "              language"
+        , ""
+        , "        , editAfterwards = True"
+        , "        }"
+        , "      : CommandWrapper.SkelConfig"
+        ]
+
+    Library ->
+        [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall"
+        ]
+
+    LibraryTypes ->
+        [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall"
+        ]

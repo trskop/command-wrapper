@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 25th May 2019
+% 26th May 2019
 
 
 # NAME
@@ -54,7 +54,69 @@ We can organise `config` subcommand abilities into following categories:
     Which is integrated with Command Wrapper and with a nicer command line UX.
 
 **Initialisation** (`--init`)
-:   Initialise toolset configuration.
+:   Initialise toolset configuration.  This action tries to be as safe as
+    possible by refusing to overwrite existing files.
+
+    Global Command Wrapper configuration is created when
+    `TOOLSET_COMMAND config --init` is invoked under the name `command-wrapper`.
+    This can be achieved in one of the following ways:
+
+    ```
+    ~/.local/lib/command-wrapper/command-wrapper config --init
+    TOOLSET_COMMAND config --init --toolset=command-wrapper
+    env COMMAND_WRAPPER_INVOKE_AS=command-wrapper TOOLSET_COMMAND config --init
+    ```
+
+    These files and directoreis are created by invoking one of the above:
+
+    ```
+    ${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/
+    │
+    ├── default/
+    │   ├── aliases-common.dhall
+    │   └── help-common.txt
+    ├── default.dhall
+    │
+    ├── cd/
+    │   └── directories-common.dhall
+    ├── command-wrapper-cd.dhall
+    │
+    ├── exec/
+    │   └── commands-common.dhall
+    ├── command-wrapper-exec.dhall
+    │
+    ├── skel/
+    ├── command-wrapper-skel.dhall
+    │
+    ├── README.md
+    ├── Types.dhall
+    └── library.dhall
+    ```
+
+    In case of `TOOLSET_COMMAND config --init --toolset=${toolset}` the
+    following is created:
+
+
+    ```
+    ${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/
+    │
+    ├── default/
+    │   ├── aliases-common.dhall
+    │   └── help-common.txt
+    ├── default.dhall
+    │
+    └── README.md
+
+    $HOME/.local/lib/${toolset}/
+
+    $HOME/.local/bin/ or $HOME/bin/
+    ├── ...
+    └── ${toolset} -> $HOME/.local/lib/command-wrapper
+    ```
+
+    For more information about individual files and directories see
+    `command-wrapper(1)`,  `command-wrapper-cd(1)`,  `command-wrapper-exec(1)`,
+    and `command-wrapper-skel(1)`.
 
 
 # OPTIONS
