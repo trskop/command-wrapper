@@ -327,7 +327,7 @@ configFileContent = Text.unlines . \case
         , ""
         , "let commandWrapper = ./library.dhall"
         , ""
-        , "let emptyAliases = commandWrapper.config.toolset"
+        , "let emptyAliases = commandWrapper.config.toolset.emptyAliases"
         , ""
         , "let aliases : List CommandWrapper.SubcommandAlias ="
         , "        ./default/aliases-common.dhall"
