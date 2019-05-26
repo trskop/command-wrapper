@@ -23,13 +23,13 @@ module CommandWrapper.Internal.Subcommand.Config.Init
   where
 
 import Control.Applicative (pure)
-import Control.Monad ((>>=), unless)
-import Data.Bool (Bool(False, True), (||), not, otherwise)
+import Control.Monad ((>>=), unless, when)
+import Data.Bool (Bool(True))
 import Data.Either (Either(Left, Right))
 import Data.Eq ((==))
-import Data.Foldable (for_)
-import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<$>), (<&>))
+import Data.Foldable ({-for_,-} traverse_)
+import Data.Function (($), (.))
+import Data.Functor ((<$>))
 import Data.Int (Int)
 import qualified Data.List as List (intercalate)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
@@ -40,26 +40,23 @@ import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (FilePath, IO, stderr, stdout)
 import Text.Show (Show, show)
 
-import Data.Text.Prettyprint.Doc ((<+>), pretty)
-import qualified Data.Text.Prettyprint.Doc as Pretty
-    ( Doc
-    , brackets
-    , hsep
-    , line
-    , squotes
-    , vsep
-    )
-import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import Data.Text (Text)
+import qualified Data.Text as Text (unlines)
+import qualified Data.Text.IO as Text (writeFile)
+import Data.Text.Prettyprint.Doc (pretty)
+import qualified Data.Text.Prettyprint.Doc as Pretty (Doc, hsep, line)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import System.Directory
     ( XdgDirectory(XdgConfig)
     , createDirectoryIfMissing
     , doesDirectoryExist
+    , doesFileExist
     , findExecutable
     , getHomeDirectory
     , getHomeDirectory
     , getXdgDirectory
     )
+--import qualified Dhall.TH (staticDhallExpression)
 import System.FilePath ((</>))
 import System.Posix.Files (createSymbolicLink)
 
@@ -67,8 +64,7 @@ import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
 import CommandWrapper.Internal.Subcommand.Help (command)
 import CommandWrapper.Message
-    ( Result
-    , defaultLayoutOptions
+    ( defaultLayoutOptions
     , errorMsg
     , message
     )
@@ -142,33 +138,71 @@ init
 
     configDir <- getXdgDirectory XdgConfig toolsetName
     libDir <- (</> (".local/lib" </> toolsetName)) <$> getHomeDirectory
-    dirs <- dirsExistence
-        [ configDir
-        , configDir </> "default"
-        , configDir </> "cd"
-        , configDir </> "exec"
-        , configDir </> "skel"
-        , libDir
-        ]
-    for_ dirs \case
-        Left dir -> do
-            createDirectoryIfMissing True dir
+    let defaultConfigDir = configDir </> "default"
+    dirsExistence [configDir, defaultConfigDir, libDir]
+        >>= createOrSkipDirectories
+
+    let readmeFile = configDir </> "README.md"
+    haveReadmeFile <- doesFileExist readmeFile
+    if haveReadmeFile
+        then
             messageLn
-                [ command (fromString dir) <> ":"
-                , Pretty.reflow "Directory created successfully."
-                ]
-        Right dir ->
-            messageLn
-                [ command (fromString dir) <> ":"
+                [ command (fromString readmeFile) <> ":"
                 , Pretty.reflow
-                    "Directory already exists, skipping its creation."
+                    "File already exists, skipping its creation."
+                ]
+        else do
+            Text.writeFile readmeFile (readmeFileContent toolsetName)
+            messageLn
+                [ command (fromString readmeFile) <> ":"
+                , Pretty.reflow "File created."
                 ]
 
-    if (usedName == "command-wrapper")
-        then
-            pure ()
-        else
-            pure ()
+    let defaultConfig = configDir </> "default.dhall"
+        commonAliasesConfig = defaultConfigDir </> "aliases-common.dhall"
+        commonHelpTxt = defaultConfigDir </> "help-common.txt"
+
+    checkFile defaultConfig
+        >>= createOrSkipFile
+                (configFileContent (DefaultConfig toolsetName libDir))
+
+    checkFile commonAliasesConfig
+        >>= createOrSkipFile
+                (configFileContent (CommonAliasesConfig toolsetName))
+
+    checkFile commonHelpTxt
+        >>= createOrSkipFile
+                (configFileContent (CommonHelpTxt toolsetName))
+
+    when (usedName == "command-wrapper") do
+        let cdConfigDir = configDir </> "cd"
+            execConfigDir = configDir </> "exec"
+            skelConfigDir = configDir </> "skel"
+
+        dirsExistence [cdConfigDir, execConfigDir, skelConfigDir]
+            >>= createOrSkipDirectories
+
+        let cdConfig = configDir </> "command-wrapper-cd.dhall"
+--          execConfig = configDir </> "command-wrapper-exec.dhall"
+--          skelConfig = configDir </> "command-wrapper-skel.dhall"
+
+            commonDirsConfig = cdConfigDir </> "directories-common.dhall"
+--          commonCommandsConfig = execConfigDir </> "commands-common.dhall"
+
+        checkFile cdConfig
+            >>= createOrSkipFile (configFileContent CdConfig)
+
+        checkFile commonDirsConfig
+            >>= createOrSkipFile (configFileContent CommonDirectoriesConfig)
+
+--      checkFile execConfig
+--          >>= createOrSkipFile (configFileContent ExecConfig)
+
+--      checkFile commonCommandsConfig
+--          >>= createOrSkipFile (configFileContent CommonCommandsConfig)
+
+--      checkFile skelConfig
+--          >>= createOrSkipFile (configFileContent SkelConfig)
   where
     colourOutput' = fromMaybe ColourOutput.Auto colourOutput
 
@@ -183,6 +217,38 @@ init
     messageLn fragments =
         message defaultLayoutOptions verbosity colourOutput' stdout
             (Pretty.hsep fragments <> Pretty.line)
+
+    createOrSkipDirectories :: [Either FilePath FilePath] -> IO ()
+    createOrSkipDirectories = traverse_ \case
+        Left dir -> do
+            createDirectoryIfMissing True dir
+            messageLn
+                [ command (fromString dir) <> ":"
+                , Pretty.reflow "Directory created successfully."
+                ]
+
+        Right dir ->
+            messageLn
+                [ command (fromString dir) <> ":"
+                , Pretty.reflow
+                    "Directory already exists, skipping its creation."
+                ]
+
+    createOrSkipFile :: Text -> Either FilePath FilePath -> IO ()
+    createOrSkipFile content = \case
+        Left file -> do
+            Text.writeFile file content
+            messageLn
+                [ command (fromString file) <> ":"
+                , Pretty.reflow "File created successfully."
+                ]
+
+        Right file ->
+            messageLn
+                [ command (fromString file) <> ":"
+                , Pretty.reflow
+                    "File already exists, skipping its creation."
+                ]
 
 checkDir :: FilePath -> IO (Maybe FilePath)
 checkDir dir = do
@@ -210,23 +276,290 @@ dirsExistence = \case
 unlist :: [String] -> String
 unlist = List.intercalate ", "
 
+readmeFileContent :: String -> Text
+readmeFileContent = Text.unlines . \case
+    "command-wrapper" ->
+        [ "# Command Wrapper configuration"
+        , ""
+        , "Tool for creating customised command-line toolsets.  This directory\
+            \ contains"
+        , "its top-level configuration"
+        , ""
+        , ""
+        , "## Documentation"
+        , ""
+        , "Offline documentation is provided in the form of manual pages.\
+            \  Best starting"
+        , "point is `command-wrapper(1)`."
+        , ""
+        , "Online documentation is available on\
+            \ [github.com/trskop/command-wrapper"
+        , "](https://github.com/trskop/command-wrapper)."
+        ]
+
+    toolsetName ->
+        [ "# Configuration for Command Wrapper toolset "
+            <> fromString toolsetName
+        , ""
+        , "Custom toolset built using Command Wrapper."
+        ]
+
+checkFile :: FilePath -> IO (Either FilePath FilePath)
+checkFile file = do
+    doesExist <- doesFileExist file
+    pure if doesExist
+        then Right file
+        else Left file
+
+data ConfigFile
+    = DefaultConfig String FilePath
+    | CommonAliasesConfig String
+    | CdConfig
+    | CommonDirectoriesConfig
+    | CommonHelpTxt String
+
+-- TODO: It would be best to embed these values using 'staticDhallExpression',
+-- however, that would strip away comments.
+configFileContent :: ConfigFile -> Text
+configFileContent = Text.unlines . \case
+    DefaultConfig "command-wrapper" libDir ->
+        [ "let CommandWrapper = ./Types.dhall"
+        , ""
+        , "let commandWrapper = ./library.dhall"
+        , ""
+        , "let aliases : List CommandWrapper.SubcommandAlias ="
+        , "        ./default/aliases-common.dhall"
+        , "      # (./default/aliases-local.dhall ? ([] : List Alias))"
+        , "      # (./default/aliases.dhall ? ([] : List Alias))"
+        , ""
+        , "let helpMessage : Text ="
+        , "        (./default/help-common.txt as Text)"
+        , "      ++ (./default/help-local.txt as Text) ? \"\")"
+        , "      ++ (./default/help.txt as Text) ? \"\")"
+        , ""
+        , "let defaults = commandWrapper.config.toolset.defaults"
+        , ""
+        , "in    defaults"
+        , "    //  { aliases = defaults.aliases # aliases"
+        , ""
+        , "        -- Extra help message is printed at the bottom of help\
+            \ message."
+        , "        , extraHelpMessage = Some helpMessage"
+        , ""
+        , "    -- Path where Command Wrapper will search for external\
+            \ subcommands.  If"
+        , "    -- specific toolset has set 'searchPath' as well then that will\
+            \ be"
+        , "    -- prepended to this one."
+        , "    , searchPath = [" <> fromString (show libDir) <> "]"
+        , "    } : CommandWrapper.DefaultConfig"
+        ]
+
+    DefaultConfig _ libDir ->
+        [ "let CommandWrapper = ../command-wrapper/Types.dhall"
+        , ""
+        , "let aliases : List CommandWrapper.SubcommandAlias ="
+        , "        ./default/aliases-common.dhall"
+        , "      # (./default/aliases-local.dhall ? ([] : List Alias))"
+        , "      # (./default/aliases.dhall ? ([] : List Alias))"
+        , ""
+        , "let helpMessage : Text ="
+        , "        (./default/help-common.txt as Text)"
+        , "      ++ (./default/help-local.txt as Text) ? \"\")"
+        , "      ++ (./default/help.txt as Text) ? \"\")"
+        , ""
+        , "in  { aliases = aliases"
+        , ""
+        , "    -- Defines when colour output should be produced by default."
+        , "    , colourOutput = None CommandWrapper.ColourOutput"
+        , ""
+        , "    -- Toolset description printed as a header of a help message."
+        , "    , description ="
+        , "        Some \"TODO: I promise to describe this toolset one day.\""
+        , ""
+        , "    -- Extra help message is printed at the bottom of help message."
+        , "    , extraHelpMessage = Some helpMessage"
+        , ""
+        , "    -- Path where Command Wrapper will search for external\
+            \ subcommands.  If"
+        , "    -- specific toolset has set 'searchPath' as well then that will\
+            \ be"
+        , "    -- prepended to this one."
+        , "    , searchPath = [" <> fromString (show libDir) <> "]"
+        , ""
+        , "    -- Default verbosity level."
+        , "    , verbosity = CommandWrapper.Verbosity.Normal"
+        , "    } : CommandWrapper.DefaultConfig"
+        ]
+
+    CommonAliasesConfig "command-wrapper" ->
+        [ "-- This file is intended to be under version control and shared\
+            \ among multiple"
+        , "-- systems. It defines aliases that should be available everywhere\
+            \ and via all"
+        , "-- toolsets."
+        , "--"
+        , "-- Aliases that are ment to be available only on this specific\
+            \ machine should"
+        , "-- go into `./aliases-local.dhall`.  If local configuration is\
+            \ under version"
+        , "-- control then `./aliases-local.dhall` should be a symbolic link\
+            \ to that"
+        , "-- version controlled file, or it should contain an import of such\
+            \ file.  There"
+        , "-- is also `./aliases.dhall` which is intended to be used as a kind\
+            \ of staging"
+        , "-- environment, and it should not be under version control."
+        , ""
+        , "[ { alias = \"h\""
+        , "  , command = \"help\""
+        , "  , arguments = [] : List Text"
+        , "  }"
+        , ""
+        , ", { alias = \"man\""
+        , "  , command = \"help\""
+        , "  , arguments = [\"--man\"]"
+        , "  }"
+        , ""
+        , "  -- The advantage of having `cfg` as an alias for `config` is that\
+            \ it shares"
+        , "  -- only one letter of its prefix with `completion`, which is\
+            \ useful when"
+        , "  -- using command line completion."
+        , ", { alias = \"cfg\""
+        , "  , command = \"config\""
+        , "  , arguments = [] : List Text"
+        , "  }"
+        , ""
+        , ", { alias = \"dhall\""
+        , "  , command = \"config\""
+        , "  , arguments = [\"--dhall\"]"
+        , "  }"
+        , ""
+        , ", { alias = \"dhall-repl\""
+        , "  , command = \"config\""
+        , "  , arguments = [\"--dhall-repl\"]"
+        , "  }"
+        , "] : List {alias : Text, command : Text, arguments : List Text}"
+        ]
+
+    CommonAliasesConfig _ ->
+        [ "-- This file is intended to be under version control and shared\
+            \ among multiple"
+        , "-- systems."
+        , "--"
+        , "-- Aliases that are ment to be available only on this specific\
+            \ machine should"
+        , "-- go into `./aliases-local.dhall`.  If local configuration is\
+            \ under version"
+        , "-- control then `./aliases-local.dhall` should be a symbolic link\
+            \ to that"
+        , "-- version controlled file, or it should contain an import of such\
+            \ file.  There"
+        , "-- is also `./aliases.dhall` which is intended to be used as a kind\
+            \ of staging"
+        , "-- environment, and it should not be under version control."
+        , ""
+        , "[ -- { alias = \"something\""
+        , "  -- , command = \"some-subcommand\""
+        , "  -- , arguments = [] : List Text"
+        , "  -- }"
+        , "] : List {alias : Text, command : Text, arguments : List Text}"
+        ]
+
+    CdConfig ->
+        [ "let CommandWrapper = ./Types.dhall"
+        , ""
+        , "let commandWrapper = ./library.dhall"
+        , ""
+        , "let emptyDirectories = commandWrapper.config.cd.emptyDirectories"
+        , ""
+        , "let directories : List Text ="
+        , "        ./cd/directories-common.dhall"
+        , "      # (./cd/directories-local.dhall ? empty)"
+        , "      # (./cd/directories.dhall ? empty)"
+        , ""
+        , "let defaults = commandWrapper.config.cd.defaults"
+        , "      → defaults"
+        , "        //  { directories ="
+        , "                defaults.directories # directories"
+        , ""
+        , "            , menuTool = (./cd/finder.dhall).fzf"
+        , ""
+        , "in    defaults"
+        , "    //  { directories = defaults.directories # directories"
+        , "        , menuTool ="
+        , "              λ(query : Optional Text)"
+        , "            → let fzf = commandWrapper.config.cd.menuTools.fzf query"
+        , "              in  fzf"
+        , "                  //  { arguments = [\"--height=40%\"] # fzf.arguments"
+        , "                      }"
+        , ""
+        , "        -- Here we can set what terminal emulator should be execu  Some"
+        , "        -- definitions are already available in Command Wrapper librato list"
+        , "        -- them one can use Dhall REPL `TOOLSET config --dhaepl` where"
+        , "        -- following expression can be evaluated:"
+        , "        --"
+        , "        -- ```"
+        , "        -- (~/.config/command-wrapper/library.dhall).termimulator"
+        , "        -- ```"
+        , "--      , terminalEmulator = defaults.terminalEmulator"
+        , "        }"
+        , "    : CommandWrapper.CdConfig"
+        ]
+
+    CommonDirectoriesConfig ->
+        [ "let home = env:HOME as Text"
+        , ""
+        , "let config = env:XDG_CONFIG_HOME as Text ? \"${home}/.config\""
+        , ""
+        , "let local = \"${home}/.local\""
+        , ""
+        , "in  [ \"${config}\""
+        , "    , \"${config}/command-wrapper\""
+        , "    , \"${local}/lib/command-wrapper\""
+        , "    , \"${home}/Downloads\""
+        , "    , \"${home}/.ssh\""
+        , "    ] : List Text"
+        ]
+
+    CommonHelpTxt "command-wrapper" ->
+        [ ""
+        , "Global Subcommands:"
+        , ""
+        , "  help       (internal, aliases: h, man)"
+        , "  config     (internal, aliases: cfg, dhall, dhall-repl)"
+        , "  version    (internal)"
+        , "  completion (internal)"
+        , "  cd         (external)"
+        , "  exec       (external)"
+        , "  skel       (external)"
+        ]
+
+    CommonHelpTxt _ ->
+        [ ""
+        , "TODO: Custom help message, please, edit `common-help.txt`."
+        ]
+
 -- ${configDir}/command-wrapper/
 -- │
 -- ├── README.md
 -- │
 -- ├── default/
 -- │   ├── aliases-common.dhall
--- │   ├── aliases-local.dhall
--- │   └── help.dhall
+-- │   ├── aliases-local.dhall    <-- Should not be created automatically.
+-- │   └── help-common.txt
 -- ├── default.dhall
 -- │
 -- ├── cd/
 -- │   ├── directories-common.dhall
--- │   ├── directories-local.dhall
+-- │   ├── directories-local.dhall    <-- Should not be created automatically.
 -- │   └── finder.dhall
 -- ├── command-wrapper-cd.dhall
 -- │
 -- ├── exec/
+-- │   ├── commands-common.dhall
+-- │   └── commands-local.dhall    <-- Should not be created automatically.
 -- ├── command-wrapper-exec.dhall
 -- │
 -- ├── skel/
@@ -241,8 +574,8 @@ unlist = List.intercalate ", "
 -- │
 -- ├── default/
 -- │   ├── aliases-common.dhall
--- │   ├── aliases-local.dhall
--- │   └── help.dhall
+-- │   ├── aliases-local.dhall    <-- Should not be created automatically.
+-- │   └── help-common.txt
 -- ├── default.dhall
 -- │
 -- └── toolset/                   <-- Maybe leave this to `skel`?
@@ -265,9 +598,3 @@ unlist = List.intercalate ", "
 --     ├── README.md
 --     ├── Shakefile.hs
 --     └── install
-
--- TODO:
---
--- - Lib and config directories.
--- - Initial configuration.
-
