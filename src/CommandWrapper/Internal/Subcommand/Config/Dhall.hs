@@ -14,10 +14,15 @@
 module CommandWrapper.Internal.Subcommand.Config.Dhall
     (
     -- * Interpreter
-      Options(..)
-    , Mode(..)
-    , defOptions
+      Interpreter(..)
+    , defInterpreter
     , interpreter
+
+    -- * Resolve
+    , Resolve(..)
+    , ResolveMode(..)
+    , defResolve
+    , resolve
 
     -- * Format
     , Dhall.Format.Format(..)
@@ -46,6 +51,7 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
   where
 
 import Control.Exception (SomeException)
+import Data.Foldable (for_, traverse_)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import qualified GHC.IO.Encoding as IO (setLocaleEncoding)
@@ -109,13 +115,17 @@ import qualified CommandWrapper.Internal.Dhall as Dhall (hPutDoc, hPutExpr)
 import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput (ColourOutput(Auto))
 import Data.Generics.Internal.VL.Lens ((^.))
-import Data.Verbosity (Verbosity)
 import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 
 
--- | Top-level program options
-data Options = Options
-    { mode            :: Mode
+-- {{{ Interpreter ------------------------------------------------------------
+
+data Interpreter = Interpreter
+    { allowImports :: Bool
+    , alpha :: Bool
+    , annotate :: Bool
+    , showType :: Bool
+
 --  , inputEncoding   :: InputEncoding
 --  , outputEncoding  :: OutputEncoding
 
@@ -124,14 +134,13 @@ data Options = Options
     }
   deriving (Show)
 
-defOptions :: Options
-defOptions = Options
-    { mode = Default
-        { annotate = False
-        , alpha = False
-        , allowImports = True
-        , showType = False
-        }
+defInterpreter :: Interpreter
+defInterpreter = Interpreter
+    { annotate = False
+    , alpha = False
+    , allowImports = True
+    , showType = False
+
 --  , inputEncoding   =
 --  , outputEncoding  =
     , input = InputStdin
@@ -175,23 +184,6 @@ data OutputEncoding
     | OutputYaml
   deriving (Show)
 
--- | The subcommands for the @dhall@ executable
-data Mode
-    = Default
-        { allowImports :: Bool
-        , alpha :: Bool
-        , annotate :: Bool
-        , showType :: Bool
-        }
-    | Resolve { resolveMode :: Maybe ResolveMode }
-  deriving (Show)
-
-data ResolveMode
-    = Dot
-    | ListTransitiveDependencies
-    | ListImmediateDependencies
-  deriving (Show)
-
 readExpression :: Input -> IO (Expr Src Import, Dhall.Import.Status IO)
 readExpression = \case
     InputStdin ->
@@ -213,73 +205,101 @@ readExpression = \case
 -- Main idea is that input and output reading/writing and encoding should be
 -- orthogonal to the mode that we are running in.
 
-interpreter :: AppNames -> Config -> Options -> IO ()
-interpreter
-  AppNames{usedName}
+interpreter :: AppNames -> Config -> Interpreter -> IO ()
+interpreter _AppNames
   config@Config{colourOutput}
-  Options{input, mode} = do
-    IO.setLocaleEncoding IO.utf8
+  Interpreter{allowImports, alpha, annotate, input, showType}
+  = handleExceptions config do
 
+    IO.setLocaleEncoding IO.utf8
     (expression, status) <- readExpression input
 
-    handleExceptions config case mode of
-        Default{allowImports, alpha, annotate, showType} -> do
-            (resolvedExpression, inferredType) <- do
-                expr <- if allowImports
-                    then
-                        State.evalStateT (Dhall.Import.loadWith expression)
-                            status
-                    else
-                        Dhall.Import.assertNoImports expression
+    (resolvedExpression, inferredType) <- do
+        expr <- if allowImports
+            then
+                State.evalStateT (Dhall.Import.loadWith expression) status
+            else
+                Dhall.Import.assertNoImports expression
 
-                exprType <- Dhall.Core.throws (Dhall.TypeCheck.typeOf expr)
+        exprType <- Dhall.Core.throws (Dhall.TypeCheck.typeOf expr)
 
-                if showType
-                    then
-                        (exprType,) <$> Dhall.Core.throws
-                            (Dhall.TypeCheck.typeOf exprType)
-                    else
-                        pure (expr, exprType)
+        if showType
+            then
+                (exprType,) <$> Dhall.Core.throws
+                    (Dhall.TypeCheck.typeOf exprType)
+            else
+                pure (expr, exprType)
 
-            let normalizedExpression = Dhall.Core.normalize resolvedExpression
+    let normalizedExpression = Dhall.Core.normalize resolvedExpression
 
-                alphaNormalizedExpression =
-                    if alpha
-                        then Dhall.Core.alphaNormalize normalizedExpression
-                        else normalizedExpression
+        alphaNormalizedExpression =
+            if alpha
+                then Dhall.Core.alphaNormalize normalizedExpression
+                else normalizedExpression
 
-                annotatedExpression =
-                    if annotate
-                        then Annot alphaNormalizedExpression inferredType
-                        else alphaNormalizedExpression
+        annotatedExpression =
+            if annotate
+                then Annot alphaNormalizedExpression inferredType
+                else alphaNormalizedExpression
 
-            putExpr annotatedExpression
+    hPutExpr config stdout annotatedExpression
 
-        Resolve{resolveMode} -> case resolveMode of
-            Just Dot -> pure () -- TODO: Die with proper error message.
+-- }}} Interpreter ------------------------------------------------------------
 
-            Just ListImmediateDependencies ->
-                mapM_ (print . Pretty.pretty . Dhall.Core.importHashed)
-                    expression
+-- {{{ Resolve ----------------------------------------------------------------
 
-            Just ListTransitiveDependencies -> do
-                cache <- (^. Dhall.Import.cache)
-                    <$> State.execStateT (Dhall.Import.loadWith expression)
-                        status
+data Resolve = Resolve
+    { mode :: ResolveMode
+    , input :: Input
+    }
+  deriving (Show)
 
-                mapM_ (print . Pretty.pretty . Dhall.Core.importType . Dhall.Core.importHashed)
-                     (Map.keys cache)
+data ResolveMode
+    = ResolveDependencies
+    | ListTransitiveDependencies
+    | ListImmediateDependencies
+--  | Dot
+  deriving (Show)
 
-            Nothing -> do
-                (resolvedExpression, _) <- State.runStateT
-                    (Dhall.Import.loadWith expression) status
+defResolve :: Resolve
+defResolve = Resolve
+    { mode = ResolveDependencies
+    , input = InputStdin
+    }
 
-                putExpr resolvedExpression
-  where
-    characterSet = Dhall.Unicode -- TODO: This should be configurable.
+resolve :: AppNames -> Config -> Resolve -> IO ()
+resolve _AppNames config Resolve{mode, input} = handleExceptions config do
 
-    putExpr = Dhall.hPutExpr (fromMaybe ColourOutput.Auto colourOutput)
-        characterSet stdout
+    IO.setLocaleEncoding IO.utf8
+    (expression, status) <- readExpression input
+
+    case mode of
+        ResolveDependencies -> do
+            (resolvedExpression, _) <- State.runStateT
+                (Dhall.Import.loadWith expression) status
+
+            hPutExpr config stdout resolvedExpression
+
+        ListImmediateDependencies ->
+            traverse_ (print . Pretty.pretty . Dhall.Core.importHashed)
+                expression
+
+        ListTransitiveDependencies -> do
+            cache <- (^. Dhall.Import.cache)
+                <$> State.execStateT (Dhall.Import.loadWith expression)
+                    status
+
+            for_ (Map.keys cache)
+                ( print
+                . Pretty.pretty
+                . Dhall.Core.importType
+                . Dhall.Core.importHashed
+                )
+
+        -- TODO: Unable to implement at the moment.
+--      Just Dot -> pure ()
+
+-- }}} Resolve ----------------------------------------------------------------
 
 {- TODO: Reimplement the rest of Dhall commands/actions
 
@@ -381,7 +401,7 @@ defFormat = Dhall.Format.Format
     }
 
 format :: AppNames -> Config -> Dhall.Format.Format -> IO ()
-format _appNames config = handleExceptions config . Dhall.Format.format
+format _AppNames config = handleExceptions config . Dhall.Format.format
 
 -- }}} Format -----------------------------------------------------------------
 
@@ -408,7 +428,7 @@ freeze
     -> Config
     -> Freeze
     -> IO ()
-freeze _appNames config Freeze{..} = handleExceptions config do
+freeze _AppNames config Freeze{..} = handleExceptions config do
     (header, expression, directory) <- case input of
         InputStdin -> do
             (header, expression) <- Text.getContents
@@ -439,7 +459,7 @@ freeze _appNames config Freeze{..} = handleExceptions config do
 -- {{{ Hash -------------------------------------------------------------------
 
 hash :: AppNames -> Config -> IO ()
-hash _appNames config =
+hash _AppNames config =
     handleExceptions config (Dhall.Hash.hash defaultStandardVersion)
 
 -- }}} Hash -------------------------------------------------------------------
@@ -457,7 +477,7 @@ defDiff :: Text -> Text -> Diff
 defDiff expr1 expr2 = Diff{expr1, expr2}
 
 diff :: AppNames -> Config -> Diff -> IO ()
-diff _appNames config Diff{..} = handleExceptions config do
+diff _AppNames config Diff{..} = handleExceptions config do
     diffDoc <- Dhall.Diff.diffNormalized
         <$> Dhall.inputExpr expr1
         <*> Dhall.inputExpr expr2
@@ -486,7 +506,7 @@ defRepl = Repl
     }
 
 repl :: AppNames -> Config -> Repl -> IO ()
-repl _appNames config@Config{verbosity} Repl{..} =
+repl _AppNames config@Config{verbosity} Repl{..} =
     handleExceptions config
         (Dhall.Repl.repl characterSet explain defaultStandardVersion)
   where
@@ -500,6 +520,12 @@ renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
 renderDoc Config{colourOutput} h doc =
     Dhall.hPutDoc (fromMaybe ColourOutput.Auto colourOutput) h
         (doc <> Pretty.line)
+
+hPutExpr :: Config -> Handle -> Expr Src X -> IO ()
+hPutExpr Config{colourOutput} =
+    Dhall.hPutExpr (fromMaybe ColourOutput.Auto colourOutput) characterSet
+  where
+    characterSet = Dhall.Unicode -- TODO: This should be configurable.
 
 handleExceptions :: Config -> IO () -> IO ()
 handleExceptions Config{verbosity} =

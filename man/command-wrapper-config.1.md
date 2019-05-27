@@ -14,14 +14,16 @@ toolset configuration.
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 \[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
-
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
-
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-reesolve
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-freeze
 \[\--\[no-]remote-only]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-hash
 
@@ -32,6 +34,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
 
 **TODO: Following usages aren't currently implemented!**
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-lint
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \[OPTIONS] \[\--] \[*EXPRESSION*]
 
@@ -138,14 +142,11 @@ We can organise `config` subcommand abilities into following categories:
 :   Add a type annotation to the output.  Type annotations aren't included by
     default.
 
-\--dhall-repl
-:   Interpret Dhall expressions in a REPL.
-
-\--dhall-diff
-:   Render the difference between the normal form of two Dhall expressions.
-
 \--dhall-format
 :   Format Dhall expression.
+
+\--dhall-resolve
+:   Resolve an Dhall expression's imports.
 
 \--dhall-freeze
 :   Add integrity checks to import statements of a Dhall expression.
@@ -156,6 +157,12 @@ We can organise `config` subcommand abilities into following categories:
 
 \--dhall-hash
 :   Compute semantic hashes for Dhall expressions.
+
+\--dhall-diff
+:   Render the difference between the normal form of two Dhall expressions.
+
+\--dhall-repl
+:   Interpret Dhall expressions in a REPL.
 
 \--init
 :   Initialise configuration of a toolset.  This includes symlinking command
@@ -173,6 +180,9 @@ We can organise `config` subcommand abilities into following categories:
 :   Dhall expression.
 
 **TODO: Following options aren't currently implemented!**
+
+\--dhall-lint
+:   Dhall linter; improve Dhall expression.
 
 \--type, -t
 :   Print type of final Dhall expression instead of its value.

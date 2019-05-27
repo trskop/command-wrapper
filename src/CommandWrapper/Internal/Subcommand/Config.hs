@@ -95,20 +95,23 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Diff(..)
     , Format(..)
     , Freeze(..)
-    , Mode(..)
-    , Options(..)
+    , Interpreter(..)
     , Repl(..)
+    , Resolve(..)
+--  , ResolveMode(..)
     , defDiff
     , defFormat
     , defFreeze
-    , defOptions
+    , defInterpreter
     , defRepl
+    , defResolve
     , diff
+    , format
     , freeze
     , hash
     , interpreter
     , repl
-    , format
+    , resolve
     )
 import CommandWrapper.Internal.Subcommand.Config.Init
     ( InitOptions(..)
@@ -121,12 +124,13 @@ import CommandWrapper.Internal.Subcommand.Config.Init
 data ConfigMode a
     = Init InitOptions a
     | ConfigLib a
-    | Dhall Dhall.Options a
+    | Dhall Dhall.Interpreter a
     | DhallDiff Dhall.Diff a
     | DhallFormat Dhall.Format a
     | DhallFreeze Dhall.Freeze a
     | DhallHash a
     | DhallRepl Dhall.Repl a
+    | DhallResolve Dhall.Resolve a
     | Help a
   deriving (Functor, Generic, Show)
 
@@ -196,6 +200,9 @@ config appNames options globalConfig =
 
         DhallRepl replOpts cfg ->
             Dhall.repl appNames cfg replOpts
+
+        DhallResolve resolveOpts cfg ->
+            Dhall.resolve appNames cfg resolveOpts
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
 
@@ -251,6 +258,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> pure mempty
 --      <*> (checkFlag <|> noCheckFlag)
 
+    , dhallResolveFlag
+        <*> pure mempty
+--      <*> ( dualFoldEndo
+--              <$> optional listDependenciesOption
+--          )
+
     , helpFlag
 
     , pure mempty
@@ -268,7 +281,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchToDhallReplMode = switchTo (DhallRepl Dhall.defRepl globalConfig)
 
     switchToDhallMode f =
-        switchTo (Dhall (f `appEndo` Dhall.defOptions) globalConfig)
+        switchTo (Dhall (f `appEndo` Dhall.defInterpreter) globalConfig)
 
     switchToDhallDiffMode :: Text -> Text -> Endo (ConfigMode Global.Config)
     switchToDhallDiffMode expr1 expr2 =
@@ -286,77 +299,64 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchToDhallFormatMode f =
         switchTo (DhallFormat (f `appEndo` Dhall.defFormat) globalConfig)
 
+    switchToDhallResolveMode
+        :: Endo Dhall.Resolve
+        -> Endo (ConfigMode Global.Config)
+    switchToDhallResolveMode f =
+        switchTo (DhallResolve (f `appEndo` Dhall.defResolve) globalConfig)
+
     initFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
 
     dhallFlag
-        :: Options.Parser (Endo Dhall.Options -> Endo (ConfigMode Global.Config))
+        :: Options.Parser
+            (Endo Dhall.Interpreter -> Endo (ConfigMode Global.Config))
     dhallFlag =
         Options.flag mempty switchToDhallMode (Options.long "dhall")
 
-    alphaFlag :: Options.Parser (Endo Dhall.Options)
+    alphaFlag :: Options.Parser (Endo Dhall.Interpreter)
     alphaFlag = Options.flag mempty (setAlpha True) (Options.long "alpha")
 
-    noAlphaFlag :: Options.Parser (Endo Dhall.Options)
+    noAlphaFlag :: Options.Parser (Endo Dhall.Interpreter)
     noAlphaFlag = Options.flag mempty (setAlpha False) (Options.long "no-alpha")
 
-    setAlpha :: Bool -> Endo Dhall.Options
-    setAlpha alpha = Endo \Dhall.Options{..} -> Dhall.Options
-        { mode = case mode of
-            m@Dhall.Default{} -> m{Dhall.alpha}
-            m -> m
-        , ..
-        }
+    setAlpha :: Bool -> Endo Dhall.Interpreter
+    setAlpha alpha = Endo \opts -> opts{Dhall.alpha}
 
-    annotateFlag :: Options.Parser (Endo Dhall.Options)
+    annotateFlag :: Options.Parser (Endo Dhall.Interpreter)
     annotateFlag =
         Options.flag mempty (setAnnotate True) (Options.long "annotate")
 
-    noAnnotateFlag :: Options.Parser (Endo Dhall.Options)
+    noAnnotateFlag :: Options.Parser (Endo Dhall.Interpreter)
     noAnnotateFlag =
         Options.flag mempty (setAnnotate False) (Options.long "no-annotate")
 
-    setAnnotate :: Bool -> Endo Dhall.Options
-    setAnnotate annotate = Endo \Dhall.Options{..} -> Dhall.Options
-        { mode = case mode of
-            m@Dhall.Default{} -> m{Dhall.annotate}
-            m -> m
-        , ..
-        }
+    setAnnotate :: Bool -> Endo Dhall.Interpreter
+    setAnnotate annotate = Endo \opts -> opts{Dhall.annotate}
 
-    allowImportsFlag :: Options.Parser (Endo Dhall.Options)
+    allowImportsFlag :: Options.Parser (Endo Dhall.Interpreter)
     allowImportsFlag =
         Options.flag mempty (setAllowImports True)
             (Options.long "allow-imports")
 
-    noAllowImportsFlag :: Options.Parser (Endo Dhall.Options)
+    noAllowImportsFlag :: Options.Parser (Endo Dhall.Interpreter)
     noAllowImportsFlag =
         Options.flag mempty (setAllowImports False)
             (Options.long "no-allow-imports")
 
-    setAllowImports :: Bool -> Endo Dhall.Options
-    setAllowImports allowImports = Endo \Dhall.Options{..} -> Dhall.Options
-        { mode = case mode of
-            m@Dhall.Default{} -> m{Dhall.allowImports}
-            m -> m
-        , ..
-        }
+    setAllowImports :: Bool -> Endo Dhall.Interpreter
+    setAllowImports allowImports = Endo \opts -> opts{Dhall.allowImports}
 
-    typeFlag :: Options.Parser (Endo Dhall.Options)
+    typeFlag :: Options.Parser (Endo Dhall.Interpreter)
     typeFlag =
         Options.flag mempty (setType True) (Options.long "type")
 
-    noTypeFlag :: Options.Parser (Endo Dhall.Options)
+    noTypeFlag :: Options.Parser (Endo Dhall.Interpreter)
     noTypeFlag =
         Options.flag mempty (setType False) (Options.long "no-type")
 
-    setType :: Bool -> Endo Dhall.Options
-    setType showType = Endo \Dhall.Options{..} -> Dhall.Options
-        { mode = case mode of
-            m@Dhall.Default{} -> m{Dhall.showType}
-            m -> m
-        , ..
-        }
+    setType :: Bool -> Endo Dhall.Interpreter
+    setType showType = Endo \opts -> opts{Dhall.showType}
 
     dhallDiffFlag
         :: Options.Parser (Text -> Text -> Endo (ConfigMode Global.Config))
@@ -394,6 +394,13 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     dhallFormatFlag =
         Options.flag mempty switchToDhallFormatMode
             (Options.long "dhall-format")
+
+    dhallResolveFlag
+        :: Options.Parser
+            (Endo Dhall.Resolve -> Endo (ConfigMode Global.Config))
+    dhallResolveFlag =
+        Options.flag mempty switchToDhallResolveMode
+            (Options.long "dhall-resolve")
 
     toolsetOption :: Options.Parser (Endo (ConfigMode Global.Config))
     toolsetOption =
@@ -440,12 +447,19 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
         , "config"
             <+> longOption "dhall-format"
 --          <+> Pretty.brackets (longOption "[no-]check")
+--          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+--          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
 --      , "config"
 --          <+> longOption "dhall-lint"
+--          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+--          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
---      , "config"
---          <+> longOption "dhall-resolve"
+        , "config"
+            <+> longOption "dhall-resolve"
+--          <+> Pretty.brackets (longOptionWithArgument "list" "WHAT")
+--          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+--          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-freeze"
@@ -510,15 +524,18 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
             [ Pretty.reflow "Format Dhall expression."
             ]
 
+        , optionDescription ["--dhall-resolve"]
+            [ Pretty.reflow "Resolve an Dhall expression's imports."
+            ]
+
 --      , optionDescription ["--[no-]check"]
 --          [ Pretty.reflow "If enabled it only checks if the input is\
 --              \ formatted."
 --          ]
 
-        , optionDescription ["--dhall-diff"]
-            [ Pretty.reflow "Render the difference between the normal form of\
-                \ two Dhall expressions."
-            ]
+--      , optionDescription ["--dhall-lint"]
+--          [ Pretty.reflow "Dhall linter; improve Dhall expression."
+--          ]
 
         , optionDescription ["--dhall-freeze"]
             [ Pretty.reflow "Add integrity checks to import statements of a\
@@ -533,6 +550,11 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 
         , optionDescription ["--dhall-hash"]
             [ Pretty.reflow "Compute semantic hashes for Dhall expressions."
+            ]
+
+        , optionDescription ["--dhall-diff"]
+            [ Pretty.reflow "Render the difference between the normal form of\
+                \ two Dhall expressions."
             ]
 
         , optionDescription ["--dhall-repl"]
@@ -595,6 +617,7 @@ configCompletion _appNames _config wordsBeforePattern pat
     hadDhallFreeze = "--dhall-freeze" `List.elem` wordsBeforePattern
     hadDhallHash = "--dhall-hash" `List.elem` wordsBeforePattern
     hadDhallRepl = "--dhall-repl" `List.elem` wordsBeforePattern
+    hadDhallResolve = "--dhall-resolve" `List.elem` wordsBeforePattern
 
     hadSomeDhall = List.or
         [ hadDhall
@@ -603,6 +626,7 @@ configCompletion _appNames _config wordsBeforePattern pat
         , hadDhallFreeze
         , hadDhallHash
         , hadDhallRepl
+        , hadDhallResolve
         ]
 
     mwhen p x = if p then x else mempty
@@ -612,14 +636,16 @@ configCompletion _appNames _config wordsBeforePattern pat
         munless (hadHelp || hadInit || hadSomeDhall)
             [ "--help", "-h"
             , "--init"
-            , "--dhall", "--dhall-diff", "--dhall-hash", "--dhall-repl"
-            , "--dhall-format", "--dhall-freeze"
+
+            , "--dhall", "--dhall-diff", "--dhall-format", "--dhall-freeze"
+            , "--dhall-hash", "--dhall-repl", "--dhall-resolve"
             ]
         <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
         <> munless
             ( List.or
                 [ hadHelp, not hadDhall, hadDhallHash, hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadInit
+                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
+                , hadInit
                 ]
             )
             [ "--alpha", "--no-alpha"
@@ -630,16 +656,26 @@ configCompletion _appNames _config wordsBeforePattern pat
         <> munless
             ( List.or
                 [ hadHelp, hadDhall, hadDhallHash, not hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadInit
+                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
+                , hadInit
                 ]
             )
             ["--remote-only", "--no-remote-only"]
 --      <> munless
 --          ( List.or
 --              [ hadHelp, hadDhall, hadDhallHash, hadDhallFreeze
---              , not hadDhallFormat, hadDhallHash, hadInit
+--              , not hadDhallFormat, hadDhallHash, hadDhallRepl
+--              , hadDhallResolve, hadInit
 --              ]
 --          )
 --          ["--check", "--no-check"]
+--      <> munless
+--          ( List.or
+--              [ hadHelp, hadDhall, hadDhallHash, hadDhallFreeze
+--              , hadDhallFormat, hadDhallHash, hadDhallRepl
+--              , not hadDhallResolve, hadInit
+--              ]
+--          )
+--          ["--list=immediate", "--list=transitive"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
