@@ -255,7 +255,7 @@ versionSubcommandHelp AppNames{usedName} = Pretty.vsep
                 "Print version information in format suitable for SHELL."
             ]
 
-        , optionDescription ["--output=FILE", "-o FILE"]
+        , optionDescription ["--output=FILE", "--output FILE", "-o FILE"]
             [ Pretty.reflow "Write optput into", metavar "FILE"
             , Pretty.reflow "instead of standard output."
             ]

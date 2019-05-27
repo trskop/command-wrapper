@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      $Header$
 -- Description: Implementation of internal command named config
@@ -22,12 +23,12 @@ import Control.Applicative ((<*>), (<|>), optional, pure)
 --import Control.Monad ((>>=), unless)
 import Data.Bool (Bool(False, True), (||), not, otherwise)
 --import Data.Either (Either(Left, Right))
-import Data.Foldable (asum, null)
+import Data.Foldable (asum, length, null)
 import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<$>), (<&>))
-import qualified Data.List as List (elem, filter, isPrefixOf, or)
+import Data.Functor (Functor, (<$>), (<&>), fmap)
+import qualified Data.List as List (drop, elem, filter, isPrefixOf, or)
 --import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe(Just), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
 import Data.String (String)
 import GHC.Generics (Generic)
@@ -35,6 +36,7 @@ import GHC.Generics (Generic)
 import System.IO (IO{-, stderr-}, stdout)
 import Text.Show (Show)
 
+import Data.Output (HasOutput(Output), setOutput)
 import Data.Monoid.Endo.Fold (dualFoldEndo)
 import Data.Text (Text)
 import Data.Text.Prettyprint.Doc ((<+>){-, pretty-})
@@ -60,6 +62,10 @@ import qualified Options.Applicative as Options
     , strArgument
     , strOption
     )
+import qualified Options.Applicative.Builder.Completer as Options (bashCompleter)
+import qualified Options.Applicative.Standard as Options (outputOption)
+import qualified Options.Applicative.Types as Options (Completer(runCompleter))
+import Safe (lastMay)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
@@ -96,6 +102,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Format(..)
     , Freeze(..)
     , Interpreter(..)
+    , Output(..)
     , Repl(..)
     , Resolve(..)
 --  , ResolveMode(..)
@@ -118,7 +125,6 @@ import CommandWrapper.Internal.Subcommand.Config.Init
     , defInitOptions
     , init
     )
-
 
 
 data ConfigMode a
@@ -248,11 +254,17 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallDiffFlag
         <*> Options.strArgument mempty
         <*> Options.strArgument mempty
+        <*> ( dualFoldEndo
+                <$> optional (outputOption @Dhall.Diff)
+            )
 
     , dhallHashFlag
 
     , dhallFreezeFlag
-        <*> (remoteOnlyFlag <|> noRemoteOnlyFlag)
+        <*> ( dualFoldEndo
+                <$> (remoteOnlyFlag <|> noRemoteOnlyFlag)
+                <*> optional outputOption
+            )
 
     , dhallFormatFlag
         <*> pure mempty
@@ -283,9 +295,13 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchToDhallMode f =
         switchTo (Dhall (f `appEndo` Dhall.defInterpreter) globalConfig)
 
-    switchToDhallDiffMode :: Text -> Text -> Endo (ConfigMode Global.Config)
-    switchToDhallDiffMode expr1 expr2 =
-        switchTo (DhallDiff (Dhall.defDiff expr1 expr2) globalConfig)
+    switchToDhallDiffMode
+        :: Text
+        -> Text
+        -> Endo Dhall.Diff
+        -> Endo (ConfigMode Global.Config)
+    switchToDhallDiffMode expr1 expr2 f =
+        switchTo (DhallDiff (f `appEndo` Dhall.defDiff expr1 expr2) globalConfig)
 
     switchToDhallFreezeMode
         :: Endo Dhall.Freeze
@@ -358,8 +374,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     setType :: Bool -> Endo Dhall.Interpreter
     setType showType = Endo \opts -> opts{Dhall.showType}
 
+    outputOption
+        :: (Output a ~ Dhall.Output, HasOutput a)
+        => Options.Parser (Endo a)
+    outputOption = Endo . setOutput <$> Options.outputOption
+
     dhallDiffFlag
-        :: Options.Parser (Text -> Text -> Endo (ConfigMode Global.Config))
+        :: Options.Parser
+            (Text -> Text -> Endo Dhall.Diff -> Endo (ConfigMode Global.Config))
     dhallDiffFlag =
         Options.flag mempty switchToDhallDiffMode (Options.long "dhall-diff")
 
@@ -442,7 +464,7 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
                     <> "|" <> longOption "[no-]type"
                     )
 --          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
---          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-format"
@@ -465,7 +487,7 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
             <+> longOption "dhall-freeze"
             <+> Pretty.brackets (longOption "[no-]remote-only")
 --          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
---          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-hash"
@@ -482,6 +504,7 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
             <+> longOption "dhall-diff"
             <+> metavar "EXPRESSION"
             <+> metavar "EXPRESSION"
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-repl"
@@ -518,6 +541,11 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
         , optionDescription ["--[no-]annotate"]
             [ Pretty.reflow "Add a type annotation to the output. Type\
                 \ annotations aren't included by default."
+            ]
+
+        , optionDescription ["--output=FILE", "--output FILE", "-o FILE"]
+            [ Pretty.reflow "Write optput into", metavar "FILE"
+            , Pretty.reflow "instead of standard output."
             ]
 
         , optionDescription ["--dhall-format"]
@@ -602,8 +630,20 @@ configCompletion
     -> String
     -> IO [String]
 configCompletion _appNames _config wordsBeforePattern pat
-  | null pat  = pure possibleOptions
-  | otherwise = pure matchingOptions
+  | Just "-o" <- lastMay wordsBeforePattern =
+        bashCompleter "file" ""
+
+  | Just "--output" <- lastMay wordsBeforePattern =
+        bashCompleter "file" ""
+
+  | "--output=" `List.isPrefixOf` pat =
+        bashCompleter "file" "--output="
+
+  | null pat =
+        pure possibleOptions
+
+  | otherwise =
+        pure matchingOptions
   where
     hadHelp =
         ("--help" `List.elem` wordsBeforePattern)
@@ -643,7 +683,7 @@ configCompletion _appNames _config wordsBeforePattern pat
         <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
         <> munless
             ( List.or
-                [ hadHelp, not hadDhall, hadDhallHash, hadDhallFreeze
+                [ hadHelp, not hadDhall, hadDhallDiff, hadDhallFreeze
                 , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
                 , hadInit
                 ]
@@ -655,7 +695,15 @@ configCompletion _appNames _config wordsBeforePattern pat
             ]
         <> munless
             ( List.or
-                [ hadHelp, hadDhall, hadDhallHash, not hadDhallFreeze
+                [ hadHelp, not (hadDhall || hadDhallDiff || hadDhallFreeze)
+                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
+                , hadInit
+                ]
+            )
+            ["-o", "--output="]
+        <> munless
+            ( List.or
+                [ hadHelp, hadDhall, hadDhallDiff, not hadDhallFreeze
                 , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
                 , hadInit
                 ]
@@ -663,7 +711,7 @@ configCompletion _appNames _config wordsBeforePattern pat
             ["--remote-only", "--no-remote-only"]
 --      <> munless
 --          ( List.or
---              [ hadHelp, hadDhall, hadDhallHash, hadDhallFreeze
+--              [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
 --              , not hadDhallFormat, hadDhallHash, hadDhallRepl
 --              , hadDhallResolve, hadInit
 --              ]
@@ -671,7 +719,7 @@ configCompletion _appNames _config wordsBeforePattern pat
 --          ["--check", "--no-check"]
 --      <> munless
 --          ( List.or
---              [ hadHelp, hadDhall, hadDhallHash, hadDhallFreeze
+--              [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
 --              , hadDhallFormat, hadDhallHash, hadDhallRepl
 --              , not hadDhallResolve, hadInit
 --              ]
@@ -679,3 +727,10 @@ configCompletion _appNames _config wordsBeforePattern pat
 --          ["--list=immediate", "--list=transitive"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
+
+    -- TODO: If there is only one completion option and it is a directory we
+    -- need to append "/" to it, or it will break the completion flow.
+    bashCompleter :: String -> String -> IO [String]
+    bashCompleter action prefix = fmap (prefix <>)
+        <$> Options.runCompleter (Options.bashCompleter action)
+            (List.drop (length prefix) pat)

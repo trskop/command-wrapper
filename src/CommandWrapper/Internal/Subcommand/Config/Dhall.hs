@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      $Header$
 -- Description: Modified version of Dhall.Main from dhall-haskell package.
@@ -61,6 +63,7 @@ import Data.List as List (dropWhile, span)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Typeable (Typeable)
+import GHC.Generics (Generic)
 import qualified GHC.IO.Encoding as IO (setLocaleEncoding)
 import System.Exit (exitFailure)
 import System.IO
@@ -73,6 +76,9 @@ import System.IO
     )
 import qualified System.IO as IO (utf8)
 
+import Data.Generics.Product.Fields (field')
+import Data.Output (IsOutput, HasOutput)
+import qualified Data.Output (IsOutput(..), HasOutput(..))
 import Data.Text (Text)
 import qualified Data.Text.IO as Text (getContents, readFile)
 import Data.Text.Prettyprint.Doc (Doc)
@@ -136,7 +142,11 @@ data Interpreter = Interpreter
     , input           :: Input
     , output          :: Output
     }
-  deriving (Show)
+  deriving (Generic, Show)
+
+instance HasOutput Interpreter where
+    type Output Interpreter = Output
+    output = field' @"output"
 
 defInterpreter :: Interpreter
 defInterpreter = Interpreter
@@ -166,6 +176,9 @@ data Output
     --   modified in palace.
     | OutputFile FilePath
   deriving (Show)
+
+instance IsOutput Output where
+    parseOutput s = OutputFile <$> Data.Output.parseOutput s
 
 data InputEncoding
     = InputCbor
@@ -415,7 +428,11 @@ data Freeze = Freeze
     , output :: Output
     , characterSet :: Dhall.CharacterSet
     }
-  deriving (Show)
+  deriving (Generic, Show)
+
+instance HasOutput Freeze where
+    type Output Freeze = Output
+    output = field' @"output"
 
 defFreeze :: Freeze
 defFreeze = Freeze
@@ -473,10 +490,18 @@ data Diff = Diff
     , expr2 :: Text
     , output :: Output
     }
-  deriving (Show)
+  deriving (Generic, Show)
+
+instance HasOutput Diff where
+    type Output Diff = Output
+    output = field' @"output"
 
 defDiff :: Text -> Text -> Diff
-defDiff expr1 expr2 = Diff{expr1, expr2, output = OutputStdout}
+defDiff expr1 expr2 = Diff
+    { expr1
+    , expr2
+    , output = OutputStdout
+    }
 
 diff :: AppNames -> Config -> Diff -> IO ()
 diff appNames config Diff{..} = handleExceptions appNames config do

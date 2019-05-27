@@ -13,15 +13,17 @@ toolset configuration.
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 \[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-reesolve
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-freeze
-\[\--\[no-]remote-only]
+\[\--\[no-]remote-only] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
 
@@ -141,6 +143,9 @@ We can organise `config` subcommand abilities into following categories:
 \--\[no-]annotate
 :   Add a type annotation to the output.  Type annotations aren't included by
     default.
+
+**\--output=***FILE*, **\--output** *FILE*, **-o** *FILE*
+:   Write optput into *FILE* instead of standard output.
 
 \--dhall-format
 :   Format Dhall expression.
