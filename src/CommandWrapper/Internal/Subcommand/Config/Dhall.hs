@@ -50,59 +50,52 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     )
   where
 
-import Control.Exception (SomeException)
+import Control.Exception (Exception, SomeException, handle, throwIO)
+import Control.Monad (unless)
 import Data.Foldable (for_, traverse_)
+import Data.List as List (dropWhile, span)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
+import Data.Typeable (Typeable)
 import qualified GHC.IO.Encoding as IO (setLocaleEncoding)
 import System.Exit (exitFailure)
 import System.IO (Handle, hPutStrLn, stderr, stdout)
 import qualified System.IO as IO (utf8)
 
 import Data.Text (Text)
-import qualified Data.Text.IO as Text (getContents, hPutStrLn, readFile)
-import Data.Text.Prettyprint.Doc (Doc, Pretty)
+import qualified Data.Text.IO as Text (getContents, readFile)
+import Data.Text.Prettyprint.Doc (Doc)
 import qualified Data.Map as Map (keys)
 import Dhall.Binary (defaultStandardVersion)
 import Dhall.Core (Expr(..), Import)
 import qualified Dhall.Freeze as Dhall (freezeImport, freezeRemoteImport)
-import Dhall.Import (Imported(..))
-import Dhall.Parser (Src)
-import qualified Dhall.Pretty as Dhall
-    ( Ann
-    , CharacterSet(..)
-    , annToAnsiStyle
-    , layoutOpts
-    )
+import Dhall.Import (Imported(..), MissingImports)
+import Dhall.Parser (ParseError, SourcedException, Src)
+import qualified Dhall.Pretty as Dhall (Ann, CharacterSet(..))
 import Dhall.TypeCheck (DetailedTypeError(..), TypeError, X)
-import qualified System.Console.Terminal.Size as Terminal
-    ( Window(Window, width)
-    , hSize
-    )
 import System.FilePath (takeDirectory)
 
-import qualified Codec.CBOR.JSON
-import qualified Codec.CBOR.Read
-import qualified Codec.CBOR.Write
-import qualified Codec.Serialise
-import qualified Control.Exception
+--import qualified Codec.CBOR.JSON
+--import qualified Codec.CBOR.Read
+--import qualified Codec.CBOR.Write
+--import qualified Codec.Serialise
 import qualified Control.Monad.Trans.State.Strict as State
-import qualified Data.Aeson
-import qualified Data.Aeson.Encode.Pretty
-import qualified Data.ByteString.Lazy
-import qualified Data.ByteString.Lazy.Char8
+--import qualified Data.Aeson
+--import qualified Data.Aeson.Encode.Pretty
+--import qualified Data.ByteString.Lazy
+--import qualified Data.ByteString.Lazy.Char8
 --import qualified Data.Text
 import qualified Data.Text.Prettyprint.Doc                 as Pretty
-import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
+--import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import qualified Dhall
-import qualified Dhall.Binary
+--import qualified Dhall.Binary
 import qualified Dhall.Core
 import qualified Dhall.Diff
 import qualified Dhall.Format
 import qualified Dhall.Hash
 import qualified Dhall.Import
 --import qualified Dhall.Import.Types
-import qualified Dhall.Lint
+--import qualified Dhall.Lint
 import qualified Dhall.Parser
 import qualified Dhall.Pretty
 import qualified Dhall.Repl
@@ -112,7 +105,7 @@ import qualified Dhall.TypeCheck
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPutDoc, hPutExpr)
-import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
+import CommandWrapper.Options.ColourOutput (shouldUseColours)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput (ColourOutput(Auto))
 import Data.Generics.Internal.VL.Lens ((^.))
 import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
@@ -206,10 +199,11 @@ readExpression = \case
 -- orthogonal to the mode that we are running in.
 
 interpreter :: AppNames -> Config -> Interpreter -> IO ()
-interpreter _AppNames
-  config@Config{colourOutput}
+interpreter
+  appNames
+  config
   Interpreter{allowImports, alpha, annotate, input, showType}
-  = handleExceptions config do
+  = handleExceptions appNames config do
 
     IO.setLocaleEncoding IO.utf8
     (expression, status) <- readExpression input
@@ -268,36 +262,36 @@ defResolve = Resolve
     }
 
 resolve :: AppNames -> Config -> Resolve -> IO ()
-resolve _AppNames config Resolve{mode, input} = handleExceptions config do
+resolve appNames config Resolve{mode, input} =
+    handleExceptions appNames config do
+        IO.setLocaleEncoding IO.utf8
+        (expression, status) <- readExpression input
 
-    IO.setLocaleEncoding IO.utf8
-    (expression, status) <- readExpression input
+        case mode of
+            ResolveDependencies -> do
+                (resolvedExpression, _) <- State.runStateT
+                    (Dhall.Import.loadWith expression) status
 
-    case mode of
-        ResolveDependencies -> do
-            (resolvedExpression, _) <- State.runStateT
-                (Dhall.Import.loadWith expression) status
+                hPutExpr config stdout resolvedExpression
 
-            hPutExpr config stdout resolvedExpression
+            ListImmediateDependencies ->
+                traverse_ (print . Pretty.pretty . Dhall.Core.importHashed)
+                    expression
 
-        ListImmediateDependencies ->
-            traverse_ (print . Pretty.pretty . Dhall.Core.importHashed)
-                expression
+            ListTransitiveDependencies -> do
+                cache <- (^. Dhall.Import.cache)
+                    <$> State.execStateT (Dhall.Import.loadWith expression)
+                        status
 
-        ListTransitiveDependencies -> do
-            cache <- (^. Dhall.Import.cache)
-                <$> State.execStateT (Dhall.Import.loadWith expression)
-                    status
+                for_ (Map.keys cache)
+                    ( print
+                    . Pretty.pretty
+                    . Dhall.Core.importType
+                    . Dhall.Core.importHashed
+                    )
 
-            for_ (Map.keys cache)
-                ( print
-                . Pretty.pretty
-                . Dhall.Core.importType
-                . Dhall.Core.importHashed
-                )
-
-        -- TODO: Unable to implement at the moment.
---      Just Dot -> pure ()
+            -- TODO: Unable to implement at the moment.
+--          Just Dot -> pure ()
 
 -- }}} Resolve ----------------------------------------------------------------
 
@@ -401,7 +395,7 @@ defFormat = Dhall.Format.Format
     }
 
 format :: AppNames -> Config -> Dhall.Format.Format -> IO ()
-format _AppNames config = handleExceptions config . Dhall.Format.format
+format appNames config = handleExceptions appNames config . Dhall.Format.format
 
 -- }}} Format -----------------------------------------------------------------
 
@@ -428,7 +422,7 @@ freeze
     -> Config
     -> Freeze
     -> IO ()
-freeze _AppNames config Freeze{..} = handleExceptions config do
+freeze appNames config Freeze{..} = handleExceptions appNames config do
     (header, expression, directory) <- case input of
         InputStdin -> do
             (header, expression) <- Text.getContents
@@ -459,8 +453,8 @@ freeze _AppNames config Freeze{..} = handleExceptions config do
 -- {{{ Hash -------------------------------------------------------------------
 
 hash :: AppNames -> Config -> IO ()
-hash _AppNames config =
-    handleExceptions config (Dhall.Hash.hash defaultStandardVersion)
+hash appNames config =
+    handleExceptions appNames config (Dhall.Hash.hash defaultStandardVersion)
 
 -- }}} Hash -------------------------------------------------------------------
 
@@ -477,7 +471,7 @@ defDiff :: Text -> Text -> Diff
 defDiff expr1 expr2 = Diff{expr1, expr2}
 
 diff :: AppNames -> Config -> Diff -> IO ()
-diff _AppNames config Diff{..} = handleExceptions config do
+diff appNames config Diff{..} = handleExceptions appNames config do
     diffDoc <- Dhall.Diff.diffNormalized
         <$> Dhall.inputExpr expr1
         <*> Dhall.inputExpr expr2
@@ -506,8 +500,8 @@ defRepl = Repl
     }
 
 repl :: AppNames -> Config -> Repl -> IO ()
-repl _AppNames config@Config{verbosity} Repl{..} =
-    handleExceptions config
+repl appNames config@Config{verbosity} Repl{..} =
+    handleExceptions appNames config
         (Dhall.Repl.repl characterSet explain defaultStandardVersion)
   where
     explain = verbosity > Verbosity.Normal
@@ -527,43 +521,99 @@ hPutExpr Config{colourOutput} =
   where
     characterSet = Dhall.Unicode -- TODO: This should be configurable.
 
-handleExceptions :: Config -> IO () -> IO ()
-handleExceptions Config{verbosity} =
-    Control.Exception.handle handler2
-    . Control.Exception.handle handler1
-    . Control.Exception.handle handler0
+data DhallException a
+    = PlainDhallException String String a
+    | ColourfulDhallException String String a
+
+instance (Show e, Typeable e) => Exception (DhallException e)
+
+instance Show e => Show (DhallException e) where
+    show = \case
+        PlainDhallException usedName prefix e ->
+            prefix <> convertErrorMsg usedName False (show e)
+
+        ColourfulDhallException usedName prefix e ->
+            prefix <> convertErrorMsg usedName True (show e)
+      where
+        -- "\ESC[1;31mError\ESC[0m:" ->
+        --     ... <> usedName <> " config: Error: " <> ...
+        convertErrorMsg usedName colour s =
+            let (prefix, msg) =
+                    List.span (/= '\x1b') (List.dropWhile (== '\n') s)
+
+                (msg1, msg2) =
+                    List.span (/= '\n') (List.dropWhile (/= ':') msg)
+
+             in mconcat
+                    [ prefix
+                    , if colour then "\ESC[1;31m" else ""
+                    , usedName
+                    , " config: Error"
+                    , msg1
+                    , if colour then "\ESC[0m" else ""
+                    , msg2
+                    ]
+
+throwDhallException
+    :: Exception e
+    => AppNames
+    -> Config
+    -> Handle
+    -> String
+    -> e
+    -> IO a
+throwDhallException AppNames{usedName} Config{colourOutput} h msg e = do
+    useColours <- shouldUseColours h (fromMaybe ColourOutput.Auto colourOutput)
+
+    let prefix =
+            if null msg
+                then ""
+                else if useColours
+                    then
+                        "\ESC[2m" <> usedName <> " config: " <> msg
+                        <> "\ESC[0m\n\n"
+                    else
+                        msg <> "\n\n"
+
+    throwIO if useColours
+        then ColourfulDhallException usedName prefix e
+        else PlainDhallException usedName prefix e
+
+handleExceptions :: AppNames -> Config -> IO () -> IO ()
+handleExceptions appNames config@Config{verbosity} =
+    handle handlerFinal . handle handler3 . handle handler2 . handle handler1
+    . handle handler0
   where
     explain = verbosity > Verbosity.Normal
 
     handler0 :: TypeError Src X -> IO ()
-    handler0 e = do
-        hPutStrLn stderr ""
-        if explain
-            then Control.Exception.throwIO (DetailedTypeError e)
-            else do
-                -- TODO: Wrong message; respect colourOutput settings.
-                Text.hPutStrLn stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
-                Control.Exception.throwIO e
+    handler0 e = if explain
+        then throwDhallException' "" (DetailedTypeError e)
+        else throwDhallException' getDetailedErrorsMsg e
 
     handler1 :: Imported (TypeError Src X) -> IO ()
-    handler1 (Imported ps e) = do
-        hPutStrLn stderr ""
-        if explain
-            then Control.Exception.throwIO (Imported ps (DetailedTypeError e))
-            else do
-                -- TODO: Wrong message; respect colourOutput settings.
-                Text.hPutStrLn stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
-                Control.Exception.throwIO (Imported ps e)
+    handler1 (Imported ps e) = if explain
+        then throwDhallException' "" (Imported ps (DetailedTypeError e))
+        else throwDhallException' getDetailedErrorsMsg (Imported ps e)
 
-    handler2 :: SomeException -> IO ()
-    handler2 e = do
+    getDetailedErrorsMsg = "Use \"--verbosity=verbose\" for detailed errors."
+
+    handler2 :: SourcedException MissingImports -> IO ()
+    handler2 = throwDhallException' ""
+
+    handler3 :: ParseError -> IO ()
+    handler3 = throwDhallException' ""
+
+    handlerFinal :: SomeException -> IO ()
+    handlerFinal e = do
         let string = show e
 
-        if not (null string)
-            -- TODO: Use errorMsg
-            then hPutStrLn stderr string
-            else return ()
+        unless (null string)
+            (hPutStrLn stderr string)
 
         System.Exit.exitFailure
+
+    throwDhallException' :: Exception e => String -> e -> IO a
+    throwDhallException' = throwDhallException appNames config stderr
 
 -- }}} Helper Functions -------------------------------------------------------
