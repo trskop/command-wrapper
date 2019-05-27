@@ -56,18 +56,19 @@ import System.Directory
     , getHomeDirectory
     , getXdgDirectory
     )
-import qualified Dhall.Format as Dhall
-    ( Format(Format, characterSet, formatMode)
-    , FormatMode(Modify, inplace)
-    , format
-    )
-import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 --import qualified Dhall.TH (staticDhallExpression)
 import System.FilePath ((</>))
 import System.Posix.Files (createSymbolicLink)
 
 import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
+import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
+    ( Freeze(input, output)
+    , Input(InputFile)
+    , Output(OutputBasedOnInput)
+    , defFreeze
+    , freeze
+    )
 import CommandWrapper.Internal.Subcommand.Help (command)
 import CommandWrapper.Message
     ( defaultLayoutOptions
@@ -97,8 +98,8 @@ defInitOptions toolsetName = InitOptions
 
 init :: AppNames -> Config -> InitOptions -> IO ()
 init
-  AppNames{exePath, usedName}
-  Config{colourOutput, verbosity}
+  appNames@AppNames{exePath, usedName}
+  config@Config{colourOutput, verbosity}
   InitOptions{..} = do
 
     destination <- case binDir of
@@ -201,23 +202,17 @@ init
         checkFile libraryTypesDhall
             >>= createOrSkipFile (configFileContent LibraryTypes)
 
-        -- TODO: Handle exceptions correctly.
-        Dhall.format Dhall.Format
-            { characterSet = Dhall.Unicode
-            , formatMode = Dhall.Modify
-                { inplace = Just libraryTypesDhall
-                }
+        Dhall.freeze appNames config Dhall.defFreeze
+            { Dhall.input = Dhall.InputFile libraryTypesDhall
+            , Dhall.output = Dhall.OutputBasedOnInput
             }
 
         checkFile libraryDhall
             >>= createOrSkipFile (configFileContent Library)
 
-        -- TODO: Handle exceptions correctly.
-        Dhall.format Dhall.Format
-            { characterSet = Dhall.Unicode
-            , formatMode = Dhall.Modify
-                { inplace = Just libraryTypesDhall
-                }
+        Dhall.freeze appNames config Dhall.defFreeze
+            { Dhall.input = Dhall.InputFile libraryDhall
+            , Dhall.output = Dhall.OutputBasedOnInput
             }
 
         checkFile cdConfig
