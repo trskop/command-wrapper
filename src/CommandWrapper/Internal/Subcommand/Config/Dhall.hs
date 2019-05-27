@@ -47,6 +47,10 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , Repl(..)
     , defRepl
     , repl
+
+    -- * Input\/Output
+    , Input(..)
+    , Output(..)
     )
   where
 
@@ -59,7 +63,14 @@ import Data.Monoid ((<>))
 import Data.Typeable (Typeable)
 import qualified GHC.IO.Encoding as IO (setLocaleEncoding)
 import System.Exit (exitFailure)
-import System.IO (Handle, hPutStrLn, stderr, stdout)
+import System.IO
+    ( Handle
+    , IOMode(WriteMode)
+    , hPutStrLn
+    , stderr
+    , stdout
+    , withFile
+    )
 import qualified System.IO as IO (utf8)
 
 import Data.Text (Text)
@@ -108,7 +119,7 @@ import qualified CommandWrapper.Internal.Dhall as Dhall (hPutDoc, hPutExpr)
 import CommandWrapper.Options.ColourOutput (shouldUseColours)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput (ColourOutput(Auto))
 import Data.Generics.Internal.VL.Lens ((^.))
-import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
+import qualified Data.Verbosity as Verbosity (Verbosity(Normal, Silent))
 
 
 -- {{{ Interpreter ------------------------------------------------------------
@@ -137,7 +148,7 @@ defInterpreter = Interpreter
 --  , inputEncoding   =
 --  , outputEncoding  =
     , input = InputStdin
-    , output = ()
+    , output = OutputStdout
     }
 
 data Input
@@ -145,19 +156,16 @@ data Input
     | InputFile FilePath
   deriving (Show)
 
-type Output = () -- TODO Implement
-
--- TODO: Alternative to simple (input, output) product we should consider:
---
--- data InputOutput
---    = InputOutput Input Output
---    | Inplace Input
---
--- Alternative representation is to have
---
--- data Output
---    = Output ...
---    | Inplace  -- Reuse 'Input' as output with few gotchas as temp files etc.
+data Output
+    = OutputStdout
+    | OutputBasedOnInput
+    -- ^ If 'Input':
+    --
+    -- * 'InputStdin' then this is interpreted as write into @stdout@,
+    -- * and if it's 'InputFile' then this is means that the input file will be
+    --   modified in palace.
+    | OutputFile FilePath
+  deriving (Show)
 
 data InputEncoding
     = InputCbor
@@ -404,7 +412,7 @@ format appNames config = handleExceptions appNames config . Dhall.Format.format
 data Freeze = Freeze
     { remoteOnly :: Bool
     , input :: Input
-    , output :: Output -- TODO: Actually implement.
+    , output :: Output
     , characterSet :: Dhall.CharacterSet
     }
   deriving (Show)
@@ -413,7 +421,7 @@ defFreeze :: Freeze
 defFreeze = Freeze
     { remoteOnly = True
     , input = InputStdin
-    , output = () -- TODO: Actually implement.
+    , output = OutputStdout
     , characterSet = Dhall.Unicode
     }
 
@@ -441,7 +449,7 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
             ) directory defaultStandardVersion
 
     frozenExpression <- traverse freezeFunction expression
-    renderDoc config stdout
+    withOutputHandle input output (renderDoc config)
         ( Pretty.pretty header
         <> Dhall.Pretty.prettyCharacterSet characterSet frozenExpression
         )
@@ -463,12 +471,12 @@ hash appNames config =
 data Diff = Diff
     { expr1 :: Text
     , expr2 :: Text
---  , output :: Maybe FilePath  -- TODO Ist this a correct type?
+    , output :: Output
     }
   deriving (Show)
 
 defDiff :: Text -> Text -> Diff
-defDiff expr1 expr2 = Diff{expr1, expr2}
+defDiff expr1 expr2 = Diff{expr1, expr2, output = OutputStdout}
 
 diff :: AppNames -> Config -> Diff -> IO ()
 diff appNames config Diff{..} = handleExceptions appNames config do
@@ -476,7 +484,7 @@ diff appNames config Diff{..} = handleExceptions appNames config do
         <$> Dhall.inputExpr expr1
         <*> Dhall.inputExpr expr2
 
-    renderDoc config stdout diffDoc
+    withOutputHandle InputStdin output (renderDoc config) diffDoc
 
 -- }}} Diff -------------------------------------------------------------------
 
@@ -514,6 +522,23 @@ renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
 renderDoc Config{colourOutput} h doc =
     Dhall.hPutDoc (fromMaybe ColourOutput.Auto colourOutput) h
         (doc <> Pretty.line)
+
+withOutputHandle :: Input -> Output -> (Handle -> b -> IO a) -> b -> IO a
+withOutputHandle input = \case
+    OutputStdout ->
+        ($ stdout)
+
+    OutputBasedOnInput -> case input of
+        InputStdin ->
+            ($ stdout)
+
+        InputFile filePath ->
+            -- TODO: Consider using a temporary file so that this operation can
+            -- be perceived as atomic from the outside.
+            \m a -> withFile filePath WriteMode \h -> m h a
+
+    OutputFile filePath ->
+        \m a -> withFile filePath WriteMode \h -> m h a
 
 hPutExpr :: Config -> Handle -> Expr Src X -> IO ()
 hPutExpr Config{colourOutput} =
@@ -608,7 +633,7 @@ handleExceptions appNames config@Config{verbosity} =
     handlerFinal e = do
         let string = show e
 
-        unless (null string)
+        unless (verbosity == Verbosity.Silent || null string)
             (hPutStrLn stderr string)
 
         System.Exit.exitFailure
