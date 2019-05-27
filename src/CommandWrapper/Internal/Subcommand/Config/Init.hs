@@ -56,6 +56,12 @@ import System.Directory
     , getHomeDirectory
     , getXdgDirectory
     )
+import qualified Dhall.Format as Dhall
+    ( Format(Format, characterSet, formatMode)
+    , FormatMode(Modify, inplace)
+    , format
+    )
+import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 --import qualified Dhall.TH (staticDhallExpression)
 import System.FilePath ((</>))
 import System.Posix.Files (createSymbolicLink)
@@ -195,8 +201,24 @@ init
         checkFile libraryTypesDhall
             >>= createOrSkipFile (configFileContent LibraryTypes)
 
+        -- TODO: Handle exceptions correctly.
+        Dhall.format Dhall.Format
+            { characterSet = Dhall.Unicode
+            , formatMode = Dhall.Modify
+                { inplace = Just libraryTypesDhall
+                }
+            }
+
         checkFile libraryDhall
             >>= createOrSkipFile (configFileContent Library)
+
+        -- TODO: Handle exceptions correctly.
+        Dhall.format Dhall.Format
+            { characterSet = Dhall.Unicode
+            , formatMode = Dhall.Modify
+                { inplace = Just libraryTypesDhall
+                }
+            }
 
         checkFile cdConfig
             >>= createOrSkipFile (configFileContent CdConfig)
