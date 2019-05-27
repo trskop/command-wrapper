@@ -28,6 +28,7 @@ module CommandWrapper.Options
     , splitArguments'
     , execParserPure
     , handleParseResult
+    , bashCompleter
     )
   where
 
@@ -48,7 +49,8 @@ import qualified CommandWrapper.Internal as Internal (Command(..), command)
 import CommandWrapper.Options.Alias (Alias(..), applyAlias)
 import CommandWrapper.Options.GlobalMode (GlobalMode(..), runGlobalMode)
 import CommandWrapper.Options.Optparse
-    ( execParserPure
+    ( bashCompleter
+    , execParserPure
     , handleParseResult
     , parse
     , splitArguments

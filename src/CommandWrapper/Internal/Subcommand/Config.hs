@@ -22,11 +22,19 @@ module CommandWrapper.Internal.Subcommand.Config
 import Control.Applicative ((<*>), (<|>), many, optional, pure)
 --import Control.Monad ((>>=), unless)
 import Data.Bool (Bool(False, True), (||), not, otherwise)
+import qualified Data.Char as Char (isDigit)
 import Data.Either (Either(Left, Right))
-import Data.Foldable (asum, length, null)
+import Data.Foldable (asum, null)
 import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<$>), (<&>), fmap)
-import qualified Data.List as List (any, drop, elem, filter, isPrefixOf, or)
+import Data.Functor (Functor, (<$>), (<&>))
+import qualified Data.List as List
+    ( any
+    , elem
+    , filter
+    , isPrefixOf
+    , or
+    , dropWhile
+    )
 --import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Just), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
@@ -66,9 +74,7 @@ import qualified Options.Applicative as Options
     , strArgument
     , strOption
     )
-import qualified Options.Applicative.Builder.Completer as Options (bashCompleter)
 import qualified Options.Applicative.Standard as Options (outputOption)
-import qualified Options.Applicative.Types as Options (Completer(runCompleter))
 import Safe (lastMay)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
@@ -94,7 +100,8 @@ import CommandWrapper.Message
     , message
     )
 import qualified CommandWrapper.Options.Optparse as Options
-    ( internalSubcommandParse
+    ( bashCompleter
+    , internalSubcommandParse
 --  , splitArguments
 --  , splitArguments'
     )
@@ -678,6 +685,10 @@ configCompletion _appNames _config wordsBeforePattern pat
   | Just "--output" <- lastMay wordsBeforePattern =
         bashCompleter "file" ""
 
+  -- TODO: This may be Bash-scpecific.  We need to investigate other shells.
+  | Just w <- lastMay wordsBeforePattern, isBashRedirection w =
+        bashCompleter "file" ""
+
   | "--output=" `List.isPrefixOf` pat =
         bashCompleter "file" "--output="
 
@@ -785,9 +796,15 @@ configCompletion _appNames _config wordsBeforePattern pat
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 
-    -- TODO: If there is only one completion option and it is a directory we
-    -- need to append "/" to it, or it will break the completion flow.
-    bashCompleter :: String -> String -> IO [String]
-    bashCompleter action prefix = fmap (prefix <>)
-        <$> Options.runCompleter (Options.bashCompleter action)
-            (List.drop (length prefix) pat)
+    -- See `bash(1)` for details.
+    isBashRedirection s = List.dropWhile Char.isDigit s `List.elem`
+        [ "&>"
+        , "&>>"
+        , "<"
+        , "<>"
+        , ">"
+        , ">&"
+        , ">>"
+        ]
+
+    bashCompleter a p = Options.bashCompleter a p pat

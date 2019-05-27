@@ -59,9 +59,7 @@ import qualified Options.Applicative as Options
     , long
     , short
     )
-import qualified Options.Applicative.Builder.Completer as Options (bashCompleter)
 import qualified Options.Applicative.Standard as Options (outputOption)
-import qualified Options.Applicative.Types as Options (Completer(runCompleter))
 import Safe (headMay, lastMay)
 
 import CommandWrapper.Config.Global (Config(..))
@@ -91,7 +89,8 @@ import CommandWrapper.Message (Result, defaultLayoutOptions, message)
 --import qualified CommandWrapper.Message as Message (dieTooManyArguments)
 --import CommandWrapper.Options.Alias (applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
-    ( internalSubcommandParse
+    ( bashCompleter
+    , internalSubcommandParse
     )
 import qualified CommandWrapper.Options.Shell as Options
 
@@ -325,9 +324,4 @@ versionCompletion _ _ wordsBeforePattern pat
 
     munless p x = if not p then x else mempty
 
-    -- TODO: If there is only one completion option and it is a directory we
-    -- need to append "/" to it, or it will break the completion flow.
-    bashCompleter :: String -> String -> IO [String]
-    bashCompleter action prefix = fmap (prefix <>)
-        <$> Options.runCompleter (Options.bashCompleter action)
-            (drop (length prefix) pat)
+    bashCompleter a p = Options.bashCompleter a p pat

@@ -22,19 +22,23 @@ module CommandWrapper.Options.Optparse
     , splitArguments'
     , execParserPure
     , handleParseResult
+
+    -- * Completion
+    , bashCompleter
     )
   where
 
 import Prelude ((+), fromIntegral)
 
 import Control.Applicative (pure)
+import Control.Monad ((>=>))
 import Data.Bool ((&&))
 import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
 import Data.Foldable (length)
 import Data.Function (($), (.))
 import Data.Functor (Functor, (<$>))
-import qualified Data.List as List (span)
+import qualified Data.List as List (drop, span)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (Endo, (<>))
 import Data.String (String)
@@ -55,8 +59,13 @@ import qualified Options.Applicative as Options
     , ParserResult(CompletionInvoked, Failure, Success)
     , parserFailure
     )
+import qualified Options.Applicative.Builder.Completer as Options
+    ( bashCompleter
+    )
 import qualified Options.Applicative.Common as Options (runParserInfo)
 import qualified Options.Applicative.Internal as Options (runP)
+import qualified Options.Applicative.Types as Options (Completer(runCompleter))
+import System.Directory (doesDirectoryExist)
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Environment.AppNames (AppNames(AppNames, usedName))
@@ -213,3 +222,22 @@ handleParseResult command verbosity colour = \case
 
     Options.CompletionInvoked _ ->
         exitWith (ExitFailure 1) -- TODO: This is imposible case.
+
+bashCompleter :: String -> String -> String -> IO [String]
+bashCompleter action prefix =
+    ( Options.runCompleter (Options.bashCompleter action)
+        . List.drop (length prefix)
+    )
+    >=> \case
+        -- If there is only one completion option, and it is a directory, by
+        -- appending '/' we'll force completion to descend into that directory.
+        --
+        -- TODO: This behaviour should be configurable!
+        [path] -> do
+            isDirectory <- doesDirectoryExist path
+            pure if isDirectory
+                then [prefix <> path <> "/"]
+                else [prefix <> path]
+
+        r ->
+            pure $ (prefix <>) <$> r
