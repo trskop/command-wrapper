@@ -18,7 +18,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-resolve
-\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+\[\--list-imports=*KIND*] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-freeze
 \[\--\[no-]remote-only] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
@@ -155,6 +155,10 @@ We can organise `config` subcommand abilities into following categories:
 
 \--dhall-resolve
 :   Resolve an Dhall expression's imports.
+
+\--list-imports=*KIND*
+:   Instead of resolving imports list them one on each line.  *KIND* can be
+    *immediate* or *transitive*.
 
 \--dhall-freeze
 :   Add integrity checks to import statements of a Dhall expression.

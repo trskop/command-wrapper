@@ -22,11 +22,11 @@ module CommandWrapper.Internal.Subcommand.Config
 import Control.Applicative ((<*>), (<|>), many, optional, pure)
 --import Control.Monad ((>>=), unless)
 import Data.Bool (Bool(False, True), (||), not, otherwise)
---import Data.Either (Either(Left, Right))
+import Data.Either (Either(Left, Right))
 import Data.Foldable (asum, length, null)
 import Data.Function (($), (.), const)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
-import qualified Data.List as List (drop, elem, filter, isPrefixOf, or)
+import qualified Data.List as List (any, drop, elem, filter, isPrefixOf, or)
 --import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Just), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
@@ -36,8 +36,9 @@ import GHC.Generics (Generic)
 import System.IO (IO{-, stderr-}, stdout)
 import Text.Show (Show)
 
-import Data.Output (HasOutput(Output), setOutput)
+import Data.CaseInsensitive as CI (mk)
 import Data.Monoid.Endo.Fold (dualFoldEndo)
+import Data.Output (HasOutput(Output), setOutput)
 import Data.Text (Text)
 import Data.Text.Prettyprint.Doc ((<+>){-, pretty-})
 import qualified Data.Text.Prettyprint.Doc as Pretty
@@ -54,11 +55,13 @@ import qualified Mainplate (applySimpleDefaults)
 import qualified Options.Applicative as Options
     ( Parser
     , defaultPrefs
+    , eitherReader
     , flag
     , flag'
     , info
     , long
     , metavar
+    , option
     , short
     , strArgument
     , strOption
@@ -81,6 +84,7 @@ import CommandWrapper.Internal.Subcommand.Help
     , section
     , toolsetCommand
     , usageSection
+    , value
     )
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message
@@ -106,7 +110,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Output(..)
     , Repl(..)
     , Resolve(..)
---  , ResolveMode(..)
+    , ResolveMode(..)
     , defDiff
     , defFormat
     , defFreeze
@@ -274,7 +278,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallResolveFlag
         <*> ( dualFoldEndo
                 <$> optional outputOption
---              <*> optional listDependenciesOption
+                <*> optional listDependenciesOption
             )
 
     , helpFlag
@@ -419,6 +423,20 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.flag mempty switchToDhallResolveMode
             (Options.long "dhall-resolve")
 
+    listDependenciesOption :: Options.Parser (Endo Dhall.Resolve)
+    listDependenciesOption =
+        Options.option parser
+            (Options.long "list-imports" <> Options.metavar "KIND")
+      where
+        parser = Options.eitherReader \s -> case CI.mk s of
+            "immediate" -> Right $ Endo \r ->
+                r{Dhall.mode = Dhall.ListImmediateDependencies}
+
+            "transitive" -> Right $ Endo \r ->
+                r{Dhall.mode = Dhall.ListTransitiveDependencies}
+
+            _ -> Left "Expected 'immediate' or 'transitive'"
+
     toolsetOption :: Options.Parser (Endo (ConfigMode Global.Config))
     toolsetOption =
         Options.strOption (Options.long "toolset" <> Options.metavar "NAME")
@@ -474,7 +492,7 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-resolve"
---          <+> Pretty.brackets (longOptionWithArgument "list" "WHAT")
+            <+> Pretty.brackets (longOptionWithArgument "list-imports" "KIND")
 --          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
@@ -549,6 +567,13 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 
         , optionDescription ["--dhall-resolve"]
             [ Pretty.reflow "Resolve an Dhall expression's imports."
+            ]
+
+        , optionDescription ["--list-imports=KIND"]
+            [ Pretty.reflow "Instead of resolving imports list them one on\
+                \ each line."
+            , metavar "KIND", "can" <+> "be", value "immediate", "or"
+            , value "transitive" <> "."
             ]
 
 --      , optionDescription ["--[no-]check"]
@@ -720,14 +745,14 @@ configCompletion _appNames _config wordsBeforePattern pat
 --              ]
 --          )
 --          ["--check", "--no-check"]
---      <> munless
---          ( List.or
---              [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
---              , hadDhallFormat, hadDhallHash, hadDhallRepl
---              , not hadDhallResolve, hadInit
---              ]
---          )
---          ["--list=immediate", "--list=transitive"]
+        <> munless
+            ( List.or
+                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
+                , hadDhallFormat, hadDhallHash, hadDhallRepl
+                , not hadDhallResolve, hadInit
+                ]
+            )
+            ["--list-imports=immediate", "--list-imports=transitive"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 
