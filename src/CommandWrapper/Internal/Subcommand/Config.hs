@@ -271,10 +271,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 --      <*> (checkFlag <|> noCheckFlag)
 
     , dhallResolveFlag
-        <*> pure mempty
---      <*> ( dualFoldEndo
---              <$> optional listDependenciesOption
---          )
+        <*> ( dualFoldEndo
+                <$> optional outputOption
+--              <*> optional listDependenciesOption
+            )
 
     , helpFlag
 
@@ -481,7 +481,7 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
             <+> longOption "dhall-resolve"
 --          <+> Pretty.brackets (longOptionWithArgument "list" "WHAT")
 --          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
---          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-freeze"
@@ -695,9 +695,10 @@ configCompletion _appNames _config wordsBeforePattern pat
             ]
         <> munless
             ( List.or
-                [ hadHelp, not (hadDhall || hadDhallDiff || hadDhallFreeze)
-                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
-                , hadInit
+                [ hadHelp
+                , not $ List.or
+                    [hadDhall, hadDhallDiff, hadDhallFreeze, hadDhallResolve]
+                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadInit
                 ]
             )
             ["-o", "--output="]

@@ -17,7 +17,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-reesolve
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-resolve
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-freeze
 \[\--\[no-]remote-only] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]

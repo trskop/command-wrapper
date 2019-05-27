@@ -161,55 +161,6 @@ defInterpreter = Interpreter
     , output = OutputStdout
     }
 
-data Input
-    = InputStdin
-    | InputFile FilePath
-  deriving (Show)
-
-data Output
-    = OutputStdout
-    | OutputBasedOnInput
-    -- ^ If 'Input':
-    --
-    -- * 'InputStdin' then this is interpreted as write into @stdout@,
-    -- * and if it's 'InputFile' then this is means that the input file will be
-    --   modified in palace.
-    | OutputFile FilePath
-  deriving (Show)
-
-instance IsOutput Output where
-    parseOutput s = OutputFile <$> Data.Output.parseOutput s
-
-data InputEncoding
-    = InputCbor
-    | InputCborJson
-    | InputDhall
-    | InputJson
-    | InputText
-    | InputYaml
-  deriving (Show)
-
-data OutputEncoding
-    = OutputCbor
-    | OutputCborJson
-    | OutputDhallAscii
-    | OutputDhallUnicode
-    | OutputJson
-    | OutputYaml
-  deriving (Show)
-
-readExpression :: Input -> IO (Expr Src Import, Dhall.Import.Status IO)
-readExpression = \case
-    InputStdin ->
-        Text.getContents >>= parseExpr "(stdin)" "."
-
-    InputFile file ->
-        Text.readFile file >>= parseExpr file file
-  where
-    parseExpr f c txt =
-        (,) <$> Dhall.Core.throws (Dhall.Parser.exprFromText f txt)
-            <*> pure (Dhall.Import.emptyStatus c)
-
 -- TODO: In principle this should be implemented as:
 --
 -- ```
@@ -266,8 +217,13 @@ interpreter
 data Resolve = Resolve
     { mode :: ResolveMode
     , input :: Input
+    , output :: Output
     }
-  deriving (Show)
+  deriving (Generic, Show)
+
+instance HasOutput Resolve where
+    type Output Resolve = Output
+    output = field' @"output"
 
 data ResolveMode
     = ResolveDependencies
@@ -280,10 +236,11 @@ defResolve :: Resolve
 defResolve = Resolve
     { mode = ResolveDependencies
     , input = InputStdin
+    , output = OutputStdout
     }
 
 resolve :: AppNames -> Config -> Resolve -> IO ()
-resolve appNames config Resolve{mode, input} =
+resolve appNames config Resolve{mode, input, output} =
     handleExceptions appNames config do
         IO.setLocaleEncoding IO.utf8
         (expression, status) <- readExpression input
@@ -293,9 +250,11 @@ resolve appNames config Resolve{mode, input} =
                 (resolvedExpression, _) <- State.runStateT
                     (Dhall.Import.loadWith expression) status
 
-                hPutExpr config stdout resolvedExpression
+                withOutputHandle input output (hPutExpr config)
+                    resolvedExpression
 
             ListImmediateDependencies ->
+                -- TODO: Handle I/O correctly.
                 traverse_ (print . Pretty.pretty . Dhall.Core.importHashed)
                     expression
 
@@ -305,6 +264,7 @@ resolve appNames config Resolve{mode, input} =
                         status
 
                 for_ (Map.keys cache)
+                    -- TODO: Handle I/O correctly.
                     ( print
                     . Pretty.pretty
                     . Dhall.Core.importType
@@ -541,12 +501,56 @@ repl appNames config@Config{verbosity} Repl{..} =
 
 -- }}} REPL -------------------------------------------------------------------
 
--- {{{ Helper Functions -------------------------------------------------------
+-- {{{ Input/Output -----------------------------------------------------------
 
-renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
-renderDoc Config{colourOutput} h doc =
-    Dhall.hPutDoc (fromMaybe ColourOutput.Auto colourOutput) h
-        (doc <> Pretty.line)
+data Input
+    = InputStdin
+    | InputFile FilePath
+  deriving (Show)
+
+data Output
+    = OutputStdout
+    | OutputBasedOnInput
+    -- ^ If 'Input':
+    --
+    -- * 'InputStdin' then this is interpreted as write into @stdout@,
+    -- * and if it's 'InputFile' then this is means that the input file will be
+    --   modified in palace.
+    | OutputFile FilePath
+  deriving (Show)
+
+instance IsOutput Output where
+    parseOutput s = OutputFile <$> Data.Output.parseOutput s
+
+data InputEncoding
+    = InputCbor
+    | InputCborJson
+    | InputDhall
+    | InputJson
+    | InputText
+    | InputYaml
+  deriving (Show)
+
+data OutputEncoding
+    = OutputCbor
+    | OutputCborJson
+    | OutputDhallAscii
+    | OutputDhallUnicode
+    | OutputJson
+    | OutputYaml
+  deriving (Show)
+
+readExpression :: Input -> IO (Expr Src Import, Dhall.Import.Status IO)
+readExpression = \case
+    InputStdin ->
+        Text.getContents >>= parseExpr "(stdin)" "."
+
+    InputFile file ->
+        Text.readFile file >>= parseExpr file file
+  where
+    parseExpr f c txt =
+        (,) <$> Dhall.Core.throws (Dhall.Parser.exprFromText f txt)
+            <*> pure (Dhall.Import.emptyStatus c)
 
 withOutputHandle :: Input -> Output -> (Handle -> b -> IO a) -> b -> IO a
 withOutputHandle input = \case
@@ -564,6 +568,15 @@ withOutputHandle input = \case
 
     OutputFile filePath ->
         \m a -> withFile filePath WriteMode \h -> m h a
+
+-- }}} Input/Output -----------------------------------------------------------
+
+-- {{{ Helper Functions -------------------------------------------------------
+
+renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
+renderDoc Config{colourOutput} h doc =
+    Dhall.hPutDoc (fromMaybe ColourOutput.Auto colourOutput) h
+        (doc <> Pretty.line)
 
 hPutExpr :: Config -> Handle -> Expr Src X -> IO ()
 hPutExpr Config{colourOutput} =
