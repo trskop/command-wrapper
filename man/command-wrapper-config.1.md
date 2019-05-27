@@ -17,6 +17,9 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-lint
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-resolve
 \[\--list-imports=*KIND*] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
@@ -37,8 +40,6 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
 
 **TODO: Following usages aren't currently implemented!**
-
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-lint
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \[OPTIONS] \[\--] \[*EXPRESSION*]
 
@@ -153,6 +154,9 @@ We can organise `config` subcommand abilities into following categories:
 \--dhall-format
 :   Format Dhall expression.
 
+\--dhall-lint
+:   Dhall linter; improve Dhall expression.
+
 \--dhall-resolve
 :   Resolve an Dhall expression's imports.
 
@@ -193,9 +197,6 @@ We can organise `config` subcommand abilities into following categories:
 :   Dhall expression.
 
 **TODO: Following options aren't currently implemented!**
-
-\--dhall-lint
-:   Dhall linter; improve Dhall expression.
 
 \--type, -t
 :   Print type of final Dhall expression instead of its value.

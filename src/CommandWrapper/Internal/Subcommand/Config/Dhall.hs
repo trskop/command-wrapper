@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      $Header$
--- Description: Modified version of Dhall.Main from dhall-haskell package.
+-- Description: Dhall operations provided by the config command.
 -- Copyright:   (c) 2018-2019 Gabriel Gonzalez and contrubutors;
 --              (c) 2019 Peter Trško
 -- License:     BSD3
@@ -12,7 +12,9 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- Modified version of @Dhall.Main@ from @dhall-haskell@ package.
+-- Dhall operations provided by the config command.  This module started its
+-- life as a copy of @Dhall.Main@ from @dhall-haskell@ package, hence the
+-- copyright.
 module CommandWrapper.Internal.Subcommand.Config.Dhall
     (
     -- * Interpreter
@@ -25,6 +27,11 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , ResolveMode(..)
     , defResolve
     , resolve
+
+    -- * Lint
+    , Lint(..)
+    , defLint
+    , lint
 
     -- * Format
     , Dhall.Format.Format(..)
@@ -87,6 +94,7 @@ import Dhall.Binary (defaultStandardVersion)
 import Dhall.Core (Expr(..), Import)
 import qualified Dhall.Freeze as Dhall (freezeImport, freezeRemoteImport)
 import Dhall.Import (Imported(..), MissingImports)
+import qualified Dhall.Lint as Dhall (lint)
 import Dhall.Parser (ParseError, SourcedException, Src)
 import qualified Dhall.Pretty as Dhall (Ann, CharacterSet(..))
 import Dhall.TypeCheck (DetailedTypeError(..), TypeError, X)
@@ -112,7 +120,6 @@ import qualified Dhall.Format
 import qualified Dhall.Hash
 import qualified Dhall.Import
 --import qualified Dhall.Import.Types
---import qualified Dhall.Lint
 import qualified Dhall.Parser
 import qualified Dhall.Pretty
 import qualified Dhall.Repl
@@ -276,47 +283,53 @@ resolve appNames config Resolve{mode, input, output} =
 
 -- }}} Resolve ----------------------------------------------------------------
 
+-- {{{ Lint -------------------------------------------------------------------
+
+data Lint = Lint
+    { input :: Input
+    , output :: Output
+    , characterSet :: Dhall.CharacterSet
+    }
+  deriving (Generic, Show)
+
+instance HasOutput Lint where
+    type Output Lint = Output
+    output = field' @"output"
+
+defLint :: Lint
+defLint = Lint
+    { input = InputStdin
+    , output = OutputStdout
+    , characterSet = Dhall.Unicode
+    }
+
+lint :: AppNames -> Config -> Lint -> IO ()
+lint appNames config Lint{input, output, characterSet} =
+    handleExceptions appNames config do
+        (header, expression) <- case input of
+            InputStdin ->
+                Text.getContents >>= parseExpr "(stdin)"
+
+            InputFile file ->
+                Text.readFile file >>= parseExpr file
+
+        withOutputHandle input output (renderDoc config)
+            (   Pretty.pretty header
+            <>  Dhall.Pretty.prettyCharacterSet characterSet
+                    (Dhall.lint expression)
+            )
+  where
+    parseExpr f = Dhall.Core.throws . Dhall.Parser.exprAndHeaderFromText f
+
+-- }}} Lint -------------------------------------------------------------------
+
 {- TODO: Reimplement the rest of Dhall commands/actions
 
 -- | Run the command specified by the `Options` type
 command :: Options -> IO ()
 command Options{..} = do
-    -- ...
-    let renderDoc :: Handle -> Doc Ann -> IO ()
-        renderDoc = -- ...
-
-        render :: Pretty a => Handle -> Expr s a -> IO ()
-        render = -- ...
-
     handle $ case mode of
         -- ...
-        Lint {..} -> do
-            case inplace of
-                Just file -> do
-                    text <- Data.Text.IO.readFile file
-
-                    (header, expression) <- Dhall.Core.throws (Dhall.Parser.exprAndHeaderFromText file text)
-
-                    let lintedExpression = Dhall.Lint.lint expression
-
-                    let doc =   Pretty.pretty header
-                            <>  Dhall.Pretty.prettyCharacterSet characterSet lintedExpression
-
-                    System.IO.withFile file System.IO.WriteMode (\h -> do
-                        renderDoc h doc )
-
-                Nothing -> do
-                    text <- Data.Text.IO.getContents
-
-                    (header, expression) <- Dhall.Core.throws (Dhall.Parser.exprAndHeaderFromText "(stdin)" text)
-
-                    let lintedExpression = Dhall.Lint.lint expression
-
-                    let doc =   Pretty.pretty header
-                            <>  Dhall.Pretty.prettyCharacterSet characterSet lintedExpression
-
-                    renderDoc stdout doc
-
         Encode {..} -> do
             expression <- getExpression file
 

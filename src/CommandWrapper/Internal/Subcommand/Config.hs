@@ -107,6 +107,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Format(..)
     , Freeze(..)
     , Interpreter(..)
+    , Lint(..)
     , Output(..)
     , Repl(..)
     , Resolve(..)
@@ -115,6 +116,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defFormat
     , defFreeze
     , defInterpreter
+    , defLint
     , defRepl
     , defResolve
     , diff
@@ -122,6 +124,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , freeze
     , hash
     , interpreter
+    , lint
     , repl
     , resolve
     )
@@ -140,6 +143,7 @@ data ConfigMode a
     | DhallFormat Dhall.Format a
     | DhallFreeze Dhall.Freeze a
     | DhallHash a
+    | DhallLint Dhall.Lint a
     | DhallRepl Dhall.Repl a
     | DhallResolve Dhall.Resolve a
     | Help a
@@ -209,6 +213,9 @@ config appNames options globalConfig =
         DhallHash cfg ->
             Dhall.hash appNames cfg
 
+        DhallLint lintOpts cfg ->
+            Dhall.lint appNames cfg lintOpts
+
         DhallRepl replOpts cfg ->
             Dhall.repl appNames cfg replOpts
 
@@ -260,7 +267,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> Options.strArgument mempty
         <*> Options.strArgument mempty
         <*> ( dualFoldEndo
-                <$> optional (outputOption @Dhall.Diff)
+                <$> optional outputOption
             )
 
     , dhallHashFlag
@@ -274,6 +281,11 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallFormatFlag
         <*> pure mempty
 --      <*> (checkFlag <|> noCheckFlag)
+
+    , dhallLintFlag
+        <*> ( dualFoldEndo
+                <$> optional outputOption
+            )
 
     , dhallResolveFlag
         <*> ( dualFoldEndo
@@ -319,6 +331,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         -> Endo (ConfigMode Global.Config)
     switchToDhallFormatMode f =
         switchTo (DhallFormat (f `appEndo` Dhall.defFormat) globalConfig)
+
+    switchToDhallLintMode :: Endo Dhall.Lint -> Endo (ConfigMode Global.Config)
+    switchToDhallLintMode f =
+        switchTo (DhallLint (f `appEndo` Dhall.defLint) globalConfig)
 
     switchToDhallResolveMode
         :: Endo Dhall.Resolve
@@ -416,6 +432,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.flag mempty switchToDhallFormatMode
             (Options.long "dhall-format")
 
+    dhallLintFlag
+        :: Options.Parser (Endo Dhall.Lint -> Endo (ConfigMode Global.Config))
+    dhallLintFlag =
+        Options.flag mempty switchToDhallLintMode
+            (Options.long "dhall-lint")
+
     dhallResolveFlag
         :: Options.Parser
             (Endo Dhall.Resolve -> Endo (ConfigMode Global.Config))
@@ -485,10 +507,10 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 --          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
 --          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
---      , "config"
---          <+> longOption "dhall-lint"
+        , "config"
+            <+> longOption "dhall-lint"
 --          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
---          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-resolve"
@@ -565,6 +587,10 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
             [ Pretty.reflow "Format Dhall expression."
             ]
 
+        , optionDescription ["--dhall-lint"]
+            [ Pretty.reflow "Dhall linter; improve Dhall expression."
+            ]
+
         , optionDescription ["--dhall-resolve"]
             [ Pretty.reflow "Resolve an Dhall expression's imports."
             ]
@@ -579,10 +605,6 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 --      , optionDescription ["--[no-]check"]
 --          [ Pretty.reflow "If enabled it only checks if the input is\
 --              \ formatted."
---          ]
-
---      , optionDescription ["--dhall-lint"]
---          [ Pretty.reflow "Dhall linter; improve Dhall expression."
 --          ]
 
         , optionDescription ["--dhall-freeze"]
@@ -676,6 +698,7 @@ configCompletion _appNames _config wordsBeforePattern pat
     hadDhallFormat = "--dhall-format" `List.elem` wordsBeforePattern
     hadDhallFreeze = "--dhall-freeze" `List.elem` wordsBeforePattern
     hadDhallHash = "--dhall-hash" `List.elem` wordsBeforePattern
+    hadDhallLint = "--dhall-lint" `List.elem` wordsBeforePattern
     hadDhallRepl = "--dhall-repl" `List.elem` wordsBeforePattern
     hadDhallResolve = "--dhall-resolve" `List.elem` wordsBeforePattern
 
@@ -685,6 +708,7 @@ configCompletion _appNames _config wordsBeforePattern pat
         , hadDhallFormat
         , hadDhallFreeze
         , hadDhallHash
+        , hadDhallLint
         , hadDhallRepl
         , hadDhallResolve
         ]
@@ -704,14 +728,14 @@ configCompletion _appNames _config wordsBeforePattern pat
             , "--init"
 
             , "--dhall", "--dhall-diff", "--dhall-format", "--dhall-freeze"
-            , "--dhall-hash", "--dhall-repl", "--dhall-resolve"
+            , "--dhall-hash", "--dhall-lint", "--dhall-repl", "--dhall-resolve"
             ]
         <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
         <> munless
             ( List.or
                 [ hadHelp, not hadDhall, hadDhallDiff, hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
-                , hadInit
+                , hadDhallFormat, hadDhallHash, hadDhallLint, hadDhallRepl
+                , hadDhallResolve, hadInit
                 ]
             )
             [ "--alpha", "--no-alpha"
@@ -723,7 +747,12 @@ configCompletion _appNames _config wordsBeforePattern pat
             ( List.or
                 [ hadHelp
                 , not $ List.or
-                    [hadDhall, hadDhallDiff, hadDhallFreeze, hadDhallResolve]
+                    [ hadDhall
+                    , hadDhallDiff
+                    , hadDhallFreeze
+                    , hadDhallLint
+                    , hadDhallResolve
+                    ]
                 , hadDhallFormat, hadDhallHash, hadDhallRepl, hadInit
                 , hadOutput -- Output options can be specified only once.
                 ]
