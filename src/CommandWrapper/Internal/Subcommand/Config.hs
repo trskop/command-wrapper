@@ -19,7 +19,7 @@ module CommandWrapper.Internal.Subcommand.Config
     )
   where
 
-import Control.Applicative ((<*>), (<|>), optional, pure)
+import Control.Applicative ((<*>), (<|>), many, optional, pure)
 --import Control.Monad ((>>=), unless)
 import Data.Bool (Bool(False, True), (||), not, otherwise)
 --import Data.Either (Either(Left, Right))
@@ -55,6 +55,7 @@ import qualified Options.Applicative as Options
     ( Parser
     , defaultPrefs
     , flag
+    , flag'
     , info
     , long
     , metavar
@@ -243,10 +244,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , dhallFlag
         <*> ( dualFoldEndo
-                <$> (allowImportsFlag <|> noAllowImportsFlag)
-                <*> (alphaFlag <|> noAlphaFlag)
-                <*> (annotateFlag <|> noAnnotateFlag)
-                <*> (typeFlag <|> noTypeFlag)
+                <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many (alphaFlag <|> noAlphaFlag)
+                <*> many (annotateFlag <|> noAnnotateFlag)
+                <*> many (typeFlag <|> noTypeFlag)
             )
 
     , dhallReplFlag
@@ -262,7 +263,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , dhallFreezeFlag
         <*> ( dualFoldEndo
-                <$> (remoteOnlyFlag <|> noRemoteOnlyFlag)
+                <$> many (remoteOnlyFlag <|> noRemoteOnlyFlag)
                 <*> optional outputOption
             )
 
@@ -331,45 +332,40 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.flag mempty switchToDhallMode (Options.long "dhall")
 
     alphaFlag :: Options.Parser (Endo Dhall.Interpreter)
-    alphaFlag = Options.flag mempty (setAlpha True) (Options.long "alpha")
+    alphaFlag = Options.flag' (setAlpha True) (Options.long "alpha")
 
     noAlphaFlag :: Options.Parser (Endo Dhall.Interpreter)
-    noAlphaFlag = Options.flag mempty (setAlpha False) (Options.long "no-alpha")
+    noAlphaFlag = Options.flag' (setAlpha False) (Options.long "no-alpha")
 
     setAlpha :: Bool -> Endo Dhall.Interpreter
     setAlpha alpha = Endo \opts -> opts{Dhall.alpha}
 
     annotateFlag :: Options.Parser (Endo Dhall.Interpreter)
-    annotateFlag =
-        Options.flag mempty (setAnnotate True) (Options.long "annotate")
+    annotateFlag = Options.flag' (setAnnotate True) (Options.long "annotate")
 
     noAnnotateFlag :: Options.Parser (Endo Dhall.Interpreter)
     noAnnotateFlag =
-        Options.flag mempty (setAnnotate False) (Options.long "no-annotate")
+        Options.flag' (setAnnotate False) (Options.long "no-annotate")
 
     setAnnotate :: Bool -> Endo Dhall.Interpreter
     setAnnotate annotate = Endo \opts -> opts{Dhall.annotate}
 
     allowImportsFlag :: Options.Parser (Endo Dhall.Interpreter)
     allowImportsFlag =
-        Options.flag mempty (setAllowImports True)
-            (Options.long "allow-imports")
+        Options.flag' (setAllowImports True) (Options.long "allow-imports")
 
     noAllowImportsFlag :: Options.Parser (Endo Dhall.Interpreter)
     noAllowImportsFlag =
-        Options.flag mempty (setAllowImports False)
-            (Options.long "no-allow-imports")
+        Options.flag' (setAllowImports False) (Options.long "no-allow-imports")
 
     setAllowImports :: Bool -> Endo Dhall.Interpreter
     setAllowImports allowImports = Endo \opts -> opts{Dhall.allowImports}
 
     typeFlag :: Options.Parser (Endo Dhall.Interpreter)
-    typeFlag =
-        Options.flag mempty (setType True) (Options.long "type")
+    typeFlag = Options.flag' (setType True) (Options.long "type")
 
     noTypeFlag :: Options.Parser (Endo Dhall.Interpreter)
-    noTypeFlag =
-        Options.flag mempty (setType False) (Options.long "no-type")
+    noTypeFlag = Options.flag' (setType False) (Options.long "no-type")
 
     setType :: Bool -> Endo Dhall.Interpreter
     setType showType = Endo \opts -> opts{Dhall.showType}
@@ -393,12 +389,11 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     remoteOnlyFlag :: Options.Parser (Endo Dhall.Freeze)
     remoteOnlyFlag =
-        Options.flag mempty (setRemoteOnly True) (Options.long "remote-only")
+        Options.flag' (setRemoteOnly True) (Options.long "remote-only")
 
     noRemoteOnlyFlag :: Options.Parser (Endo Dhall.Freeze)
     noRemoteOnlyFlag =
-        Options.flag mempty (setRemoteOnly False)
-            (Options.long "no-remote-only")
+        Options.flag' (setRemoteOnly False) (Options.long "no-remote-only")
 
     setRemoteOnly :: Bool -> Endo Dhall.Freeze
     setRemoteOnly remoteOnly = Endo \opts -> opts{Dhall.remoteOnly}
@@ -669,6 +664,12 @@ configCompletion _appNames _config wordsBeforePattern pat
         , hadDhallResolve
         ]
 
+    hadOutput = List.or
+        [ "-o" `List.elem` wordsBeforePattern
+        , "--output" `List.elem` wordsBeforePattern
+        , List.any ("--output=" `List.isPrefixOf`) wordsBeforePattern
+        ]
+
     mwhen p x = if p then x else mempty
     munless p = mwhen (not p)
 
@@ -699,6 +700,7 @@ configCompletion _appNames _config wordsBeforePattern pat
                 , not $ List.or
                     [hadDhall, hadDhallDiff, hadDhallFreeze, hadDhallResolve]
                 , hadDhallFormat, hadDhallHash, hadDhallRepl, hadInit
+                , hadOutput -- Output options can be specified only once.
                 ]
             )
             ["-o", "--output="]

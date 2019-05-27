@@ -135,18 +135,20 @@ We can organise `config` subcommand abilities into following categories:
 
 \--\[no-]allow-imports
 :   Controls whether imports in the input expression are allowed or not.  By
-    default imports are allowed.
+    default imports are allowed.  Can be specified multiple times, later
+    instance is applied.
 
 \--\[no-]alpha
 :   Perform α-normalisation of Dhall expression.  By default α-normalisation is
-    not performed.
+    not performed.  Can be specified multiple times, later instance is applied.
 
 \--\[no-]annotate
 :   Add a type annotation to the output.  Type annotations aren't included by
-    default.
+    default.  Can be specified multiple times, later instance is applied.
 
 **\--output=***FILE*, **\--output** *FILE*, **-o** *FILE*
-:   Write optput into *FILE* instead of standard output.
+:   Write optput into *FILE* instead of standard output.  Can be specified only
+    once.
 
 \--dhall-format
 :   Format Dhall expression.
@@ -159,7 +161,8 @@ We can organise `config` subcommand abilities into following categories:
 
 \--\[no-]remote-only
 :   Specifies if integrity checks should be added to only remote imports or to
-    all imports.  By default they are added only to remote imports.
+    all imports.  By default they are added only to remote imports.  Can be
+    specified multiple times, later instance is applied.
 
 \--dhall-hash
 :   Compute semantic hashes for Dhall expressions.
