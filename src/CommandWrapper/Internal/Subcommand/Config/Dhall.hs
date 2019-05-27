@@ -216,13 +216,13 @@ readExpression = \case
 interpreter :: AppNames -> Config -> Options -> IO ()
 interpreter
   AppNames{usedName}
-  Config{colourOutput, verbosity}
+  config@Config{colourOutput}
   Options{input, mode} = do
     IO.setLocaleEncoding IO.utf8
 
     (expression, status) <- readExpression input
 
-    handle case mode of
+    handleExceptions config case mode of
         Default{allowImports, alpha, annotate, showType} -> do
             (resolvedExpression, inferredType) <- do
                 expr <- if allowImports
@@ -280,44 +280,6 @@ interpreter
 
     putExpr = Dhall.hPutExpr (fromMaybe ColourOutput.Auto colourOutput)
         characterSet stdout
-
-    handle =
-        Control.Exception.handle handler2
-        . Control.Exception.handle handler1
-        . Control.Exception.handle handler0
-
-    explain = verbosity > Verbosity.Normal
-
-    handler0 :: TypeError Src X -> IO ()
-    handler0 e = do
-        hPutStrLn stderr ""
-        if explain
-            then Control.Exception.throwIO (DetailedTypeError e)
-            else do
-                -- TODO: Wrong message.
-                Text.hPutStrLn stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
-                Control.Exception.throwIO e
-
-    handler1 :: Imported (TypeError Src X) -> IO ()
-    handler1 (Imported ps e) = do
-        hPutStrLn stderr ""
-        if explain
-            then Control.Exception.throwIO (Imported ps (DetailedTypeError e))
-            else do
-                -- TODO: Wrong message.
-                Text.hPutStrLn stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
-                Control.Exception.throwIO (Imported ps e)
-
-    handler2 :: SomeException -> IO ()
-    handler2 e = do
-        let string = show e
-
-        if not (null string)
-            -- TODO: Use errorMsg
-            then hPutStrLn stderr string
-            else return ()
-
-        System.Exit.exitFailure
 
 {- TODO: Reimplement the rest of Dhall commands/actions
 
@@ -419,7 +381,7 @@ defFormat = Dhall.Format.Format
     }
 
 format :: AppNames -> Config -> Dhall.Format.Format -> IO ()
-format _appNames _config = Dhall.Format.format
+format _appNames config = handleExceptions config . Dhall.Format.format
 
 -- }}} Format -----------------------------------------------------------------
 
@@ -446,7 +408,7 @@ freeze
     -> Config
     -> Freeze
     -> IO ()
-freeze _appNames config Freeze{..} = do
+freeze _appNames config Freeze{..} = handleExceptions config do
     (header, expression, directory) <- case input of
         InputStdin -> do
             (header, expression) <- Text.getContents
@@ -477,8 +439,8 @@ freeze _appNames config Freeze{..} = do
 -- {{{ Hash -------------------------------------------------------------------
 
 hash :: AppNames -> Config -> IO ()
-hash _appNames _config =
-    Dhall.Hash.hash defaultStandardVersion
+hash _appNames config =
+    handleExceptions config (Dhall.Hash.hash defaultStandardVersion)
 
 -- }}} Hash -------------------------------------------------------------------
 
@@ -495,7 +457,7 @@ defDiff :: Text -> Text -> Diff
 defDiff expr1 expr2 = Diff{expr1, expr2}
 
 diff :: AppNames -> Config -> Diff -> IO ()
-diff _appNames config Diff{..} = do
+diff _appNames config Diff{..} = handleExceptions config do
     diffDoc <- Dhall.Diff.diffNormalized
         <$> Dhall.inputExpr expr1
         <*> Dhall.inputExpr expr2
@@ -524,8 +486,9 @@ defRepl = Repl
     }
 
 repl :: AppNames -> Config -> Repl -> IO ()
-repl _appNames Config{verbosity} Repl{..} =
-    Dhall.Repl.repl characterSet explain defaultStandardVersion
+repl _appNames config@Config{verbosity} Repl{..} =
+    handleExceptions config
+        (Dhall.Repl.repl characterSet explain defaultStandardVersion)
   where
     explain = verbosity > Verbosity.Normal
 
@@ -537,5 +500,44 @@ renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
 renderDoc Config{colourOutput} h doc =
     Dhall.hPutDoc (fromMaybe ColourOutput.Auto colourOutput) h
         (doc <> Pretty.line)
+
+handleExceptions :: Config -> IO () -> IO ()
+handleExceptions Config{verbosity} =
+    Control.Exception.handle handler2
+    . Control.Exception.handle handler1
+    . Control.Exception.handle handler0
+  where
+    explain = verbosity > Verbosity.Normal
+
+    handler0 :: TypeError Src X -> IO ()
+    handler0 e = do
+        hPutStrLn stderr ""
+        if explain
+            then Control.Exception.throwIO (DetailedTypeError e)
+            else do
+                -- TODO: Wrong message; respect colourOutput settings.
+                Text.hPutStrLn stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
+                Control.Exception.throwIO e
+
+    handler1 :: Imported (TypeError Src X) -> IO ()
+    handler1 (Imported ps e) = do
+        hPutStrLn stderr ""
+        if explain
+            then Control.Exception.throwIO (Imported ps (DetailedTypeError e))
+            else do
+                -- TODO: Wrong message; respect colourOutput settings.
+                Text.hPutStrLn stderr "\ESC[2mUse \"dhall --explain\" for detailed errors\ESC[0m"
+                Control.Exception.throwIO (Imported ps e)
+
+    handler2 :: SomeException -> IO ()
+    handler2 e = do
+        let string = show e
+
+        if not (null string)
+            -- TODO: Use errorMsg
+            then hPutStrLn stderr string
+            else return ()
+
+        System.Exit.exitFailure
 
 -- }}} Helper Functions -------------------------------------------------------
