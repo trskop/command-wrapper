@@ -626,9 +626,9 @@ configFileContent = Text.unlines . \case
         ]
 
     Library ->
-        [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall"
+        [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall"
         ]
 
     LibraryTypes ->
-        [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall"
+        [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall"
         ]
