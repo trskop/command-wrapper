@@ -36,7 +36,7 @@ import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
-import Data.Tree (Forest, Tree(Node), drawTree, unfoldForest)
+import Data.Tree (Forest, Tree(Node), unfoldForest)
 import qualified Dhall (Interpret, auto, inject, inputFile)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
@@ -133,7 +133,20 @@ main = do
 
                     _ -> ("", []) -- This should not happen.
 
-             in putStrLn $ drawTree (Text.unpack <$> Node "" forest)
+                draw :: Tree String -> [String]
+                draw (Node x ts0) = lines x <> drawSubTrees ts0
+                  where
+                    drawSubTrees = \case
+                        [] ->
+                            []
+                        [t] ->
+                            shift "└── " "    " (draw t)
+                        t : ts ->
+                            shift "├── " "│   " (draw t) <> drawSubTrees ts
+
+                    shift first other = zipWith (<>) (first : repeat other)
+
+             in putStrLn . unlines $ draw (Text.unpack <$> Node "" forest)
 
         DryRun ->
             getExecutableCommand params commands commandAndItsArguments
