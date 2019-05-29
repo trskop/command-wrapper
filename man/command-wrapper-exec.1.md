@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 7th May 2019
+% 29th May 2019
 
 
 # NAME
@@ -63,24 +63,16 @@ scripting language like Bash.
     These would be displayed as a following tree:
 
     ```
-    |
-    +- build
-    |  |
-    |  +- back-end*
-    |  |  |
-    |  |  +- locally*
-    |  |  |
-    |  |  `- remotely*
-    |  |
-    |  `- front-end*
-    |     |
-    |     +- locally*
-    |     |
-    |     `- remotely*
-    |
-    +- debug*
-    |
-    `- echo*
+    ├── build
+    │   │
+    │   ├── back-end*
+    │   │   ├── locally*
+    │   │   └── remotely*
+    │   └── front-end*
+    │       ├── locally*
+    │       └── remotely*
+    ├── debug*
+    └── echo*
     ```
 
     The star (`*`) character indicates which commands are executable, i.e. can
