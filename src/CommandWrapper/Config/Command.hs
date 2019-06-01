@@ -52,7 +52,7 @@ import CommandWrapper.Options.Shell (Shell)
 
 data NamedCommand = NamedCommand
     { name :: Text
-    , descritpion :: Maybe Text
+    , description :: Maybe Text
     , command :: Verbosity -> ColourOutput -> [Text] -> Command
     , completion :: Maybe (Shell -> Natural -> [Text] -> Command)
     }
