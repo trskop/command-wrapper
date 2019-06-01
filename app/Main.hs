@@ -21,11 +21,10 @@ import Control.Monad ((>>=))
 import Data.Bool (Bool(True))
 import Data.Either (Either(Right), either)
 import Data.Eq ((/=))
-import Data.Function (($), (.), flip, id)
+import Data.Function (($), (.), id)
 import Data.Functor ((<$>))
-import Data.Semigroup ((<>))
-import Data.Maybe (Maybe)
-import Data.Monoid (Endo(Endo, appEndo), Last(Last, getLast), mconcat, mempty)
+import Data.Maybe (Maybe, fromMaybe, maybe)
+import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
 import Data.String (String)
 import System.Exit (die)
 import System.IO (IO{-, print-})
@@ -45,12 +44,12 @@ import System.Directory
     )
 import System.FilePath ((</>))
 
-import qualified CommandWrapper.Config.Global as Global (Config(Config))
+import qualified CommandWrapper.Config.Global as Global (Config)
 import qualified CommandWrapper.Config.Global as Global.Config
     ( Config(..)
     , def
-    , read
     )
+import qualified CommandWrapper.Config.File as Config.File (apply, read)
 import CommandWrapper.Environment
     ( AppNames(..)
     , defaultCommandWrapperPrefix
@@ -62,7 +61,8 @@ import qualified CommandWrapper.Internal as Internal
 import qualified CommandWrapper.Options as Options
 import CommandWrapper.Options.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
-    ( options
+    ( ColourOutput(Auto)
+    , options
     , noColorEnvVar
     )
 import qualified CommandWrapper.Options.GlobalMode as Options
@@ -84,11 +84,9 @@ main :: IO ()
 main = do
     appNames@AppNames{exeName, usedName} <- getAppNames'
     -- TODO: It would be great to have debugging message with 'appNames' in it.
-    defaultColourOutput <- parseEnvIO (die . show) ColourOutput.noColorEnvVar
-
-    let defaultConfig = Global.Config.def
-            { Global.Config.colourOutput = defaultColourOutput
-            }
+    defaultConfig <- parseEnvIO (die . show) do
+        defColour <- fromMaybe ColourOutput.Auto <$> ColourOutput.noColorEnvVar
+        pure (Global.Config.def defColour)
 
     -- TODO: This code can be simplified and generalised by mapping over a list
     --       of names under which command-wrapper is known at the moment.
@@ -110,7 +108,7 @@ main = do
 --      print (if configExists then "Reading" else "No such file", configFile)
         if configExists
             then
-                Global.Config.read configFile >>= either die (pure . flip (<>))
+                Config.File.read configFile >>= either die (pure . Config.File.apply)
             else
                 pure id
 
@@ -148,11 +146,9 @@ colourOptions :: Options.Parser (Endo Global.Config)
 colourOptions = modifyConfig <$> ColourOutput.options
   where
     modifyConfig :: Maybe ColourOutput -> Endo Global.Config
-    modifyConfig newValue =
-        Endo $ \config@Global.Config{Global.Config.colourOutput} -> config
-            { Global.Config.colourOutput =
-                getLast (Last colourOutput <> Last newValue)
-            }
+    modifyConfig =
+        maybe mempty \colourOutput ->
+            Endo \config -> config{Global.Config.colourOutput}
 
 noAliasesOption :: Options.Parser (Endo Global.Config)
 noAliasesOption = Options.flag mempty modifyConfig $ mconcat

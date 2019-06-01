@@ -130,9 +130,6 @@ import CommandWrapper.Internal.Subcommand.Version (versionCompletion)
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message (Result, defaultLayoutOptions, errorMsg, message)
 import CommandWrapper.Options.Alias (Alias(alias))
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput
-    ( ColourOutput(Auto)
-    )
 import qualified CommandWrapper.Options.Alias as Options (applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
@@ -346,12 +343,11 @@ completion appNames options config =
                 Nothing -> do
                     -- TODO: Figure out how to handle this better.
                     let Global.Config{colourOutput, verbosity} = config
-                        colour = fromMaybe ColourOutput.Auto colourOutput
 
                         subcommand' :: forall ann. Pretty.Doc ann
                         subcommand' = pretty (usedName <> " completion")
 
-                    errorMsg subcommand' verbosity colour stderr
+                    errorMsg subcommand' verbosity colourOutput stderr
                         "Failed to generate completion script."
                     -- TODO: This is probably not the best exit code.
                     exitWith (ExitFailure 1)
@@ -406,12 +402,11 @@ completion appNames options config =
 
             _    -> do
                 let Global.Config{colourOutput, verbosity} = config
-                    colour = fromMaybe ColourOutput.Auto colourOutput
 
                     subcommand :: forall ann. Pretty.Doc ann
                     subcommand = pretty (usedName appNames <> " completion")
 
-                errorMsg subcommand verbosity colour stderr
+                errorMsg subcommand verbosity colourOutput stderr
                     $ fromString (show shell) <> ": Unsupported SHELL value."
                 exitWith (ExitFailure 125)
 
@@ -464,10 +459,8 @@ completion appNames options config =
 
         HelpMode () ->
             let Global.Config{colourOutput, verbosity} = config
-                colour = fromMaybe ColourOutput.Auto colourOutput
-
-            in message defaultLayoutOptions verbosity colour stdout
-                (completionSubcommandHelp appNames)
+             in message defaultLayoutOptions verbosity colourOutput stdout
+                    (completionSubcommandHelp appNames)
   where
     defaults =
         let opts = CompletionOptions
@@ -668,13 +661,12 @@ subcommandCompletion appNames config shell index words _invokedAs = \case
 
         when (exitCode /= ExitSuccess) $ do
             let Global.Config{colourOutput, verbosity} = config
-                colour = fromMaybe ColourOutput.Auto colourOutput
 
                 subcommand' :: forall ann. Pretty.Doc ann
                 subcommand' = pretty
                     $ usedName appNames <> " completion"
 
-            errorMsg subcommand' verbosity colour stderr
+            errorMsg subcommand' verbosity colourOutput stderr
                 $ fromString subcommand
                 <> ": Subcommand protocol violated when called with\
                     \ '--completion-info':\n"

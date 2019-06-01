@@ -36,7 +36,7 @@ import qualified Data.List as List
     , dropWhile
     )
 --import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Maybe (Maybe(Just), fromMaybe)
+import Data.Maybe (Maybe(Just))
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
 import Data.String (String)
 import GHC.Generics (Generic)
@@ -105,9 +105,6 @@ import qualified CommandWrapper.Options.Optparse as Options
 --  , splitArguments
 --  , splitArguments'
     )
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput
-    ( ColourOutput(Auto)
-    )
 
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Diff(..)
@@ -165,8 +162,7 @@ config appNames options globalConfig =
         ConfigLib _ -> pure ()
 
         Help Global.Config{colourOutput, verbosity} ->
-            message defaultLayoutOptions verbosity
-                (fromMaybe ColourOutput.Auto colourOutput) stdout
+            message defaultLayoutOptions verbosity colourOutput stdout
                 (configSubcommandHelp appNames)
 
         -- TODO:
@@ -235,19 +231,16 @@ config appNames options globalConfig =
     dieWith :: Global.Config -> Int -> (forall ann. Pretty.Doc ann) -> IO a
     dieWith cfg exitCode msg = do
         let Global.Config{colourOutput, verbosity} = cfg
-            colour = fromMaybe ColourOutput.Auto colourOutput
 
             subcommand :: forall ann. Pretty.Doc ann
             subcommand = pretty (usedName <> " config")
 
-        errorMsg subcommand verbosity colour stderr msg
+        errorMsg subcommand verbosity colourOutput stderr msg
         exitWith (ExitFailure exitCode)
 
     messageLn Global.Config{colourOutput, verbosity} fragments =
-        let colourOutput' = fromMaybe ColourOutput.Auto colourOutput
-
-         in message defaultLayoutOptions verbosity colourOutput' stdout
-                (Pretty.hsep fragments <> Pretty.line)
+        message defaultLayoutOptions verbosity colourOutput stdout
+            (Pretty.hsep fragments <> Pretty.line)
     -}
 
 parseOptions

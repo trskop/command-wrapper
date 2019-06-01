@@ -26,7 +26,6 @@ import Data.Bool ((||), not, otherwise)
 import Data.Foldable (null)
 import Data.Functor ((<&>))
 import qualified Data.List as List (elem, filter, isPrefixOf)
-import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo))
 import Data.String (fromString)
 import Data.Version (showVersion)
@@ -40,7 +39,6 @@ import Data.Output
     , OutputStdoutOrFile
     , pattern OutputStdoutOnly
     )
-import qualified Data.Output.Colour as ColourOutput (ColourOutput(Auto))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines)
 import qualified Data.Text.IO as Text (hPutStr)
@@ -118,7 +116,7 @@ version versionInfo appNames options config =
         FullVersion format output _config ->
             withOutputHandle output \handle -> case format of
                 DhallFormat ->
-                    Dhall.hPut colour Dhall.Unicode handle Dhall.inject
+                    Dhall.hPut colourOutput Dhall.Unicode handle Dhall.inject
                         versionInfo
 
                 ShellFormat shell ->
@@ -128,23 +126,22 @@ version versionInfo appNames options config =
                         Options.Zsh -> versionInfoBash -- Same syntax as Bash.
 
                 PlainFormat ->
-                    message defaultLayoutOptions verbosity colour handle
+                    message defaultLayoutOptions verbosity colourOutput handle
                         (versionInfoDoc versionInfo)
 
         NumericVersion _field output _config ->
             withOutputHandle output \handle ->
-                message defaultLayoutOptions verbosity colour handle
+                message defaultLayoutOptions verbosity colourOutput handle
                     ("TODO" :: Pretty.Doc (Result Pretty.AnsiStyle))
 
         VersionHelp _config ->
-            message defaultLayoutOptions verbosity colour stdout
+            message defaultLayoutOptions verbosity colourOutput stdout
                 (versionSubcommandHelp appNames)
   where
     defaults = Mainplate.applySimpleDefaults
         (FullVersion PlainFormat OutputStdoutOnly ())
 
     Config{colourOutput, verbosity} = config
-    colour = fromMaybe ColourOutput.Auto colourOutput
 
     withOutputHandle :: OutputStdoutOrFile -> (Handle -> IO a) -> IO a
     withOutputHandle = \case

@@ -32,7 +32,7 @@ import Data.Function (($), (.))
 import Data.Functor ((<$>))
 import Data.Int (Int)
 import qualified Data.List as List (intercalate)
-import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
+import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid ((<>))
 import Data.String (String, fromString)
 import GHC.Generics (Generic)
@@ -74,9 +74,6 @@ import CommandWrapper.Message
     ( defaultLayoutOptions
     , errorMsg
     , message
-    )
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput
-    ( ColourOutput(Auto)
     )
 
 
@@ -230,18 +227,16 @@ init
         checkFile skelConfig
             >>= createOrSkipFile (configFileContent SkelConfig)
   where
-    colourOutput' = fromMaybe ColourOutput.Auto colourOutput
-
     dieWith :: Int -> (forall ann. Pretty.Doc ann) -> IO a
     dieWith exitCode msg = do
         let subcommand :: forall ann. Pretty.Doc ann
             subcommand = pretty (usedName <> " config")
 
-        errorMsg subcommand verbosity colourOutput' stderr msg
+        errorMsg subcommand verbosity colourOutput stderr msg
         exitWith (ExitFailure exitCode)
 
     messageLn fragments =
-        message defaultLayoutOptions verbosity colourOutput' stdout
+        message defaultLayoutOptions verbosity colourOutput stdout
             (Pretty.hsep fragments <> Pretty.line)
 
     createOrSkipDirectories :: [Either FilePath FilePath] -> IO ()

@@ -32,14 +32,13 @@ import Data.Functor ((<$>), (<&>), fmap)
 import qualified Data.List as List (drop, isPrefixOf, nub)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty (toList)
-import Data.Maybe (Maybe(Just, Nothing), catMaybes, fromMaybe, listToMaybe)
+import Data.Maybe (Maybe(Just, Nothing), catMaybes, listToMaybe)
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
 import Data.Traversable (mapM)
 import System.IO (FilePath, IO, stderr)
 import Text.Show (show)
 
---import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 import qualified Mainplate (ExternalCommand(..))
 import System.Directory
     ( XdgDirectory(XdgConfig)
@@ -73,9 +72,6 @@ import qualified CommandWrapper.Environment as Environment
     , getEnv
     , mkEnvVars
     , subcommandProtocolVersion
-    )
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput
-    ( ColourOutput(Auto)
     )
 import CommandWrapper.Message
     ( debugMsg
@@ -141,9 +137,7 @@ executeCommandWith f appNames globalConfig subcommand arguments =
         (prefix, prefix <> "-" <> subcommand)
 
     Environment.AppNames{exePath, usedName, names} = appNames
-
-    Global.Config{verbosity, colourOutput = possiblyColourOutput} = globalConfig
-    colourOutput = fromMaybe ColourOutput.Auto possiblyColourOutput
+    Global.Config{verbosity, colourOutput} = globalConfig
 
     getParams prefix command = do
         config <- getXdgDirectory XdgConfig (prefix </> command <.> "dhall")
@@ -180,8 +174,7 @@ findSubcommandExecutable config usedName subcommands = do
     findSubcommandExecutable' searchPath =
         fmap listToMaybe . findExecutablesInDirectories searchPath
 
-    Global.Config{verbosity, colourOutput = possiblyColourOutput} = config
-    colourOutput = fromMaybe ColourOutput.Auto possiblyColourOutput
+    Global.Config{verbosity, colourOutput} = config
 
 -- | Find all (unique) external subcommands.
 findSubcommands :: Environment.AppNames -> Global.Config -> IO [String]

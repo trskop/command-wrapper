@@ -39,7 +39,7 @@ import Data.Foldable (length)
 import Data.Function (($), (.))
 import Data.Functor (Functor, (<$>))
 import qualified Data.List as List (drop, span)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (listToMaybe)
 import Data.Monoid (Endo, (<>))
 import Data.String (String)
 import Data.Word (Word)
@@ -131,7 +131,7 @@ internalSubcommandParse appNames config subcommand parserPrefs parserInfo =
   where
     handleParseResult' AppNames{usedName} Config{colourOutput, verbosity} =
         handleParseResult (usedName <> " " <> subcommand) verbosity
-            (fromMaybe ColourOutput.Auto colourOutput)
+            colourOutput
 
 -- | Split arguments into global options and the rest.
 --

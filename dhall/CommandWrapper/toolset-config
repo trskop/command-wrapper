@@ -29,7 +29,7 @@ in  { defaults =
         , searchPath = emptySearchPath
         , description = None Text
         , extraHelpMessage = None Text
-        , verbosity = CommandWrapper.Verbosity.Normal
+        , verbosity = None CommandWrapper.Verbosity
         , colourOutput = None CommandWrapper.ColourOutput
         }
 

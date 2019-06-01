@@ -67,7 +67,6 @@ import Control.Exception (Exception, SomeException, handle, throwIO)
 import Control.Monad (unless)
 import Data.Foldable (for_, traverse_)
 import Data.List as List (dropWhile, span)
-import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
@@ -130,7 +129,6 @@ import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPutDoc, hPutExpr)
 import CommandWrapper.Options.ColourOutput (shouldUseColours)
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput (ColourOutput(Auto))
 import Data.Generics.Internal.VL.Lens ((^.))
 import qualified Data.Verbosity as Verbosity (Verbosity(Normal, Silent))
 
@@ -588,12 +586,10 @@ withOutputHandle input = \case
 
 renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
 renderDoc Config{colourOutput} h doc =
-    Dhall.hPutDoc (fromMaybe ColourOutput.Auto colourOutput) h
-        (doc <> Pretty.line)
+    Dhall.hPutDoc colourOutput h (doc <> Pretty.line)
 
 hPutExpr :: Config -> Handle -> Expr Src X -> IO ()
-hPutExpr Config{colourOutput} =
-    Dhall.hPutExpr (fromMaybe ColourOutput.Auto colourOutput) characterSet
+hPutExpr Config{colourOutput} = Dhall.hPutExpr colourOutput characterSet
   where
     characterSet = Dhall.Unicode -- TODO: This should be configurable.
 
@@ -639,7 +635,7 @@ throwDhallException
     -> e
     -> IO a
 throwDhallException AppNames{usedName} Config{colourOutput} h msg e = do
-    useColours <- shouldUseColours h (fromMaybe ColourOutput.Auto colourOutput)
+    useColours <- shouldUseColours h colourOutput
 
     let prefix =
             if null msg

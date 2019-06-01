@@ -39,7 +39,7 @@ import Control.Applicative ((<|>), optional)
 import Data.Foldable (traverse_)
 import Data.Functor ((<&>))
 import qualified Data.List.NonEmpty as NonEmpty (toList)
-import Data.Maybe (fromMaybe, listToMaybe, maybe)
+import Data.Maybe (listToMaybe, maybe)
 import Data.Monoid (Endo(Endo))
 import Data.String (fromString)
 import GHC.Generics (Generic)
@@ -47,7 +47,6 @@ import System.IO (stderr, stdout)
 
 import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
-import qualified Data.Output.Colour as ColourOutput (ColourOutput(Auto))
 import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
@@ -111,14 +110,15 @@ help
 help internalHelp appNames@AppNames{usedName} options config =
     runMain (parseOptions appNames config options) defaults $ \case
         MainHelp _config -> do
-            message defaultLayoutOptions verbosity colour stdout
+            message defaultLayoutOptions verbosity colourOutput stdout
                 (mainHelpMsg appNames config)
             traverse_ putStrLn extraHelpMessage
 
         SubcommandHelp cmd _config ->
             case internalHelp cmd of
                 Just msg ->
-                    message defaultLayoutOptions verbosity colour stdout msg
+                    message defaultLayoutOptions verbosity colourOutput stdout
+                        msg
 
                 Nothing ->
                     External.executeCommand appNames config cmd ["--help"]
@@ -159,7 +159,6 @@ help internalHelp appNames@AppNames{usedName} options config =
     defaults = Mainplate.applySimpleDefaults (MainHelp ())
 
     Config{colourOutput, extraHelpMessage, verbosity} = config
-    colour = fromMaybe ColourOutput.Auto colourOutput
 
 -- TODO: Consider moving this function or core of its functionality into
 -- "CommandWrapper.External" module.
@@ -170,7 +169,7 @@ findSubcommandManualPageName
     -> IO (Maybe String)
 findSubcommandManualPageName
   AppNames{usedName, names}
-  config@Config{verbosity, colourOutput = possiblyColourOutput}
+  config@Config{verbosity, colourOutput}
   subcommandName = do
     searchPath <- External.getSearchPath config
     debugMsg (fromString usedName) verbosity colourOutput stderr
@@ -194,8 +193,6 @@ findSubcommandManualPageName
 
     findSubcommandExecutable' searchPath =
         fmap listToMaybe . findExecutablesInDirectories searchPath
-
-    colourOutput = fromMaybe ColourOutput.Auto possiblyColourOutput
 
     subcommands = names <&> \prefix ->
         prefix <> "-" <> subcommandName
