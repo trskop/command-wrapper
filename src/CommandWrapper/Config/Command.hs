@@ -44,14 +44,17 @@ import qualified Dhall.Core as Dhall
         )
     )
 import Data.Verbosity (Verbosity)
+import Numeric.Natural (Natural)
 
 import CommandWrapper.Config.Environment (EnvironmentVariable)
 import CommandWrapper.Options.ColourOutput (ColourOutput)
-
+import CommandWrapper.Options.Shell (Shell)
 
 data NamedCommand = NamedCommand
     { name :: Text
+    , descritpion :: Maybe Text
     , command :: Verbosity -> ColourOutput -> [Text] -> Command
+    , completion :: Maybe (Shell -> Natural -> [Text] -> Command)
     }
   deriving stock (Generic)
   deriving anyclass (Dhall.Interpret)

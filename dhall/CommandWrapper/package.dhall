@@ -32,6 +32,8 @@
     , exec =
         { defaults = ./exec/defaults
         , emptyCommands = ./exec/emptyCommands
+        , namedCommand = ./exec/namedCommand
+
         , bazel = ./exec/bazel
         , direnv = ./exec/direnv
         , docker = ./exec/docker

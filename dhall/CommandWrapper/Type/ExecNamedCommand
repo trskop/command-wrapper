@@ -1,0 +1,29 @@
+let CommandWithEnvironment : Type = ./CommandWithEnvironment
+
+let Verbosity : Type = ./Verbosity
+
+let ColourOutput : Type = ./ColourOutput
+
+let ExecCommand : Type = ./ExecCommand
+
+let Shell : Type = ./Shell
+
+in  { name :
+        Text
+    , description :
+        Optional Text
+    , command :
+          ∀(verbosity : Verbosity)
+        → ∀(colourOutput : ColourOutput)
+        → ∀(arguments : List Text)
+        → ExecCommand
+    , completion :
+        Optional
+        (   ∀(shell : Shell)
+          → ∀(index : Natural)
+          → ∀(arguments : List Text)
+          → ExecCommand
+        )
+    }
+
+-- vim: filetype=dhall

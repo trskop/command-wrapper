@@ -1,0 +1,6 @@
+let CommandWithEnvironment : Type = ./CommandWithEnvironment
+
+in    CommandWithEnvironment
+    ⩓ { searchPath : Bool, workingDirectory : Optional Text }
+
+-- vim: filetype=dhall

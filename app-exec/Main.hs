@@ -160,7 +160,7 @@ main = do
             printCommandWrapperStyleCompletionInfoExpression stdout
 
         Completion index ->
-            mapM_ putStrLn (completion config index commandAndItsArguments)
+            mapM_ putStrLn (doCompletion config index commandAndItsArguments)
 
         Help ->
             let Params{verbosity, colour} = params
@@ -241,8 +241,8 @@ parseOptions = asum
     , pure id
     ]
 
-completion :: Config -> Word -> [String] -> [String]
-completion Config{commands} index words =
+doCompletion :: Config -> Word -> [String] -> [String]
+doCompletion Config{commands} index words =
     List.filter (pat `List.isPrefixOf`) $ allOptions <> commandNames
   where
     pat = fromMaybe (lastDef "" words) (atMay words (fromIntegral index))

@@ -1,7 +1,5 @@
 let Skel = ./Type/Skel
 
-let Exec = ./Type/Exec
-
 in  { Command = ./Type/Command
     , CommandWithEnvironment = ./Type/CommandWithEnvironment
     , ConnectToDatabase = ./Type/ConnectToDatabase
@@ -11,6 +9,7 @@ in  { Command = ./Type/Command
     , Verbosity = ./Type/Verbosity
     , ColourOutput = ./Type/ColourOutput
     , Schema = ./Type/Schema
+    , Shell = ./Type/Shell
 
     -- Toolset default (main/global) configuration
     , ToolsetConfig = ./Type/ToolsetConfig
@@ -24,6 +23,6 @@ in  { Command = ./Type/Command
     , CdConfig = ./Type/CdConfig
 
     -- Configuration for `exec` subcommand
-    , ExecCommand = Exec.Command
-    , ExecNamedCommand = Exec.NamedCommand
+    , ExecCommand = ./Type/ExecCommand
+    , ExecNamedCommand = ./Type/ExecNamedCommand
     }
