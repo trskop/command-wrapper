@@ -26,15 +26,19 @@ module CommandWrapper.Environment.Params
     )
   where
 
+import Prelude (maxBound, minBound)
+
 import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=))
 import Data.Bifunctor (bimap, first)
 import qualified Data.Char as Char (toLower)
 import Data.Eq ((/=))
+import Data.Foldable (foldMap)
 import Data.Function (($), (.))
 import Data.Functor ((<$>), fmap)
 import qualified Data.List as List (dropWhile)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
+import Data.Monoid (Endo(Endo, appEndo))
 import Data.Semigroup (Semigroup((<>)))
 import Data.String (String, fromString)
 import Data.Tuple (snd, uncurry)
@@ -48,6 +52,8 @@ import Control.Monad.Except (throwError)
 import qualified Data.CaseInsensitive as CaseInsensitive (mk)
 import qualified Data.HashMap.Strict as HashMap (delete, fromList, toList)
 import qualified Data.Text as Text (unpack)
+import Data.Text.Prettyprint.Doc (Doc, Pretty(pretty), (<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty (dquotes, viaShow, vsep)
 import Data.Verbosity (Verbosity)
 import qualified Data.Verbosity as Verbosity (parse)
 
@@ -63,7 +69,6 @@ import CommandWrapper.Environment.AppNames
     )
 import CommandWrapper.Environment.Variable
     ( CommandWrapperPrefix
-    , CommandWrapperToolsetVarName(..)
     , CommandWrapperVarName(..)
     , EnvVarName
     , EnvVarValue
@@ -149,6 +154,18 @@ data Params = Params
     }
   deriving stock (Generic, Show)
 
+instance Pretty Params where
+    pretty :: Params -> Doc ann
+    pretty Params{..} = Pretty.vsep
+        [ "exePath" <+> Pretty.dquotes (pretty exePath)
+        , "name" <+> Pretty.dquotes (pretty name)
+        , "subcommand" <+> Pretty.dquotes (pretty subcommand)
+        , "config" <+> Pretty.dquotes (pretty config)
+        , "verbosity" <+> Pretty.viaShow verbosity
+        , "colour" <+> Pretty.viaShow colour
+        , "version" <+> Pretty.dquotes (pretty (showVersion version))
+        ]
+
 -- | Subcommand protocol is versioned separately from Command Wrapper library
 -- and Command Wrapper tool.
 subcommandProtocolVersion :: Version
@@ -180,19 +197,16 @@ commandWrapperEnv
     -> EnvBuilder CommandWrapperPrefix
     -> [(String, String)]
 commandWrapperEnv AppNames{commandWrapperPrefix} (EnvBuilder mkEnv) =
-    fromHashMap . removeToolsetVars $ mkEnv commandWrapperPrefix
+    fromHashMap (removeToolsetVars `appEndo` mkEnv commandWrapperPrefix)
   where
     fromHashMap = fmap (bimap Text.unpack Text.unpack) . HashMap.toList
 
-    removeToolsetVars =
-        -- TODO: This assumes that there is only one einvorinment variable
-        --   defined in 'CommandWrapperToolsetVarName' data type.  This is true
-        --   at the moment, but it should be written in generic way to support
-        --   'CommandWrapperToolsetVarName' extensions.
-        let invokeAs =
-                getCommandWrapperToolsetVarName commandWrapperPrefix
-                    CommandWrapperInvokeAs
-        in HashMap.delete invokeAs
+    removeToolsetVars = foldMap
+        ( Endo
+            . HashMap.delete
+            . getCommandWrapperToolsetVarName commandWrapperPrefix
+        )
+        [minBound .. maxBound]
 
 -- | Parse Command Wrapper environment variables that are part of subcommand
 -- protocol.

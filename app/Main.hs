@@ -23,28 +23,29 @@ import Data.Either (Either(Right), either)
 import Data.Eq ((/=))
 import Data.Function (($), (.), id)
 import Data.Functor ((<$>))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, maybe)
 import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
 import Data.String (String)
 import System.Exit (die)
 import System.IO (IO{-, print-})
 import Text.Show (show)
 
-import qualified Options.Applicative as Options
-import qualified Options.Applicative.Standard as Options
 import Data.Monoid.Endo.Fold (dualFoldEndo)
+import qualified Data.Text as Text (unpack)
 import Data.Verbosity (Verbosity(Silent))
 import Data.Verbosity.Class (setVerbosity)
 import qualified Mainplate.Extensible as Mainplate
     ( Command(Internal)
     , runExtensibleAppWith
     )
+import qualified Options.Applicative as Options
+import qualified Options.Applicative.Standard as Options
 import System.Directory
     ( XdgDirectory(XdgConfig)
     , doesFileExist
     , getXdgDirectory
     )
-import System.FilePath ((</>))
+import System.FilePath ((</>), splitSearchPath)
 
 import qualified CommandWrapper.Config.Global as Global (Config)
 import qualified CommandWrapper.Config.Global as Global.Config
@@ -55,8 +56,11 @@ import qualified CommandWrapper.Config.Global as Global.Config
 import qualified CommandWrapper.Config.File as Config.File (apply, read)
 import CommandWrapper.Environment
     ( AppNames(..)
+    , CommandWrapperToolsetVarName(CommandWrapperPath)
+    , commandWrapperToolsetVarName
     , defaultCommandWrapperPrefix
     , getAppNames
+    , optionalVar
     , parseEnvIO
     )
 import qualified CommandWrapper.External as External
@@ -87,9 +91,7 @@ main :: IO ()
 main = do
     appNames@AppNames{exeName, usedName} <- getAppNames'
     -- TODO: It would be great to have debugging message with 'appNames' in it.
-    defaultConfig <- parseEnvIO (die . show) do
-        defColour <- fromMaybe ColourOutput.Auto <$> ColourOutput.noColorEnvVar
-        pure (Global.Config.def defColour)
+    defaultConfig <- parseEnv
 
     -- TODO: This code can be simplified and generalised by mapping over a list
     --       of names under which command-wrapper is known at the moment.
@@ -117,6 +119,20 @@ main = do
 
 getAppNames' :: IO AppNames
 getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version)
+
+-- | Parse environment variables and produce default configuration that can be
+-- later updated by configuration file and command line options.
+parseEnv :: IO Global.Config
+parseEnv = parseEnvIO (die . show) do
+    defColour <- fromMaybe ColourOutput.Auto <$> ColourOutput.noColorEnvVar
+
+    searchPathVar <- commandWrapperToolsetVarName CommandWrapperPath
+    searchPath <- optionalVar searchPathVar
+
+    pure (Global.Config.def defColour)
+        { Global.Config.searchPath =
+            maybe [] (splitSearchPath . Text.unpack) searchPath
+        }
 
 parseOptions
     :: AppNames

@@ -26,17 +26,26 @@ module CommandWrapper.Environment.AppNames
 
 import Control.Applicative (pure)
 import Data.Eq ((==))
-import Data.Functor ((<&>))
-import Data.List.NonEmpty (NonEmpty((:|)))
+import Data.Functor ((<$>), (<&>))
+import Data.List.NonEmpty (NonEmpty((:|)), toList)
 import Data.Maybe (maybe)
+import Data.Semigroup ((<>))
 import Data.String (String)
-import Data.Version (Version, makeVersion)
+import Data.Version (Version, makeVersion, showVersion)
 import GHC.Generics (Generic)
 import System.Environment (getProgName, lookupEnv)
 import System.IO (FilePath, IO)
 import Text.Show (Show)
 
 import qualified Data.Text as Text (unpack)
+import Data.Text.Prettyprint.Doc (Doc, Pretty(pretty), (<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty
+    ( comma
+    , dquote
+    , dquotes
+    , encloseSep
+    , vsep
+    )
 import System.Environment.Executable (ScriptPath(..), getScriptPath)
 import System.FilePath (takeFileName)
 
@@ -112,6 +121,23 @@ data AppNames = AppNames
     -- ^ Prefix shared by all Command Wrapper environment variables.
     }
   deriving stock (Generic, Show)
+
+instance Pretty AppNames where
+    pretty :: AppNames -> Doc ann
+    pretty AppNames{..} = Pretty.vsep
+        [ "exePath" <+> Pretty.dquotes (pretty exePath)
+        , "exeName" <+> Pretty.dquotes (pretty exeName)
+        , "exeVersion" <+> Pretty.dquotes (pretty (showVersion exeVersion))
+        , "usedName" <+> Pretty.dquotes (pretty usedName)
+
+        , "names"
+            <+> Pretty.encloseSep Pretty.dquote Pretty.dquote
+                    (Pretty.dquote <> Pretty.comma <+> Pretty.dquote)
+                    (pretty <$> toList names)
+
+        , "commandWrapperPrefix"
+            <+> Pretty.dquotes (pretty commandWrapperPrefix)
+        ]
 
 -- | Smart constructor for 'AppNames'.
 --

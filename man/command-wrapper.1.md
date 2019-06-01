@@ -86,7 +86,7 @@ this manual.
 -v
 :   Increment verbosity by one level; can be repeated.
 
-\--color\[=*WHEN*], \--colour\[=*WHEN*]
+\--color=*WHEN*, **\--colour**=*WHEN*
 :   Colourise output; *WHEN* can be one of `always` (default if *WHEN* is omitted),
     `auto`, or `never`.  See also `NO_COLOR` in *ENVIRONMENT VARIABLES*
     section.
@@ -476,6 +476,25 @@ used by `man` run `manpath` command, which should print out something like:
     See also `command-wrapper-subcommand-protocol(7)` for more details on how
     subcommands are invoked.
 
+`COMMAND_WRAPPER_PATH`
+:   Default search path for external subcommands.  Any value that is specified
+    in configuration file (see *CONFIGURATION FILE* section for details) is
+    appended to this value.
+
+    Here is an example shell session (Bash) that demonstrates how this works:
+
+    ```
+    $ mkdir subcommands
+    $ cat subcommands/command-wrapper-test <<"EOF"
+    #!/usr/bin/env bash
+
+    echo "Test World!"
+    EOF
+    $ chmod +x subcommands/command-wrapper-test
+    $ COMMAND_WRAPPER_PATH="${PWD}/subcommands" ~/.local/lib/command-wrapper/command-wrapper test
+    Test World!
+    ```
+
 
 # CONFIGURATION FILE
 
@@ -564,7 +583,7 @@ in  -- Subcommand aliases.  These can be used to invoke subcommand in
 
     -- Default verbosity to be used when command is invoked.  See
     -- `--verbosity` option for more details.
-    , verbosity : CommandWrapper.Verbosity
+    , verbosity : Optional CommandWrapper.Verbosity
 
     } : CommandWrapper.DefaultConfig
 ```

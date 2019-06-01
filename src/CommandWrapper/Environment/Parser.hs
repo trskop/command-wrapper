@@ -29,6 +29,7 @@ module CommandWrapper.Environment.Parser
     , commandWrapperVar
     , commandWrapperVar'
     , commandWrapperVarName
+    , commandWrapperToolsetVarName
     )
   where
 
@@ -51,10 +52,12 @@ import qualified System.Environment.Parser as Parser (parseEnv)
 import CommandWrapper.Environment.Variable
     ( CommandWrapperPrefix
     , CommandWrapperVarName
+    , CommandWrapperToolsetVarName
     , EnvVarName
     , EnvVarValue
     , defaultCommandWrapperPrefix
     , getCommandWrapperVarName
+    , getCommandWrapperToolsetVarName
     )
 
 
@@ -76,6 +79,13 @@ commandWrapperVarName
 commandWrapperVarName name =
     ask <&> \prefix ->
         getCommandWrapperVarName prefix name
+
+commandWrapperToolsetVarName
+    :: CommandWrapperToolsetVarName
+    -> ParseEnv CommandWrapperPrefix EnvVarName
+commandWrapperToolsetVarName name =
+    ask <&> \prefix ->
+        getCommandWrapperToolsetVarName prefix name
 
 -- | Parse Command Wrapper environment variables using provided parser.  It's a
 -- specialised version of 'Parser.parseEnv' from "System.Environment.Parser":

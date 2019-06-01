@@ -37,6 +37,8 @@ module CommandWrapper.Environment.Variable
     )
   where
 
+import Prelude (Bounded, Enum)
+
 import Data.Function ((.))
 import Data.Monoid ((<>))
 import GHC.Generics (Generic)
@@ -110,7 +112,7 @@ data CommandWrapperVarName
     -- > <prefix>_VERSION
     --
     -- See also documentation of 'CommandWrapper.Environment.Params.version.
-  deriving stock (Generic, Show)
+  deriving stock (Bounded, Enum, Generic, Show)
 
 -- | Get fully formed Command Wrapper variable name:
 --
@@ -142,7 +144,13 @@ data CommandWrapperToolsetVarName
     --
     -- See also module "CommandWrapper.Environment.AppNames", especially
     -- 'CommandWrapper.Environment.AppNames.getAppNames' function.
-  deriving stock (Generic, Show)
+
+    | CommandWrapperPath
+    -- ^ Search path for external commands prepended to the one retrieved from
+    -- configuration.
+    --
+    -- > <prefix>_PATH
+  deriving stock (Bounded, Enum, Generic, Show)
 
 -- | Get fully formed Command Wrapper (toolset) variable name:
 --
@@ -153,3 +161,4 @@ getCommandWrapperToolsetVarName
     -> EnvVarName
 getCommandWrapperToolsetVarName prefix = (prefix <>) . \case
     CommandWrapperInvokeAs -> "_INVOKE_AS"
+    CommandWrapperPath -> "_PATH"
