@@ -86,7 +86,7 @@ this manual.
 -v
 :   Increment verbosity by one level; can be repeated.
 
-\--color[=*WHEN*], \--colour[=*WHEN*]
+\--color\[=*WHEN*], \--colour\[=*WHEN*]
 :   Colourise output; *WHEN* can be one of `always` (default if *WHEN* is omitted),
     `auto`, or `never`.  See also `NO_COLOR` in *ENVIRONMENT VARIABLES*
     section.
@@ -95,10 +95,10 @@ this manual.
 :   Same as `--colour=never`.  See also `NO_COLOR` in *ENVIRONMENT VARIABLES*
     section.
 
-\--no-aliases
-:   Ignore *SUBCOMMAND* aliases.  This is useful when used from e.g. scripts to
-    avoid issues with user defined aliases interfering with how the script
-    behaves.
+\--\[no-]aliases
+:   Apply or ignore *SUBCOMMAND* aliases.  This is useful when used from e.g.
+    scripts to avoid issues with user defined aliases interfering with how the
+    script behaves.
 
 \--change-directory=*DIRECTORY*, -C *DIRECTORY*,
 :   Change working directory before doing anything, especially executing a

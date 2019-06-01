@@ -16,14 +16,14 @@
 module Main (main)
   where
 
-import Control.Applicative ((<*>), many, optional, pure)
+import Control.Applicative ((<*>), (<|>), many, pure)
 import Control.Monad ((>>=))
-import Data.Bool (Bool(True))
+import Data.Bool (Bool(False, True))
 import Data.Either (Either(Right), either)
 import Data.Eq ((/=))
 import Data.Function (($), (.), id)
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe, fromMaybe, maybe)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
 import Data.String (String)
 import System.Exit (die)
@@ -32,7 +32,9 @@ import Text.Show (show)
 
 import qualified Options.Applicative as Options
 import qualified Options.Applicative.Standard as Options
-import Data.Monoid.Endo.Fold (foldEndo)
+import Data.Monoid.Endo.Fold (dualFoldEndo)
+import Data.Verbosity (Verbosity(Silent))
+import Data.Verbosity.Class (setVerbosity)
 import qualified Mainplate.Extensible as Mainplate
     ( Command(Internal)
     , runExtensibleAppWith
@@ -48,6 +50,7 @@ import qualified CommandWrapper.Config.Global as Global (Config)
 import qualified CommandWrapper.Config.Global as Global.Config
     ( Config(..)
     , def
+    , getAliases
     )
 import qualified CommandWrapper.Config.File as Config.File (apply, read)
 import CommandWrapper.Environment
@@ -121,7 +124,7 @@ parseOptions
     -> IO (Endo (Options.Command Global.Config))
 parseOptions appNames config =
     Options.parseCommandWrapper appNames Options.defaultPrefs parserInfo
-        $ pure . Global.Config.aliases . (`appEndo` config)
+        $ pure . Global.Config.getAliases . (`appEndo` config)
   where
     parserInfo :: Options.ParserInfo (Options.GlobalMode (Endo Global.Config))
     parserInfo =
@@ -129,36 +132,45 @@ parseOptions appNames config =
 
 globalOptions :: Options.Parser (Options.GlobalMode (Endo Global.Config))
 globalOptions = withGlobalMode
-    <*> ( foldEndo
+    <*> ( dualFoldEndo
             <$> verbosityOptions
-            <*> colourOptions
-            <*> noAliasesOption
+            <*> many colourOptions
+            <*> many (aliasesFlag <|> noAliasesFlag)
         )
 
 verbosityOptions :: Options.Parser (Endo Global.Config)
-verbosityOptions = foldEndo
+verbosityOptions = dualFoldEndo
     <$> many Options.incrementVerbosityFlag
-    <*> optional Options.verbosityOption
-    <*> Options.silentFlag
-    <*> Options.quietFlag
+    <*> many Options.verbosityOption
+    <*> many (Options.flag' (setVerbosity Silent) Options.silent)
+    <*> many (Options.flag' (setVerbosity Silent) Options.quiet)
 
 colourOptions :: Options.Parser (Endo Global.Config)
 colourOptions = modifyConfig <$> ColourOutput.options
   where
-    modifyConfig :: Maybe ColourOutput -> Endo Global.Config
-    modifyConfig =
-        maybe mempty \colourOutput ->
-            Endo \config -> config{Global.Config.colourOutput}
+    modifyConfig :: ColourOutput -> Endo Global.Config
+    modifyConfig colourOutput =
+        Endo \config -> config{Global.Config.colourOutput}
 
-noAliasesOption :: Options.Parser (Endo Global.Config)
-noAliasesOption = Options.flag mempty modifyConfig $ mconcat
-    [ Options.long "no-aliases"
-    , Options.help "Ignore SUBCOMMAND aliases."
+aliasesFlag :: Options.Parser (Endo Global.Config)
+aliasesFlag = Options.flag' modifyConfig $ mconcat
+    [ Options.long "aliases"
+    , Options.help "Use SUBCOMMAND aliases, dual to '--no-aliases'."
     ]
   where
     modifyConfig :: Endo Global.Config
     modifyConfig =
-        Endo $ \config -> config{Global.Config.aliases = []}
+        Endo $ \config -> config{Global.Config.ignoreAliases = False}
+
+noAliasesFlag :: Options.Parser (Endo Global.Config)
+noAliasesFlag = Options.flag' modifyConfig $ mconcat
+    [ Options.long "no-aliases"
+    , Options.help "Ignore SUBCOMMAND aliases, dual to '--aliases'."
+    ]
+  where
+    modifyConfig :: Endo Global.Config
+    modifyConfig =
+        Endo $ \config -> config{Global.Config.ignoreAliases = True}
 
 withGlobalMode
     :: Options.Parser
@@ -167,7 +179,7 @@ withGlobalMode
 withGlobalMode = run <$> go
   where
     go :: Options.Parser (Endo (Options.GlobalMode (Endo Global.Config)))
-    go = foldEndo
+    go = dualFoldEndo
         <$> helpOption
         <*> versionOption
 

@@ -106,7 +106,7 @@ import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 
-import qualified CommandWrapper.Config.Global as Global (Config(..))
+import qualified CommandWrapper.Config.Global as Global (Config(..), getAliases)
 import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
 import qualified CommandWrapper.External as External
     ( executeCommand
@@ -474,7 +474,7 @@ completion appNames options config =
         in Mainplate.applySimpleDefaults (CompletionMode opts ())
 
     getAliases :: Global.Config -> [String]
-    getAliases = List.nub . fmap alias . Global.aliases
+    getAliases = List.nub . fmap alias . Global.getAliases
 
     findSubcommandsFuzzy :: Global.Config -> Query -> IO [Fuzzy String String]
     findSubcommandsFuzzy cfg Query{patternToMatch, caseSensitive} = do
@@ -599,7 +599,7 @@ getCompletions appNames config CompletionOptions{..} = case subcommand of
         let -- TODO: Figure out how to take arguments into account when
             -- applying aliases.
             (realSubcommandName, _) =
-                Options.applyAlias (Global.aliases config)
+                Options.applyAlias (Global.getAliases config)
                     subcommandName []
 
          in subcommandCompletion appNames config shell idx subcommandArgument
@@ -741,7 +741,7 @@ getSubcommands :: AppNames -> Global.Config -> IO [String]
 getSubcommands appNames config = do
     extCmds <- External.findSubcommands appNames config
 
-    let aliases = alias <$> Global.aliases config
+    let aliases = alias <$> Global.getAliases config
         internalCommands = ["help", "config", "completion", "version"]
 
     pure (List.nub $ aliases <> internalCommands <> extCmds)

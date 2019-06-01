@@ -72,7 +72,7 @@ import qualified Options.Applicative as Options
 import System.Directory (findExecutablesInDirectories)
 import System.Posix.Process (executeFile)
 
-import CommandWrapper.Config.Global (Config(..))
+import CommandWrapper.Config.Global (Config(..), getAliases)
 import CommandWrapper.Environment (AppNames(AppNames, usedName, names))
 import qualified CommandWrapper.External as External
     ( executeCommand
@@ -202,7 +202,7 @@ findSubcommandManualPageName
 -- > TOOLSET [GLOBAL_OPTIONS] help [SUBCOMMAND]
 -- > TOOLSET [GLOBAL_OPTIONS] help --man [SUBCOMMAND|TOPIC]
 parseOptions :: AppNames -> Config -> [String] -> IO (Endo (HelpMode ()))
-parseOptions appNames config@Config{aliases} options =
+parseOptions appNames config options =
     execParser $ foldEndo
         <$> optional
                 ( subcommandArg
@@ -231,7 +231,7 @@ parseOptions appNames config@Config{aliases} options =
     subcommandArg :: Options.Parser (Endo (HelpMode ()))
     subcommandArg =
         Options.strArgument (Options.metavar "SUBCOMMAND") <&> \cmd ->
-            let (realCmd, _) = applyAlias aliases cmd []
+            let (realCmd, _) = applyAlias (getAliases config) cmd []
             in switchTo (SubcommandHelp realCmd ())
 
     execParser parser =
@@ -291,10 +291,11 @@ mainHelpMsg AppNames{usedName} Config{description} = Pretty.vsep
             , Pretty.squotes (longOption "colour=never") <> "."
             ]
 
-        , optionDescription ["--no-aliases"]
-            [ "Ignore", metavar "SUBCOMMAND", Pretty.reflow "aliases. This is\
-                \ useful when used from e.g. scripts to avoid issues with user\
-                \ defined aliases interfering with how the script behaves."
+        , optionDescription ["--[no-]aliases"]
+            [ "Apply or ignore", metavar "SUBCOMMAND", "aliases."
+            , Pretty.reflow  "This is useful when used from e.g. scripts to\
+                \ avoid issues with user defined aliases interfering with how\
+                \ the script behaves."
             ]
 
         , optionDescription ["--version", "-V"]

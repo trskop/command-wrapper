@@ -13,9 +13,11 @@
 module CommandWrapper.Config.Global
     ( Config(..)
     , def
+    , getAliases
     )
   where
 
+import Data.Bool (Bool(False))
 import Data.Maybe (Maybe(Nothing))
 import Data.String (String)
 import GHC.Generics (Generic)
@@ -38,6 +40,7 @@ data Config = Config
     , extraHelpMessage :: Maybe String
     , verbosity :: Verbosity
     , colourOutput :: ColourOutput
+    , ignoreAliases :: Bool
     }
   deriving stock (Generic, Show)
   deriving anyclass (Dhall.Interpret, HasVerbosity)
@@ -50,4 +53,11 @@ def colourOutput = Config
     , extraHelpMessage = Nothing
     , verbosity = Verbosity.Normal
     , colourOutput
+    , ignoreAliases = False
     }
+
+getAliases :: Config -> [Alias]
+getAliases Config{aliases, ignoreAliases} =
+    if ignoreAliases
+        then []
+        else aliases

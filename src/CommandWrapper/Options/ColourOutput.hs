@@ -29,8 +29,8 @@ module CommandWrapper.Options.ColourOutput
     )
   where
 
-import Control.Applicative (optional)
-import Data.Monoid (Last(Last, getLast), mconcat)
+import Data.Foldable (asum)
+import Data.Monoid (mconcat)
 import System.IO (Handle, hIsTerminalDevice)
 
 import qualified Data.CaseInsensitive as CI (mk)
@@ -47,27 +47,27 @@ import System.Console.Terminfo (setupTermFromEnv)
 
 -- |
 -- > [--[no-]colo[u]r --colo[u]r=WHEN]
-options :: Options.Parser (Maybe ColourOutput)
-options = go
-    <$> noColourFlag
-    <*> noColorFlag
-    <*> optional colourOption
-    <*> optional colorOption
+options :: Options.Parser ColourOutput
+options = asum
+    [ noColourFlag
+    , noColorFlag
+    , colourOption
+    , colorOption
+    ]
   where
-    go a b c d = getLast . mconcat $ map Last [a, b, c, d]
 
 -- |
 -- > [--no-colo[u]r]
-noColourFlag :: Options.Parser (Maybe ColourOutput)
+noColourFlag :: Options.Parser ColourOutput
 noColourFlag = noColourFlag' "no-colour"
 
 -- |
 -- > [--no-color]
-noColorFlag :: Options.Parser (Maybe ColourOutput)
+noColorFlag :: Options.Parser ColourOutput
 noColorFlag = noColourFlag' "no-color"
 
-noColourFlag' :: String ->  Options.Parser (Maybe ColourOutput)
-noColourFlag' name = Options.flag Nothing (Just Never) $ mconcat
+noColourFlag' :: String -> Options.Parser ColourOutput
+noColourFlag' name = Options.flag' Never $ mconcat
     [ Options.long name
     , Options.help "Never use colourised output. Same as '--colour=never'."
     ]
