@@ -420,7 +420,7 @@ configFileContent = Text.unlines . \case
         , "    , searchPath = [" <> fromString (show libDir) <> "]"
         , ""
         , "    -- Default verbosity level."
-        , "    , verbosity = CommandWrapper.Verbosity.Normal"
+        , "    , verbosity = None CommandWrapper.Verbosity"
         , "    } : CommandWrapper.ToolsetConfig"
         ]
 
