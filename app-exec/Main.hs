@@ -31,10 +31,15 @@ import System.Environment (getArgs, getEnvironment)
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
 import qualified Data.Text as Text (split, unpack)
-import qualified Data.Text.IO as Text (putStrLn)
-import Data.Text.Prettyprint.Doc ((<+>))
+--import qualified Data.Text.IO as Text (putStrLn)
+import Data.Text.Prettyprint.Doc (Doc, (<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
-import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
+    ( AnsiStyle
+    , Color(Magenta, White)
+    , color
+    , colorDull
+    )
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Tree (Forest, Tree(Node), unfoldForest)
 import qualified Dhall (Interpret, auto, inject, inputFile)
@@ -63,10 +68,10 @@ import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Config.Environment as EnvironmentVariable
     ( toTuple
     )
-import CommandWrapper.Message (Result, defaultLayoutOptions, message)
-import qualified CommandWrapper.Options as Options (splitArguments)
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPut)
 import qualified CommandWrapper.Internal.Subcommand.Help as Help
+import CommandWrapper.Message (Result, defaultLayoutOptions, hPutDoc, message)
+import qualified CommandWrapper.Options as Options (splitArguments)
 import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
     , Params(Params, colour, config, name, subcommand, verbosity)
@@ -113,40 +118,10 @@ main = do
 
     case action of
         List ->
-            mapM_ (Text.putStrLn . (name :: NamedCommand -> Text)) commands
+            listCommands params config ListOptions{showDescription = True}
 
         Tree ->
-            let names :: [[Text]] =
-                    Text.split (== '.') . (name :: NamedCommand -> Text)
-                    <$> commands
-
-                groupNames :: [[Text]] -> [[[Text]]] =
-                    List.groupBy ((==) `on` headMay)
-                    . List.sortBy (compare `on` headMay)
-
-                forest :: Forest Text = (`unfoldForest` groupNames names) \case
-                    (n : r) : ns ->
-                        let rs = groupNames $ r : fmap (drop 1) ns
-                         in ( n <> if [[]] `elem` rs then "*" else ""
-                            , List.filter (/= [[]]) rs
-                            )
-
-                    _ -> ("", []) -- This should not happen.
-
-                draw :: Tree String -> [String]
-                draw (Node x ts0) = lines x <> drawSubTrees ts0
-                  where
-                    drawSubTrees = \case
-                        [] ->
-                            []
-                        [t] ->
-                            shift "└── " "    " (draw t)
-                        t : ts ->
-                            shift "├── " "│   " (draw t) <> drawSubTrees ts
-
-                    shift first other = zipWith (<>) (first : repeat other)
-
-             in putStrLn . unlines $ draw (Text.unpack <$> Node "" forest)
+            showCommandTree params config TreeOptions{}
 
         DryRun ->
             getExecutableCommand params commands commandAndItsArguments
@@ -215,6 +190,71 @@ executeCommand Command{..} = do
 printCommand :: Params -> Command -> IO ()
 printCommand Params{colour} =
     Dhall.hPut colour Dhall.Unicode stdout Dhall.inject
+
+newtype ListOptions = ListOptions
+    { showDescription :: Bool
+    }
+
+data CommandAnn
+    = CommandName
+    | CommandDescription
+
+listCommands :: Params -> Config -> ListOptions -> IO ()
+listCommands Params{colour} Config{commands} ListOptions{..} =
+    putDoc $ Pretty.vsep (describe <$> commands) <> Pretty.line
+  where
+    describe :: NamedCommand -> Doc CommandAnn
+    describe NamedCommand{name, description} =
+        let commandName =
+                Pretty.annotate CommandName (pretty name)
+
+            commandDescription =
+                Pretty.annotate CommandDescription (pretty description)
+
+         in if showDescription
+                then commandName <+> commandDescription
+                else commandName
+
+    putDoc = hPutDoc defaultLayoutOptions toAnsi colour stdout
+
+    toAnsi = \case
+        CommandName -> Pretty.color Pretty.Magenta
+        CommandDescription -> Pretty.colorDull Pretty.White
+
+data TreeOptions = TreeOptions
+
+showCommandTree :: Params -> Config -> TreeOptions -> IO ()
+showCommandTree Params{} Config{commands} TreeOptions{} =
+    putStrLn . unlines $ draw (Text.unpack <$> Node "" forest)
+  where
+    names :: [[Text]] =
+        Text.split (== '.') . (name :: NamedCommand -> Text) <$> commands
+
+    groupNames :: [[Text]] -> [[[Text]]] =
+        List.groupBy ((==) `on` headMay) . List.sortBy (compare `on` headMay)
+
+    forest :: Forest Text = (`unfoldForest` groupNames names) \case
+        (n : r) : ns ->
+            let rs = groupNames $ r : fmap (drop 1) ns
+             in ( n <> if [[]] `elem` rs then "*" else ""
+                , List.filter (/= [[]]) rs
+                )
+
+        _ -> ("", []) -- This should not happen.
+
+    draw :: Tree String -> [String]
+    draw (Node x ts0) = lines x <> drawSubTrees ts0
+      where
+        drawSubTrees = \case
+            [] ->
+                []
+            [t] ->
+                shift "└── " "    " (draw t)
+            t : ts ->
+                shift "├── " "│   " (draw t) <> drawSubTrees ts
+
+        shift first other = zipWith (<>) (first : repeat other)
+
 
 parseOptions :: Options.Parser (Action -> Action)
 parseOptions = asum
@@ -374,17 +414,3 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 --
 -- -  Nicer `--tree` representation that uses colours to make the distinction
 --    between executable commands and purely organisation nodes more obvious.
---
--- -  Commands should have description that is printed as part of help/list:
---
---    ```
---    { commands =
---        [ ...
---        , { name = "build"
---          , description = Some "Build the project"
---          , command = ./build-command.dhall
---          }
---        , ...
---        ]
---    }
---    ```
