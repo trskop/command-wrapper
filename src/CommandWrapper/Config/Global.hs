@@ -41,6 +41,7 @@ data Config = Config
     , verbosity :: Verbosity
     , colourOutput :: ColourOutput
     , ignoreAliases :: Bool
+    , changeDirectory :: Maybe FilePath
     }
   deriving stock (Generic, Show)
   deriving anyclass (Dhall.Interpret, HasVerbosity)
@@ -54,6 +55,7 @@ def colourOutput = Config
     , verbosity = Verbosity.Normal
     , colourOutput
     , ignoreAliases = False
+    , changeDirectory = Nothing
     }
 
 getAliases :: Config -> [Alias]

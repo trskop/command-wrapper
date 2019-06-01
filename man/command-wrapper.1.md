@@ -100,9 +100,9 @@ this manual.
     scripts to avoid issues with user defined aliases interfering with how the
     script behaves.
 
-\--change-directory=*DIRECTORY*, -C *DIRECTORY*,
+\--change-directory=*DIRECTORY*
 :   Change working directory before doing anything, especially executing a
-    subcommand.  **TODO: Not yet implemented!**
+    subcommand.
 
 \--help, -h
 :   Print toolset (*TOOLSET_COMMAND*) help information and exit.  Using *help*
@@ -177,6 +177,7 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
         * Unable to parse configuration file, or if there was a type error in
           a configuration file.
         * Required configuration file is missing.
+        * Unable to change working directory, see `--change-directory` option.
 
 `2`
 :   Returned by a subcommand if the Command Wrapper environment wasn't set up

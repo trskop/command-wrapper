@@ -17,17 +17,27 @@ module Main (main)
   where
 
 import Control.Applicative ((<*>), (<|>), many, pure)
+import Control.Exception
+    ( SomeAsyncException
+    , SomeException
+    , catch
+    , displayException
+    , fromException
+    , throwIO
+    )
 import Control.Monad ((>>=))
 import Data.Bool (Bool(False, True))
 import Data.Either (Either(Right), either)
 import Data.Eq ((/=))
+import Data.Foldable (for_)
 import Data.Function (($), (.), id)
-import Data.Functor ((<$>))
-import Data.Maybe (fromMaybe, maybe)
+import Data.Functor ((<$>), fmap)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe, maybe)
 import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
-import Data.String (String)
-import System.Exit (die)
-import System.IO (IO{-, print-})
+import Data.Semigroup ((<>))
+import Data.String (String, fromString)
+import System.Exit (ExitCode(ExitFailure), die, exitWith)
+import System.IO (FilePath, IO, stderr)
 import Text.Show (show)
 
 import Data.Monoid.Endo.Fold (dualFoldEndo)
@@ -44,10 +54,11 @@ import System.Directory
     ( XdgDirectory(XdgConfig)
     , doesFileExist
     , getXdgDirectory
+    , setCurrentDirectory
     )
 import System.FilePath ((</>), splitSearchPath)
 
-import qualified CommandWrapper.Config.Global as Global (Config)
+import qualified CommandWrapper.Config.Global as Global (Config(Config))
 import qualified CommandWrapper.Config.Global as Global.Config
     ( Config(..)
     , def
@@ -65,6 +76,7 @@ import CommandWrapper.Environment
     )
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
+import CommandWrapper.Message (errorMsg)
 import qualified CommandWrapper.Options as Options
 import CommandWrapper.Options.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
@@ -103,7 +115,7 @@ main = do
             )
 
     Mainplate.runExtensibleAppWith (parseOptions appNames config) readConfig
-        (defaults config) (External.run appNames) (Internal.run appNames)
+        (defaults config) (go External.run appNames) (go Internal.run appNames)
   where
     readGlobalConfig baseName = do
         configFile <- getXdgDirectory XdgConfig (baseName </> "default.dhall")
@@ -116,6 +128,24 @@ main = do
                 Config.File.read configFile >>= either die (pure . Config.File.apply)
             else
                 pure id
+
+    go :: (AppNames -> command -> Global.Config -> IO ())
+        -> AppNames
+        -> command
+        -> Global.Config
+        -> IO ()
+    go run appNames@AppNames{usedName} command config@Global.Config{..} = do
+        -- TODO: Nice error message when we fail to set the working directory.
+        for_ changeDirectory \dir ->
+            setCurrentDirectory dir `catch` \(e :: SomeException) ->
+                case fromException @SomeAsyncException e of
+                    Just _ -> throwIO e  -- Not touching this!
+                    Nothing -> do
+                        errorMsg (fromString usedName) verbosity colourOutput
+                            stderr (fromString (displayException e) <> ".")
+                        exitWith (ExitFailure 1)
+
+        run appNames command config
 
 getAppNames' :: IO AppNames
 getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version)
@@ -152,6 +182,7 @@ globalOptions = withGlobalMode
             <$> verbosityOptions
             <*> many colourOptions
             <*> many (aliasesFlag <|> noAliasesFlag)
+            <*> many changeDirectoryOption
         )
 
 verbosityOptions :: Options.Parser (Endo Global.Config)
@@ -187,6 +218,17 @@ noAliasesFlag = Options.flag' modifyConfig $ mconcat
     modifyConfig :: Endo Global.Config
     modifyConfig =
         Endo $ \config -> config{Global.Config.ignoreAliases = True}
+
+changeDirectoryOption :: Options.Parser (Endo Global.Config)
+changeDirectoryOption = fmap modifyConfig . Options.strOption $ mconcat
+    [ Options.long "change-directory"
+    , Options.metavar "DIRECTORY"
+    , Options.help "Change current wworking directory to DIRECTORY."
+    ]
+  where
+    modifyConfig :: FilePath -> Endo Global.Config
+    modifyConfig dir =
+        Endo $ \config -> config{Global.Config.changeDirectory = pure dir}
 
 withGlobalMode
     :: Options.Parser
