@@ -11,13 +11,16 @@ environment.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec [\--] COMMAND
-\[EXTRA\_COMMAND\_ARGUMENTS]
-
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--print COMMAND [\--]
-\[EXTRA\_COMMAND\_ARGUMENTS]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec [\--] *COMMAND*
+\[*COMMAND\_ARGUMENTS*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|\--tree|-t}
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--print *COMMAND* [\--]
+\[*COMMAND\_ARGUMENTS*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--dhall=*EXPRESSION* [\--]
+\[*COMMAND\_ARGUMENTS*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--help|-h}
 
@@ -79,13 +82,13 @@ scripting language like Bash.
     be called as:
 
     ```
-    TOOLSET_COMMAND exec COMMAND [--] [EXTRA_COMMAND_ARGUMENTS]
+    TOOLSET_COMMAND exec COMMAND [--] [COMMAND_ARGUMENTS]
     ```
 
 \--print
 :   Print command as it will be executed in Dhall format.  Can be used as
     dry-run functionality, for debugging, and for creating template when adding
-    new command.  Any *EXTRA_COMMAND_ARGUMENTS* are passed to the Dhall
+    new command.  Any *COMMAND_ARGUMENTS* are passed to the Dhall
     function before it being evaluated.
 
     Let's say that configuration contains following command definition:
@@ -96,6 +99,7 @@ scripting language like Bash.
 
     in  { commands =
             [ { name = "echo"
+              , description = Some "Call echo command (not the shell builtin)."
               , command =
                     λ(_ : CommandWrapper.Verbosity)
                   → λ(_ : CommandWrapper.ColourOutput)
@@ -106,6 +110,13 @@ scripting language like Bash.
                     , searchPath = True
                     , workingDirectory = None Text
                     } : CommandWrapper.ExecCommand
+              , completion =
+                  None
+                  (   CommandWrapper.Shell
+                    → Natural
+                    → List Text
+                    → CommandWrapper.ExecCommand
+                  )
               } : CommandWrapper.ExecNamedCommand
             ]
         }
@@ -130,15 +141,52 @@ scripting language like Bash.
 
     See also *CONFIGURATION FILE* section for more information.
 
+\--dhall=*EXPRESSION*
+:   Execute Dhall *EXPRESSION*.  The *EXPRESSION* has to have following type:
+
+    ```
+    let CommandWrapper =
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
+
+    in    ∀(verbosity : CommandWrapper.Verbosity)
+        → ∀(colour : CommandWrapper.ColourOutput)
+        → ∀(arguments : List Text)
+        → CommandWrapper.ExecCommand
+    ```
+
+    For example:
+
+    ```
+    let CommandWrapper =
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
+
+    in    λ(verbosity : CommandWrapper.Verbosity)
+        → λ(colourOutput : CommandWrapper.ColourOutput)
+        → λ(arguments : List Text)
+        → { arguments =
+              arguments
+          , command =
+              "echo"
+          , environment =
+              [] : List CommandWrapper.EnvironmentVariable
+          , searchPath =
+              True
+          , workingDirectory =
+              None Text
+          }
+    ```
+
+    This is very useful when designing new commands.
+
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help exec`.
 
-`COMMAND`
+*COMMAND*
 :   `COMMAND` is a symbolic command name as it is specified in configuration
-    file.  If available then it is executed.  Any *EXTRA_COMMAND_ARGUMENTS* are
+    file.  If available then it is executed.  Any *COMMAND_ARGUMENTS* are
     passed to it.  See *CONFIGURATION FILE* section for more details.
 
-`EXTRA_COMMAND_ARGUMENTS`
+*COMMAND_ARGUMENTS*
 :   Extra arguments that are passed to the command referenced by *COMMAND*.  See
     *CONFIGURATION FILE* section for more details.
 
@@ -216,72 +264,86 @@ let CommandWrapper =
       -- See also `dhall hash --help`.
 
 in  -- List of commands that `exec` subcommand can execute.
-    { commands
-        : List
-            -- Symbolic name for this command (`COMMAND`)
-            -- that can be used to invoke it via:
-            --
-            --     TOOLSET_COMMAND exec COMMAND
-            --
-            -- See `COMMAND` description for more details.
-            { name : Text
+    { commands :
+        List
+          -- Symbolic name for this command (`COMMAND`)
+          -- that can be used to invoke it via:
+          --
+          --     TOOLSET_COMMAND exec COMMAND
+          --
+          -- See `COMMAND` description for more details.
+          { name : Text
 
-            -- Function that constructs command description
-            -- that we can execute.
-            , command
-                -- Verbosity is taken from following
-                -- environment variable:
-                --
-                --     COMMAND_WRAPPER_VERBOSITY
-                --
-                -- See `command-wrapper-subcommand-protocol(7)`
-                -- for more details on its purpose.
-                : ∀(verbosity : CommandWrapper.Verbosity)
+          -- Description of `COMMAND` which is printed when `exec`
+          -- is invoked with `--list` option.
+          , description : Optional Text
 
-                -- Colour output preferences are taken from
-                -- following environment variable:
-                --
-                --     COMMAND_WRAPPER_COLOUR
-                --
-                -- See `command-wrapper-subcommand-protocol(7)`
-                -- for more details on its purpose.
-                → ∀(colourOutput : CommandWrapper.ColourOutput)
+          -- Function that constructs command description
+          -- that we can execute.
+          , command :
+              -- Verbosity is taken from following
+              -- environment variable:
+              --
+              --     COMMAND_WRAPPER_VERBOSITY
+              --
+              -- See `command-wrapper-subcommand-protocol(7)`
+              -- for more details on its purpose.
+                ∀(verbosity : CommandWrapper.Verbosity)
 
-                -- Extra arguments passed on command line.
-                -- See `EXTRA_COMMAND_ARGUMENTS` for more
-                -- details.
+              -- Colour output preferences are taken from
+              -- following environment variable:
+              --
+              --     COMMAND_WRAPPER_COLOUR
+              --
+              -- See `command-wrapper-subcommand-protocol(7)`
+              -- for more details on its purpose.
+              → ∀(colourOutput : CommandWrapper.ColourOutput)
+
+              -- Extra arguments passed on command line.
+              -- See `EXTRA_COMMAND_ARGUMENTS` for more
+              -- details.
+              → ∀(arguments : List Text)
+
+                -- Either command name of fill file path
+                -- to an executable.  We search for it in
+                -- `$PATH` only if `searchPath = True`
+              → { command : Text
+
+                -- Arguments as they are passed to `command`
+                -- when executed.  Usually we want to append
+                -- `EXTRA_COMMAND_ARGUMENTS`, but not always.
+                , arguments : List Text
+
+                -- Look for `command` in `$PATH`?
+                --
+                -- * True - Yes, search `$PATH` for `command`.
+                -- * False - No, ignore `$PATH` and execute
+                --   `command` as it is.  Usually requires
+                --   `command` to be a full path.
+                , searchPath : Bool
+
+                -- Additional environment variables to
+                -- pass to the `command` when executed.
+                -- They may override existing environment
+                -- variables.
+                , environment : List CommandWrapper.EnvironmentVariable
+
+                -- Change working directory before executing
+                -- `command`, if specified.  Otherwise keep
+                -- working directory unchanged.
+                , workingDirectory : Optional Text
+                }
+
+          -- Alternative command to invoke when performing
+          -- command line completion.
+          , completion :
+              None
+              (   ∀(shell : CommandWrapper.Shell)
+                → ∀(index : Natural)
                 → ∀(arguments : List Text)
-
-                  -- Either command name of fill file path
-                  -- to an executable.  We search for it in
-                  -- `$PATH` only if `searchPath = True`
-                → { command : Text
-
-                  -- Arguments as they are passed to `command`
-                  -- when executed.  Usually we want to append
-                  -- `EXTRA_COMMAND_ARGUMENTS`, but not always.
-                  , arguments : List Text
-
-                  -- Look for `command` in `$PATH`?
-                  --
-                  -- * True - Yes, search `$PATH` for `command`.
-                  -- * False - No, ignore `$PATH` and execute
-                  --   `command` as it is.  Usually requires
-                  --   `command` to be a full path.
-                  , searchPath : Bool
-
-                  -- Additional environment variables to
-                  -- pass to the `command` when executed.
-                  -- They may override existing environment
-                  -- variables.
-                  , environment : List CommandWrapper.EnvironmentVariable
-
-                  -- Change working directory before executing
-                  -- `command`, if specified.  Otherwise keep
-                  -- working directory unchanged.
-                  , workingDirectory : Optional Text
-                  }
-            }
+                → CommandWrapper.ExecCommand
+              )
+          }
     }
 ```
 
@@ -302,6 +364,7 @@ let CommandWrapper =
 
 in  { commands =
         [ { name = "echo"
+          , description = Some "Call echo command (not the shell builtin)."
           , command =
               -- We are ignoring `verbosity` and `colourOutput`, both of those
               -- are passed down from toolset configuration and GLOBAL_OPTIONS.
@@ -316,6 +379,15 @@ in  { commands =
                 , searchPath = True
                 , workingDirectory = None Text
                 } : CommandWrapper.ExecCommand
+
+          -- No command line completion willl be performed.
+          , completion =
+              None
+              (   CommandWrapper.Shell
+                → Natural
+                → List Text
+                → CommandWrapper.ExecCommand
+              )
           } : CommandWrapper.ExecNamedCommand
         ]
     }
@@ -338,7 +410,7 @@ let CommandWrapper =
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 
-in    λ(cfg : CommandWrapper.DefaultConfig)
+in    λ(cfg : CommandWrapper.ToolsetConfig)
     →   cfg
      // { aliases =
               cfg.aliases

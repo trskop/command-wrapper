@@ -42,7 +42,7 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Tree (Forest, Tree(Node), unfoldForest)
-import qualified Dhall (Interpret, auto, inject, inputFile)
+import qualified Dhall (Interpret, auto, inject, input, inputFile)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
     ( Parser
@@ -95,6 +95,7 @@ data Action
     | Tree
     | DryRun
     | Run
+    | RunDhall Text
     | CompletionInfo
     | Completion Word
     | Help
@@ -130,6 +131,14 @@ main = do
         Run ->
             getExecutableCommand params commands commandAndItsArguments
                 >>= executeCommand
+
+        RunDhall expression ->
+            runDhall params config RunDhallOptions
+                { expression
+
+                -- There is no command name, only arguments.
+                , arguments = fromString <$> commandAndItsArguments
+                }
 
         CompletionInfo ->
             printCommandWrapperStyleCompletionInfoExpression stdout
@@ -190,6 +199,18 @@ executeCommand Command{..} = do
 printCommand :: Params -> Command -> IO ()
 printCommand Params{colour} =
     Dhall.hPut colour Dhall.Unicode stdout Dhall.inject
+
+data RunDhallOptions = RunDhallOptions
+    { expression :: Text
+    , arguments :: [Text]
+    }
+
+runDhall :: Params -> Config -> RunDhallOptions -> IO ()
+runDhall Params{colour, verbosity} Config{} RunDhallOptions{..} = do
+    -- TODO: Handle dhall exceptions properly.  Get inspired by `config`
+    -- subcommand.
+    mkCommand <- Dhall.input Dhall.auto expression
+    executeCommand (mkCommand verbosity colour arguments)
 
 newtype ListOptions = ListOptions
     { showDescription :: Bool
@@ -259,6 +280,7 @@ showCommandTree Params{} Config{commands} TreeOptions{} =
 parseOptions :: Options.Parser (Action -> Action)
 parseOptions = asum
     [ completionInfoFlag
+    , dhallOption
     , Options.flag' (const List) $ mconcat
         [ Options.short 'l'
         , Options.long "list"
@@ -280,6 +302,9 @@ parseOptions = asum
 
     , pure id
     ]
+  where
+    dhallOption = Options.strOption (Options.long "dhall") <&> \expr _ ->
+        RunDhall expr
 
 doCompletion :: Config -> Word -> [String] -> [String]
 doCompletion Config{commands} index words =
@@ -293,6 +318,7 @@ doCompletion Config{commands} index words =
         [ "-l", "--ls", "--list"
         , "-t", "--tree"
         , "--print"
+        , "--dhall="
         , "-h", "--help"
         ]
 
@@ -307,7 +333,7 @@ helpMsg Params{name, subcommand} = Pretty.vsep
             <+> Pretty.brackets (Help.longOption "print")
             <+> Pretty.brackets (Help.metavar "--")
             <+> Help.metavar "COMMAND"
-            <+> Pretty.brackets (Help.metavar "EXTRA_COMMAND_ARGUMENT")
+            <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
 
         , subcommand' <+> Pretty.braces
             ( Help.longOption "list"
@@ -320,6 +346,11 @@ helpMsg Params{name, subcommand} = Pretty.vsep
             <> "|"
             <> Help.shortOption 't'
             )
+
+        , subcommand'
+            <+> Help.longOptionWithArgument "print" "EXPRESSION"
+            <+> Pretty.brackets (Help.metavar "--")
+            <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
 
         , subcommand' <+> Help.helpOptions
 
@@ -342,6 +373,19 @@ helpMsg Params{name, subcommand} = Pretty.vsep
                 "Print command as it will be executed in Dhall format."
             ]
 
+        , Help.optionDescription ["--dhall=EXPRESSION"]
+            [ Pretty.reflow "Execute Dhall", Help.metavar "EXPRESSION" <> "."
+            , Pretty.reflow "Expected type of", Help.metavar "EXPRESSION"
+            , Pretty.reflow "is documented in"
+            , Help.value "command-wrapper-exec(1)"
+            , Pretty.reflow "manual page.  It can be viewed by calling"
+            , Pretty.squotes
+                ( Help.toolsetCommand name
+                    ("help" <+> "--man" <+> subcommand')
+                )
+                <> "."
+            ]
+
         , Help.optionDescription ["--help", "-h"]
             [ Pretty.reflow "Print this help and exit. Same as"
             , Pretty.squotes
@@ -354,7 +398,7 @@ helpMsg Params{name, subcommand} = Pretty.vsep
         ]
     , ""
 
-    , Help.section (Help.metavar "EXTRA_COMMAND_ARGUMENT")
+    , Help.section (Help.metavar "COMMAND_ARGUMENTS")
         [ Pretty.reflow "Additional arguments passed to"
         <+> Help.metavar "COMMAND" <> "."
         ]
@@ -373,20 +417,12 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 --    well.  Having the ability to tell when the command requires additional
 --    arguments, but there is no obvious simple solution.
 --
--- -  Ability to take Dhall function of the following type:
+-- -  Support other types of Dhall expression when invoked with
+--    `--dhall=EXPRESSION`:
 --
---    ```
---    Verbosity -> ColourOutput -> [Text] -> Command
---    ```
---
---    As an argument and execute it.
---
---    ```
---    TOOLSET exec --command=DHALL [ARGUMENTS]
---    ```
---
---    Since Dhall supports imports, the above will work for files and URLs as
---    well.
+--    - Already supported: `Verbosity -> ColourOutput -> [Text] -> Command`
+--    - `Command` -- This would be nice dual to `--print`
+--    - `NamedCommand`
 --
 -- -  Support desktop notifications:
 --
