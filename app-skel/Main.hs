@@ -25,6 +25,7 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid (Last(Last, getLast), (<>))
 import Data.String (fromString)
 import GHC.Generics (Generic)
+import System.Environment (getArgs)
 
 import Data.CaseInsensitive as CI (mk)
 import Data.Monoid.Endo (Endo(appEndo))
@@ -32,8 +33,26 @@ import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
 import qualified Data.Text.IO as Text (writeFile)
 import qualified Dhall (Inject, Interpret, auto, inputFile)
-import qualified Data.Text as Text (unpack)
-import qualified Options.Applicative as Options (flag', help, long, short)
+import Data.Text.Prettyprint.Doc ((<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import qualified Options.Applicative as Options
+    ( Parser
+    , argument
+    , defaultPrefs
+    , execParserPure
+    , flag'
+    , handleParseResult
+    , help
+    , info
+    , long
+    , maybeReader
+    , metavar
+    , option
+    , short
+    , switch
+    )
 import System.Directory
     ( createDirectoryIfMissing
     , doesDirectoryExist
@@ -52,11 +71,12 @@ import System.Editor
     )
 import qualified System.Editor as Editor (editor)
 import System.FilePath (takeDirectory)
-import qualified Turtle
 
+import qualified CommandWrapper.Internal.Subcommand.Help as Help
+import CommandWrapper.Message (Result, defaultLayoutOptions, message)
 import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
-    , Params(Params, config, name)
+    , Params(Params, colour, config, name, subcommand, verbosity)
     , completionInfoFlag
     , dieWith
     , printOptparseCompletionInfoExpression
@@ -109,7 +129,13 @@ instance HaveCompletionInfo Mode where
 main :: IO ()
 main = do
     params <- subcommandParams
-    Turtle.options description parseOptions >>= \case
+    options <- getArgs
+
+    -- TODO: Switch to custom parser so that errors are printed correctly.
+    mode <- Options.handleParseResult
+        $ Options.execParserPure Options.defaultPrefs
+            (Options.info parseOptions mempty) options
+    case mode of
         DefaultMode opts ->
             mainAction params opts
 
@@ -120,11 +146,10 @@ main = do
             notYetImplemented params
 
         Help ->
-            notYetImplemented params
+            let Params{verbosity, colour} = params
+             in message defaultLayoutOptions verbosity colour stdout
+                    (helpMsg params)
   where
-    description =
-        "Generate subcommand skeleton for specific command-wrapper environment"
-
     notYetImplemented params =
         dieWith params stderr 125 "Bug: This is not yet implemented."
 
@@ -191,12 +216,21 @@ generateSkeleton params createParents Template{..} = do
 
     pure targetFile
 
-parseOptions :: Turtle.Parser Mode
+startEditor :: Editor -> FilePath -> IO ()
+startEditor defaultEditor file = do
+    editorCommand <- getEditorCommand Nothing (stdEditorLookupStrategy "nvim")
+        simpleEditorCommand (pure False)
+    execEditorCommand (maybe defaultEditor Editor.editor editorCommand)
+        ( Just File{file = fromString file, line = 0}
+        )
+
+parseOptions :: Options.Parser Mode
 parseOptions = asum
     [ completionInfoFlag <*> pure Help
+    , Options.flag' Help (Options.short 'h' <> Options.long "help")
     , go
-        <$> ( Turtle.arg parseSubcommandName "SUBCOMMAND"
-                "Name of the new subcommand"
+        <$> ( Options.argument (Options.maybeReader parseSubcommandName)
+                (Options.metavar "SUBCOMMAND")
                 <&> \subcommandName -> DefaultModeOptions
                         { subcommandName
                         , language = Nothing
@@ -206,16 +240,16 @@ parseOptions = asum
             )
 
         <*> ( optional
-                ( Turtle.opt parseLanguage "language" 'l'
-                    "Choose programming language of subcommand skeleton"
+                ( Options.option (Options.maybeReader parseLanguage)
+                    ( Options.long "language"
+                    <> Options.short 'l'
+                    )
                 )
                 <&> \language mode -> mode{language}
             )
 
         <*> ( optional
-                ( Turtle.switch "parents" 'p'
-                    "Create parent directories if they do not exist"
-                )
+                (Options.switch (Options.long "parents" <> Options.short 'p'))
                 <&> maybe id \createParents opts ->
                         (opts :: DefaultModeOptions){createParents}
             )
@@ -247,28 +281,77 @@ parseOptions = asum
   where
     go m f g h i = DefaultMode $ foldEndo f g h i `appEndo` m
 
-parseSubcommandName :: Text -> Maybe String
+parseSubcommandName :: String -> Maybe String
 parseSubcommandName = \case
     "" -> Nothing
-    t -> Just (Text.unpack t)
+    t -> Just t
         -- TODO: Check that subcommand name consists of only reasonable ASCII
         --       characters. Any other reasonable restrictions on subcommand
         --       name?
 
-parseLanguage :: Text -> Maybe Language
+parseLanguage :: String -> Maybe Language
 parseLanguage t = case CI.mk t of
     "haskell" -> Just Haskell
     "bash" -> Just Bash
     "dhall" -> Just Dhall
     _ -> Nothing
 
-startEditor :: Editor -> FilePath -> IO ()
-startEditor defaultEditor file = do
-    editorCommand <- getEditorCommand Nothing (stdEditorLookupStrategy "nvim")
-        simpleEditorCommand (pure False)
-    execEditorCommand (maybe defaultEditor Editor.editor editorCommand)
-        ( Just File{file = fromString file, line = 0}
-        )
+helpMsg :: Params -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpMsg Params{name, subcommand} = Pretty.vsep
+    [ Pretty.reflow "Generate subcommand skeleton for specific command-wrapper\
+        \ environment."
+    , ""
+
+    , Help.usageSection name
+        [ subcommand'
+            <+> Pretty.brackets
+                    (Help.longOptionWithArgument "language" "LANGUAGE")
+            <+> Pretty.brackets
+                    ( Help.longOption "parents"
+                    <> "|"
+                    <> Help.longOption "[no-]edit"
+                    )
+            <+> Help.metavar "SUBCOMMAND"
+
+        , subcommand' <+> Help.helpOptions
+
+        , "help" <+> Pretty.brackets (Help.longOption "man") <+> subcommand'
+        ]
+
+    , Help.section ("Options" <> ":")
+        [ Help.optionDescription ["--language=LANGUAGE", "-l LANGUAGE"]
+            [ Pretty.reflow "Choose the programming"
+            , Help.metavar "LANGUAGE", "of", Help.metavar "SUBCOMMAND"
+            , "skeleton."
+            ]
+
+        , Help.optionDescription ["--parents", "-p"]
+            [ Pretty.reflow "Create parent directories if they do not exist."
+            ]
+
+        , Help.optionDescription ["--[no-]edit", "-e", "-E"]
+            [ Pretty.reflow
+                "Open, or not, the created file in an editor afterwards."
+            , "Options", Help.shortOption 'e', "and", Help.shortOption 'E'
+            , Pretty.reflow "are equivalent to", Help.longOption "edit", "and"
+            , Help.longOption "no-edit" <> ",", "respectively."
+            ]
+
+        , Help.optionDescription ["--help", "-h"]
+            [ Pretty.reflow "Print this help and exit. Same as"
+            , Pretty.squotes
+                (Help.toolsetCommand name ("help" <+> subcommand')) <> "."
+            ]
+        ]
+
+    , Help.section (Help.metavar "SUBCOMMAND")
+        [ Pretty.reflow "Name of the new subcommand. Where and how the source\
+            \ code or executable file will be named is configurable."
+        ]
+    , ""
+    ]
+  where
+    subcommand' = fromString subcommand
 
 -- TODO:
 --

@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SKEL(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 5th May 2019
+% 2nd June 2019
 
 
 # NAME
@@ -44,12 +44,9 @@ provides skeletons only for a alimited number of languages, see
 \--parents, -p
 :   Create parent directories if they do not exist.
 
-\--edit, -e
-:   Open the created file in an editor.
-
-\--no-edit, -E
-:   Inverse of `--edit` that is useful if `--edit` mode is configured to be the
-    default.
+\--\[no-]edit, -e, -E
+:   Open, or not, the created file in an editor afterwards.  Options `-e` and
+    `-E` are equivalent to `--edit` and `--no-edit`, respectively.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help skel`.
