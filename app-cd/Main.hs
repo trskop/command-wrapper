@@ -21,37 +21,50 @@ import Control.Applicative (optional)
 import Control.Exception (onException)
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Foldable (for_)
+import Data.Foldable (asum, for_)
 import qualified Data.List as List (nub)
 import Data.Maybe (isJust)
 import Data.Semigroup (Semigroup(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
 import Text.Read (readMaybe)
+import System.Environment (getArgs)
 
 import Data.Text (Text, isPrefixOf)
 import qualified Data.Text as Text (unpack)
 import qualified Dhall (Inject, Interpret, auto, inputFile)
+import Data.Text.Prettyprint.Doc ((<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import qualified Options.Applicative as Options
+    ( Parser
+    , defaultPrefs
+    , execParserPure
+    , flag'
+    , handleParseResult
+    , info
+    , long
+    , metavar
+    , short
+    , strArgument
+    , strOption
+    , switch
+    )
 import System.Posix.Process (executeFile)
 import Turtle
     ( Line
-    , Parser
     , Shell
-    , argPath
     , cd
     , echo
-    , encodeString
     , env
     , export
     , fromText
     , inproc
     , lineToText
     , need
-    , optText
-    , options
     , select
     , sh
-    , switch
     , testdir
     , unsafeTextToLine
     , unset
@@ -60,6 +73,8 @@ import Turtle
 import CommandWrapper.Config.Command (SimpleCommand(..))
 import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Environment as Environment
+import qualified CommandWrapper.Internal.Subcommand.Help as Help
+import CommandWrapper.Message (Result, defaultLayoutOptions, message)
 import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
     , completionInfoFlag
@@ -111,7 +126,14 @@ instance HaveCompletionInfo Mode where
 main :: IO ()
 main = do
     params <- getEnvironment
-    options description (completionInfoFlag <*> parseOptions) >>= \case
+    options <- getArgs
+
+    -- TODO: Switch to custom parser so that errors are printed correctly.
+    mode <- Options.handleParseResult
+        $ Options.execParserPure Options.defaultPrefs
+            (Options.info (completionInfoFlag <*> parseOptions) mempty) options
+
+    case mode of
         DefaultMode strategy query directory ->
             mainAction params strategy query directory
 
@@ -122,10 +144,13 @@ main = do
             notYetImplemented params
 
         Help ->
-            notYetImplemented params
+            let Params
+                    { params = params'@Environment.Params{verbosity, colour}
+                    }
+                    = params
+             in message defaultLayoutOptions verbosity colour stdout
+                    (helpMsg params')
   where
-    description = "Change directory by selecting one from preselected list."
-
     notYetImplemented Params{params} =
         dieWith params stderr 125 "Bug: This is not yet implemented."
 
@@ -213,14 +238,17 @@ evalStrategy params@Params{config, inTmux, inKitty} = \case
   where
     Config{shell, terminalEmulator} = config
 
-parseOptions :: Parser Mode
-parseOptions =
-    go  <$> shellSwitch
+parseOptions :: Options.Parser Mode
+parseOptions = asum
+    [ Options.flag' Help (Options.long "help" <> Options.short 'h')
+    , go
+        <$> shellSwitch
         <*> tmuxSwitch
         <*> kittySwitch
         <*> terminalEmulator
         <*> optional queryOption
         <*> optional dirArgument
+    ]
   where
     go runShell runTmux runKitty runTerminalEmulator query dir = DefaultMode
         (   (if runShell then ShellOnly else Auto)
@@ -229,25 +257,21 @@ parseOptions =
             <> (if runTerminalEmulator then TerminalEmulatorOnly else Auto)
         )
         query
-        (fromString . encodeString <$> dir)
+        dir
 
-    shellSwitch = switch "shell" 's'
-        "Execute a subshell even if in a Tmux session or Kitty terminal."
+    shellSwitch = Options.switch (Options.long "shell" <> Options.short 's')
 
-    tmuxSwitch = switch "tmux" 't'
-        "Create a new Tmux window, or fail if not in Tmux session."
+    tmuxSwitch = Options.switch (Options.long "tmux" <> Options.short 't')
 
-    kittySwitch = switch "kitty" 'k'
-        "Create a new Kitty window, or fail if not runing in Kitty terminal."
+    kittySwitch = Options.switch (Options.long "kitty" <> Options.short 'k')
 
-    terminalEmulator = switch "terminal" 'e'
-        "Open a new terminal emulator window."
+    terminalEmulator =
+        Options.switch (Options.long "terminal" <> Options.short 'e')
 
-    queryOption = optText "query" 'q'
-        "Start the search for a directory with the given QUERY."
+    queryOption = Options.strOption
+        (Options.long "query" <> Options.short 'q' <> Options.metavar "QUERY")
 
-    dirArgument = argPath "DIR"
-        "Use DIR instead of searching for one in a configured list."
+    dirArgument = Options.strArgument (Options.metavar "DIRECTORY")
 
 data Action
     = RunShell (Maybe Text)
@@ -343,7 +367,8 @@ executeAction params directory = \case
 
         liftIO $ executeFile command True arguments Nothing
             `onException`
-                die params 126 ("'" <> fromString command <> "': Failed to execute.")
+                die params 126
+                    ("'" <> fromString command <> "': Failed to execute.")
 
     showCommand cmd args = fromString cmd <> " " <> fromString (show args)
 
@@ -369,6 +394,73 @@ executeAction params directory = \case
 
 die :: MonadIO io => Params void -> Int -> Text -> io a
 die Params{params} n m = liftIO (dieWith params stderr n m)
+
+helpMsg :: Environment.Params -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpMsg Environment.Params{name, subcommand} = Pretty.vsep
+    [ Pretty.reflow "Change directory by selecting one from preselected list."
+    , ""
+
+    , Help.usageSection name
+        [ subcommand'
+            <+> Pretty.brackets
+                    ( Help.longOption "shell"
+                    <> "|"
+                    <> Help.longOption "tmux"
+                    <> "|"
+                    <> Help.longOption "kitty"
+                    <> "|"
+                    <> Help.longOption "terminal"
+                    )
+            <+> Pretty.brackets (Help.longOptionWithArgument "query" "QUERY")
+            <+> Pretty.brackets (Help.metavar "DIRECTORY")
+
+        , subcommand' <+> Help.helpOptions
+
+        , "help" <+> Pretty.brackets (Help.longOption "man") <+> subcommand'
+        ]
+
+    , Help.section ("Options" <> ":")
+        [ Help.optionDescription ["--shell", "-s"]
+            [ Pretty.reflow "Execute a subshell even if in a Tmux session or\
+                \ Kitty terminal."
+            ]
+
+        , Help.optionDescription ["--tmux", "-t"]
+            [ Pretty.reflow "Create a new Tmux window, or fail if not in Tmux\
+                \ session."
+            ]
+
+        , Help.optionDescription ["--kitty", "-k"]
+            [ Pretty.reflow "Create a new Kitty window, or fail if not runing\
+                \ in Kitty terminal."
+            ]
+
+        , Help.optionDescription ["--terminal", "-e"]
+            [ Pretty.reflow "Open a new terminal emulator window."
+            ]
+
+        , Help.optionDescription ["--query=QUERY", "-q QUERY"]
+            [ Pretty.reflow "Start the search for a directory with the given"
+            , Help.metavar "QUERY" <> "."
+            ]
+
+        , Help.optionDescription ["--help", "-h"]
+            [ Pretty.reflow "Print this help and exit. Same as"
+            , Pretty.squotes
+                (Help.toolsetCommand name ("help" <+> subcommand')) <> "."
+            ]
+        ]
+
+    , Help.section (Help.metavar "DIRECTORY")
+        [ Pretty.hsep
+            [ "Use", Help.metavar "DIRECTORY"
+            , Pretty.reflow "instead of searching for one in a configured list."
+            ]
+        ]
+    , ""
+    ]
+  where
+    subcommand' = fromString subcommand
 
 -- TODO:
 --
