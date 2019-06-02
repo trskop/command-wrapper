@@ -1,10 +1,8 @@
 let SkelLanguage : Type = <Bash | Dhall | Haskell >
 
-let SkelTemplate : Type =
-      { targetFile : Text
-      , executable : Bool
-      , template : Text
-      }
+let Editor : Type = ./Editor
+
+let SkelTemplate : Type = ./SkelTemplate
 
 let SkelConfig : Type =
       { template : ∀(language : SkelLanguage) → SkelTemplate
@@ -12,11 +10,12 @@ let SkelConfig : Type =
       -- Open the newly created file in an editor?
       , editAfterwards : Bool
 
-      , defaultLanguage : Optioal SkelLanguage
+      , editor : Optional Editor
+
+      , defaultLanguage : Optional SkelLanguage
       }
 
 in  { Language = SkelLanguage
-    , Template = SkelTemplate
     , Config = SkelConfig
     }
 

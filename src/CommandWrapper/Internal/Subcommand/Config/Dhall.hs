@@ -1,6 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      $Header$
 -- Description: Dhall operations provided by the config command.

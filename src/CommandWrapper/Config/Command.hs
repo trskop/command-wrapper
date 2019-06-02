@@ -28,6 +28,7 @@ import qualified Dhall
     , InputType(InputType, declared, embed)
     , Interpret
     , InterpretOptions(InterpretOptions, fieldModifier)
+    , RecordInputType
     , inputRecord
     , inputFieldWith
     )
@@ -88,6 +89,7 @@ instance Dhall.Inject Command where
         adapt Command{..} =
             (command, (arguments, (environment, (searchPath, workingDirectory))))
 
+        field :: Text -> Dhall.InputType a -> Dhall.RecordInputType a
         field = Dhall.inputFieldWith . fieldModifier
 
 data SimpleCommand = SimpleCommand
@@ -108,6 +110,7 @@ instance Dhall.Inject SimpleCommand where
       where
         adapt SimpleCommand{..} = (command, (arguments, environment))
 
+        field :: Text -> Dhall.InputType a -> Dhall.RecordInputType a
         field = Dhall.inputFieldWith . fieldModifier
 
 -- {{{ Helper Functions -- Do Not Export --------------------------------------

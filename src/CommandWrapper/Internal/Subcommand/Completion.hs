@@ -1,7 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion
 -- Description: Implementation of internal subcommand that provides command

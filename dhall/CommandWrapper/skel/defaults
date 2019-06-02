@@ -1,0 +1,17 @@
+let CommandWrapper = ../Types.dhall
+
+in    λ ( template
+        :   ∀(language : CommandWrapper.SkelLanguage)
+          → CommandWrapper.SkelTemplate
+        )
+    → { template =
+          template
+      , editAfterwards =
+          False
+      , editor =
+          None CommandWrapper.Editor
+      , defaultLanguage =
+          None CommandWrapper.SkelLanguage
+      }
+
+-- vim: filetype=dhall

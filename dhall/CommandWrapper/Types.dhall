@@ -10,13 +10,14 @@ in  { Command = ./Type/Command
     , ColourOutput = ./Type/ColourOutput
     , Schema = ./Type/Schema
     , Shell = ./Type/Shell
+    , Editor = ./Type/Editor
 
     -- Toolset default (main/global) configuration
     , ToolsetConfig = ./Type/ToolsetConfig
 
     -- Configuration for `skel` subcommand
+    , SkelTemplate = ./Type/SkelTemplate
     , SkelLanguage = Skel.Language
-    , SkelTemplate = Skel.Template
     , SkelConfig = Skel.Config
 
     -- Configuration for `cd` subcommand

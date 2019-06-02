@@ -41,6 +41,13 @@ which is described in its own manual page
 Documentation is in the form of manual pages written in Markdown and compiled
 using `pandoc`.  See [`man/`](./man/) directory.
 
+When installed these can be viewed using:
+
+```
+TOOLSET_COMMAND help --man [SUBCOMMAND|TOPIC]
+```
+
+
 ### Basic Usage
 
 ```

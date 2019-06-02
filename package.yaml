@@ -37,8 +37,11 @@ default-extensions:
   - RankNTypes
   - RecordWildCards
   - ScopedTypeVariables
+  - StandaloneDeriving
   - TupleSections
   - TypeApplications
+  - TypeFamilies
+  - TypeOperators
 
 dependencies:
   - base
@@ -111,6 +114,7 @@ executables:
     dependencies:
       - *this
       - turtle
+      - open-in-editor
 
   command-wrapper-exec:
     source-dirs: app-exec

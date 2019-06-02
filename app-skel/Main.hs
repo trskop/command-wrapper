@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      Main
 -- Description: CommandWrapper subcommand for generating subcommand skeletons
@@ -34,6 +33,7 @@ import Data.Text (Text)
 import qualified Data.Text.IO as Text (writeFile)
 import qualified Dhall (Inject, Interpret, auto, inputFile)
 import qualified Data.Text as Text (unpack)
+import qualified Options.Applicative as Options (flag', help, long, short)
 import System.Directory
     ( createDirectoryIfMissing
     , doesDirectoryExist
@@ -42,6 +42,15 @@ import System.Directory
     , setPermissions
     )
 import qualified System.Directory as Directory (executable)
+import System.Editor
+    ( Editor
+    , File(..)
+    , execEditorCommand
+    , getEditorCommand
+    , simpleEditorCommand
+    , stdEditorLookupStrategy
+    )
+import qualified System.Editor as Editor (editor)
 import System.FilePath (takeDirectory)
 import qualified Turtle
 
@@ -66,10 +75,9 @@ data Language
 
 data Config = Config
     { template :: Language -> Template
-    , editAfterwards :: Bool
-    -- TODO: Editor settings to override environment.
-
     , defaultLanguage :: Maybe Language
+    , editAfterwards :: Bool
+    , editor :: Maybe Editor
     }
   deriving stock (Generic)
   deriving anyclass (Dhall.Interpret)
@@ -136,7 +144,7 @@ mainAction
         mkConfig <- Dhall.inputFile Dhall.auto configFile
 
         let subcommand = wrapperName <> "-" <> subcommandName
-            Config{template, editAfterwards, defaultLanguage} =
+            Config{template, defaultLanguage, editAfterwards, editor} =
                 mkConfig
                     (fromString @Text wrapperName)
                     (fromString @Text subcommandName)
@@ -149,9 +157,11 @@ mainAction
         putStrLn ("Successfully created '" <> createdFile <> "'")
 
         when (fromMaybe editAfterwards possiblyEditAfterwards)
-            $ startEditor createdFile
+            $ startEditor (fromMaybe defaultEditor editor) createdFile
     where
       (<<>>) = (getLast .) . ((<>) `on` Last)
+
+      defaultEditor = Editor.editor (simpleEditorCommand "vi")
 
 generateSkeleton :: Params -> Bool -> Template -> IO FilePath
 generateSkeleton params createParents Template{..} = do
@@ -188,11 +198,11 @@ parseOptions = asum
         <$> ( Turtle.arg parseSubcommandName "SUBCOMMAND"
                 "Name of the new subcommand"
                 <&> \subcommandName -> DefaultModeOptions
-                    { subcommandName
-                    , language = Nothing
-                    , editAfterwards = Nothing
-                    , createParents = False
-                    }
+                        { subcommandName
+                        , language = Nothing
+                        , editAfterwards = Nothing
+                        , createParents = False
+                        }
             )
 
         <*> ( optional
@@ -207,25 +217,31 @@ parseOptions = asum
                     "Create parent directories if they do not exist"
                 )
                 <&> maybe id \createParents opts ->
-                    (opts :: DefaultModeOptions){createParents}
+                        (opts :: DefaultModeOptions){createParents}
             )
 
         <*> ( optional
-                ( Turtle.switch "edit" 'e'
-                    "Open the created file in an editor afterwards"
+                ( Options.flag' True $ mconcat
+                    [ Options.long "edit"
+                    , Options.short 'e'
+                    , Options.help
+                        "Open the created file in an editor afterwards"
+                    ]
                 )
                 <&> \editAfterwards opts ->
-                    (opts :: DefaultModeOptions){editAfterwards}
+                        (opts :: DefaultModeOptions){editAfterwards}
             )
 
         <*> ( optional
-                ( Turtle.switch "no-edit" 'E'
-                    "Don't open the created file in an editor afterwards"
+                ( Options.flag' False $ mconcat
+                    [ Options.long "no-edit"
+                    , Options.short 'E'
+                    , Options.help
+                        "Don't open the created file in an editor afterwards"
+                    ]
                 )
-                <&> \doNotEditAfterwards opts ->
-                    (opts :: DefaultModeOptions)
-                        { editAfterwards = not <$> doNotEditAfterwards
-                        }
+                <&> \editAfterwards opts ->
+                        (opts :: DefaultModeOptions){editAfterwards}
             )
     ]
   where
@@ -246,8 +262,13 @@ parseLanguage t = case CI.mk t of
     "dhall" -> Just Dhall
     _ -> Nothing
 
-startEditor :: FilePath -> IO ()
-startEditor _ = pure () -- TODO: Implement
+startEditor :: Editor -> FilePath -> IO ()
+startEditor defaultEditor file = do
+    editorCommand <- getEditorCommand Nothing (stdEditorLookupStrategy "nvim")
+        simpleEditorCommand (pure False)
+    execEditorCommand (maybe defaultEditor Editor.editor editorCommand)
+        ( Just File{file = fromString file, line = 0}
+        )
 
 -- TODO:
 --
@@ -264,11 +285,3 @@ startEditor _ = pure () -- TODO: Implement
 --     ```
 --     TOOLSET skel {--config|-c} {--toolset|SUBCOMMAND}
 --     ```
---
--- - Toolset skeleton, i.e. create:
---
---     - Toolset symbolic link to Command Wrapper.
---     - Lib and config directories.
---     - Initial configuration.
---
--- - Allow users to specify default lanugage in the configuration file.

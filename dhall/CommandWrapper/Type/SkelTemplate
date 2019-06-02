@@ -1,0 +1,8 @@
+let SkelTemplate : Type =
+      { targetFile : Text
+      , executable : Bool
+      , template : Text
+      }
+in  SkelTemplate
+
+-- vim: filetype=dhall

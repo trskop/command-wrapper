@@ -45,11 +45,11 @@ provides skeletons only for a alimited number of languages, see
 :   Create parent directories if they do not exist.
 
 \--edit, -e
-:   Open the created file in an editor.  **TODO: Currently not implemented!**
+:   Open the created file in an editor.
 
 \--no-edit, -E
 :   Inverse of `--edit` that is useful if `--edit` mode is configured to be the
-    default.  **TODO: Currently not implemented!**
+    default.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help skel`.

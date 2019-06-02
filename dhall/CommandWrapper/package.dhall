@@ -7,6 +7,13 @@
     , withExtraArguments = ./command/withExtraArguments
     }
 
+, editor =
+    { colon-separated = ./editor/colon-separated
+    , some = ./editor/some
+    , standard = ./editor/standard
+    , visual-studio-code = ./editor/visual-studio-code
+    }
+
 -- HTTP/HTTPS URL schemas
 , schema =
     { fold = ./schema/fold
@@ -47,7 +54,8 @@
         } 
 
     , skel =
-        { default-bash-skel = ./skel/default-bash-skel
+        { defaults = ./skel/defaults
+        , default-bash-skel = ./skel/default-bash-skel
         , default-dhall-skel = ./skel/default-dhall-skel
         , default-haskell-skel = ./skel/default-haskell-skel
         }
