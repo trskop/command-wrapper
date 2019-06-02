@@ -20,8 +20,10 @@ module Main (main)
 import Control.Applicative (optional)
 import Control.Monad (unless, when)
 import Data.Foldable (asum)
+import Data.Function (on)
 import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
+import Data.Monoid (Last(Last, getLast), (<>))
 import Data.String (fromString)
 import GHC.Generics (Generic)
 
@@ -66,6 +68,8 @@ data Config = Config
     { template :: Language -> Template
     , editAfterwards :: Bool
     -- TODO: Editor settings to override environment.
+
+    , defaultLanguage :: Maybe Language
     }
   deriving stock (Generic)
   deriving anyclass (Dhall.Interpret)
@@ -132,13 +136,13 @@ mainAction
         mkConfig <- Dhall.inputFile Dhall.auto configFile
 
         let subcommand = wrapperName <> "-" <> subcommandName
-            Config{template, editAfterwards} =
+            Config{template, editAfterwards, defaultLanguage} =
                 mkConfig
                     (fromString @Text wrapperName)
                     (fromString @Text subcommandName)
                     (fromString @Text subcommand)
 
-            language = fromMaybe Haskell possiblyLanguage
+            language = fromMaybe Haskell (defaultLanguage <<>> possiblyLanguage)
 
         createdFile <- generateSkeleton params createParents (template language)
 
@@ -146,6 +150,8 @@ mainAction
 
         when (fromMaybe editAfterwards possiblyEditAfterwards)
             $ startEditor createdFile
+    where
+      (<<>>) = (getLast .) . ((<>) `on` Last)
 
 generateSkeleton :: Params -> Bool -> Template -> IO FilePath
 generateSkeleton params createParents Template{..} = do
@@ -264,3 +270,5 @@ startEditor _ = pure () -- TODO: Implement
 --     - Toolset symbolic link to Command Wrapper.
 --     - Lib and config directories.
 --     - Initial configuration.
+--
+-- - Allow users to specify default lanugage in the configuration file.

@@ -11,6 +11,8 @@ let SkelConfig : Type =
 
       -- Open the newly created file in an editor?
       , editAfterwards : Bool
+
+      , defaultLanguage : Optioal SkelLanguage
       }
 
 in  { Language = SkelLanguage
