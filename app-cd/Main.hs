@@ -17,19 +17,20 @@
 module Main (main)
   where
 
-import Control.Applicative (optional)
+import Control.Applicative (optional, many)
 import Control.Exception (onException)
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (asum, for_)
-import qualified Data.List as List (nub)
-import Data.Maybe (isJust)
+import qualified Data.List as List (filter, nub, isPrefixOf)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Semigroup (Semigroup(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
 import Text.Read (readMaybe)
 import System.Environment (getArgs)
 
+import Data.CaseInsensitive as CI (mk)
 import Data.Text (Text, isPrefixOf)
 import qualified Data.Text as Text (unpack)
 import qualified Dhall (Inject, Interpret, auto, inputFile)
@@ -39,18 +40,23 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Options.Applicative as Options
     ( Parser
+    , auto
     , defaultPrefs
     , execParserPure
     , flag'
     , handleParseResult
     , info
+    , internal
     , long
+    , maybeReader
     , metavar
+    , option
     , short
     , strArgument
     , strOption
     , switch
     )
+import Safe (atMay, lastDef)
 import System.Posix.Process (executeFile)
 import Turtle
     ( Line
@@ -75,11 +81,14 @@ import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Environment as Environment
 import qualified CommandWrapper.Internal.Subcommand.Help as Help
 import CommandWrapper.Message (Result, defaultLayoutOptions, message)
+import CommandWrapper.Options.Optparse (bashCompleter)
+import qualified CommandWrapper.Options.Shell as Options (Shell)
+import qualified CommandWrapper.Options.Shell as Options.Shell (parse)
 import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
     , completionInfoFlag
     , dieWith
-    , printOptparseCompletionInfoExpression
+    , printCommandWrapperStyleCompletionInfoExpression
     , stderr
     , stdout
     , subcommandParams
@@ -117,7 +126,7 @@ data Params config = Params
 data Mode
     = DefaultMode Strategy (Maybe Text) (Maybe Text)
     | CompletionInfo
-    | Completion Word [String]
+    | Completion Word Options.Shell [String]
     | Help
 
 instance HaveCompletionInfo Mode where
@@ -138,10 +147,10 @@ main = do
             mainAction params strategy query directory
 
         CompletionInfo ->
-            printOptparseCompletionInfoExpression stdout
+            printCommandWrapperStyleCompletionInfoExpression stdout
 
-        Completion _ _ ->
-            notYetImplemented params
+        Completion index _shell words' ->
+            doCompletion params index words'
 
         Help ->
             let Params
@@ -150,9 +159,6 @@ main = do
                     = params
              in message defaultLayoutOptions verbosity colour stdout
                     (helpMsg params')
-  where
-    notYetImplemented Params{params} =
-        dieWith params stderr 125 "Bug: This is not yet implemented."
 
 mainAction :: Params FilePath -> Strategy -> Maybe Text -> Maybe Text -> IO ()
 mainAction params@Params{config = configFile} strategy query directory =
@@ -241,6 +247,7 @@ evalStrategy params@Params{config, inTmux, inKitty} = \case
 parseOptions :: Options.Parser Mode
 parseOptions = asum
     [ Options.flag' Help (Options.long "help" <> Options.short 'h')
+    , completionOptions
     , go
         <$> shellSwitch
         <*> tmuxSwitch
@@ -272,6 +279,14 @@ parseOptions = asum
         (Options.long "query" <> Options.short 'q' <> Options.metavar "QUERY")
 
     dirArgument = Options.strArgument (Options.metavar "DIRECTORY")
+
+completionOptions :: Options.Parser Mode
+completionOptions =
+    Options.flag' Completion (Options.long "completion" <> Options.internal)
+    <*> Options.option Options.auto (Options.long "index" <> Options.internal)
+    <*> Options.option (Options.maybeReader $ Options.Shell.parse . CI.mk)
+            (Options.long "shell" <> Options.internal)
+    <*> many (Options.strArgument (Options.metavar "WORD" <> Options.internal))
 
 data Action
     = RunShell (Maybe Text)
@@ -394,6 +409,22 @@ executeAction params directory = \case
 
 die :: MonadIO io => Params void -> Int -> Text -> io a
 die Params{params} n m = liftIO (dieWith params stderr n m)
+
+doCompletion :: Params a -> Word -> [String] -> IO ()
+doCompletion Params{} index words' = do
+    mapM_ putStrLn (List.filter (pat `List.isPrefixOf`) allOptions)
+    bashCompleter "directory" "" pat >>= mapM_ putStrLn
+  where
+    pat = fromMaybe (lastDef "" words') (atMay words' (fromIntegral index))
+
+    allOptions =
+        [ "-s", "--shell"
+        , "-t", "--tmux"
+        , "-k", "--kitty"
+        , "-e", "--terminal"
+        , "-h", "--help"
+        , "-q", "--query="
+        ]
 
 helpMsg :: Environment.Params -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpMsg Environment.Params{name, subcommand} = Pretty.vsep

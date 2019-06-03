@@ -16,11 +16,12 @@
 module Main (main)
   where
 
-import Control.Applicative (optional)
+import Control.Applicative (many, optional)
 import Control.Monad (unless, when)
 import Data.Foldable (asum)
 import Data.Function (on)
 import Data.Functor ((<&>))
+import qualified Data.List as List (filter, isPrefixOf)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Last(Last, getLast), (<>))
 import Data.String (fromString)
@@ -40,17 +41,20 @@ import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Options.Applicative as Options
     ( Parser
     , argument
+    , auto
     , defaultPrefs
     , execParserPure
     , flag'
     , handleParseResult
     , help
     , info
+    , internal
     , long
     , maybeReader
     , metavar
     , option
     , short
+    , strArgument
     , switch
     )
 import System.Directory
@@ -61,6 +65,7 @@ import System.Directory
     , setPermissions
     )
 import qualified System.Directory as Directory (executable)
+import Safe (atMay, lastDef)
 import System.Editor
     ( Editor
     , File(..)
@@ -74,12 +79,14 @@ import System.FilePath (takeDirectory)
 
 import qualified CommandWrapper.Internal.Subcommand.Help as Help
 import CommandWrapper.Message (Result, defaultLayoutOptions, message)
+import CommandWrapper.Options.Shell (Shell)
+import CommandWrapper.Options.Shell as Shell (parse)
 import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
     , Params(Params, colour, config, name, subcommand, verbosity)
     , completionInfoFlag
     , dieWith
-    , printOptparseCompletionInfoExpression
+    , printCommandWrapperStyleCompletionInfoExpression
     , stderr
     , stdout
     , subcommandParams
@@ -120,7 +127,7 @@ data DefaultModeOptions = DefaultModeOptions
 data Mode
     = DefaultMode DefaultModeOptions
     | CompletionInfo
-    | Completion Word [String]
+    | Completion Word Shell [String]
     | Help
 
 instance HaveCompletionInfo Mode where
@@ -140,18 +147,15 @@ main = do
             mainAction params opts
 
         CompletionInfo ->
-            printOptparseCompletionInfoExpression stdout
+            printCommandWrapperStyleCompletionInfoExpression stdout
 
-        Completion _ _ ->
-            notYetImplemented params
+        Completion index _shell words' ->
+            doCompletion params index words'
 
         Help ->
             let Params{verbosity, colour} = params
              in message defaultLayoutOptions verbosity colour stdout
                     (helpMsg params)
-  where
-    notYetImplemented params =
-        dieWith params stderr 125 "Bug: This is not yet implemented."
 
 mainAction :: Params -> DefaultModeOptions -> IO ()
 mainAction
@@ -228,6 +232,8 @@ parseOptions :: Options.Parser Mode
 parseOptions = asum
     [ completionInfoFlag <*> pure Help
     , Options.flag' Help (Options.short 'h' <> Options.long "help")
+    , completionOptions
+
     , go
         <$> ( Options.argument (Options.maybeReader parseSubcommandName)
                 (Options.metavar "SUBCOMMAND")
@@ -281,6 +287,14 @@ parseOptions = asum
   where
     go m f g h i = DefaultMode $ foldEndo f g h i `appEndo` m
 
+completionOptions :: Options.Parser Mode
+completionOptions =
+    Options.flag' Completion (Options.long "completion" <> Options.internal)
+    <*> Options.option Options.auto (Options.long "index" <> Options.internal)
+    <*> Options.option (Options.maybeReader $ Shell.parse . CI.mk)
+            (Options.long "shell" <> Options.internal)
+    <*> many (Options.strArgument (Options.metavar "WORD" <> Options.internal))
+
 parseSubcommandName :: String -> Maybe String
 parseSubcommandName = \case
     "" -> Nothing
@@ -295,6 +309,19 @@ parseLanguage t = case CI.mk t of
     "bash" -> Just Bash
     "dhall" -> Just Dhall
     _ -> Nothing
+
+doCompletion :: Params -> Word -> [String] -> IO ()
+doCompletion Params{} index words' =
+    mapM_ putStrLn (List.filter (pat `List.isPrefixOf`) allOptions)
+  where
+    pat = fromMaybe (lastDef "" words') (atMay words' (fromIntegral index))
+
+    allOptions =
+        [ "-l", "--language=bash", "--language=dhall", "--language=haskell"
+        , "-p", "--parents"
+        , "-e", "--edit", "-E", "--no-edit"
+        , "-h", "--help"
+        ]
 
 helpMsg :: Params -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpMsg Params{name, subcommand} = Pretty.vsep
