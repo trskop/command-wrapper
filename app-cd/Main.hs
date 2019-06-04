@@ -247,7 +247,6 @@ evalStrategy params@Params{config, inTmux, inKitty} = \case
 parseOptions :: Options.Parser Mode
 parseOptions = asum
     [ Options.flag' Help (Options.long "help" <> Options.short 'h')
-    , completionOptions
     , go
         <$> shellSwitch
         <*> tmuxSwitch
@@ -255,6 +254,7 @@ parseOptions = asum
         <*> terminalEmulator
         <*> optional queryOption
         <*> optional dirArgument
+    , completionOptions
     ]
   where
     go runShell runTmux runKitty runTerminalEmulator query dir = DefaultMode
