@@ -11,12 +11,13 @@
 --
 -- Implementation of internal command named @config@.
 module CommandWrapper.Internal.Subcommand.Config
-    ( ConfigMode(..)
-    , config
+    ( config
     , configSubcommandHelp
-    , configCompletion
+    , configSubcommandCompleter
     )
   where
+
+import Prelude (fromIntegral)
 
 import Control.Applicative ((<*>), (<|>), many, optional, pure)
 --import Control.Monad ((>>=), unless)
@@ -28,16 +29,18 @@ import Data.Function (($), (.), const)
 import Data.Functor (Functor, (<$>), (<&>))
 import qualified Data.List as List
     ( any
+    , dropWhile
     , elem
     , filter
     , isPrefixOf
     , or
-    , dropWhile
+    , take
     )
 --import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Maybe (Maybe(Just))
+import Data.Maybe (Maybe(Just), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
 import Data.String (String)
+import Data.Word (Word)
 import GHC.Generics (Generic)
 --import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (IO{-, stderr-}, stdout)
@@ -74,7 +77,7 @@ import qualified Options.Applicative as Options
     , strOption
     )
 import qualified Options.Applicative.Standard as Options (outputOption)
-import Safe (lastMay)
+import Safe (atMay, lastMay)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
@@ -104,6 +107,7 @@ import qualified CommandWrapper.Options.Optparse as Options
 --  , splitArguments
 --  , splitArguments'
     )
+import qualified CommandWrapper.Options.Shell as Options (Shell)
 
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Diff(..)
@@ -663,6 +667,19 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 
     , ""
     ]
+
+configSubcommandCompleter
+    :: AppNames
+    -> Global.Config
+    -> Options.Shell
+    -> Word
+    -> [String]
+    -> IO [String]
+configSubcommandCompleter appNames cfg _shell index words =
+    configCompletion appNames cfg wordsBeforePattern pat
+  where
+    wordsBeforePattern = List.take (fromIntegral index) words
+    pat = fromMaybe "" $ atMay words (fromIntegral index)
 
 configCompletion
     :: AppNames

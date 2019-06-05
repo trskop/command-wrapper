@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Internal.Help
 -- Description: Implementation of internal command named help
@@ -10,9 +11,9 @@
 --
 -- Implementation of internal command named @help@.
 module CommandWrapper.Internal.Subcommand.Help
-    ( HelpMode(..)
-    , help
+    ( help
     , helpSubcommandHelp
+    , helpSubcommandCompleter
 
     -- * Utilities
     , (<++>)
@@ -35,15 +36,27 @@ module CommandWrapper.Internal.Subcommand.Help
     )
   where
 
-import Control.Applicative ((<|>), optional)
-import Data.Foldable (traverse_)
-import Data.Functor ((<&>))
+import Prelude (fromIntegral)
+
+import Control.Applicative ((<*>), (<|>), optional, pure)
+import Control.Monad ((>>=))
+import Data.Bool (Bool(True), otherwise)
+import Data.Char (Char)
+import qualified Data.Char as Char (toLower)
+import Data.Eq ((==))
+import Data.Foldable (null, traverse_)
+import Data.Function (($), (.), const)
+import Data.Functor (Functor, (<$>), (<&>), fmap)
+import qualified Data.List as List (elem, filter, isPrefixOf, nub, take)
 import qualified Data.List.NonEmpty as NonEmpty (toList)
-import Data.Maybe (listToMaybe, maybe)
-import Data.Monoid (Endo(Endo))
-import Data.String (fromString)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe, listToMaybe, maybe)
+import Data.Monoid (Endo(Endo), mempty)
+import Data.Semigroup ((<>))
+import Data.String (String, fromString)
+import Data.Word (Word)
 import GHC.Generics (Generic)
-import System.IO (stderr, stdout)
+import System.IO (IO, putStrLn, stderr, stdout)
+import Text.Show (Show, show)
 
 import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
@@ -69,6 +82,7 @@ import qualified Options.Applicative as Options
     , short
     , strArgument
     )
+import Safe (atMay, headMay)
 import System.Directory (findExecutablesInDirectories)
 import System.Posix.Process (executeFile)
 
@@ -76,6 +90,7 @@ import CommandWrapper.Config.Global (Config(..), getAliases)
 import CommandWrapper.Environment (AppNames(AppNames, usedName, names))
 import qualified CommandWrapper.External as External
     ( executeCommand
+    , findSubcommands
     , getSearchPath
     )
 import CommandWrapper.Internal.Utils (runMain)
@@ -85,10 +100,11 @@ import CommandWrapper.Message
     , defaultLayoutOptions
     , message
     )
-import CommandWrapper.Options.Alias (applyAlias)
+import CommandWrapper.Options.Alias (Alias(alias), applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     )
+import qualified CommandWrapper.Options.Shell as Options (Shell)
 
 
 data HelpMode a
@@ -456,3 +472,52 @@ toolsetCommand toolset doc = Pretty.annotate magenta (pretty toolset <+> doc)
 
 (<++>) :: Pretty.Doc ann -> Pretty.Doc ann -> Pretty.Doc ann
 x <++> y = x <> Pretty.softline <> y
+
+helpSubcommandCompleter
+    :: AppNames
+    -> Config
+    -> Options.Shell
+    -> Word
+    -> [String]
+    -> IO [String]
+helpSubcommandCompleter  appNames config _shell index words =
+    helpCompletion appNames config hadDashDash pat
+  where
+    wordsBeforePattern = List.take (fromIntegral index) words
+    hadDashDash = "--" `List.elem` wordsBeforePattern
+    pat = fromMaybe "" $ atMay words (fromIntegral index)
+
+-- | Command line completion for internal @help@ subcommand.
+helpCompletion :: AppNames -> Config -> Bool -> String -> IO [String]
+helpCompletion appNames config hadDashDash pat
+  | hadDashDash = subcmds
+  | null pat    = (helpOptions' <>) <$> subcmds
+  | isOption    = pure $ List.filter (pat `List.isPrefixOf`) helpOptions'
+  | otherwise   = subcmds
+  where
+    isOption = headMay pat == Just '-'
+    helpOptions' = ["--help", "-h", "--"]
+    subcmds = findSubcommands appNames config pat
+
+-- | Lookup external and internal subcommands matching pattern (prefix).
+findSubcommands
+    :: AppNames
+    -> Config
+    -> String
+    -- ^ Pattern (prefix) to match subcommand name against.
+    -> IO [String]
+findSubcommands appNames config pat =
+    -- TODO: Function 'findSubcommands' is also defined in
+    -- CommandWrapper.Internal.Subcommand.Completion module.
+    List.filter (fmap Char.toLower pat `List.isPrefixOf`) <$> getSubcommands
+  where
+    -- | List all available external and internal subcommands.
+    getSubcommands :: IO [String]
+    getSubcommands = do
+        extCmds <- External.findSubcommands appNames config
+
+        let aliases = alias <$> getAliases config
+            -- TODO: Get rid of hardcoded list of internal subcommands.
+            internalCommands = ["help", "config", "completion", "version"]
+
+        pure (List.nub $ aliases <> internalCommands <> extCmds)

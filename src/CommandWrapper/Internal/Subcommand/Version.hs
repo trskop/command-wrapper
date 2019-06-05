@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE PatternSynonyms #-}
 -- |
 -- Module:      CommandWrapper.Internal.Version
@@ -12,25 +13,31 @@
 -- Implementation of internal command named @version@.
 module CommandWrapper.Internal.Subcommand.Version
     ( VersionInfo(..)
-    , VersionMode(..)
     , PrettyVersion(..)
     , version
-    , versionSubcommandHelp
     , versionQQ
-    , versionCompletion
+    , versionSubcommandCompleter
+    , versionSubcommandHelp
     )
   where
 
-import Control.Applicative ((<|>), optional)
+import Prelude (fromIntegral)
+
+import Control.Applicative ((<*>), (<|>), optional, pure)
 import Data.Bool ((||), not, otherwise)
 import Data.Foldable (null)
-import Data.Functor ((<&>))
-import qualified Data.List as List (elem, filter, isPrefixOf)
-import Data.Monoid (Endo(Endo, appEndo))
-import Data.String (fromString)
+import Data.Function (($), (.), const)
+import Data.Functor (Functor, (<$>), (<&>))
+import qualified Data.List as List (elem, filter, isPrefixOf, take)
+import Data.Maybe (Maybe(Just), fromMaybe)
+import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
+import Data.Semigroup ((<>))
+import Data.String (String, fromString)
 import Data.Version (showVersion)
+import Data.Word (Word)
 import GHC.Generics (Generic)
-import System.IO (Handle, IOMode(WriteMode), stdout, withFile)
+import System.IO (Handle, IO, IOMode(WriteMode), stdout, withFile)
+import Text.Show (Show)
 
 import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Output
@@ -58,7 +65,7 @@ import qualified Options.Applicative as Options
     , short
     )
 import qualified Options.Applicative.Standard as Options (outputOption)
-import Safe (headMay, lastMay)
+import Safe (atMay, headMay, lastMay)
 
 import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
@@ -272,13 +279,24 @@ versionSubcommandHelp AppNames{usedName} = Pretty.vsep
     , ""
     ]
 
-versionCompletion
+versionSubcommandCompleter
     :: AppNames
     -> Config
+    -> Options.Shell
+    -> Word
     -> [String]
+    -> IO [String]
+versionSubcommandCompleter _appNames _config _shell index words =
+    versionCompletion wordsBeforePattern pat
+  where
+    wordsBeforePattern = List.take (fromIntegral index) words
+    pat = fromMaybe "" $ atMay words (fromIntegral index)
+
+versionCompletion
+    :: [String]
     -> String
     -> IO [String]
-versionCompletion _ _ wordsBeforePattern pat
+versionCompletion wordsBeforePattern pat
   | Just "-o" <- lastMay wordsBeforePattern =
         bashCompleter "file" ""
 

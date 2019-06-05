@@ -20,22 +20,28 @@ module CommandWrapper.Internal
     , command
 
     -- ** Help Command
-    , Subcommand.HelpMode(..)
-    , help
+    , Subcommand.help
+    , Subcommand.helpSubcommandCompleter
+    , Subcommand.helpSubcommandHelp
 
     -- ** Config Command
-    , Subcommand.ConfigMode(..)
     , Subcommand.config
+    , Subcommand.configSubcommandCompleter
+    , Subcommand.configSubcommandHelp
 
     -- ** Completion Command
-    , Subcommand.CompletionMode(..)
+    , Subcommand.Completer
+    , Subcommand.InternalCompleter
     , Subcommand.completion
+    , Subcommand.completionSubcommandCompleter
+    , Subcommand.completionSubcommandHelp
 
     -- ** Completion Command
-    , Subcommand.VersionMode(..)
     , Subcommand.VersionInfo(..)
     , Subcommand.PrettyVersion(..)
     , Subcommand.version
+    , Subcommand.versionSubcommandCompleter
+    , Subcommand.versionSubcommandHelp
 
     -- * Generic Functions
     , runMain
@@ -57,26 +63,28 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames, subcommandProtocolVersion)
 import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
-    ( CompletionMode(..)
+    ( Completer
+    , InternalCompleter
     , completion
     , completionSubcommandHelp
+    , completionSubcommandCompleter
     )
 import qualified CommandWrapper.Internal.Subcommand.Config as Subcommand
-    ( ConfigMode(..)
-    , config
+    ( config
     , configSubcommandHelp
+    , configSubcommandCompleter
     )
 import qualified CommandWrapper.Internal.Subcommand.Help as Subcommand
-    ( HelpMode(..)
-    , help
+    ( help
     , helpSubcommandHelp
+    , helpSubcommandCompleter
     )
 import qualified CommandWrapper.Internal.Subcommand.Version as Subcommand
     ( VersionInfo(..)
-    , VersionMode(..)
     , PrettyVersion(..)
     , version
     , versionQQ
+    , versionSubcommandCompleter
     , versionSubcommandHelp
     )
 import CommandWrapper.Internal.Utils (runMain)
@@ -109,10 +117,17 @@ command = \case
 
 run :: AppNames -> Command -> Global.Config -> IO ()
 run appNames = \case
-    HelpCommand options -> help appNames options
-    ConfigCommand options -> Subcommand.config appNames options
-    CompletionCommand options -> Subcommand.completion appNames options
-    VersionCommand options -> Subcommand.version versionInfo appNames options
+    HelpCommand options ->
+        help appNames options
+
+    ConfigCommand options ->
+        Subcommand.config appNames options
+
+    CompletionCommand options ->
+        Subcommand.completion internalCompleter appNames options
+
+    VersionCommand options ->
+        Subcommand.version versionInfo appNames options
   where
     -- TODO: Is this the best place for this definition?
     versionInfo = Subcommand.VersionInfo
@@ -129,6 +144,23 @@ run appNames = \case
         -- moment.
         , dhallStandard = Subcommand.PrettyVersion (makeVersion [7, 0, 0])
         }
+
+    internalCompleter subcommandName =
+        internalSubcommandCompleter <$> command subcommandName []
+
+internalSubcommandCompleter :: Command -> Subcommand.Completer
+internalSubcommandCompleter = \case
+    HelpCommand _ ->
+        Subcommand.helpSubcommandCompleter
+
+    ConfigCommand _ ->
+        Subcommand.configSubcommandCompleter
+
+    CompletionCommand _ ->
+        Subcommand.completionSubcommandCompleter
+
+    VersionCommand _ ->
+        Subcommand.versionSubcommandCompleter
 
 -- {{{ Help Command -----------------------------------------------------------
 
