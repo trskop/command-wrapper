@@ -19,6 +19,8 @@ module CommandWrapper.Internal.Subcommand.Config.Init
     ( InitOptions(..)
     , defInitOptions
     , init
+    , ConfigFile(..)
+    , configFileContent
     )
   where
 
@@ -400,28 +402,26 @@ configFileContent = Text.unlines . \case
         , "      ++ (./default/help-local.txt as Text ? \"\")"
         , "      ++ (./default/help.txt as Text ? \"\")"
         , ""
-        , "in  { aliases = aliases"
+        , "let defaults = commandWrapper.config.toolset.defaults"
         , ""
-        , "    -- Defines when colour output should be produced by default."
-        , "    , colourOutput = None CommandWrapper.ColourOutput"
+        , "in    defaults"
+        , "    // { aliases = aliases"
         , ""
-        , "    -- Toolset description printed as a header of a help message."
-        , "    , description ="
-        , "        Some \"TODO: I promise to describe this toolset one day.\""
+        , "       -- Toolset description printed as a header of a help message."
+        , "       , description ="
+        , "           Some \"TODO: I promise to describe this toolset one day.\""
         , ""
-        , "    -- Extra help message is printed at the bottom of help message."
-        , "    , extraHelpMessage = Some helpMessage"
+        , "       -- Extra help message is printed at the bottom of help\
+            \ message."
+        , "       , extraHelpMessage = Some helpMessage"
         , ""
-        , "    -- Path where Command Wrapper will search for external\
+        , "       -- Path where Command Wrapper will search for external\
             \ subcommands.  If"
-        , "    -- specific toolset has set 'searchPath' as well then that will\
-            \ be"
-        , "    -- prepended to this one."
-        , "    , searchPath = [" <> fromString (show libDir) <> "]"
-        , ""
-        , "    -- Default verbosity level."
-        , "    , verbosity = None CommandWrapper.Verbosity"
-        , "    } : CommandWrapper.ToolsetConfig"
+        , "       -- specific toolset has set 'searchPath' as well then that\
+            \ will be"
+        , "       -- prepended to this one."
+        , "       , searchPath = [" <> fromString (show libDir) <> "]"
+        , "       } : CommandWrapper.ToolsetConfig"
         ]
 
     CommonAliasesConfig "command-wrapper" ->
