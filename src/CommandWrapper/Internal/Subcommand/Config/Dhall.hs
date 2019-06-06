@@ -177,7 +177,7 @@ interpreter :: AppNames -> Config -> Interpreter -> IO ()
 interpreter
   appNames
   config
-  Interpreter{allowImports, alpha, annotate, input, showType}
+  Interpreter{allowImports, alpha, annotate, input, output, showType}
   = handleExceptions appNames config do
 
     IO.setLocaleEncoding IO.utf8
@@ -211,7 +211,7 @@ interpreter
                 then Annot alphaNormalizedExpression inferredType
                 else alphaNormalizedExpression
 
-    hPutExpr config stdout annotatedExpression
+    withOutputHandle input output (hPutExpr config) annotatedExpression
 
 -- }}} Interpreter ------------------------------------------------------------
 

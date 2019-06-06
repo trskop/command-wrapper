@@ -262,6 +262,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (alphaFlag <|> noAlphaFlag)
                 <*> many (annotateFlag <|> noAnnotateFlag)
                 <*> many (typeFlag <|> noTypeFlag)
+                <*> optional outputOption
             )
 
     , dhallReplFlag
