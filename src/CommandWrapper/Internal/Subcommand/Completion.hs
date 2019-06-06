@@ -129,7 +129,7 @@ import CommandWrapper.Internal.Subcommand.Help
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message (Result, defaultLayoutOptions, errorMsg, message)
 import CommandWrapper.Options.Alias (Alias(alias))
-import qualified CommandWrapper.Options.Alias as Options (applyAlias)
+import qualified CommandWrapper.Options.Alias as Options (applyAliasCompletion)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     , splitArguments
@@ -620,17 +620,19 @@ getCompletions internalCompleter appNames config CompletionOptions{..} =
     subcommandCompletion' idx subcommandArguments subcommandName =
         let -- TODO: Figure out how to take arguments into account when
             -- applying aliases.
-            (realSubcommandName, _) =
-                Options.applyAlias (Global.getAliases config)
-                    subcommandName []
+            (realSubcommandName, realSubcommandArguments, realIndex) =
+                Options.applyAliasCompletion (Global.getAliases config)
+                    subcommandName subcommandArguments idx
 
          in case internalCompleter realSubcommandName of
                 Nothing ->
-                    subcommandCompletion appNames config shell idx
-                        subcommandArguments subcommandName realSubcommandName
+                    subcommandCompletion appNames config shell realIndex
+                        realSubcommandArguments subcommandName
+                        realSubcommandName
 
                 Just completer ->
-                    completer appNames config shell idx subcommandArguments
+                    completer appNames config shell realIndex
+                        realSubcommandArguments
 
     globalCompletion =
         let pat = fromMaybe "" $ atMay words (fromIntegral index')

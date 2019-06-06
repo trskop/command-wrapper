@@ -13,14 +13,18 @@
 module CommandWrapper.Options.Alias
     ( Alias(..)
     , applyAlias
+    , applyAliasCompletion
     )
   where
 
+import Prelude ((+))
+
 import Data.Eq ((==))
-import qualified Data.List as List (find)
+import qualified Data.List as List (find, genericLength)
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid ((<>))
 import Data.String (String)
+import Data.Word (Word)
 import GHC.Generics (Generic)
 import Text.Show (Show)
 
@@ -37,9 +41,21 @@ data Alias = Alias
 
 applyAlias :: [Alias] -> String -> [String] -> (String, [String])
 applyAlias aliases subcommand arguments =
+    let (cmd, args, _) = applyAliasCompletion aliases subcommand arguments 0
+     in (cmd, args)
+
+-- | Same as 'applyAlias', but also offsets an index pointing to the argument
+-- list when the argument list changes.
+applyAliasCompletion
+    :: [Alias]
+    -> String
+    -> [String]
+    -> Word
+    -> (String, [String], Word)
+applyAliasCompletion aliases subcommand arguments index =
     case List.find (\Alias{alias} -> alias == subcommand) aliases of
         Nothing ->
-            (subcommand, arguments)
+            (subcommand, arguments, index)
 
         Just Alias{command, arguments = args} ->
-            (command, args <> arguments)
+            (command, args <> arguments, index + List.genericLength args)
