@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 21th April 2019
+% 6th June 2019
 
 
 # NAME
@@ -22,10 +22,14 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help cd
 
 # DESCRIPTION
 
-Like `cd` shell command, but allows the user to select a directory from a
-pre-defined list.  This speeds up access to commonly accessed directories.
-Normally it spawns a new shell, or a Tmux/Kitty window, see *OPTIONS* for
-details.
+It is common that while working on something one needs to jump into another
+directory, do something there, and then go back.  This command tries to solve
+this by spawning a subshell, or a new Tmux/Kitty window, or a terminal
+emulator, see *OPTIONS* for details.
+
+Behaviour of this command is similar to `cd` shell command, but allows the user
+to select a directory from a pre-defined list.  This speeds up access to
+commonly accessed directories.
 
 When no option is specified, `cd` subcommand checks if it's running in Tmux or
 Kitty, and if it is then it opens a new Tmux or Kitty window, respectively.  If
