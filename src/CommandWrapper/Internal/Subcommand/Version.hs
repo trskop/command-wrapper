@@ -286,17 +286,7 @@ versionSubcommandCompleter
     -> Word
     -> [String]
     -> IO [String]
-versionSubcommandCompleter _appNames _config _shell index words =
-    versionCompletion wordsBeforePattern pat
-  where
-    wordsBeforePattern = List.take (fromIntegral index) words
-    pat = fromMaybe "" $ atMay words (fromIntegral index)
-
-versionCompletion
-    :: [String]
-    -> String
-    -> IO [String]
-versionCompletion wordsBeforePattern pat
+versionSubcommandCompleter _appNames _config _shell index words
   | Just "-o" <- lastMay wordsBeforePattern =
         bashCompleter "file" ""
 
@@ -320,6 +310,9 @@ versionCompletion wordsBeforePattern pat
   | otherwise =
         pure []
   where
+    wordsBeforePattern = List.take (fromIntegral index) words
+    pat = fromMaybe "" $ atMay words (fromIntegral index)
+
     hadHelp =
         ("--help" `List.elem` wordsBeforePattern)
         || ("-h" `List.elem` wordsBeforePattern)

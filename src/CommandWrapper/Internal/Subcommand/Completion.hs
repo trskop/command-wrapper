@@ -32,12 +32,13 @@ import Data.Bool (Bool(False), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
-import Data.Foldable (all, asum, forM_, length, mapM_, null)
+import Data.Foldable (all, any, asum, forM_, length, mapM_, null)
 import Data.Function (($), (.), const, id)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List
     ( break
     , drop
+    , elem
     , filter
     , isPrefixOf
     , lookup
@@ -102,7 +103,7 @@ import qualified Options.Applicative as Options
     , strOption
     )
 import qualified Options.Applicative.Standard as Options (outputOption)
-import Safe (atMay, headMay)
+import Safe (atMay, headMay, lastMay)
 import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
@@ -131,7 +132,8 @@ import CommandWrapper.Message (Result, defaultLayoutOptions, errorMsg, message)
 import CommandWrapper.Options.Alias (Alias(alias))
 import qualified CommandWrapper.Options.Alias as Options (applyAliasCompletion)
 import qualified CommandWrapper.Options.Optparse as Options
-    ( internalSubcommandParse
+    ( bashCompleter
+    , internalSubcommandParse
     , splitArguments
     , splitArguments'
     )
@@ -699,45 +701,77 @@ subcommandCompletion appNames config shell index words _invokedAs subcommand =
         readProcess cmd _ args env =
             readCreateProcessWithExitCode (proc cmd args){env} ""
 
+-- | Command line completion for the @completion@ subcommand itself.
 completionSubcommandCompleter :: Completer
-completionSubcommandCompleter appNames config _shell index words =
-    completionCompletion appNames config wordsBeforePattern pat
+completionSubcommandCompleter appNames config _shell index words
+  | Just "-o" <- lastBeforePattern =
+        -- TODO: This requires `bash` to be available.
+        Options.bashCompleter "file" "" pat
+
+  | Just "--output" <- lastBeforePattern =
+        -- TODO: This requires `bash` to be available.
+        Options.bashCompleter "file" "" pat
+
+  | "--output=" `List.isPrefixOf` pat =
+        -- TODO: This requires `bash` to be available.
+        Options.bashCompleter "file" "--output=" pat
+
+  | "--shell=" `List.isPrefixOf` pat =
+        pure if had "--library"
+            then List.filter (pat `List.isPrefixOf`) ["--shell=bash"]
+            else List.filter (pat `List.isPrefixOf`) shellOptions
+
+  | "--subcommand=" `List.isPrefixOf` pat =
+        fmap ("--subcommand=" <>)
+            <$> findSubcommands appNames config
+                    (List.drop (length @[] "--subcommand=") pat)
+
+  | hadOneOf ["--help", "-h"] =
+        pure []
+
+  | any ("--index=" `List.isPrefixOf`) wordsBeforePattern =
+        pure $ List.filter (pat `List.isPrefixOf`) completionOptions
+
+  | had "--query" =
+        pure $ List.filter (pat `List.isPrefixOf`) queryOptions
+
+  | had "--library" =
+        pure $ List.filter (pat `List.isPrefixOf`) libraryOptions
+
+  | had "--script" =
+        pure $ List.filter (pat `List.isPrefixOf`) scriptOptions
+
+  | null pat  = pure modeOptions
+  | otherwise = pure $ List.filter (pat `List.isPrefixOf`) modeOptions
   where
     wordsBeforePattern = List.take (fromIntegral index) words
     pat = fromMaybe "" $ atMay words (fromIntegral index)
+    lastBeforePattern = lastMay wordsBeforePattern
 
--- | Command line completion for the @completion@ subcommand itself.
-completionCompletion
-    :: AppNames
-    -> Global.Config
-    -> [String]
-    -- ^ Options and arguments before the one that we are completing.
-    -> String
-    -- ^ Pattern (prefix), i.e. option\/argument that we are completing.
-    -> IO [String]
-completionCompletion _appNames _config _wordsBeforePattern pat
-    | null pat  = pure allOptions
-    | otherwise = pure $ List.filter (pat `List.isPrefixOf`) allOptions
-  where
-    -- TODO: This implementation needs refinement:
-    --
-    -- - Be contextual, i.e. if there is `--query` then ignore options that do
-    --   not apply.
-    -- - Complete `SHELL` and `SUBCOMMAND` values.
-    -- - Complete files/directories for --output=
-    allOptions = List.nub
-        [ "--index=", "--shell=bash", "--shell=fish", "--subcommand=", "--"
+    hadOneOf = any (`List.elem` wordsBeforePattern)
+    had = (`List.elem` wordsBeforePattern)
 
-        , "--library", "--shell=bash", "--shell=fish"
+    outputOptions = ["--output=", "-o"]
 
-        , "--query", "--subcommands", "--subcommand-aliases"
-        , "--supported-shells", "--verbosity-values", "--colour-values"
-        , "--color-values"
+    queryOptions =
+        ["--subcommands", "--subcommand-aliases", "--supported-shells"
+        , "--verbosity-values", "--colour-values", "--color-values"
+        ] <> outputOptions
 
-        , "--script", "--shell=bash", "--alias="
+    -- At the moment we have library only for Bash.
+    libraryOptions = ["--shell=bash"]
 
-        , "--output=", "-o"
+    completionOptions = ["--shell=", "--subcommand=", "--"] <> outputOptions
 
+    scriptOptions = ["--alias=", "--shell=", "--subcommand="] <> outputOptions
+
+    shellOptions = ("--shell=" <>) <$> ["bash", "fish"]
+
+    modeOptions = List.nub
+        [ "--index="
+        , "--library"
+        , "--query"
+        , "--script"
         , "--help", "-h"
         ]
 

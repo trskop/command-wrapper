@@ -676,19 +676,7 @@ configSubcommandCompleter
     -> Word
     -> [String]
     -> IO [String]
-configSubcommandCompleter appNames cfg _shell index words =
-    configCompletion appNames cfg wordsBeforePattern pat
-  where
-    wordsBeforePattern = List.take (fromIntegral index) words
-    pat = fromMaybe "" $ atMay words (fromIntegral index)
-
-configCompletion
-    :: AppNames
-    -> Global.Config
-    -> [String]
-    -> String
-    -> IO [String]
-configCompletion _appNames _config wordsBeforePattern pat
+configSubcommandCompleter _appNames _cfg _shell index words
   | Just "-o" <- lastMay wordsBeforePattern =
         bashCompleter "file" ""
 
@@ -708,6 +696,9 @@ configCompletion _appNames _config wordsBeforePattern pat
   | otherwise =
         pure matchingOptions
   where
+    wordsBeforePattern = List.take (fromIntegral index) words
+    pat = fromMaybe "" $ atMay words (fromIntegral index)
+
     hadHelp =
         ("--help" `List.elem` wordsBeforePattern)
         || ("-h" `List.elem` wordsBeforePattern)

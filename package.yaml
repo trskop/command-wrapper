@@ -89,7 +89,7 @@ dependencies:
   - serialise
   - transformers
 
-ghc-options: -Wall
+ghc-options: -Wall -Wcompat
 
 library:
   source-dirs: src
