@@ -13,18 +13,20 @@ toolset configuration.
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 \[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type]
-\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+\[\--input=*FILE*|\--input *FILE*|-i *FILE*] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-lint
-\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+\[\--input=*FILE*|\--input *FILE*|-i *FILE*] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-resolve
-\[\--list-imports=*KIND*] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+\[\--list-imports=*KIND*] \[\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-freeze
-\[\--\[no-]remote-only] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+\[\--\[no-]remote-only] \[\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
@@ -147,7 +149,11 @@ We can organise `config` subcommand abilities into following categories:
 :   Add a type annotation to the output.  Type annotations aren't included by
     default.  Can be specified multiple times, later instance is applied.
 
-**\--output=***FILE*, **\--output** *FILE*, **-o** *FILE*
+\--input=*FILE*, **\--input** *FILE*, **-i** *FILE*
+:   Read input from *FILE* instead of standard input.  Can be specified only
+    once.
+
+\--output=*FILE*, **\--output** *FILE*, **-o** *FILE*
 :   Write optput into *FILE* instead of standard output.  Can be specified only
     once.
 

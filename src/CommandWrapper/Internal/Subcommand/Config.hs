@@ -108,7 +108,11 @@ import qualified CommandWrapper.Options.Optparse as Options
 --  , splitArguments'
     )
 import qualified CommandWrapper.Options.Shell as Options (Shell)
-
+import CommandWrapper.Internal.Subcommand.Config.Dhall
+    ( HasInput
+    , parseInput
+    , setInput
+    )
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Diff(..)
     , Format(..)
@@ -263,6 +267,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (annotateFlag <|> noAnnotateFlag)
                 <*> many (typeFlag <|> noTypeFlag)
                 <*> optional outputOption
+                <*> optional inputOption
             )
 
     , dhallReplFlag
@@ -280,6 +285,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> ( dualFoldEndo
                 <$> many (remoteOnlyFlag <|> noRemoteOnlyFlag)
                 <*> optional outputOption
+                <*> optional inputOption
             )
 
     , dhallFormatFlag
@@ -289,11 +295,13 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallLintFlag
         <*> ( dualFoldEndo
                 <$> optional outputOption
+                <*> optional inputOption
             )
 
     , dhallResolveFlag
         <*> ( dualFoldEndo
                 <$> optional outputOption
+                <*> optional inputOption
                 <*> optional listDependenciesOption
             )
 
@@ -393,6 +401,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     setType :: Bool -> Endo Dhall.Interpreter
     setType showType = Endo \opts -> opts{Dhall.showType}
+
+    inputOption
+        :: HasInput a
+        => Options.Parser (Endo a)
+    inputOption =
+        Endo . setInput
+            <$> Options.option (Options.eitherReader parseInput)
+                    (Options.long "input" <> Options.short 'i')
 
     outputOption
         :: (Output a ~ Dhall.Output, HasOutput a)
@@ -502,7 +518,7 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
                     <> "|" <> longOption "[no-]annotate"
                     <> "|" <> longOption "[no-]type"
                     )
---          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
@@ -513,19 +529,19 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-lint"
---          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-resolve"
             <+> Pretty.brackets (longOptionWithArgument "list-imports" "KIND")
---          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-freeze"
             <+> Pretty.brackets (longOption "[no-]remote-only")
---          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+            <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
@@ -580,6 +596,11 @@ configSubcommandHelp AppNames{usedName} = Pretty.vsep
         , optionDescription ["--[no-]annotate"]
             [ Pretty.reflow "Add a type annotation to the output. Type\
                 \ annotations aren't included by default."
+            ]
+
+        , optionDescription ["--input=FILE", "--input FILE", "-i FILE"]
+            [ Pretty.reflow "Read input from", metavar "FILE"
+            , Pretty.reflow "instead of standard input."
             ]
 
         , optionDescription ["--output=FILE", "--output FILE", "-o FILE"]

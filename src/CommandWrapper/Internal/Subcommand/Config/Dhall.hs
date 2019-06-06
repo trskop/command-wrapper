@@ -57,6 +57,10 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
 
     -- * Input\/Output
     , Input(..)
+    , HasInput(..)
+    , IsInput(..)
+    , setInput
+
     , Output(..)
     )
   where
@@ -80,7 +84,9 @@ import System.IO
     )
 import qualified System.IO as IO (utf8)
 
+import Data.Generics.Internal.VL.Lens (set)
 import Data.Generics.Product.Fields (field')
+import Data.Generics.Product.Typed (HasType, typed)
 import Data.Output (IsOutput, HasOutput)
 import qualified Data.Output (IsOutput(..), HasOutput(..))
 import Data.Text (Text)
@@ -96,6 +102,7 @@ import Dhall.Parser (ParseError, SourcedException, Src)
 import qualified Dhall.Pretty as Dhall (Ann, CharacterSet(..))
 import Dhall.TypeCheck (DetailedTypeError(..), TypeError, X)
 import System.FilePath (takeDirectory)
+import System.FilePath.Parse (parseFilePath)
 
 --import qualified Codec.CBOR.JSON
 --import qualified Codec.CBOR.Read
@@ -146,6 +153,7 @@ data Interpreter = Interpreter
     , output          :: Output
     }
   deriving (Generic, Show)
+  deriving anyclass (HasInput)
 
 instance HasOutput Interpreter where
     type Output Interpreter = Output
@@ -223,6 +231,7 @@ data Resolve = Resolve
     , output :: Output
     }
   deriving (Generic, Show)
+  deriving anyclass (HasInput)
 
 instance HasOutput Resolve where
     type Output Resolve = Output
@@ -287,6 +296,7 @@ data Lint = Lint
     , characterSet :: Dhall.CharacterSet
     }
   deriving (Generic, Show)
+  deriving anyclass (HasInput)
 
 instance HasOutput Lint where
     type Output Lint = Output
@@ -398,6 +408,7 @@ data Freeze = Freeze
     , characterSet :: Dhall.CharacterSet
     }
   deriving (Generic, Show)
+  deriving anyclass (HasInput)
 
 instance HasOutput Freeze where
     type Output Freeze = Output
@@ -516,6 +527,32 @@ data Input
     = InputStdin
     | InputFile FilePath
   deriving (Show)
+
+-- TODO: This is a generic pattern, like HasOutput, it should be moved to
+-- mainplate?
+class IsInput a where
+    parseInput :: String -> Either String a
+
+instance IsInput FilePath where
+    parseInput = parseFilePath
+
+instance IsInput Input where
+    parseInput s = InputFile <$> parseInput s
+
+-- TODO: This is a generic pattern, like HasOutput, it should be generalised
+-- and moved to mainplate?
+class HasInput a where
+    inputL :: Functor f => (Input -> f Input) -> a -> f a
+
+    default inputL
+        :: (HasType Input a, Functor f)
+        => (Input -> f Input)
+        -> a
+        -> f a
+    inputL = typed @Input
+
+setInput :: HasInput a => Input -> a -> a
+setInput = set inputL
 
 data Output
     = OutputStdout
