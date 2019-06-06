@@ -36,6 +36,36 @@ which is described in its own manual page
 ](man/command-wrapper-subcommand-protocol.7.md).
 
 
+## Some Interesting Features
+
+*   Command Wrapper makes heavy use of [Dhall](https://dhall-lang.org/)
+    configuration language.  It goes as far as having Dhall interpreter
+    integrated into its `config` (internal) subcommand.  It also provides very
+    useful Dhall library [`dhall/CommandWrapper`](dhall/CommandWrapper/).
+
+*   Command line completion for Bash and Fish shells.
+
+*   Subcommands can be written in any language, they just need to respect
+    Subcommand Protocol (described in [`command-wrapper-subcommand-protocol(7)`
+    ](man/command-wrapper-subcommand-protocol.7.md) manual page).
+
+*   Subcommands adhering to Subcommand Protocol get command line completion
+    and help integration for free.
+
+*   Subcommand skeletons for Bash and Haskell.  Subcommands in those languages
+    can leverage libraries provided by Command Wrapper.
+
+*   Subcommand aliases similar to Git aliases.  Command line completion
+    understands aliases as well.
+
+*   Very useful `exec` subcommand that provides shell aliases on steroids.  It
+    Can leverage dhall to compose commands, and even safely share them via
+    internet.  Its documentation is available in form of manual page
+    [`command-wrapper-exec(1)`](man/command-wrapper-exec.1.md).
+
+*   A lot more.
+
+
 ## Documentation
 
 Documentation is in the form of manual pages written in Markdown and compiled
