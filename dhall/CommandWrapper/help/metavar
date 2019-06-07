@@ -1,0 +1,5 @@
+let Types = ../Types.dhall
+
+in  λ(t : Text) → { annotation = Types.HelpAnnotation.Metavar, content = t }
+
+-- vim: filetype=dhall

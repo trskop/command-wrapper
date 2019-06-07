@@ -7,30 +7,6 @@
     , withExtraArguments = ./command/withExtraArguments
     }
 
-, editor =
-    { colon-separated = ./editor/colon-separated
-    , some = ./editor/some
-    , standard = ./editor/standard
-    , visual-studio-code = ./editor/visual-studio-code
-    }
-
--- HTTP/HTTPS URL schemas
-, schema =
-    { fold = ./schema/fold
-    , show = ./schema/show
-    }
-
--- These are some known terminal emulators that support setting working
--- directory via command line option.
-, terminalEmulator =
-    { urxvt = ./terminal-emulator/urxvt
-    , kitty = ./terminal-emulator/kitty
-    }
-
-, verbosity =
-    { fold = ./verbosity/fold
-    }
-
 -- Defaults and library of useful tools for toolset and external subcommands
 -- bundled with Command Wrapper.
 , config =
@@ -63,6 +39,38 @@
     , toolset = ./toolset-config
     }
 
+, editor =
+    { colon-separated = ./editor/colon-separated
+    , some = ./editor/some
+    , standard = ./editor/standard
+    , visual-studio-code = ./editor/visual-studio-code
+    }
+
+, help =
+    { command = ./help/command
+    , metavar = ./help/metavar
+    , option = ./help/option
+    , plain = ./help/plain
+    , value = ./help/value
+    }
+
+-- HTTP/HTTPS URL schemas
+, schema =
+    { fold = ./schema/fold
+    , show = ./schema/show
+    }
+
+-- These are some known terminal emulators that support setting working
+-- directory via command line option.
+, terminalEmulator =
+    { urxvt = ./terminal-emulator/urxvt
+    , kitty = ./terminal-emulator/kitty
+    }
+
+, verbosity =
+    { fold = ./verbosity/fold
+    }
+
 , utils =
     { `List` =
         { head-and-tail = ./List/head-and-tail
@@ -74,6 +82,5 @@
         , port = ./url/port
         , portToText = ./url/portToText
         }
-
     }
 }

@@ -1,0 +1,5 @@
+let Annotation = ./HelpAnnotation
+
+in  λ(a : Type) → { annotation : Annotation, content : a }
+
+-- vim: filetype=dhall

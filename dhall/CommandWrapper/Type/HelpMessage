@@ -1,0 +1,15 @@
+let Annotated = ./HelpAnnotated
+
+let Section = ./HelpSection
+
+in  { description :
+        Text
+    , usage :
+        List (Annotated Text)
+    , sections :
+        List (Section (Annotated Text))
+    , message :
+        List (Annotated Text)
+    }
+
+-- vim: filetype=dhall

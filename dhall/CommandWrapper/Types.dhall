@@ -26,4 +26,9 @@ in  { Command = ./Type/Command
     -- Configuration for `exec` subcommand
     , ExecCommand = ./Type/ExecCommand
     , ExecNamedCommand = ./Type/ExecNamedCommand
+
+    -- Help message
+    , HelpMessage = ./Type/HelpMessage
+    , HelpAnnotation = ./Type/HelpAnnotation
+    , HelpAnnotated = ./Type/HelpAnnotated
     }
