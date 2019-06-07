@@ -22,6 +22,7 @@ import Control.Exception (onException)
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (asum, for_)
+import Data.Functor ((<&>))
 import qualified Data.List as List (filter, nub, isPrefixOf)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Semigroup (Semigroup(..))
@@ -57,6 +58,8 @@ import qualified Options.Applicative as Options
     , switch
     )
 import Safe (atMay, lastDef)
+import System.Directory (getCurrentDirectory)
+import System.FilePath ((</>), normalise)
 import System.Posix.Process (executeFile)
 import Turtle
     ( Line
@@ -69,6 +72,7 @@ import Turtle
     , inproc
     , lineToText
     , need
+    , relative
     , select
     , sh
     , testdir
@@ -307,21 +311,22 @@ executeAction :: Params void -> Line -> Action -> Shell ()
 executeAction params directory = \case
     RunShell shellOverride -> do
         dieIfDirectoryDoesNotExist
+        dir <- resolveDirectory
 
         -- TODO: We should respect verbosity here.
         echo (": cd " <> directory)
         cd directoryPath
 
         shell <- resolveShell shellOverride
-
-        exportEnvVariables (incrementLevel <$> need "CD_LEVEL")
+        exportEnvVariables dir (incrementLevel <$> need "CD_LEVEL")
         executeCommand (Text.unpack shell) [] []
 
     RunTmux shellOverride -> do
         dieIfDirectoryDoesNotExist
-
+        dir <- resolveDirectory
         shell <- resolveShell shellOverride
-        let tmuxOptions =
+        let directoryStr = Text.unpack dir
+            tmuxOptions =
                 [ "new-window", "-c", directoryStr
                 , "--"
                 -- Hadn't found any other reliable way how to pass these
@@ -334,10 +339,12 @@ executeAction params directory = \case
 
     RunKitty shellOverride -> do
         dieIfDirectoryDoesNotExist
-
+        dir <- resolveDirectory
         shell <- resolveShell shellOverride
-        -- https://sw.kovidgoyal.net/kitty/remote-control.html#kitty-new-window
-        let kittyOptions =
+        let directoryStr = Text.unpack dir
+
+            -- https://sw.kovidgoyal.net/kitty/remote-control.html#kitty-new-window
+            kittyOptions =
                 [ "@", "new-window", "--cwd", directoryStr
                 , "--"
                 -- Hadn't found any other reliable way how to pass these
@@ -350,14 +357,14 @@ executeAction params directory = \case
 
     RunTerminalEmulator term -> do
         dieIfDirectoryDoesNotExist
+        dir <- resolveDirectory
 
         let SimpleCommand{..} = term directoryText
-        exportEnvVariables (pure "0")
+        exportEnvVariables dir (pure "0")
         executeCommand command arguments environment
   where
     directoryPath = fromText directoryText
     directoryText = lineToText directory
-    directoryStr = Text.unpack directoryText
 
 --  resolveShell :: MonadIO io => Maybe Text -> io (Maybe Text)
     resolveShell = maybe (need "SHELL") (pure . Just) >=> \case
@@ -372,6 +379,13 @@ executeAction params directory = \case
 
         Just shell ->
             pure shell
+
+    resolveDirectory
+      | Turtle.relative directoryPath =
+            liftIO getCurrentDirectory <&> \cwd ->
+                fromString $ normalise (cwd </> Text.unpack directoryText)
+      | otherwise =
+            pure directoryText
 
     executeCommand command arguments environment = do
         -- TODO: We should respect verbosity here.
@@ -397,10 +411,10 @@ executeAction params directory = \case
     -- * Make names of these environment variables configurable.
     -- * Consider also having another variable that will contain a stack of
     --   directories for nested `TOOLSET cd` invocations.
-    exportEnvVariables :: Shell Text -> Shell ()
-    exportEnvVariables getCdLevel = do
+    exportEnvVariables :: Text -> Shell Text -> Shell ()
+    exportEnvVariables dir getCdLevel = do
         getCdLevel >>= export "CD_LEVEL"
-        export "CD_DIRECTORY" directoryText
+        export "CD_DIRECTORY" dir
 
     incrementLevel :: Maybe Text -> Text
     incrementLevel =
