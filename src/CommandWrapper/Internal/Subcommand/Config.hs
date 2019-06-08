@@ -168,9 +168,9 @@ config appNames options globalConfig =
 
         ConfigLib _ -> pure ()
 
-        Help Global.Config{colourOutput, verbosity} ->
+        Help config'@Global.Config{colourOutput, verbosity} ->
             message defaultLayoutOptions verbosity colourOutput stdout
-                (configSubcommandHelp appNames)
+                (configSubcommandHelp appNames config')
 
         -- TODO:
         --
@@ -501,8 +501,11 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.internalSubcommandParse appNames globalConfig "config"
             Options.defaultPrefs (Options.info (asum parser) mempty) options
 
-configSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
-configSubcommandHelp AppNames{usedName} = Pretty.vsep
+configSubcommandHelp
+    :: AppNames
+    -> Global.Config
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
+configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
     [ Pretty.reflow
         "Initialise, query, and update Command Wrapper toolset configuration."
     , ""

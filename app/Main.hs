@@ -40,6 +40,10 @@ import Text.Show (show)
 
 import Data.Monoid.Endo.Fold (dualFoldEndo)
 import qualified Data.Text as Text (unpack)
+import Data.Text.Prettyprint.Doc ((<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Verbosity (Verbosity(Silent))
 import Data.Verbosity.Class (setVerbosity)
 import qualified Mainplate.Extensible as Mainplate
@@ -74,7 +78,7 @@ import CommandWrapper.Environment
     )
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
-import CommandWrapper.Message (errorMsg)
+import CommandWrapper.Message (Result(..), errorMsg)
 import qualified CommandWrapper.Options as Options
 import CommandWrapper.Options.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput
@@ -83,6 +87,20 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     , noColorEnvVar
     )
 import qualified CommandWrapper.Options.GlobalMode as Options
+import qualified CommandWrapper.Internal.Subcommand.Help as Help
+    ( dullGreen
+    , helpOptions
+    , longOption
+    , metavar
+    , optionDescription
+    , optionalMetavar
+    , optionalSubcommand
+    , section
+    , shortOption
+    , subcommand
+    , usageSection
+    , value
+    )
 
 import Paths_command_wrapper (version)
 
@@ -113,7 +131,8 @@ main = do
             )
 
     Mainplate.runExtensibleAppWith (parseOptions appNames config) readConfig
-        (defaults config) (go External.run appNames) (go Internal.run appNames)
+        (defaults config) (go External.run appNames)
+        (go (Internal.run helpMessage) appNames)
   where
     readGlobalConfig baseName = do
         configFile <- getXdgDirectory XdgConfig (baseName </> "default.dhall")
@@ -258,3 +277,102 @@ versionOption
 versionOption = Options.flag mempty switchToVersionMode (Options.version True)
   where
     switchToVersionMode = Endo (Options.switchGlobalMode Options.VersionMode)
+
+helpMessage :: AppNames -> Global.Config -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpMessage AppNames{usedName} Global.Config{description} = Pretty.vsep
+    [ Pretty.reflow (maybe defaultDescription fromString description)
+    , ""
+
+    , Help.usageSection usedName
+        [ Help.subcommand <+> subcommandArguments
+
+        , "help"
+            <+> Help.optionalMetavar "HELP_OPTIONS"
+            <+> Help.optionalSubcommand
+
+        , "config"
+            <+> Help.optionalMetavar "CONFIG_OPTIONS"
+            <+> Help.optionalSubcommand
+
+        , "version" <+> Help.optionalMetavar "VERSION_OPTIONS"
+        , "completion" <+> Help.optionalMetavar "COMPLETION_OPTIONS"
+
+        , Pretty.braces
+            (Help.longOption "version" <> "|" <> Help.shortOption 'V')
+
+        , Help.helpOptions
+        ]
+
+    , Help.section (Pretty.annotate Help.dullGreen "GLOBAL_OPTIONS" <> ":")
+        [ Help.optionDescription ["-v"]
+            [ Pretty.reflow "Increment verbosity by one level. Can be used"
+            , Pretty.reflow "multiple times."
+            ]
+
+        , Help.optionDescription ["--verbosity=VERBOSITY"]
+            [ Pretty.reflow "Set verbosity level to"
+            , Help.metavar "VERBOSITY" <> "."
+            , Pretty.reflow "Possible values of"
+            , Help.metavar "VERBOSITY", "are"
+            , Pretty.squotes (Help.value "silent") <> ","
+            , Pretty.squotes (Help.value "normal") <> ","
+            , Pretty.squotes (Help.value "verbose") <> ","
+            , "and"
+            , Pretty.squotes (Help.value "annoying") <> "."
+            ]
+
+        , Help.optionDescription ["--silent", "-s"]
+            (silentDescription "quiet")
+
+        , Help.optionDescription ["--quiet", "-q"]
+            (silentDescription "silent")
+
+        , Help.optionDescription ["--colo[u]r=WHEN"]
+            [ "Set", Help.metavar "WHEN"
+            , Pretty.reflow "colourised output should be produced. Possible"
+            , Pretty.reflow "values of"
+            , Help.metavar "WHEN", "are"
+            , Pretty.squotes (Help.value "always") <> ","
+            , Pretty.squotes (Help.value "auto") <> ","
+            , "and", Pretty.squotes (Help.value "never") <> "."
+            ]
+
+        , Help.optionDescription ["--no-colo[u]r"]
+            [ Pretty.reflow "Same as"
+            , Pretty.squotes (Help.longOption "colour=never") <> "."
+            ]
+
+        , Help.optionDescription ["--[no-]aliases"]
+            [ "Apply or ignore", Help.metavar "SUBCOMMAND", "aliases."
+            , Pretty.reflow  "This is useful when used from e.g. scripts to\
+                \ avoid issues with user defined aliases interfering with how\
+                \ the script behaves."
+            ]
+
+        , Help.optionDescription ["--version", "-V"]
+            [ Pretty.reflow "Print version information to stdout and exit."
+            ]
+
+        , Help.optionDescription ["--help", "-h"]
+            [ Pretty.reflow "Print this help and exit."
+            ]
+        ]
+
+    , Help.section (Help.metavar "SUBCOMMAND" <> ":")
+        [ Pretty.reflow "Name of either internal or external subcommand."
+        ]
+    , ""
+    ]
+  where
+    silentDescription altOpt =
+        [ Pretty.reflow
+            "Silent mode. Suppress normal diagnostic or result output. Same as"
+        , Pretty.squotes (Help.longOption altOpt) <> ",", "and"
+        , Pretty.squotes (Help.longOption "verbosity=silent") <> "."
+        ]
+
+    defaultDescription = "Toolset of commands for working developer."
+
+    subcommandArguments =
+        Pretty.brackets (Pretty.annotate Help.dullGreen "SUBCOMMAND_ARGUMENTS")
+

@@ -66,18 +66,18 @@ import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
     ( Completer
     , InternalCompleter
     , completion
-    , completionSubcommandHelp
     , completionSubcommandCompleter
+    , completionSubcommandHelp
     )
 import qualified CommandWrapper.Internal.Subcommand.Config as Subcommand
     ( config
-    , configSubcommandHelp
     , configSubcommandCompleter
+    , configSubcommandHelp
     )
 import qualified CommandWrapper.Internal.Subcommand.Help as Subcommand
     ( help
-    , helpSubcommandHelp
     , helpSubcommandCompleter
+    , helpSubcommandHelp
     )
 import qualified CommandWrapper.Internal.Subcommand.Version as Subcommand
     ( VersionInfo(..)
@@ -115,10 +115,14 @@ command = \case
     "version" -> Just . VersionCommand
     _ -> const Nothing
 
-run :: AppNames -> Command -> Global.Config -> IO ()
-run appNames = \case
+run :: (AppNames -> Global.Config -> Pretty.Doc (Result Pretty.AnsiStyle))
+    -> AppNames
+    -> Command
+    -> Global.Config
+    -> IO ()
+run globalHelp appNames = \case
     HelpCommand options ->
-        help appNames options
+        help globalHelp appNames options
 
     ConfigCommand options ->
         Subcommand.config appNames options
@@ -164,27 +168,32 @@ internalSubcommandCompleter = \case
 
 -- {{{ Help Command -----------------------------------------------------------
 
-help :: AppNames -> [String] -> Global.Config -> IO ()
-help appNames = Subcommand.help internalSubcommandHelpMsg appNames
+help
+    :: (AppNames -> Global.Config -> Pretty.Doc (Result Pretty.AnsiStyle))
+    -> AppNames
+    -> [String]
+    -> Global.Config
+    -> IO ()
+help globalHelp = Subcommand.help internalSubcommandHelp' globalHelp
   where
-    internalSubcommandHelpMsg s =
-        internalSubcommandHelp appNames <$> command s []
+    internalSubcommandHelp' s = internalSubcommandHelp <$> command s []
 
 internalSubcommandHelp
-    :: AppNames
-    -> Command
+    :: Command
+    -> AppNames
+    -> Global.Config
     -> Pretty.Doc (Result Pretty.AnsiStyle)
-internalSubcommandHelp appNames = \case
+internalSubcommandHelp = \case
     HelpCommand _ ->
-        Subcommand.helpSubcommandHelp appNames
+        Subcommand.helpSubcommandHelp
 
     ConfigCommand _ ->
-        Subcommand.configSubcommandHelp appNames
+        Subcommand.configSubcommandHelp
 
     CompletionCommand _ ->
-        Subcommand.completionSubcommandHelp appNames
+        Subcommand.completionSubcommandHelp
 
     VersionCommand _ ->
-        Subcommand.versionSubcommandHelp appNames
+        Subcommand.versionSubcommandHelp
 
 -- }}} Help Command -----------------------------------------------------------

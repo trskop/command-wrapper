@@ -120,7 +120,7 @@ version
     -> IO ()
 version versionInfo appNames options config =
     runMain (parseOptions appNames config options) defaults $ \case
-        FullVersion format output _config ->
+        FullVersion format output Config{colourOutput, verbosity} -> do
             withOutputHandle output \handle -> case format of
                 DhallFormat ->
                     Dhall.hPut colourOutput Dhall.Unicode handle Dhall.inject
@@ -136,19 +136,17 @@ version versionInfo appNames options config =
                     message defaultLayoutOptions verbosity colourOutput handle
                         (versionInfoDoc versionInfo)
 
-        NumericVersion _field output _config ->
+        NumericVersion _field output Config{colourOutput, verbosity} -> do
             withOutputHandle output \handle ->
                 message defaultLayoutOptions verbosity colourOutput handle
                     ("TODO" :: Pretty.Doc (Result Pretty.AnsiStyle))
 
-        VersionHelp _config ->
+        VersionHelp config'@Config{colourOutput, verbosity} -> do
             message defaultLayoutOptions verbosity colourOutput stdout
-                (versionSubcommandHelp appNames)
+                (versionSubcommandHelp appNames config')
   where
     defaults = Mainplate.applySimpleDefaults
-        (FullVersion PlainFormat OutputStdoutOnly ())
-
-    Config{colourOutput, verbosity} = config
+        (FullVersion PlainFormat OutputStdoutOnly config)
 
     withOutputHandle :: OutputStdoutOrFile -> (Handle -> IO a) -> IO a
     withOutputHandle = \case
@@ -188,7 +186,7 @@ versionInfoFish VersionInfo{..} = Text.unlines
 
     var n v = "set COMMAND_WRAPPER_" <> n <> "_VERSION '" <> v <> "'"
 
-parseOptions :: AppNames -> Config -> [String] -> IO (Endo (VersionMode ()))
+parseOptions :: AppNames -> Config -> [String] -> IO (Endo (VersionMode Config))
 parseOptions appNames config options =
     execParser $ foldEndo
         <$> (   dhallFlag
@@ -209,13 +207,14 @@ parseOptions appNames config options =
         let shell = f `appEndo` Options.Bash
         in  switchTo (FullVersion (ShellFormat shell))
 
-    dhallFlag, shellOption, helpFlag :: Options.Parser (Endo (VersionMode ()))
+    dhallFlag, shellOption, helpFlag
+        :: Options.Parser (Endo (VersionMode Config))
 
     dhallFlag = Options.flag mempty switchToDhallFormat (Options.long "dhall")
 
     shellOption = switchToShellFormat <$> Options.shellOption
 
-    outputOption :: Options.Parser (Endo (VersionMode ()))
+    outputOption :: Options.Parser (Endo (VersionMode Config))
     outputOption = Options.outputOption <&> \o -> Endo \case
         FullVersion format _ a -> FullVersion format o a
         NumericVersion field _ a -> NumericVersion field o a
@@ -230,8 +229,11 @@ parseOptions appNames config options =
         , Options.long "help"
         ]
 
-versionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
-versionSubcommandHelp AppNames{usedName} = Pretty.vsep
+versionSubcommandHelp
+    :: AppNames
+    -> Config
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
+versionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
     [ Pretty.reflow "Display version information."
     , ""
 

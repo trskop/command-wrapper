@@ -30,6 +30,7 @@ module CommandWrapper.Internal.Subcommand.Help
     , optionalSubcommand
     , section
     , shortOption
+    , subcommand
     , toolsetCommand
     , usageSection
     , value
@@ -40,16 +41,16 @@ import Prelude (fromIntegral)
 
 import Control.Applicative ((<*>), (<|>), optional, pure)
 import Control.Monad ((>>=))
-import Data.Bool (Bool(True), otherwise)
+import Data.Bool (Bool(False, True), otherwise)
 import Data.Char (Char)
 import qualified Data.Char as Char (toLower)
 import Data.Eq ((==))
 import Data.Foldable (null, traverse_)
-import Data.Function (($), (.), const)
+import Data.Function (($), (.))
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List (elem, filter, isPrefixOf, nub, take)
 import qualified Data.List.NonEmpty as NonEmpty (toList)
-import Data.Maybe (Maybe(Just, Nothing), fromMaybe, listToMaybe, maybe)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe, listToMaybe)
 import Data.Monoid (Endo(Endo), mempty)
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
@@ -82,7 +83,7 @@ import qualified Options.Applicative as Options
     , short
     , strArgument
     )
-import Safe (atMay, headMay)
+import Safe (atMay, headMay, lastMay)
 import System.Directory (findExecutablesInDirectories)
 import System.Posix.Process (executeFile)
 
@@ -114,30 +115,34 @@ data HelpMode a
   deriving stock (Functor, Generic, Show)
 
 help
-    :: (String -> Maybe (Pretty.Doc (Result Pretty.AnsiStyle)))
+    ::  ( String
+        -> Maybe (AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle))
+        )
     -- ^ Return help message to print if string argument is an internal
     -- subcommand.
     --
     -- TODO: Return something more structured.
+    -> (AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle))
+    -- ^ Main\/global help message for the toolset itself.
     -> AppNames
     -> [String]
     -> Config
     -> IO ()
-help internalHelp appNames@AppNames{usedName} options config =
+help internalHelp mainHelp appNames@AppNames{usedName} options config =
     runMain (parseOptions appNames config options) defaults $ \case
-        MainHelp _config -> do
+        MainHelp config' -> do
             message defaultLayoutOptions verbosity colourOutput stdout
-                (mainHelpMsg appNames config)
+                (mainHelp appNames config')
             traverse_ putStrLn extraHelpMessage
 
-        SubcommandHelp cmd _config ->
+        SubcommandHelp cmd config' ->
             case internalHelp cmd of
-                Just msg ->
+                Just mkMsg ->
                     message defaultLayoutOptions verbosity colourOutput stdout
-                        msg
+                        (mkMsg appNames config')
 
                 Nothing ->
-                    External.executeCommand appNames config cmd ["--help"]
+                    External.executeCommand appNames config' cmd ["--help"]
 
         -- TODO:
         -- - We need to take aliases into account.
@@ -150,7 +155,7 @@ help internalHelp appNames@AppNames{usedName} options config =
         --   to "command-wrapper" if a more concrete manual page desn't exist.
         --   At the moment we assume that manual page for toolset is always
         --   present.
-        ManPage topic _config -> do
+        ManPage topic config' -> do
             let internalCommandManPage =
                     ("command-wrapper-" <>) <$> topic
 
@@ -165,14 +170,14 @@ help internalHelp appNames@AppNames{usedName} options config =
                 Just "version" -> pure internalCommandManPage
 
                 Just subcommandName ->
-                    findSubcommandManualPageName appNames config subcommandName
+                    findSubcommandManualPageName appNames config' subcommandName
 
             case possiblyManualPageName of
                 Nothing -> pure () -- TODO: Error message.
                 Just manPageName ->
                     executeFile "man" True [manPageName] Nothing
   where
-    defaults = Mainplate.applySimpleDefaults (MainHelp ())
+    defaults = Mainplate.applySimpleDefaults (MainHelp config)
 
     Config{colourOutput, extraHelpMessage, verbosity} = config
 
@@ -217,7 +222,7 @@ findSubcommandManualPageName
 --
 -- > TOOLSET [GLOBAL_OPTIONS] help [SUBCOMMAND]
 -- > TOOLSET [GLOBAL_OPTIONS] help --man [SUBCOMMAND|TOPIC]
-parseOptions :: AppNames -> Config -> [String] -> IO (Endo (HelpMode ()))
+parseOptions :: AppNames -> Config -> [String] -> IO (Endo (HelpMode Config))
 parseOptions appNames config options =
     execParser $ foldEndo
         <$> optional
@@ -226,11 +231,15 @@ parseOptions appNames config options =
                 <|> helpFlag
                 )
   where
-    switchTo = Endo . const
+    switchTo :: (Config -> HelpMode Config) -> Endo (HelpMode Config)
+    switchTo f = Endo \case
+        MainHelp cfg -> f cfg
+        SubcommandHelp _ cfg -> f cfg
+        ManPage _ cfg -> f cfg
 
-    manFlag :: Options.Parser (Maybe String -> Endo (HelpMode ()))
+    manFlag :: Options.Parser (Maybe String -> Endo (HelpMode Config))
     manFlag =
-        Options.flag' (\n -> switchTo (ManPage n ()))
+        Options.flag' (\n -> switchTo (ManPage n))
             ( Options.long "man"
             <> Options.help "Show manual page for a SUBCOMMAND or a TOPIC."
             )
@@ -239,107 +248,23 @@ parseOptions appNames config options =
     subcommandOrTopicArg =
         Options.strArgument (Options.metavar "SUBCOMMAND|TOPIC")
 
-    helpFlag :: Options.Parser (Endo (HelpMode ()))
+    helpFlag :: Options.Parser (Endo (HelpMode Config))
     helpFlag =
-        Options.flag mempty (switchTo $ SubcommandHelp "help" ())
+        Options.flag mempty (switchTo $ SubcommandHelp "help")
             (Options.long "help" <> Options.short 'h')
 
-    subcommandArg :: Options.Parser (Endo (HelpMode ()))
+    subcommandArg :: Options.Parser (Endo (HelpMode Config))
     subcommandArg =
         Options.strArgument (Options.metavar "SUBCOMMAND") <&> \cmd ->
             let (realCmd, _) = applyAlias (getAliases config) cmd []
-            in switchTo (SubcommandHelp realCmd ())
+            in switchTo (SubcommandHelp realCmd)
 
     execParser parser =
         Options.internalSubcommandParse appNames config "help"
             Options.defaultPrefs (Options.info parser mempty) options
 
-mainHelpMsg :: AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle)
-mainHelpMsg AppNames{usedName} Config{description} = Pretty.vsep
-    [ Pretty.reflow (maybe defaultDescription fromString description)
-    , ""
-
-    , usageSection usedName
-        [ subcommand <+> subcommandArguments
-        , "help" <+> optionalMetavar "HELP_OPTIONS" <+> optionalSubcommand
-        , "config" <+> optionalMetavar "CONFIG_OPTIONS" <+> optionalSubcommand
-        , "version" <+> optionalMetavar "VERSION_OPTIONS"
-        , "completion" <+> optionalMetavar "COMPLETION_OPTIONS"
-        , Pretty.braces (longOption "version" <> "|" <> shortOption 'V')
-        , helpOptions
-        ]
-
-    , section (Pretty.annotate dullGreen "GLOBAL_OPTIONS" <> ":")
-        [ optionDescription ["-v"]
-            [ Pretty.reflow "Increment verbosity by one level. Can be used"
-            , Pretty.reflow "multiple times."
-            ]
-
-        , optionDescription ["--verbosity=VERBOSITY"]
-            [ Pretty.reflow "Set verbosity level to"
-            , metavar "VERBOSITY" <> "."
-            , Pretty.reflow "Possible values of"
-            , metavar "VERBOSITY", "are"
-            , Pretty.squotes (value "silent") <> ","
-            , Pretty.squotes (value "normal") <> ","
-            , Pretty.squotes (value "verbose") <> ","
-            , "and"
-            , Pretty.squotes (value "annoying") <> "."
-            ]
-
-        , optionDescription ["--silent", "-s"]
-            (silentDescription "quiet")
-
-        , optionDescription ["--quiet", "-q"]
-            (silentDescription "silent")
-
-        , optionDescription ["--colo[u]r=WHEN"]
-            [ "Set", metavar "WHEN"
-            , Pretty.reflow "colourised output should be produced. Possible"
-            , Pretty.reflow "values of"
-            , metavar "WHEN", "are", Pretty.squotes (value "always") <> ","
-            , Pretty.squotes (value "auto") <> ","
-            , "and", Pretty.squotes (value "never") <> "."
-            ]
-
-        , optionDescription ["--no-colo[u]r"]
-            [ Pretty.reflow "Same as"
-            , Pretty.squotes (longOption "colour=never") <> "."
-            ]
-
-        , optionDescription ["--[no-]aliases"]
-            [ "Apply or ignore", metavar "SUBCOMMAND", "aliases."
-            , Pretty.reflow  "This is useful when used from e.g. scripts to\
-                \ avoid issues with user defined aliases interfering with how\
-                \ the script behaves."
-            ]
-
-        , optionDescription ["--version", "-V"]
-            [ Pretty.reflow "Print version information to stdout and exit."
-            ]
-
-        , optionDescription ["--help", "-h"]
-            [ Pretty.reflow "Print this help and exit."
-            ]
-        ]
-
-    , section (metavar "SUBCOMMAND" <> ":")
-        [ Pretty.reflow "Name of either internal or external subcommand."
-        ]
-    , ""
-    ]
-  where
-    silentDescription altOpt =
-        [ Pretty.reflow
-            "Silent mode. Suppress normal diagnostic or result output. Same as"
-        , Pretty.squotes (longOption altOpt) <> ",", "and"
-        , Pretty.squotes (longOption "verbosity=silent") <> "."
-        ]
-
-    defaultDescription = "Toolset of commands for working developer."
-
-helpSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
-helpSubcommandHelp AppNames{usedName} = Pretty.vsep
+helpSubcommandHelp :: AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
     [ Pretty.reflow
         "Display help message for Commnad Wrapper or one of its subcommands."
     , ""
@@ -387,10 +312,6 @@ subcommand = metavar "SUBCOMMAND"
 
 optionalSubcommand :: Pretty.Doc (Result Pretty.AnsiStyle)
 optionalSubcommand = Pretty.brackets subcommand
-
-subcommandArguments :: Pretty.Doc (Result Pretty.AnsiStyle)
-subcommandArguments =
-    Pretty.brackets (Pretty.annotate dullGreen "SUBCOMMAND_ARGUMENTS")
 
 globalOptions :: Pretty.Doc (Result Pretty.AnsiStyle)
 globalOptions = Pretty.brackets (Pretty.annotate dullGreen "GLOBAL_OPTIONS")
@@ -480,24 +401,24 @@ helpSubcommandCompleter
     -> Word
     -> [String]
     -> IO [String]
-helpSubcommandCompleter  appNames config _shell index words =
-    helpCompletion appNames config hadDashDash pat
-  where
-    wordsBeforePattern = List.take (fromIntegral index) words
-    hadDashDash = "--" `List.elem` wordsBeforePattern
-    pat = fromMaybe "" $ atMay words (fromIntegral index)
-
--- | Command line completion for internal @help@ subcommand.
-helpCompletion :: AppNames -> Config -> Bool -> String -> IO [String]
-helpCompletion appNames config hadDashDash pat
+helpSubcommandCompleter appNames config _shell index words
+  | hadTopic    = pure []
   | hadDashDash = subcmds
   | null pat    = (helpOptions' <>) <$> subcmds
   | isOption    = pure $ List.filter (pat `List.isPrefixOf`) helpOptions'
   | otherwise   = subcmds
   where
+    wordsBeforePattern = List.take (fromIntegral index) words
+    hadDashDash = "--" `List.elem` wordsBeforePattern
+    pat = fromMaybe "" $ atMay words (fromIntegral index)
     isOption = headMay pat == Just '-'
     helpOptions' = ["--help", "-h", "--"]
     subcmds = findSubcommands appNames config pat
+
+    hadTopic = case lastMay wordsBeforePattern of
+        Nothing -> False
+        Just ('-' : _) -> False
+        _ -> True
 
 -- | Lookup external and internal subcommands matching pattern (prefix).
 findSubcommands

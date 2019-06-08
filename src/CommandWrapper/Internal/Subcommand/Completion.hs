@@ -33,7 +33,7 @@ import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
 import Data.Foldable (all, any, asum, forM_, length, mapM_, null)
-import Data.Function (($), (.), const, id)
+import Data.Function (($), (.), id)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List
     ( break
@@ -342,14 +342,17 @@ completion
     -> IO ()
 completion internalCompleter appNames options config =
     runMain (parseOptions appNames config options) defaults \case
-        CompletionMode opts@CompletionOptions{output} () ->
-            getCompletions internalCompleter appNames config opts
+        CompletionMode opts@CompletionOptions{output} config' ->
+            getCompletions internalCompleter appNames config' opts
                 >>= outputStringLines output
 
         -- TODO:
         --
         -- - Completion script should be configurable.
-        ScriptMode ScriptOptions{shell, aliases, subcommand, output} () -> do
+        ScriptMode
+          ScriptOptions{shell, aliases, subcommand, output}
+          Global.Config{colourOutput, verbosity} -> do
+
             let mkCompletionScriptExpr =
                     $(Dhall.TH.staticDhallExpression
                         "./dhall/completion.dhall"
@@ -360,9 +363,7 @@ completion internalCompleter appNames options config =
             case MkCompletionScript <$> Dhall.extract Dhall.auto mkCompletionScriptExpr of
                 Nothing -> do
                     -- TODO: Figure out how to handle this better.
-                    let Global.Config{colourOutput, verbosity} = config
-
-                        subcommand' :: forall ann. Pretty.Doc ann
+                    let subcommand' :: forall ann. Pretty.Doc ann
                         subcommand' = pretty (usedName <> " completion")
 
                     errorMsg subcommand' verbosity colourOutput stderr
@@ -405,7 +406,9 @@ completion internalCompleter appNames options config =
                                     Options.Fish -> fish
                                     Options.Zsh  -> zsh
 
-        LibraryMode LibraryOptions{shell, output} () -> case shell of
+        LibraryMode
+          LibraryOptions{shell, output}
+          Global.Config{colourOutput, verbosity} -> case shell of
             -- TODO: We should consider piping the output to a pager or similar
             -- tool when the stdout is attached to a terminal.  For example
             -- `bat` would be a great choice if it is installed.
@@ -418,32 +421,31 @@ completion internalCompleter appNames options config =
                         OutputNotHandle (OutputFile fn) ->
                             ByteString.writeFile fn lib
 
-            _    -> do
-                let Global.Config{colourOutput, verbosity} = config
-
-                    subcommand :: forall ann. Pretty.Doc ann
+            _ -> do
+                let subcommand :: forall ann. Pretty.Doc ann
                     subcommand = pretty (usedName appNames <> " completion")
 
                 errorMsg subcommand verbosity colourOutput stderr
                     $ fromString (show shell) <> ": Unsupported SHELL value."
                 exitWith (ExitFailure 125)
 
-        QueryMode query@Query{..} () -> case what of
+        QueryMode query@Query{..} config' -> case what of
             QuerySubcommands
               | null patternToMatch ->
-                    getSubcommands appNames config >>= outputStringLines output
+                    getSubcommands appNames config'
+                        >>= outputStringLines output
 
               | otherwise ->
-                    findSubcommandsFuzzy config query
+                    findSubcommandsFuzzy config' query
                         >>= outputStringLines output . fmap Fuzzy.original
 
             QuerySubcommandAliases
               | null patternToMatch ->
-                    outputStringLines output (getAliases config)
+                    outputStringLines output (getAliases config')
 
               | otherwise ->
                     outputStringLines output $ fmap Fuzzy.original
-                        (findSubcommandAliasesFuzzy config query)
+                        (findSubcommandAliasesFuzzy config' query)
 
             QueryVerbosityValues
               | null patternToMatch ->
@@ -475,10 +477,9 @@ completion internalCompleter appNames options config =
                             caseSensitive
                         )
 
-        HelpMode () ->
-            let Global.Config{colourOutput, verbosity} = config
-             in message defaultLayoutOptions verbosity colourOutput stdout
-                    (completionSubcommandHelp appNames)
+        HelpMode config'@Global.Config{colourOutput, verbosity} ->
+            message defaultLayoutOptions verbosity colourOutput stdout
+                (completionSubcommandHelp appNames config')
   where
     defaults =
         let opts = CompletionOptions
@@ -489,7 +490,7 @@ completion internalCompleter appNames options config =
                 , output = OutputStdoutOnly
                 }
 
-        in Mainplate.applySimpleDefaults (CompletionMode opts ())
+        in Mainplate.applySimpleDefaults (CompletionMode opts config)
 
     getAliases :: Global.Config -> [String]
     getAliases = List.nub . fmap alias . Global.getAliases
@@ -801,7 +802,7 @@ parseOptions
     :: AppNames
     -> Global.Config
     -> [String]
-    -> IO (Endo (CompletionMode ()))
+    -> IO (Endo (CompletionMode Global.Config))
 parseOptions appNames config arguments = do
     let (options, words) = Options.splitArguments arguments
 
@@ -814,7 +815,7 @@ parseOptions appNames config arguments = do
                 [ dualFoldEndo
                     <$> aliasOption
                     <*> many aliasOption
-                    :: Options.Parser (Endo (CompletionMode ()))
+                    :: Options.Parser (Endo (CompletionMode Global.Config))
                 , dualFoldEndo
                     <$> subcommandOption
                     <*> some aliasOption
@@ -849,14 +850,20 @@ parseOptions appNames config arguments = do
             <*> optional subcommandOption
         ]
   where
-    switchTo = Endo . const
-    switchToScriptMode = switchTo (ScriptMode defScriptOptions ())
-    switchToLibraryMode = switchTo (LibraryMode defLibraryOptions ())
-    switchToQueryMode = switchTo (QueryMode defQueryOptions ())
-    switchToHelpMode = switchTo (HelpMode ())
+    switchTo f = Endo \case
+        CompletionMode _ a -> f a
+        ScriptMode _ a -> f a
+        LibraryMode _ a -> f a
+        QueryMode _ a -> f a
+        HelpMode a -> f a
+
+    switchToScriptMode = switchTo (ScriptMode defScriptOptions)
+    switchToLibraryMode = switchTo (LibraryMode defLibraryOptions)
+    switchToQueryMode = switchTo (QueryMode defQueryOptions)
+    switchToHelpMode = switchTo HelpMode
 
     updateCompletionOptions words =
-        fmap . mapEndo $ \f _ ->
+        fmap . mapEndo $ \f ->
             let defOpts = CompletionOptions
                     { words
                     , index = Nothing
@@ -864,23 +871,23 @@ parseOptions appNames config arguments = do
                     , subcommand = Nothing
                     , output = OutputStdoutOnly
                     }
-            in CompletionMode (f defOpts) ()
+            in appEndo $ switchTo (CompletionMode (f defOpts))
 
     updateQueryOptions
         :: Options.Parser (Endo Query)
-        -> Options.Parser (Endo (CompletionMode ()))
+        -> Options.Parser (Endo (CompletionMode Global.Config))
     updateQueryOptions = fmap . mapEndo $ \f -> \case
         QueryMode q cfg -> QueryMode (f q) cfg
         mode            -> mode
 
-    scriptFlag :: Options.Parser (Endo (CompletionMode ()))
+    scriptFlag :: Options.Parser (Endo (CompletionMode Global.Config))
     scriptFlag = Options.flag mempty switchToScriptMode (Options.long "script")
 
-    libraryFlag :: Options.Parser (Endo (CompletionMode ()))
+    libraryFlag :: Options.Parser (Endo (CompletionMode Global.Config))
     libraryFlag =
         Options.flag mempty switchToLibraryMode (Options.long "library")
 
-    queryFlag :: Options.Parser (Endo (CompletionMode ()))
+    queryFlag :: Options.Parser (Endo (CompletionMode Global.Config))
     queryFlag = Options.flag mempty switchToQueryMode (Options.long "query")
 
     subcommandsFlag :: Options.Parser (Endo Query)
@@ -936,7 +943,7 @@ parseOptions appNames config arguments = do
                 | otherwise ->
                     Left "Non-negative number expected"
 
-    aliasOption :: Options.Parser (Endo (CompletionMode ()))
+    aliasOption :: Options.Parser (Endo (CompletionMode Global.Config))
     aliasOption =
         Options.strOption (Options.long "alias" <> Options.metavar "ALIAS")
             <&> \alias -> Endo \case
@@ -949,7 +956,7 @@ parseOptions appNames config arguments = do
                     mode ->
                         mode
 
-    outputOption :: Options.Parser (Endo (CompletionMode ()))
+    outputOption :: Options.Parser (Endo (CompletionMode Global.Config))
     outputOption = updateOutput <$> Options.outputOption
 
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
@@ -961,8 +968,11 @@ parseOptions appNames config arguments = do
         Options.internalSubcommandParse appNames config "completion"
             Options.defaultPrefs (Options.info parser mempty) options
 
-completionSubcommandHelp :: AppNames -> Pretty.Doc (Result Pretty.AnsiStyle)
-completionSubcommandHelp AppNames{usedName} = Pretty.vsep
+completionSubcommandHelp
+    :: AppNames
+    -> Global.Config
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
+completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
     [ Pretty.reflow "Command line completion, editor, and IDE support."
     , ""
 
