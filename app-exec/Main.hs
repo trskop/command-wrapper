@@ -17,6 +17,8 @@ module Main (main)
 
 import Prelude hiding (words)
 
+import Control.Applicative (empty)
+import Control.Monad (when)
 import Data.Bifunctor (bimap)
 import Data.Foldable (asum, elem, for_)
 import Data.Function (on)
@@ -27,6 +29,7 @@ import Data.Monoid (Endo(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
 import System.Environment (getArgs, getEnvironment)
+import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
@@ -57,10 +60,19 @@ import qualified Options.Applicative as Options
     , option
     , short
     , strOption
+    , switch
     )
 import Safe (atMay, headMay, lastDef)
+import qualified System.Clock as Clock (Clock(Monotonic), TimeSpec, getTime)
 import System.Directory (setCurrentDirectory)
-import qualified System.Posix as Posix (executeFile)
+import qualified System.Posix as Posix
+    ( ProcessID
+    , ProcessStatus(Exited, Stopped, Terminated)
+    , executeFile
+    , forkProcess
+    , getProcessStatus
+    )
+import qualified Turtle (procs) -- Get rid of dependency on turtle, use process.
 
 import CommandWrapper.Config.Command (Command(..), NamedCommand(..))
 import qualified CommandWrapper.Config.Command as NamedCommand (isNamed)
@@ -94,8 +106,8 @@ data Action
     = List
     | Tree
     | DryRun
-    | Run
-    | RunDhall Text
+    | Run Bool
+    | RunDhall Bool Text
     | CompletionInfo
     | Completion Word
     | Help
@@ -110,7 +122,7 @@ main = do
     (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
 
     config@Config{commands} <- Dhall.inputFile Dhall.auto configFile
-    action <- fmap ($ Run) . Options.handleParseResult
+    action <- fmap ($ Run False) . Options.handleParseResult
         -- TODO: Switch to custom parser so that errors are printed correctly.
         $ Options.execParserPure
             Options.defaultPrefs
@@ -128,17 +140,27 @@ main = do
             getExecutableCommand params commands commandAndItsArguments
                 >>= printCommand params
 
-        Run ->
+        Run monitor ->
             getExecutableCommand params commands commandAndItsArguments
-                >>= executeCommand
+                >>= executeAndMonitorCommand params MonitorOptions
+                        { monitor
+                        , notificationMessage = "Action "
+                            <> maybe "" (\s -> "'" <> fromString s <> "'")
+                                (headMay commandAndItsArguments)
+                        }
 
-        RunDhall expression ->
-            runDhall params config RunDhallOptions
-                { expression
+        RunDhall monitor expression ->
+            runDhall params config
+                MonitorOptions
+                    { monitor
+                    , notificationMessage = "Action "
+                    }
+                RunDhallOptions
+                    { expression
 
-                -- There is no command name, only arguments.
-                , arguments = fromString <$> commandAndItsArguments
-                }
+                    -- There is no command name, only arguments.
+                    , arguments = fromString <$> commandAndItsArguments
+                    }
 
         CompletionInfo ->
             printCommandWrapperStyleCompletionInfoExpression stdout
@@ -174,6 +196,77 @@ getCommand params@Params{verbosity, colour} commands expectedName arguments =
         Just NamedCommand{command} ->
             pure (command verbosity colour arguments)
 
+data MonitorOptions = MonitorOptions
+    { monitor :: Bool
+    , notificationMessage :: Text
+    }
+
+executeAndMonitorCommand :: Params -> MonitorOptions -> Command -> IO ()
+executeAndMonitorCommand Params{..} MonitorOptions{..} command
+  | monitor = do
+        getDuration <- startDuration
+        pid <- Posix.forkProcess (executeCommand command)
+        exitCode <- getProcessStatus pid
+        duration <- getDuration
+        message defaultLayoutOptions verbosity colour stdout
+            ( "Action took: " <> Pretty.viaShow duration <> Pretty.line
+                :: Pretty.Doc (Result Pretty.AnsiStyle)
+            )
+        notifyWhen True notificationMessage exitCode
+        exitWith exitCode
+
+  | otherwise =
+        executeCommand command
+  where
+    getProcessStatus :: Posix.ProcessID -> IO ExitCode
+    getProcessStatus pid =
+        Posix.getProcessStatus True True pid >>= \case
+            Just (Posix.Exited exitCode) -> pure exitCode
+            Just Posix.Terminated{} -> pure (ExitFailure 1)
+            Just Posix.Stopped{} -> getProcessStatus pid
+            Nothing -> getProcessStatus pid
+
+-- TODO: This function contains a lot of hardcoded values.  They need to be
+-- configurable.
+notifyWhen :: Bool -> Text -> ExitCode -> IO ()
+notifyWhen p notificationMessage status = when p do
+    execs "notify-send" [icon, urgency, msg]
+    -- TODO: Find a different way to play notification sound.  This blocks
+    -- until the sound is played.
+    execs "paplay" [soundFile]
+  where
+    icon = "--icon="
+        <>  ( if status == ExitSuccess
+                then "dialog-information"
+                else "dialog-error"
+            )
+
+    urgency = "--urgency="
+        <>  ( if status == ExitSuccess
+                then "low"
+                else "normal"
+            )
+
+    msg = notificationMessage
+        <> " "
+        <>  ( if status == ExitSuccess
+                then "finished."
+                else "failed."
+            )
+
+    soundFile = "/usr/share/sounds/freedesktop/stereo/complete.oga"
+
+    execs cmd args = Turtle.procs cmd args empty
+
+startDuration :: IO (IO Clock.TimeSpec)
+startDuration = do
+    start <- getTime
+    return $ do
+        end <- getTime
+        pure (end - start)
+  where
+    getTime = Clock.getTime Clock.Monotonic
+
 executeCommand :: Command -> IO ()
 executeCommand Command{..} = do
     for_ workingDirectory setCurrentDirectory
@@ -205,12 +298,21 @@ data RunDhallOptions = RunDhallOptions
     , arguments :: [Text]
     }
 
-runDhall :: Params -> Config -> RunDhallOptions -> IO ()
-runDhall Params{colour, verbosity} Config{} RunDhallOptions{..} = do
+runDhall :: Params -> Config -> MonitorOptions -> RunDhallOptions -> IO ()
+runDhall
+  params@Params{colour, verbosity}
+  Config{}
+  monitorOptions@MonitorOptions{notificationMessage}
+  RunDhallOptions{arguments, expression} = do
     -- TODO: Handle dhall exceptions properly.  Get inspired by `config`
     -- subcommand.
     mkCommand <- Dhall.input Dhall.auto expression
-    executeCommand (mkCommand verbosity colour arguments)
+    let cmd@Command{command} = mkCommand verbosity colour arguments
+        monitorOptions' = monitorOptions
+            { notificationMessage =
+                notificationMessage <> "'" <> fromString command <> "'"
+            }
+    executeAndMonitorCommand params monitorOptions' cmd
 
 newtype ListOptions = ListOptions
     { showDescription :: Bool
@@ -276,11 +378,11 @@ showCommandTree Params{} Config{commands} TreeOptions{} =
 
         shift first other = zipWith (<>) (first : repeat other)
 
-
 parseOptions :: Options.Parser (Action -> Action)
 parseOptions = asum
     [ completionInfoFlag
-    , dhallOption
+    , Options.flag' (const (Run True)) (Options.long "notify")
+    , dhallOption <*> Options.switch (Options.long "notify")
     , Options.flag' (const List) $ mconcat
         [ Options.short 'l'
         , Options.long "list"
@@ -303,8 +405,8 @@ parseOptions = asum
     , pure id
     ]
   where
-    dhallOption = Options.strOption (Options.long "dhall") <&> \expr _ ->
-        RunDhall expr
+    dhallOption = Options.strOption (Options.long "dhall") <&> \expr m _ ->
+        RunDhall m expr
 
 doCompletion :: Config -> Word -> [String] -> [String]
 doCompletion Config{commands} index words =
@@ -319,7 +421,9 @@ doCompletion Config{commands} index words =
         , "-t", "--tree"
         , "--print"
         , "--dhall="
+        , "--notify"
         , "-h", "--help"
+        , "--"
         ]
 
 helpMsg :: Params -> Pretty.Doc (Result Pretty.AnsiStyle)
@@ -333,6 +437,12 @@ helpMsg Params{name, subcommand} = Pretty.vsep
             <+> Pretty.brackets (Help.longOption "print")
             <+> Pretty.brackets (Help.metavar "--")
             <+> Help.metavar "COMMAND"
+            <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
+
+        , subcommand'
+            <+> Help.longOptionWithArgument "dhall" "EXPRESSION"
+            <+> Pretty.brackets (Help.longOption "notify")
+            <+> Pretty.brackets (Help.metavar "--")
             <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
 
         , subcommand' <+> Pretty.braces
@@ -384,6 +494,11 @@ helpMsg Params{name, subcommand} = Pretty.vsep
                     ("help" <+> "--man" <+> subcommand')
                 )
                 <> "."
+            ]
+
+        , Help.optionDescription ["--notify"]
+            [ Pretty.reflow
+                "Send desktop notification when the command is done."
             ]
 
         , Help.optionDescription ["--help", "-h"]

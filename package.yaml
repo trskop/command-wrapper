@@ -121,3 +121,5 @@ executables:
     main: Main.hs
     dependencies:
       - *this
+      - clock
+      - turtle

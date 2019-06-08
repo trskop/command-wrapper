@@ -11,7 +11,7 @@ environment.
 
 # USAGE
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec [\--] *COMMAND*
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \[\--notify] [\--] *COMMAND*
 \[*COMMAND\_ARGUMENTS*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|\--tree|-t}
@@ -19,7 +19,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|\--tree|-t}
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--print *COMMAND* [\--]
 \[*COMMAND\_ARGUMENTS*]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--dhall=*EXPRESSION* [\--]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--dhall=*EXPRESSION* \[\--notify] [\--]
 \[*COMMAND\_ARGUMENTS*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--help|-h}
@@ -177,6 +177,9 @@ scripting language like Bash.
     ```
 
     This is very useful when designing new commands.
+
+\--notify
+    Send desktop notification when the command is done.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help exec`.
