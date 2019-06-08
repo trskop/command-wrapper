@@ -375,4 +375,3 @@ helpMessage AppNames{usedName} Global.Config{description} = Pretty.vsep
 
     subcommandArguments =
         Pretty.brackets (Pretty.annotate Help.dullGreen "SUBCOMMAND_ARGUMENTS")
-
