@@ -707,12 +707,21 @@ configSubcommandCompleter _appNames _cfg _shell index words
   | Just "--output" <- lastMay wordsBeforePattern =
         bashCompleter "file" ""
 
+  | Just "-i" <- lastMay wordsBeforePattern =
+        bashCompleter "file" ""
+
+  | Just "--input" <- lastMay wordsBeforePattern =
+        bashCompleter "file" ""
+
   -- TODO: This may be Bash-scpecific.  We need to investigate other shells.
   | Just w <- lastMay wordsBeforePattern, isBashRedirection w =
         bashCompleter "file" ""
 
   | "--output=" `List.isPrefixOf` pat =
         bashCompleter "file" "--output="
+
+  | "--input=" `List.isPrefixOf` pat =
+        bashCompleter "file" "--input="
 
   | null pat =
         pure possibleOptions
@@ -755,6 +764,12 @@ configSubcommandCompleter _appNames _cfg _shell index words
         , List.any ("--output=" `List.isPrefixOf`) wordsBeforePattern
         ]
 
+    hadInput = List.or
+        [ "-i" `List.elem` wordsBeforePattern
+        , "--input" `List.elem` wordsBeforePattern
+        , List.any ("--input=" `List.isPrefixOf`) wordsBeforePattern
+        ]
+
     mwhen p x = if p then x else mempty
     munless p = mwhen (not p)
 
@@ -794,6 +809,22 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 ]
             )
             ["-o", "--output="]
+        <> munless
+            ( List.or
+                [ hadHelp
+                , not $ List.or
+                    [ hadDhall
+                    , hadDhallDiff
+                    , hadDhallFreeze
+                    , hadDhallLint
+                    , hadDhallResolve
+                    ]
+                , hadDhallDiff, hadDhallFormat, hadDhallHash, hadDhallRepl
+                , hadInit
+                , hadInput -- Input options can be specified only once.
+                ]
+            )
+            ["-i", "--input="]
         <> munless
             ( List.or
                 [ hadHelp, hadDhall, hadDhallDiff, not hadDhallFreeze
