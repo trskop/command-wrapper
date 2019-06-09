@@ -33,6 +33,7 @@ import qualified Dhall
 
 data Alias = Alias
     { alias :: String
+    , description :: Maybe String
     , command :: String
     , arguments :: [String]
     }

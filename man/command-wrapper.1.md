@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 10th April 2019
+% 9th June 2019
 
 
 # NAME
@@ -544,6 +544,9 @@ in  -- Subcommand aliases.  These can be used to invoke subcommand in
             -- Name of the alias, i.e. name under which we can execute
             -- this subcommand.
             { alias : Text
+
+            -- Optional alias description which serves as a short help message.
+            , description : Optional Text
 
             -- Command Wrapper subcommand to be executed under the
             -- name specified in `alias` field.
