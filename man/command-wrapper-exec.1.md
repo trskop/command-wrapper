@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 29th May 2019
+% 9th June 2019
 
 
 # NAME
@@ -433,6 +433,34 @@ hello world
 user@machine ~ $ TOOLSET_COMMAND hello.world again
 hello world again
 ```
+
+Following Dhall expression will create aliases for all exec commands:
+
+```
+let CommandWrapper =
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
+
+let execConfig = ../command-wrapper-exec.dhall
+
+let List/map =
+      https://prelude.dhall-lang.org/List/map
+      sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680
+
+let toAlias =
+        λ(x : CommandWrapper.ExecNamedCommand)
+      → { alias = x.name, command = "exec", arguments = [ x.name ] }
+
+in  List/map
+    CommandWrapper.ExecNamedCommand
+    CommandWrapper.SubcommandAlias
+    toAlias
+    execConfig.commands
+```
+
+It is ment to be put into
+`${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/default/exec-aliases.dhall`
+and included in
+`${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/default.dhall`.
 
 
 # SEE ALSO
