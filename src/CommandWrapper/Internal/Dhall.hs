@@ -10,13 +10,24 @@
 --
 -- Dhall utilities.
 module CommandWrapper.Internal.Dhall
-    ( hPut
+    (
+    -- * Interpret Combinators
+
+    -- * Inject Combinators
+      inputString
+    , inputList
+    , inputMaybe
+
+    -- * I/O
+    , hPut
     , hPutExpr
     , hPutDoc
     )
   where
 
 import Data.Functor ((<&>))
+import Data.String (fromString)
+import GHC.Exts (IsList(fromList))
 import System.IO (Handle)
 
 import Data.Text.Prettyprint.Doc (Pretty)
@@ -29,8 +40,19 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     , unAnnotateS
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (renderIO)
-import qualified Dhall (InputType(InputType, embed))
-import qualified Dhall.Core as Dhall (Expr)
+import qualified Dhall (InputType(InputType, declared, embed))
+import qualified Dhall.Core as Dhall
+    ( Expr
+        ( App
+        , List
+        , ListLit
+        , None
+        , Optional
+        , Some
+        , Text
+        , TextLit
+        )
+    )
 import qualified Dhall.Pretty as Dhall
     ( Ann
     , CharacterSet
@@ -45,6 +67,29 @@ import qualified System.Console.Terminal.Size as Terminal
 
 import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
 
+
+-- {{{ Combinators ------------------------------------------------------------
+
+inputString :: Dhall.InputType String
+inputString = Dhall.InputType
+    { declared = Dhall.Text
+    , embed = Dhall.TextLit . fromString
+    }
+
+inputList :: Dhall.InputType a -> Dhall.InputType [a]
+inputList Dhall.InputType{..} = Dhall.InputType
+    { declared = Dhall.List `Dhall.App` declared
+    , embed = Dhall.ListLit (Just declared) . fromList . fmap embed
+    }
+
+inputMaybe :: Dhall.InputType a -> Dhall.InputType (Maybe a)
+inputMaybe Dhall.InputType{..} = Dhall.InputType
+    { declared = Dhall.Optional `Dhall.App` declared
+    , embed = maybe (Dhall.None `Dhall.App` declared) (Dhall.Some . embed)
+    }
+
+-- }}} Combinators ------------------------------------------------------------
+-- {{{ I/O --------------------------------------------------------------------
 
 -- | Print haskell value as a Dhall expression.
 hPut
@@ -87,3 +132,5 @@ hPutDoc colourOutput h doc = do
         if useColours
             then Dhall.annToAnsiStyle <$> stream
             else Pretty.unAnnotateS stream
+
+-- }}} I/O --------------------------------------------------------------------

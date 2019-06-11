@@ -17,37 +17,24 @@ module CommandWrapper.Config.Command
     )
   where
 
-import Data.String (fromString)
 import GHC.Generics (Generic)
-import GHC.Exts (IsList(fromList))
 
 import Data.Text (Text)
 import Dhall ((>$<), (>*<))
 import qualified Dhall
     ( Inject(injectWith)
-    , InputType(InputType, declared, embed)
+    , InputType
     , Interpret
     , InterpretOptions(InterpretOptions, fieldModifier)
     , RecordInputType
     , inputRecord
     , inputFieldWith
     )
-import qualified Dhall.Core as Dhall
-    ( Expr
-        ( App
-        , List
-        , ListLit
-        , None
-        , Optional
-        , Some
-        , Text
-        , TextLit
-        )
-    )
 import Data.Verbosity (Verbosity)
 import Numeric.Natural (Natural)
 
 import CommandWrapper.Config.Environment (EnvironmentVariable)
+import CommandWrapper.Internal.Dhall as Dhall
 import CommandWrapper.Options.ColourOutput (ColourOutput)
 import CommandWrapper.Options.Shell (Shell)
 
@@ -79,11 +66,11 @@ data Command = Command
 instance Dhall.Inject Command where
     injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.inputRecord
         ( adapt
-            >$< field "command" inputString
-            >*< field "arguments" (inputList inputString)
+            >$< field "command" Dhall.inputString
+            >*< field "arguments" (Dhall.inputList Dhall.inputString)
             >*< field "environment" (Dhall.injectWith opts)
             >*< field "searchPath" (Dhall.injectWith opts)
-            >*< field "workingDirectory" (inputMaybe inputString)
+            >*< field "workingDirectory" (Dhall.inputMaybe Dhall.inputString)
         )
       where
         adapt Command{..} =
@@ -103,8 +90,8 @@ data SimpleCommand = SimpleCommand
 instance Dhall.Inject SimpleCommand where
     injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.inputRecord
         ( adapt
-            >$< field "command" inputString
-            >*< field "arguments" (inputList inputString)
+            >$< field "command" Dhall.inputString
+            >*< field "arguments" (Dhall.inputList Dhall.inputString)
             >*< field "environment" (Dhall.injectWith opts)
         )
       where
@@ -112,25 +99,3 @@ instance Dhall.Inject SimpleCommand where
 
         field :: Text -> Dhall.InputType a -> Dhall.RecordInputType a
         field = Dhall.inputFieldWith . fieldModifier
-
--- {{{ Helper Functions -- Do Not Export --------------------------------------
-
-inputString :: Dhall.InputType String
-inputString = Dhall.InputType
-    { declared = Dhall.Text
-    , embed = Dhall.TextLit . fromString
-    }
-
-inputList :: Dhall.InputType a -> Dhall.InputType [a]
-inputList Dhall.InputType{..} = Dhall.InputType
-    { declared = Dhall.List `Dhall.App` declared
-    , embed = Dhall.ListLit (Just declared) . fromList . fmap embed
-    }
-
-inputMaybe :: Dhall.InputType a -> Dhall.InputType (Maybe a)
-inputMaybe Dhall.InputType{..} = Dhall.InputType
-    { declared = Dhall.Optional `Dhall.App` declared
-    , embed = maybe (Dhall.None `Dhall.App` declared) (Dhall.Some . embed)
-    }
-
--- }}} Helper Functions -- Do Not Export --------------------------------------
