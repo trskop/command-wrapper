@@ -36,7 +36,6 @@ import Control.Monad (guard)
 import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
 import Data.Functor ((<&>))
-import Data.Functor.Compose (Compose(Compose))
 import Data.Semigroup ((<>))
 import Data.String (fromString)
 import GHC.Exts (IsList(fromList))
@@ -84,7 +83,6 @@ import qualified Dhall.Pretty as Dhall
     , layoutOpts
     , prettyCharacterSet
     )
-import qualified Dhall.TypeCheck as Dhall (X)
 import qualified System.Console.Terminal.Size as Terminal
     ( Window(Window, width)
     , hSize

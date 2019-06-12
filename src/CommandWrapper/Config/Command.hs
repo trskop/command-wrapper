@@ -38,6 +38,7 @@ import CommandWrapper.Internal.Dhall as Dhall
 import CommandWrapper.Options.ColourOutput (ColourOutput)
 import CommandWrapper.Options.Shell (Shell)
 
+
 data NamedCommand = NamedCommand
     { name :: Text
     , description :: Maybe Text
