@@ -1,0 +1,3 @@
+< Never | Always | OnFailure | After : Natural >
+
+-- vim: filetype=dhall
