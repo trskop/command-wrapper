@@ -12,9 +12,13 @@
 module CommandWrapper.Internal.Dhall
     (
     -- * Interpret Combinators
+      UnionType(..)
+    , constructor
+    , constructor0
+    , union
 
     -- * Inject Combinators
-      inputString
+    , inputString
     , inputList
     , inputMaybe
 
@@ -25,11 +29,20 @@ module CommandWrapper.Internal.Dhall
     )
   where
 
+import Prelude hiding ((<>))
+
+import Control.Applicative (empty)
+import Control.Monad (guard)
+import Data.Bifunctor (bimap)
+import Data.Coerce (coerce)
 import Data.Functor ((<&>))
+import Data.Functor.Compose (Compose(Compose))
+import Data.Semigroup ((<>))
 import Data.String (fromString)
 import GHC.Exts (IsList(fromList))
 import System.IO (Handle)
 
+import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -40,19 +53,30 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     , unAnnotateS
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (renderIO)
-import qualified Dhall (InputType(InputType, declared, embed))
+import qualified Dhall
+    ( InputType(InputType, declared, embed)
+    , Type(Type, expected, extract)
+    )
 import qualified Dhall.Core as Dhall
     ( Expr
         ( App
+        , Field
         , List
         , ListLit
         , None
         , Optional
+        , Record
+        , RecordLit
         , Some
         , Text
         , TextLit
+        , Union
+        , UnionLit
         )
+    , judgmentallyEqual
     )
+import qualified Dhall.Map as Dhall (Map)
+import qualified Dhall.Map as Dhall.Map (delete, lookup, singleton)
 import qualified Dhall.Pretty as Dhall
     ( Ann
     , CharacterSet
@@ -60,6 +84,7 @@ import qualified Dhall.Pretty as Dhall
     , layoutOpts
     , prettyCharacterSet
     )
+import qualified Dhall.TypeCheck as Dhall (X)
 import qualified System.Console.Terminal.Size as Terminal
     ( Window(Window, width)
     , hSize
@@ -68,7 +93,7 @@ import qualified System.Console.Terminal.Size as Terminal
 import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
 
 
--- {{{ Combinators ------------------------------------------------------------
+-- {{{ Inject Combinators -----------------------------------------------------
 
 inputString :: Dhall.InputType String
 inputString = Dhall.InputType
@@ -88,7 +113,78 @@ inputMaybe Dhall.InputType{..} = Dhall.InputType
     , embed = maybe (Dhall.None `Dhall.App` declared) (Dhall.Some . embed)
     }
 
--- }}} Combinators ------------------------------------------------------------
+-- }}} Inject Combinators -----------------------------------------------------
+-- {{{ Interpret Combinators --------------------------------------------------
+
+newtype UnionType a =
+    UnionType (Dhall.Map Text (Either a (Dhall.Type a)))
+
+instance Functor UnionType where
+    fmap :: forall a b. (a -> b) -> UnionType a -> UnionType b
+    fmap f =
+        coerce @(Dhall.Map Text (Either a (Dhall.Type a)) -> Dhall.Map Text (Either b (Dhall.Type b)))
+            (fmap (bimap f (fmap f)))
+
+instance Semigroup (UnionType a) where
+    (<>) = coerce ((<>) @(Dhall.Map Text (Either a (Dhall.Type a))))
+
+instance Monoid (UnionType a) where
+    mempty = coerce (mempty :: Dhall.Map Text (Either a (Dhall.Type a)))
+    mappend = (<>)
+
+-- | Parse a single constructor of a union.
+constructor :: Text -> Dhall.Type a -> UnionType a
+constructor key valueType =
+    UnionType (Dhall.Map.singleton key (Right valueType))
+
+-- | Parse a single constructor of a union.
+constructor0 :: Text -> a -> UnionType a
+constructor0 key value = UnionType (Dhall.Map.singleton key (Left value))
+
+-- | Run a 'UnionType' parser to build a 'Dhall.Type' parser.
+union :: forall a. UnionType a -> Dhall.Type a
+union (UnionType constructors) = Dhall.Type
+    { extract  = extractF
+    , expected = Dhall.Union expect
+    }
+  where
+    expect =
+        either (const Nothing) (notEmptyRecord . Dhall.expected)
+            <$> constructors
+
+    extractF e0 = do
+        (field, e1, rest) <- extractUnionConstructor e0
+
+        t <- Dhall.Map.lookup field constructors
+        guard
+            ( Dhall.Union rest
+                `Dhall.judgmentallyEqual`
+                    Dhall.Union (Dhall.Map.delete field expect)
+            )
+        either Just (`Dhall.extract` e1) t
+
+extractUnionConstructor
+    :: Dhall.Expr s a
+    -> Maybe (Text, Dhall.Expr s a, Dhall.Map Text (Maybe (Dhall.Expr s a)))
+extractUnionConstructor = \case
+    Dhall.UnionLit fld e rest ->
+        pure (fld, e, rest)
+
+    Dhall.App (Dhall.Field (Dhall.Union kts) fld) e ->
+        pure (fld, e, Dhall.Map.delete fld kts)
+
+    Dhall.Field (Dhall.Union kts) fld ->
+        pure (fld, Dhall.RecordLit mempty, Dhall.Map.delete fld kts)
+
+    _ ->
+        empty
+
+notEmptyRecord :: Dhall.Expr s a -> Maybe (Dhall.Expr s a)
+notEmptyRecord = \case
+    Dhall.Record m | null m -> empty
+    e                       -> pure e
+
+-- }}} Interpret Combinators --------------------------------------------------
 -- {{{ I/O --------------------------------------------------------------------
 
 -- | Print haskell value as a Dhall expression.
