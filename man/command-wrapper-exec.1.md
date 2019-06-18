@@ -179,7 +179,7 @@ scripting language like Bash.
     This is very useful when designing new commands.
 
 \--notify
-    Send desktop notification when the command is done.
+:   Send desktop notification when the command is done.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help exec`.
