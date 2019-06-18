@@ -23,18 +23,26 @@ import Data.Bifunctor (bimap)
 import Data.Foldable (asum, elem, for_)
 import Data.Function (on)
 import Data.Functor ((<&>))
-import qualified Data.List as List (filter, find, groupBy, isPrefixOf, sortBy)
+import qualified Data.List as List
+    ( filter
+    , find
+    , groupBy
+    , isPrefixOf
+    , sortBy
+    , take
+    )
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
+import Numeric.Natural (Natural)
 import System.Environment (getArgs, getEnvironment)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 
+import qualified Data.CaseInsensitive as CaseInsensitive (mk)
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
 import qualified Data.Text as Text (split, unpack)
---import qualified Data.Text.IO as Text (putStrLn)
 import Data.Text.Prettyprint.Doc (Doc, (<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
@@ -61,6 +69,7 @@ import qualified Options.Applicative as Options
     , short
     , strOption
     , switch
+    , maybeReader
     )
 import Safe (atMay, headMay, lastDef)
 import qualified System.Clock as Clock (Clock(Monotonic), TimeSpec, getTime)
@@ -83,7 +92,12 @@ import qualified CommandWrapper.Config.Environment as EnvironmentVariable
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPut)
 import qualified CommandWrapper.Internal.Subcommand.Help as Help
 import CommandWrapper.Message (Result, defaultLayoutOptions, hPutDoc, message)
-import qualified CommandWrapper.Options as Options (splitArguments)
+import qualified CommandWrapper.Options as Options
+    ( splitArguments
+    , splitArguments'
+    )
+import qualified CommandWrapper.Options.Shell as Options (Shell)
+import qualified CommandWrapper.Options.Shell as Options.Shell (parse)
 import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
     , Params(Params, colour, config, name, subcommand, verbosity)
@@ -98,6 +112,9 @@ import CommandWrapper.Prelude
 
 newtype Config = Config
     { commands :: [NamedCommand]
+    -- TODO: Defaults for:
+    -- - Notifications
+    -- - Command line completion defaults
     }
   deriving stock (Generic)
   deriving anyclass (Dhall.Interpret)
@@ -109,7 +126,7 @@ data Action
     | Run Bool
     | RunDhall Bool Text
     | CompletionInfo
-    | Completion Word
+    | Completion Word Options.Shell
     | Help
 
 instance HaveCompletionInfo Action where
@@ -165,8 +182,8 @@ main = do
         CompletionInfo ->
             printCommandWrapperStyleCompletionInfoExpression stdout
 
-        Completion index ->
-            mapM_ putStrLn (doCompletion config index commandAndItsArguments)
+        Completion index shell ->
+            doCompletion config shell index commandAndItsArguments
 
         Help ->
             let Params{verbosity, colour} = params
@@ -398,7 +415,8 @@ parseOptions = asum
                 (Options.long "completion" <> Options.internal)
             <*> Options.option Options.auto
                 (Options.long "index" <> Options.internal)
-            <*  Options.strOption @String
+            <*> Options.option
+                (Options.maybeReader (Options.Shell.parse . CaseInsensitive.mk))
                 (Options.long "shell" <> Options.internal)
             )
 
@@ -408,13 +426,46 @@ parseOptions = asum
     dhallOption = Options.strOption (Options.long "dhall") <&> \expr m _ ->
         RunDhall m expr
 
-doCompletion :: Config -> Word -> [String] -> [String]
-doCompletion Config{commands} index words =
-    List.filter (pat `List.isPrefixOf`) $ allOptions <> commandNames
+doCompletion :: Config -> Options.Shell -> Word -> [String] -> IO ()
+doCompletion config@Config{commands} shell index words =
+    case Options.splitArguments' words of
+        (_, _, []) ->
+            completeExecSubcommand
+
+        (_, indexBound, commandName : commandArguments)
+          | not canCompleteCommand || index <= indexBound ->
+                completeExecSubcommand
+          | otherwise ->
+                doCommandCompletion config shell commandName
+                    (index - indexBound) commandArguments
   where
+    completeExecSubcommand
+      | hadListOrTreeOrHelp =
+            pure ()
+      | hadDhall =
+            mapM_ putStrLn $ List.filter (pat `List.isPrefixOf`) ["--notify"]
+      | hadNotifyOrPrint =
+            mapM_ putStrLn commandNames
+      | otherwise =
+            mapM_ putStrLn $ List.filter
+                (pat `List.isPrefixOf`)
+                (allOptions <> commandNames)
+
     pat = fromMaybe (lastDef "" words) (atMay words (fromIntegral index))
 
+    wordsBeforePattern = List.take (fromIntegral index) words
+
     commandNames = Text.unpack . (name :: NamedCommand -> Text) <$> commands
+
+    hadListOrTreeOrHelp = any
+        (`elem` ["-l", "--ls", "--list", "-t", "--tree", "-h", "--help"])
+        wordsBeforePattern
+
+    hadDhall = any ("--dhall=" `List.isPrefixOf`) wordsBeforePattern
+
+    hadNotifyOrPrint = any (`elem` ["--notify", "--print"]) wordsBeforePattern
+
+    canCompleteCommand = not (hadListOrTreeOrHelp || hadDhall)
 
     allOptions =
         [ "-l", "--ls", "--list"
@@ -425,6 +476,38 @@ doCompletion Config{commands} index words =
         , "-h", "--help"
         , "--"
         ]
+
+doCommandCompletion
+    :: Config
+    -> Options.Shell
+    -> String
+    -- ^ Command name.
+    -> Word
+    -> [String]
+    -> IO ()
+doCommandCompletion Config{commands} shell commandName index words =
+    case List.find (NamedCommand.isNamed (fromString commandName)) commands of
+        Nothing ->
+            defaultCompletion
+        Just NamedCommand{completion} -> case completion of
+            Nothing ->
+                defaultCompletion
+            Just mkCommand ->
+                executeCommandCompletion mkCommand shell index words
+  where
+    -- TODO: Should this be the same default completion as shell does?
+    defaultCompletion = pure ()
+
+executeCommandCompletion
+    :: (Options.Shell -> Natural -> [Text] -> Command)
+    -- ^ Function that constructs completion command, i.e. command that will be
+    -- executed to provide completion.
+    -> Options.Shell
+    -> Word
+    -> [String]
+    -> IO ()
+executeCommandCompletion mkCommand shell index words =
+    executeCommand (mkCommand shell (fromIntegral index) (fromString <$> words))
 
 helpMsg :: Params -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpMsg Params{name, subcommand} = Pretty.vsep
