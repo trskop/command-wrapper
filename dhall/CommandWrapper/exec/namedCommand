@@ -20,6 +20,8 @@ in    λ(name : Text)
               → ∀(arguments : List Text)
               → CommandWrapper.ExecCommand
             )
+        , notifyWhen =
+            None CommandWrapper.NotifyWhen
         }
       : CommandWrapper.ExecNamedCommand
 

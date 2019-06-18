@@ -34,6 +34,7 @@ import Data.Verbosity (Verbosity)
 import Numeric.Natural (Natural)
 
 import CommandWrapper.Config.Environment (EnvironmentVariable)
+import CommandWrapper.Config.NotifyWhen (NotifyWhen)
 import CommandWrapper.Internal.Dhall as Dhall
 import CommandWrapper.Options.ColourOutput (ColourOutput)
 import CommandWrapper.Options.Shell (Shell)
@@ -44,6 +45,7 @@ data NamedCommand = NamedCommand
     , description :: Maybe Text
     , command :: Verbosity -> ColourOutput -> [Text] -> Command
     , completion :: Maybe (Shell -> Natural -> [Text] -> Command)
+    , notifyWhen :: Maybe NotifyWhen
     }
   deriving stock (Generic)
   deriving anyclass (Dhall.Interpret)

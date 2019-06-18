@@ -8,6 +8,8 @@ let ExecCommand : Type = ./ExecCommand
 
 let Shell : Type = ./Shell
 
+let NotifyWhen : Type = ./NotifyWhen
+
 in  { name :
         Text
     , description :
@@ -24,6 +26,8 @@ in  { name :
           → ∀(arguments : List Text)
           → ExecCommand
         )
+    , notifyWhen :
+        Optional NotifyWhen
     }
 
 -- vim: filetype=dhall

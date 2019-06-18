@@ -229,7 +229,7 @@ executeAndMonitorCommand Params{..} MonitorOptions{..} command
             ( "Action took: " <> Pretty.viaShow duration <> Pretty.line
                 :: Pretty.Doc (Result Pretty.AnsiStyle)
             )
-        notifyWhen True notificationMessage exitCode
+        doNotifyWhen True notificationMessage exitCode
         exitWith exitCode
 
   | otherwise =
@@ -245,8 +245,8 @@ executeAndMonitorCommand Params{..} MonitorOptions{..} command
 
 -- TODO: This function contains a lot of hardcoded values.  They need to be
 -- configurable.
-notifyWhen :: Bool -> Text -> ExitCode -> IO ()
-notifyWhen p notificationMessage status = when p do
+doNotifyWhen :: Bool -> Text -> ExitCode -> IO ()
+doNotifyWhen p notificationMessage status = when p do
     execs "notify-send" [icon, urgency, msg]
     -- TODO: Find a different way to play notification sound.  This blocks
     -- until the sound is played.

@@ -18,7 +18,13 @@ module CommandWrapper.Config.NotifyWhen
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 
-import qualified Dhall (Type, natural)
+import Data.Text (Text)
+import qualified Dhall
+    ( Interpret(autoWith)
+    , InterpretOptions(InterpretOptions, constructorModifier)
+    , Type
+    , natural
+    )
 import qualified CommandWrapper.Internal.Dhall as Dhall
     ( constructor
     , constructor0
@@ -37,12 +43,17 @@ data NotifyWhen
     -- ^ Notify only if action took more than the specified number of seconds.
   deriving stock (Eq, Generic, Show)
 
-interpretNotifyWhen :: Dhall.Type NotifyWhen
-interpretNotifyWhen = Dhall.union $ mconcat
-    [ Dhall.constructor0 "Never"      Never
-    , Dhall.constructor0 "Always"     Always
-    , Dhall.constructor0 "OnFailure"  OnFailure
-    , Dhall.constructor  "After"     (After <$> Dhall.natural)
+interpretNotifyWhen :: (Text -> Text) -> Dhall.Type NotifyWhen
+interpretNotifyWhen f = Dhall.union $ mconcat
+    [ Dhall.constructor0 (f "Never")      Never
+    , Dhall.constructor0 (f "Always")     Always
+    , Dhall.constructor0 (f "OnFailure")  OnFailure
+    , Dhall.constructor  (f "After")     (After <$> Dhall.natural)
     ]
+
+instance Dhall.Interpret NotifyWhen where
+    autoWith :: Dhall.InterpretOptions -> Dhall.Type NotifyWhen
+    autoWith Dhall.InterpretOptions{constructorModifier} =
+        interpretNotifyWhen constructorModifier
 
 --inputNotifyWhen :: Dhall.InputType NotifyWhen
