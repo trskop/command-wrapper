@@ -445,7 +445,7 @@ doCompletion config@Config{commands} shell index words =
       | hadDhall =
             mapM_ putStrLn $ List.filter (pat `List.isPrefixOf`) ["--notify"]
       | hadNotifyOrPrint =
-            mapM_ putStrLn commandNames
+            mapM_ putStrLn $ List.filter (pat `List.isPrefixOf`) commandNames
       | otherwise =
             mapM_ putStrLn $ List.filter
                 (pat `List.isPrefixOf`)
