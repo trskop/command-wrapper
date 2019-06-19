@@ -229,7 +229,8 @@ executeAndMonitorCommand Params{..} MonitorOptions{..} command
             ( "Action took: " <> Pretty.viaShow duration <> Pretty.line
                 :: Pretty.Doc (Result Pretty.AnsiStyle)
             )
-        doNotifyWhen True notificationMessage exitCode
+        -- TODO: Value of type `NotifyConfig` should be part of `Config`.
+        doNotifyWhen defNotifyConfig True notificationMessage exitCode
         exitWith exitCode
 
   | otherwise =
@@ -243,37 +244,68 @@ executeAndMonitorCommand Params{..} MonitorOptions{..} command
             Just Posix.Stopped{} -> getProcessStatus pid
             Nothing -> getProcessStatus pid
 
--- TODO: This function contains a lot of hardcoded values.  They need to be
--- configurable.
-doNotifyWhen :: Bool -> Text -> ExitCode -> IO ()
-doNotifyWhen p notificationMessage status = when p do
-    execs "notify-send" [icon, urgency, msg]
-    -- TODO: Find a different way to play notification sound.  This blocks
-    -- until the sound is played.
-    execs "paplay" [soundFile]
-  where
-    icon = "--icon="
-        <>  ( if status == ExitSuccess
+data NotifyConfig = NotifyConfig
+    { icon :: ExitCode -> Maybe Text
+    , urgency :: ExitCode -> Maybe Urgency
+    , composeMessage :: Text -> ExitCode -> Text
+    , sound :: ExitCode -> Maybe FilePath
+    }
+
+defNotifyConfig :: NotifyConfig
+defNotifyConfig = NotifyConfig
+    { icon = \status ->
+        Just if status == ExitSuccess
                 then "dialog-information"
                 else "dialog-error"
-            )
 
-    urgency = "--urgency="
-        <>  ( if status == ExitSuccess
-                then "low"
-                else "normal"
-            )
+    , urgency = \status ->
+        Just if status == ExitSuccess
+                then Low
+                else Normal
 
-    msg = notificationMessage
-        <> " "
-        <>  ( if status == ExitSuccess
-                then "finished."
-                else "failed."
-            )
+    , composeMessage = \msg status -> mconcat
+        [ msg
+        , " "
+        , if status == ExitSuccess
+            then "finished."
+            else "failed."
+        ]
 
-    soundFile = "/usr/share/sounds/freedesktop/stereo/complete.oga"
+    , sound = \status ->
+        Just if status == ExitSuccess
+                then "/usr/share/sounds/freedesktop/stereo/dialog-information.oga"
+                else "/usr/share/sounds/freedesktop/stereo/dialog-error.oga"
+    }
+
+data Urgency = Low | Normal | Critical
+
+-- TODO:
+--
+-- - Use Haskell client to send notification instead of relying on external
+--   application.
+-- - Find another way how to play the message.  Maybe even ask for notification
+--   service if it supports sounds, and play sound ourselves only if it doesn't.
+-- - Using external play command blocks until the sound is played, obviously,
+--   however, this is not desired behaviour for application like this.
+doNotifyWhen :: NotifyConfig -> Bool -> Text -> ExitCode -> IO ()
+doNotifyWhen NotifyConfig{..} p notificationMessage status = when p do
+    execs "notify-send" (iconOpt <> urgencyOpt <> [msgArg])
+    for_ (sound status) \soundFile ->
+        execs "paplay" [fromString soundFile]
+  where
+    iconOpt = maybe [] (\i -> ["--icon=" <> i]) (icon status)
+
+    urgencyOpt =
+        maybe [] (\u -> ["--urgency=" <> urgencyToText u]) (urgency status)
+
+    msgArg = composeMessage notificationMessage status
 
     execs cmd args = Turtle.procs cmd args empty
+
+    urgencyToText = \case
+        Low -> "low"
+        Normal -> "normal"
+        Critical -> "critical"
 
 startDuration :: IO (IO Clock.TimeSpec)
 startDuration = do
@@ -648,3 +680,5 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 --
 -- -  Nicer `--tree` representation that uses colours to make the distinction
 --    between executable commands and purely organisation nodes more obvious.
+--
+-- -  Option `--time` to print how long the application took to execute.
