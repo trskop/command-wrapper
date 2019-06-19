@@ -19,6 +19,7 @@ module CommandWrapper.Internal.Subcommand.Completion
     , completionSubcommandCompleter
     , completionSubcommandHelp
 
+    , CompletionConfig(..)
     , InternalCompleter
     , Completer
     )
@@ -334,16 +335,25 @@ defLibraryOptions = LibraryOptions
     , output = OutputStdoutOnly
     }
 
+-- | Configuration of @completion@ internal subcommand.
+data CompletionConfig = CompletionConfig
+    { internalCompleter :: InternalCompleter
+    -- ^ Completer for all internal subcommands.
+
+    , internalSubcommands :: [String]
+    -- ^ Names of internal subcommands.
+    }
+
 completion
-    :: InternalCompleter
+    :: CompletionConfig
     -> AppNames
     -> [String]
     -> Global.Config
     -> IO ()
-completion internalCompleter appNames options config =
+completion completionConfig@CompletionConfig{..} appNames options config =
     runMain (parseOptions appNames config options) defaults \case
         CompletionMode opts@CompletionOptions{output} config' ->
-            getCompletions internalCompleter appNames config' opts
+            getCompletions completionConfig appNames config' opts
                 >>= outputStringLines output
 
         -- TODO:
@@ -432,7 +442,7 @@ completion internalCompleter appNames options config =
         QueryMode query@Query{..} config' -> case what of
             QuerySubcommands
               | null patternToMatch ->
-                    getSubcommands appNames config'
+                    getSubcommands appNames config' internalSubcommands
                         >>= outputStringLines output
 
               | otherwise ->
@@ -497,7 +507,7 @@ completion internalCompleter appNames options config =
 
     findSubcommandsFuzzy :: Global.Config -> Query -> IO [Fuzzy String String]
     findSubcommandsFuzzy cfg Query{patternToMatch, caseSensitive} = do
-        cmds <- getSubcommands appNames cfg
+        cmds <- getSubcommands appNames cfg internalSubcommands
         pure (Fuzzy.filter patternToMatch cmds "" "" id caseSensitive)
 
     findSubcommandAliasesFuzzy
@@ -583,12 +593,12 @@ matchGlobalOptions pat =
 -- - This will need access to global parser definition to provide completion
 --   for global options without the need for hardcoded values.
 getCompletions
-    :: InternalCompleter
+    :: CompletionConfig
     -> AppNames
     -> Global.Config
     -> CompletionOptions
     -> IO [String]
-getCompletions internalCompleter appNames config CompletionOptions{..} =
+getCompletions CompletionConfig{..} appNames config CompletionOptions{..} =
     case subcommand of
         Nothing -> do
             let (_globalOptions, n, subcommandAndItsArguments) =
@@ -639,7 +649,7 @@ getCompletions internalCompleter appNames config CompletionOptions{..} =
 
     globalCompletion =
         let pat = fromMaybe "" $ atMay words (fromIntegral index')
-            subcommands = findSubcommands appNames config pat
+            subcommands = findSubcommands appNames config internalSubcommands pat
 
          in case headMay pat of
                 Nothing  ->
@@ -703,8 +713,12 @@ subcommandCompletion appNames config shell index words _invokedAs subcommand =
             readCreateProcessWithExitCode (proc cmd args){env} ""
 
 -- | Command line completion for the @completion@ subcommand itself.
-completionSubcommandCompleter :: Completer
-completionSubcommandCompleter appNames config _shell index words
+completionSubcommandCompleter
+    :: [String]
+    -- ^ Names of internal subcommands so that we can complete them.
+    -> Completer
+completionSubcommandCompleter internalSubcommands appNames config _shell index
+  words
   | Just "-o" <- lastBeforePattern =
         -- TODO: This requires `bash` to be available.
         Options.bashCompleter "file" "" pat
@@ -724,7 +738,7 @@ completionSubcommandCompleter appNames config _shell index words
 
   | "--subcommand=" `List.isPrefixOf` pat =
         fmap ("--subcommand=" <>)
-            <$> findSubcommands appNames config
+            <$> findSubcommands appNames config internalSubcommands
                     (List.drop (length @[] "--subcommand=") pat)
 
   | hadOneOf ["--help", "-h"] =
@@ -780,21 +794,21 @@ completionSubcommandCompleter appNames config _shell index words
 findSubcommands
     :: AppNames
     -> Global.Config
+    -> [String]
+    -- ^ List of internal subcommand names.
     -> String
     -- ^ Pattern (prefix) to match subcommand name against.
     -> IO [String]
-findSubcommands appNames config pat =
+findSubcommands appNames config internalCommands pat =
     List.filter (fmap Char.toLower pat `List.isPrefixOf`)
-        <$> getSubcommands appNames config
+        <$> getSubcommands appNames config internalCommands
 
 -- | List all available external and internal subcommands.
-getSubcommands :: AppNames -> Global.Config -> IO [String]
-getSubcommands appNames config = do
+getSubcommands :: AppNames -> Global.Config -> [String] -> IO [String]
+getSubcommands appNames config internalCommands = do
     extCmds <- External.findSubcommands appNames config
 
     let aliases = alias <$> Global.getAliases config
-        -- TODO: Get rid of hardcoded list of internal subcommands.
-        internalCommands = ["help", "config", "completion", "version"]
 
     pure (List.nub $ aliases <> internalCommands <> extCmds)
 

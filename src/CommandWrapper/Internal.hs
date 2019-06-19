@@ -30,13 +30,14 @@ module CommandWrapper.Internal
     , Subcommand.configSubcommandHelp
 
     -- ** Completion Command
+    , Subcommand.CompletionConfig(..)
     , Subcommand.Completer
     , Subcommand.InternalCompleter
     , Subcommand.completion
     , Subcommand.completionSubcommandCompleter
     , Subcommand.completionSubcommandHelp
 
-    -- ** Completion Command
+    -- ** Version Command
     , Subcommand.VersionInfo(..)
     , Subcommand.PrettyVersion(..)
     , Subcommand.version
@@ -48,10 +49,12 @@ module CommandWrapper.Internal
     )
   where
 
-import Data.Function ((.), const)
+import Control.Applicative ((<*>), pure)
 import Data.Functor ((<$>))
+import qualified Data.List as List (lookup)
 import Data.Maybe (Maybe(..))
 import Data.String (String)
+import Data.Tuple (fst)
 import Data.Version (makeVersion)
 import GHC.Generics (Generic)
 import System.IO (IO)
@@ -64,6 +67,7 @@ import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames, subcommandProtocolVersion)
 import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
     ( Completer
+    , CompletionConfig(..)
     , InternalCompleter
     , completion
     , completionSubcommandCompleter
@@ -108,12 +112,15 @@ command
     -- ^ Subcommand arguments.
     -> Maybe Command
     -- ^ Return 'Nothing' if subcommand is not an internal command.
-command = \case
-    "help" -> Just . HelpCommand
-    "config" -> Just . ConfigCommand
-    "completion" -> Just . CompletionCommand
-    "version" -> Just . VersionCommand
-    _ -> const Nothing
+command name args = List.lookup name commands <*> pure args
+
+commands :: [(String, [String] -> Command)]
+commands =
+    [ ("completion", CompletionCommand)
+    , ("config", ConfigCommand)
+    , ("help", HelpCommand)
+    , ("version", VersionCommand)
+    ]
 
 run :: (AppNames -> Global.Config -> Pretty.Doc (Result Pretty.AnsiStyle))
     -> AppNames
@@ -128,7 +135,7 @@ run globalHelp appNames = \case
         Subcommand.config appNames options
 
     CompletionCommand options ->
-        Subcommand.completion internalCompleter appNames options
+        Subcommand.completion completionConfig appNames options
 
     VersionCommand options ->
         Subcommand.version versionInfo appNames options
@@ -149,8 +156,12 @@ run globalHelp appNames = \case
         , dhallStandard = Subcommand.PrettyVersion (makeVersion [7, 0, 0])
         }
 
-    internalCompleter subcommandName =
-        internalSubcommandCompleter <$> command subcommandName []
+    completionConfig = Subcommand.CompletionConfig
+        { internalCompleter = \subcommandName ->
+            internalSubcommandCompleter <$> command subcommandName []
+
+        , internalSubcommands = fst <$> commands
+        }
 
 internalSubcommandCompleter :: Command -> Subcommand.Completer
 internalSubcommandCompleter = \case
@@ -161,10 +172,12 @@ internalSubcommandCompleter = \case
         Subcommand.configSubcommandCompleter
 
     CompletionCommand _ ->
-        Subcommand.completionSubcommandCompleter
+        Subcommand.completionSubcommandCompleter internalSubcommands
 
     VersionCommand _ ->
         Subcommand.versionSubcommandCompleter
+  where
+    internalSubcommands = fst <$> commands
 
 -- {{{ Help Command -----------------------------------------------------------
 
