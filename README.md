@@ -59,7 +59,7 @@ which is described in its own manual page
     understands aliases as well.
 
 *   Very useful `exec` subcommand that provides shell aliases on steroids.  It
-    Can leverage dhall to compose commands, and even safely share them via
+    can leverage Dhall to compose commands, and even safely share them via
     internet.  Its documentation is available in form of manual page
     [`command-wrapper-exec(1)`](man/command-wrapper-exec.1.md).
 
