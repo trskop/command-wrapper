@@ -365,33 +365,51 @@ let CommandWrapper =
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 
+let commandWrapper =
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      -- Note that adding a hash will allow Dhall to cache the import.
+      -- See also `dhall hash --help`.
+
 in  { commands =
-        [ { name = "echo"
-          , description = Some "Call echo command (not the shell builtin)."
-          , command =
-              -- We are ignoring `verbosity` and `colourOutput`, both of those
+        [ commandWrapper.config.exec.namedCommand "echo"
+            ( -- We are ignoring `verbosity` and `colourOutput`, both of those
               -- are passed down from toolset configuration and GLOBAL_OPTIONS.
               -- Therefore, we can construct a command that respects those
               -- options as well.
-                λ(verbosity : CommandWrapper.Verbosity)
+
+in  { commands =
+        -- Use smart constructor to create named commands to avoid upgrade
+        -- issues any time there is a change in definition of
+        -- `CommandWrapper.ExecNamedCommand`.
+        [   commandWrapper.config.exec.namedCommand
+            -- Name of the command we are defining, this will be what needs to
+            -- be passed to `exec` to invoke it:
+            -- ```
+            -- TOOLSET_COMMAND [GLOBAL_OPTIONS] exec [EXEC_OPTIONS] echo [ARGUMENTS]
+            -- ```
+            "echo"
+            -- We are ignoring `verbosity` and `colourOutput`, both of those
+            -- are passed down from toolset configuration and GLOBAL_OPTIONS.
+            -- Therefore, we can construct a command that respects those
+            -- options as well.
+            (   λ(verbosity : CommandWrapper.Verbosity)
               → λ(colourOutput : CommandWrapper.ColourOutput)
               → λ(arguments : List Text)
-              → { command = "echo"
-                , arguments = arguments
-                , environment = [] : List CommandWrapper.EnvironmentVariable
-                , searchPath = True
-                , workingDirectory = None Text
-                } : CommandWrapper.ExecCommand
-
-          -- No command line completion willl be performed.
-          , completion =
-              None
-              (   CommandWrapper.Shell
-                → Natural
-                → List Text
-                → CommandWrapper.ExecCommand
-              )
-          } : CommandWrapper.ExecNamedCommand
+              →   { command =
+                      "echo"
+                  , arguments =
+                      arguments
+                  , environment =
+                      commandWrapper.command.emptyEnvironment
+                  , searchPath =
+                      True
+                  , workingDirectory =
+                      None Text
+                  }
+                : CommandWrapper.ExecCommand
+            )
+          //  { description = Some "Call echo command (not the shell builtin)."
+              }
         ]
     }
 ```
