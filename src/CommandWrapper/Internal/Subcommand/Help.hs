@@ -45,7 +45,7 @@ import Data.Bool (Bool(False, True), otherwise)
 import Data.Char (Char)
 import qualified Data.Char as Char (toLower)
 import Data.Eq ((==))
-import Data.Foldable (null, traverse_)
+import Data.Foldable (any, null, traverse_)
 import Data.Function (($), (.))
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List (elem, filter, isPrefixOf, nub, take)
@@ -61,11 +61,11 @@ import Text.Show (Show, show)
 
 import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
-import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
+import Data.Text.Prettyprint.Doc (Doc, Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     ( AnsiStyle
-    , Color(Green, Magenta)
+    , Color(Green, Magenta, White)
     , color
     , colorDull
     )
@@ -99,9 +99,14 @@ import CommandWrapper.Message
     ( Result(..)
     , debugMsg
     , defaultLayoutOptions
+    , defaultLayoutOptions
+    , hPutDoc
     , message
     )
-import CommandWrapper.Options.Alias (Alias(alias), applyAlias)
+import CommandWrapper.Options.Alias
+    ( Alias(Alias, alias, description)
+    , applyAlias
+    )
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     )
@@ -112,6 +117,7 @@ data HelpMode a
     = MainHelp a
     | SubcommandHelp String a
     | ManPage (Maybe String) a
+    | Aliases a
   deriving stock (Functor, Generic, Show)
 
 help
@@ -165,6 +171,9 @@ help internalHelp mainHelp appNames@AppNames{usedName} options config =
                 Nothing -> pure () -- TODO: Error message.
                 Just manPageName ->
                     executeFile "man" True [manPageName] Nothing
+
+        Aliases config' -> do
+            listAliases appNames config'
   where
     defaults = Mainplate.applySimpleDefaults (MainHelp config)
 
@@ -213,6 +222,7 @@ parseOptions appNames config options =
         <$> optional
                 ( subcommandArg
                 <|> (manFlag <*> optional subcommandOrTopicArg)
+                <|> aliasesFlag
                 <|> helpFlag
                 )
   where
@@ -221,6 +231,7 @@ parseOptions appNames config options =
         MainHelp cfg -> f cfg
         SubcommandHelp _ cfg -> f cfg
         ManPage _ cfg -> f cfg
+        Aliases cfg -> f cfg
 
     manFlag :: Options.Parser (Maybe String -> Endo (HelpMode Config))
     manFlag =
@@ -244,6 +255,10 @@ parseOptions appNames config options =
             let (realCmd, _) = applyAlias (getAliases config) cmd []
             in switchTo (SubcommandHelp realCmd)
 
+    aliasesFlag :: Options.Parser (Endo (HelpMode Config))
+    aliasesFlag =
+        Options.flag mempty (switchTo Aliases) (Options.long "aliases")
+
     execParser parser =
         Options.internalSubcommandParse appNames config "help"
             Options.defaultPrefs (Options.info parser mempty) options
@@ -262,6 +277,7 @@ helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 <> "|"
                 <> metavar "TOPIC"
                 )
+        , "help" <+> longOption "aliases"
         , "help" <+> helpOptions
         , helpOptions
         ]
@@ -276,6 +292,10 @@ helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ Pretty.reflow "Show manual page for"
             , metavar "SUBCOMMAND" <> "|" <> metavar "TOPIC"
             , Pretty.reflow "instead of short help message."
+            ]
+
+        , optionDescription ["--aliases"]
+            [ Pretty.reflow "List and describe available aliases."
             ]
 
         , optionDescription ["--help", "-h"]
@@ -387,6 +407,8 @@ helpSubcommandCompleter
     -> [String]
     -> IO [String]
 helpSubcommandCompleter appNames config _shell index words
+  | hadAliases  = pure []
+  | hadHelp     = pure []
   | hadTopic    = pure []
   | hadDashDash = subcmds
   | null pat    = (helpOptions' <>) <$> subcmds
@@ -395,9 +417,11 @@ helpSubcommandCompleter appNames config _shell index words
   where
     wordsBeforePattern = List.take (fromIntegral index) words
     hadDashDash = "--" `List.elem` wordsBeforePattern
+    hadAliases = "--aliases" `List.elem` wordsBeforePattern
+    hadHelp = any (`List.elem` ["--help", "-h"]) wordsBeforePattern
     pat = fromMaybe "" $ atMay words (fromIntegral index)
     isOption = headMay pat == Just '-'
-    helpOptions' = ["--help", "-h", "--"]
+    helpOptions' = ["--aliases", "--help", "-h", "--man", "--"]
     subcmds = findSubcommands appNames config pat
 
     hadTopic = case lastMay wordsBeforePattern of
@@ -427,3 +451,22 @@ findSubcommands appNames config pat =
             internalCommands = ["help", "config", "completion", "version"]
 
         pure (List.nub $ aliases <> internalCommands <> extCmds)
+
+data AliasAnn
+    = AliasName
+    | AliasDescription
+
+listAliases :: AppNames -> Config -> IO ()
+listAliases AppNames{} config@Config{colourOutput} =
+    putDoc $ Pretty.vsep (describe <$> getAliases config) <> Pretty.line
+  where
+    describe :: Alias -> Doc AliasAnn
+    describe Alias{alias, description} =
+        Pretty.annotate AliasName (fromString alias)
+        <+> Pretty.annotate AliasDescription (pretty description)
+
+    putDoc = hPutDoc defaultLayoutOptions toAnsi colourOutput stdout
+
+    toAnsi = \case
+        AliasName -> Pretty.color Pretty.Magenta
+        AliasDescription -> Pretty.colorDull Pretty.White

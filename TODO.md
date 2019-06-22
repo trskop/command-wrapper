@@ -45,8 +45,6 @@
 
 ### Help
 
-*   `TOOLSET help --aliases` to list aliases with short description.
-
 *   `TOOLSET help --man` needs to understand aliases.
 
 *   Completion should support topics as well.

@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-HELP(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 13th May 2019
+% 22nd June 2019
 
 
 # NAME
@@ -14,6 +14,8 @@ its subcommands.
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \[*SUBCOMMAND*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \--man \[*SUBCOMMAND*|*TOPIC*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \--aliases
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help {\--help|-h}
 
@@ -33,6 +35,9 @@ on colour settings.
 \--man \[*SUBCOMMAND*|*TOPIC*]
 :   Show manual page for *SUBCOMMAND*|*TOPIC* instead of short help message.  If
     neither is specified then manual page for current toolset is displayed.
+
+\--aliases
+:   List and describe available aliases.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help help`.
