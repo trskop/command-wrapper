@@ -47,7 +47,7 @@ import Data.Text.Prettyprint.Doc (Doc, (<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     ( AnsiStyle
-    , Color(Magenta, White)
+    , Color(Blue, Magenta, White)
     , color
     , colorDull
     )
@@ -419,9 +419,11 @@ listCommands Params{colour} Config{commands} ListOptions{..} =
 
 data TreeOptions = TreeOptions
 
+data TreeAnn = NodeName | LeafName
+
 showCommandTree :: Params -> Config -> TreeOptions -> IO ()
-showCommandTree Params{} Config{commands} TreeOptions{} =
-    putStrLn . unlines $ draw (Text.unpack <$> Node "" forest)
+showCommandTree Params{colour} Config{commands} TreeOptions{} =
+    putDoc (treeDoc <> Pretty.line)
   where
     names :: [[Text]] =
         Text.split (== '.') . (name :: NamedCommand -> Text) <$> commands
@@ -429,17 +431,20 @@ showCommandTree Params{} Config{commands} TreeOptions{} =
     groupNames :: [[Text]] -> [[[Text]]] =
         List.groupBy ((==) `on` headMay) . List.sortBy (compare `on` headMay)
 
-    forest :: Forest Text = (`unfoldForest` groupNames names) \case
+    forest :: Forest (Doc TreeAnn) = (`unfoldForest` groupNames names) \case
         (n : r) : ns ->
             let rs = groupNames $ r : fmap (drop 1) ns
-             in ( n <> if [[]] `elem` rs then "*" else ""
+                isLeaf = [[]] `elem` rs
+                ann = Pretty.annotate (if isLeaf then LeafName else NodeName)
+
+             in ( ann (pretty n) <> if isLeaf then "*" else ""
                 , List.filter (/= [[]]) rs
                 )
 
         _ -> ("", []) -- This should not happen.
 
-    draw :: Tree String -> [String]
-    draw (Node x ts0) = lines x <> drawSubTrees ts0
+    draw :: Tree (Doc ann) -> [Doc ann]
+    draw (Node x ts0) = x : drawSubTrees ts0
       where
         drawSubTrees = \case
             [] ->
@@ -450,6 +455,14 @@ showCommandTree Params{} Config{commands} TreeOptions{} =
                 shift "├── " "│   " (draw t) <> drawSubTrees ts
 
         shift first other = zipWith (<>) (first : repeat other)
+
+    treeDoc = Pretty.vsep $ drop 1 (draw (Node "" forest))
+
+    putDoc = hPutDoc defaultLayoutOptions toAnsi colour stdout
+
+    toAnsi = \case
+        LeafName -> Pretty.color Pretty.Magenta
+        NodeName -> Pretty.color Pretty.Blue
 
 parseOptions :: Options.Parser (Action -> Action)
 parseOptions = asum
@@ -751,9 +764,6 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 --          }
 --    }
 --    ```
---
--- -  Nicer `--tree` representation that uses colours to make the distinction
---    between executable commands and purely organisation nodes more obvious.
 --
 -- -  Option `--time` to print how long the application took to execute.
 --
