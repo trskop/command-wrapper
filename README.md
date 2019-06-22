@@ -96,26 +96,41 @@ page, including list of external subcommands installed along with it.
 
 ## Install
 
-Install `command-wrapper`:
+1.  Install `command-wrapper`:
 
-```Bash
-git clone https://github.com/trskop/command-wrapper.git ~/.local/src/github.com/trskop/command-wrapper
-~/.local/src/github.com/trskop/command-wrapper/install
-~/.local/lib/command-wrapper/command-wrapper config --init
-```
+    1.  Clone Git repository:
 
-Define new toolset.  In this example we'll name it `yx`, you can name it
-however you like:
+        ```Bash
+        git clone https://github.com/trskop/command-wrapper.git ~/.local/src/github.com/trskop/command-wrapper
+        ```
 
-```Bash
-~/.local/lib/command-wrapper/command-wrapper config --init --toolset=yx
-```
+    2.  Build and install Command Wrapper binaries and documentation:
 
-Include in `~/.bashrc`:
+        ```Bash
+        ~/.local/src/github.com/trskop/command-wrapper/install
+        ```
 
-```
-source <(yx completion --script --shell=bash)
-```
+    3.  Initialise Command Wrapper configuration:
+
+        ```Bash
+        ~/.local/lib/command-wrapper/command-wrapper config --init
+        ```
+
+2.  Define new toolset.
+
+    In this example we'll name it `yx`, you can name it however you like:
+
+    ```Bash
+    ~/.local/lib/command-wrapper/command-wrapper config --init --toolset=yx
+    ```
+
+3.  Enable command line completion for new toolset.
+
+    Include following in your `~/.bashrc`:
+
+    ```
+    source <(yx completion --script --shell=bash)
+    ```
 
 
 ## How To Choose a Toolset Name
