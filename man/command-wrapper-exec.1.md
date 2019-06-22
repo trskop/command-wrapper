@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 9th June 2019
+% 22th June 2019
 
 
 # NAME
@@ -16,11 +16,14 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \[\--notify] [\--] *COMMAND*
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|\--tree|-t}
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--print *COMMAND* [\--]
-\[*COMMAND\_ARGUMENTS*]
-
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--dhall=*EXPRESSION* \[\--notify] [\--]
 \[*COMMAND\_ARGUMENTS*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--print [\--] *COMMAND*
+\[*COMMAND\_ARGUMENTS*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--print-completion \--index=*NUM*
+\--shell=*SHELL* *COMMAND* [\--] \[*COMMAND\_ARGUMENTS*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--help|-h}
 
@@ -85,6 +88,46 @@ scripting language like Bash.
     TOOLSET_COMMAND exec COMMAND [--] [COMMAND_ARGUMENTS]
     ```
 
+\--dhall=*EXPRESSION*
+:   Execute Dhall *EXPRESSION*.  The *EXPRESSION* has to have following type:
+
+    ```
+    let CommandWrapper =
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
+
+    in    ∀(verbosity : CommandWrapper.Verbosity)
+        → ∀(colour : CommandWrapper.ColourOutput)
+        → ∀(arguments : List Text)
+        → CommandWrapper.ExecCommand
+    ```
+
+    For example:
+
+    ```
+    let CommandWrapper =
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
+
+    in    λ(verbosity : CommandWrapper.Verbosity)
+        → λ(colourOutput : CommandWrapper.ColourOutput)
+        → λ(arguments : List Text)
+        → { arguments =
+              arguments
+          , command =
+              "echo"
+          , environment =
+              [] : List CommandWrapper.EnvironmentVariable
+          , searchPath =
+              True
+          , workingDirectory =
+              None Text
+          }
+    ```
+
+    This is very useful when designing new commands.
+
+\--notify
+:   Send desktop notification when the command is done.
+
 \--print
 :   Print command as it will be executed in Dhall format.  Can be used as
     dry-run functionality, for debugging, and for creating template when adding
@@ -141,45 +184,10 @@ scripting language like Bash.
 
     See also *CONFIGURATION FILE* section for more information.
 
-\--dhall=*EXPRESSION*
-:   Execute Dhall *EXPRESSION*.  The *EXPRESSION* has to have following type:
-
-    ```
-    let CommandWrapper =
-          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
-
-    in    ∀(verbosity : CommandWrapper.Verbosity)
-        → ∀(colour : CommandWrapper.ColourOutput)
-        → ∀(arguments : List Text)
-        → CommandWrapper.ExecCommand
-    ```
-
-    For example:
-
-    ```
-    let CommandWrapper =
-          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
-
-    in    λ(verbosity : CommandWrapper.Verbosity)
-        → λ(colourOutput : CommandWrapper.ColourOutput)
-        → λ(arguments : List Text)
-        → { arguments =
-              arguments
-          , command =
-              "echo"
-          , environment =
-              [] : List CommandWrapper.EnvironmentVariable
-          , searchPath =
-              True
-          , workingDirectory =
-              None Text
-          }
-    ```
-
-    This is very useful when designing new commands.
-
-\--notify
-:   Send desktop notification when the command is done.
+\--print-completion
+:   Similar to `--print`, but prints command that would be used to do command
+    line completion if it was invoked.  Additional options `--index=`*NUM*, and
+    `--shell=`*SHELL* are passed to the command line completion command.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help exec`.

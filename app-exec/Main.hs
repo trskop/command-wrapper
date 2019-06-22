@@ -53,7 +53,7 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Tree (Forest, Tree(Node), unfoldForest)
-import qualified Dhall (Interpret, auto, inject, input, inputFile)
+import qualified Dhall (Inject, Interpret, auto, inject, input, inputFile)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
     ( Parser
@@ -123,6 +123,7 @@ data Action
     = List
     | Tree
     | DryRun
+    | DryRunCompletion Word Options.Shell
     | Run Bool
     | RunDhall Bool Text
     | CompletionInfo
@@ -138,7 +139,7 @@ main = do
 
     (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
 
-    config@Config{commands} <- Dhall.inputFile Dhall.auto configFile
+    config <- Dhall.inputFile Dhall.auto configFile
     action <- fmap ($ Run False) . Options.handleParseResult
         -- TODO: Switch to custom parser so that errors are printed correctly.
         $ Options.execParserPure
@@ -154,11 +155,15 @@ main = do
             showCommandTree params config TreeOptions{}
 
         DryRun ->
-            getExecutableCommand params commands commandAndItsArguments
-                >>= printCommand params
+            getExecutableCommand params config commandAndItsArguments
+                >>= printAsDhall params
+
+        DryRunCompletion idx shell -> do
+            getCompletionCommand params config shell idx commandAndItsArguments
+                >>= printAsDhall params
 
         Run monitor ->
-            getExecutableCommand params commands commandAndItsArguments
+            getExecutableCommand params config commandAndItsArguments
                 >>= executeAndMonitorCommand params MonitorOptions
                         { monitor
                         , notificationMessage = "Action "
@@ -183,20 +188,39 @@ main = do
             printCommandWrapperStyleCompletionInfoExpression stdout
 
         Completion index shell ->
-            doCompletion config shell index commandAndItsArguments
+            doCompletion params config shell index commandAndItsArguments
 
         Help ->
             let Params{verbosity, colour} = params
              in message defaultLayoutOptions verbosity colour stdout
                     (helpMsg params)
   where
-    getExecutableCommand params commands commandAndItsArguments =
+    getExecutableCommand :: Params -> Config -> [String] -> IO Command
+    getExecutableCommand params Config{commands} commandAndItsArguments =
         case fromString <$> commandAndItsArguments of
             [] ->
                 dieWith params stderr 1 "COMMAND: Missing argument."
 
             name : arguments ->
                 getCommand params commands name arguments
+
+    getCompletionCommand
+        :: Params
+        -> Config
+        -> Options.Shell
+        -> Word
+        -> [String]
+        -> IO (Maybe Command)
+    getCompletionCommand params config shell index = \case
+        [] ->
+            dieWith params stderr 1 "COMMAND: Missing argument."
+
+        name : arguments -> do
+            mkCmd <- getCompletion params config name
+            pure $ mkCmd
+                <*> pure shell
+                <*> pure (fromIntegral index)
+                <*> pure (fromString <$> arguments)
 
 getCommand
     :: Params
@@ -338,8 +362,8 @@ executeCommand Command{..} = do
         varToTuple =
             bimap Text.unpack Text.unpack . EnvironmentVariable.toTuple
 
-printCommand :: Params -> Command -> IO ()
-printCommand Params{colour} =
+printAsDhall :: Dhall.Inject a => Params -> a -> IO ()
+printAsDhall Params{colour} =
     Dhall.hPut colour Dhall.Unicode stdout Dhall.inject
 
 data RunDhallOptions = RunDhallOptions
@@ -439,17 +463,18 @@ parseOptions = asum
         ]
     , Options.flag' (const Tree) (Options.long "tree" <> Options.short 't')
     , Options.flag' (const DryRun) (Options.long "print")
+    , Options.flag' (\i s _ -> DryRunCompletion i s) (Options.long "print-completion")
+        <*> indexOption
+        <*> shellOption
+
     , Options.flag' (const Help) (Options.short 'h' <> Options.long "help")
 
     -- Command line completion:
     , const
         <$> ( Options.flag' Completion
                 (Options.long "completion" <> Options.internal)
-            <*> Options.option Options.auto
-                (Options.long "index" <> Options.internal)
-            <*> Options.option
-                (Options.maybeReader (Options.Shell.parse . CaseInsensitive.mk))
-                (Options.long "shell" <> Options.internal)
+            <*> indexOption
+            <*> shellOption
             )
 
     , pure id
@@ -458,8 +483,17 @@ parseOptions = asum
     dhallOption = Options.strOption (Options.long "dhall") <&> \expr m _ ->
         RunDhall m expr
 
-doCompletion :: Config -> Options.Shell -> Word -> [String] -> IO ()
-doCompletion config@Config{commands} shell index words =
+    indexOption :: Options.Parser Word
+    indexOption =
+        Options.option Options.auto (Options.long "index" <> Options.internal)
+
+    shellOption :: Options.Parser Options.Shell
+    shellOption = Options.option
+        (Options.maybeReader (Options.Shell.parse . CaseInsensitive.mk))
+        (Options.long "shell" <> Options.internal)
+
+doCompletion :: Params -> Config -> Options.Shell -> Word -> [String] -> IO ()
+doCompletion params config@Config{commands} shell index words =
     case Options.splitArguments' words of
         (_, _, []) ->
             completeExecSubcommand
@@ -468,22 +502,26 @@ doCompletion config@Config{commands} shell index words =
           | not canCompleteCommand || index <= indexBound ->
                 completeExecSubcommand
           | otherwise ->
-                doCommandCompletion config shell commandName
+                doCommandCompletion params config shell commandName
                     (index - indexBound) commandArguments
   where
     completeExecSubcommand
       | hadListOrTreeOrHelp =
             pure ()
+      | hadDhall, any (== "--notify") wordsBeforePattern =
+            pure ()
       | hadDhall =
-            mapM_ putStrLn $ List.filter (pat `List.isPrefixOf`) ["--notify"]
+            printMatching ["--notify"]
       | hadNotifyOrPrint =
-            mapM_ putStrLn $ List.filter (pat `List.isPrefixOf`) commandNames
+            printMatching commandNames
+      | hadPrintCompletion =
+            printMatching (printCompletionOptions <> commandNames)
       | otherwise =
-            mapM_ putStrLn $ List.filter
-                (pat `List.isPrefixOf`)
-                (allOptions <> commandNames)
+            printMatching (allOptions <> commandNames)
 
     pat = fromMaybe (lastDef "" words) (atMay words (fromIntegral index))
+
+    printMatching = mapM_ putStrLn . List.filter (pat `List.isPrefixOf`)
 
     wordsBeforePattern = List.take (fromIntegral index) words
 
@@ -497,12 +535,25 @@ doCompletion config@Config{commands} shell index words =
 
     hadNotifyOrPrint = any (`elem` ["--notify", "--print"]) wordsBeforePattern
 
+    hadPrintCompletion = any (== "--print-completion") wordsBeforePattern
+
     canCompleteCommand = not (hadListOrTreeOrHelp || hadDhall)
+
+    printCompletionOptions =
+        ( if any ("--index=" `List.isPrefixOf`) wordsBeforePattern
+             then []
+             else ["--index="]
+        )
+        <>  ( if any ("--shell=" `List.isPrefixOf`) wordsBeforePattern
+                  then []
+                  else ["--shell=" <> s | s <- ["bash", "fish", "zsh"]]
+            )
 
     allOptions =
         [ "-l", "--ls", "--list"
         , "-t", "--tree"
         , "--print"
+        , "--print-completion"
         , "--dhall="
         , "--notify"
         , "-h", "--help"
@@ -510,25 +561,37 @@ doCompletion config@Config{commands} shell index words =
         ]
 
 doCommandCompletion
-    :: Config
+    :: Params
+    -> Config
     -> Options.Shell
     -> String
     -- ^ Command name.
     -> Word
     -> [String]
     -> IO ()
-doCommandCompletion Config{commands} shell commandName index words =
-    case List.find (NamedCommand.isNamed (fromString commandName)) commands of
+doCommandCompletion params config shell commandName index words =
+    getCompletion params config commandName >>= \case
         Nothing ->
             defaultCompletion
-        Just NamedCommand{completion} -> case completion of
-            Nothing ->
-                defaultCompletion
-            Just mkCommand ->
-                executeCommandCompletion mkCommand shell index words
+        Just mkCompletionCommand ->
+            executeCommandCompletion mkCompletionCommand shell index words
   where
     -- TODO: Should this be the same default completion as shell does?
     defaultCompletion = pure ()
+
+getCompletion
+    :: Params
+    -> Config
+    -> String
+    -> IO (Maybe (Options.Shell -> Natural -> [Text] -> Command))
+getCompletion params Config{commands} commandName =
+    case List.find (NamedCommand.isNamed (fromString commandName)) commands of
+        Nothing ->
+            dieWith params stderr 1
+                ("'" <> fromString commandName <> "': Missing argument.")
+
+        Just NamedCommand{completion} ->
+            pure completion
 
 executeCommandCompletion
     :: (Options.Shell -> Natural -> [Text] -> Command)
@@ -549,15 +612,9 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 
     , Help.usageSection name
         [ subcommand'
-            <+> Pretty.brackets (Help.longOption "print")
-            <+> Pretty.brackets (Help.metavar "--")
-            <+> Help.metavar "COMMAND"
-            <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
-
-        , subcommand'
-            <+> Help.longOptionWithArgument "dhall" "EXPRESSION"
             <+> Pretty.brackets (Help.longOption "notify")
             <+> Pretty.brackets (Help.metavar "--")
+            <+> Help.metavar "COMMAND"
             <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
 
         , subcommand' <+> Pretty.braces
@@ -573,8 +630,23 @@ helpMsg Params{name, subcommand} = Pretty.vsep
             )
 
         , subcommand'
-            <+> Help.longOptionWithArgument "print" "EXPRESSION"
+            <+> Help.longOptionWithArgument "dhall" "EXPRESSION"
+            <+> Pretty.brackets (Help.longOption "notify")
             <+> Pretty.brackets (Help.metavar "--")
+            <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
+
+        , subcommand'
+            <+> Help.longOption "print"
+            <+> Pretty.brackets (Help.metavar "--")
+            <+> Help.metavar "COMMAND"
+            <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
+
+        , subcommand'
+            <+> Help.longOption "print-completion"
+            <+> Help.longOptionWithArgument "index" "NUM"
+            <+> Help.longOptionWithArgument "shell" "SHELL"
+            <+> Pretty.brackets (Help.metavar "--")
+            <+> Help.metavar "COMMAND"
             <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
 
         , subcommand' <+> Help.helpOptions
@@ -596,6 +668,17 @@ helpMsg Params{name, subcommand} = Pretty.vsep
         , Help.optionDescription ["--print"]
             [ Pretty.reflow
                 "Print command as it will be executed in Dhall format."
+            ]
+
+        , Help.optionDescription ["--print-completion"]
+            [ "Similar", "to", Help.longOption "print" <> ","
+            , Pretty.reflow
+                "but prints command that would be used to do command line\
+                \ completion if it was invoked.  Additional options"
+            , Help.longOptionWithArgument "index" "NUM" <> ",", "and"
+            , Help.longOptionWithArgument "shell" "SHELL"
+            , Pretty.reflow
+                "are passed to the command line completion command."
             ]
 
         , Help.optionDescription ["--dhall=EXPRESSION"]
@@ -639,9 +722,6 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 
 -- TODO:
 --
--- -  Allow alternatives, i.e. have a list of commands for one `NAME` and the
---    first one that is available is used.  (Just an idea.)
---
 -- -  Evaluate command with and without extra arguments.  If the result is the
 --    same then print warning to the user.  Dual case would be interesting as
 --    well.  Having the ability to tell when the command requires additional
@@ -654,27 +734,21 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 --    - `Command` -- This would be nice dual to `--print`
 --    - `NamedCommand`
 --
--- -  Support desktop notifications:
+-- -  Configuration for desktop notifications:
 --
 --    ```
---    { commands =
---        [ ...
---        , { name = "build-and-notify"
---          , command = ./build-command.dhall
---          , notify =
---              Some
---                { when = <Always = {=} | TakesLongerThan : Natural>
---                , params =
---                      \(exitCode : <ExitSuccess : {} | ExitFailure : Natural>)
---                    -> { icon = foldExitCode (Optional Text) (Some "dialog-information") (Some "dialog-error") exitCode
---                       , urgency = foldExitCode (Optional Text) (Some "low") (Some "normal") exitCode
---                       , message = "Build ${foldExitCode Text "finished successfully" "failed"}."
---                       , soundFile = None Text
---                       }
---                }
+--    { commands : ExecNamedCommand
+--    , notifications =
+--          { when : Optional NotifyWhen
+--          , params =
+--                  \(exitCode : <ExitSuccess : {} | ExitFailure : Natural>)
+--              ->  { icon = foldExitCode (Optional Text) (Some "dialog-information") (Some "dialog-error") exitCode
+--                  , urgency = foldExitCode (Optional Text) (Some "low") (Some "normal") exitCode
+--                  , message = \(msg : Text) -> "${msg} ${foldExitCode Text "finished successfully" "failed"}."
+--                  , soundFile = None Text
+--                  }
+--          , forceSound = Optional Bool
 --          }
---        , ...
---        ]
 --    }
 --    ```
 --
@@ -682,3 +756,6 @@ helpMsg Params{name, subcommand} = Pretty.vsep
 --    between executable commands and purely organisation nodes more obvious.
 --
 -- -  Option `--time` to print how long the application took to execute.
+--
+-- -  Command line completion should have access to `Verbosity` and
+--    `ColourOutput`.  These can affect how `ExecCommand` value is constructed.
