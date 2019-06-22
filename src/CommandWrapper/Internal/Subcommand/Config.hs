@@ -172,42 +172,6 @@ config appNames options globalConfig =
             message defaultLayoutOptions verbosity colourOutput stdout
                 (configSubcommandHelp appNames config')
 
-        -- TODO:
-        --
-        -- - Merge in functionality of: `dhall`, `dhall-json`, `dhall-bash`,
-        --   and `dhall-text`
-        -- - Provide functionality for shell variables that transforms:
-        --
-        --     ```
-        --     { name = "FOO"
-        --     , value = "foo"
-        --     }
-        --     ```
-        --
-        --     Into:
-        --
-        --     ```
-        --     export FOO=foo
-        --     ```
-        --
-        --     It should also support transorming:
-        --
-        --     ```
-        --     [ { name = "FOO"
-        --       , value = "foo"
-        --       }
-        --     , { name = "BAR"
-        --       , value = "bar"
-        --       }
-        --     ]
-        --     ```
-        --
-        --     Into:
-        --
-        --     ```
-        --     export FOO=foo
-        --     export FOO=bar
-        --     ```
         Dhall opts cfg ->
             Dhall.interpreter appNames cfg opts
 

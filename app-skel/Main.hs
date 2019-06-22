@@ -379,19 +379,3 @@ helpMsg Params{name, subcommand} = Pretty.vsep
     ]
   where
     subcommand' = fromString subcommand
-
--- TODO:
---
--- - Skeletons of configuration files would be very useful.  Not only an empty
---   one for the newly created subcommand, but also being able to have various
---   commonly used configuration skeletons.  Or is that something that `config`
---   subcommand should be doing?
---
--- - When `TOOLSET skel SUBCOMMAND --language=dhall` is invoked we could try to
---   find a specific skeleton for that subcommand.
---
--- - Maybe switch syntax of config skeletons to:
---
---     ```
---     TOOLSET skel {--config|-c} {--toolset|SUBCOMMAND}
---     ```

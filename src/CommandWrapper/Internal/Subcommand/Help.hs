@@ -144,17 +144,6 @@ help internalHelp mainHelp appNames@AppNames{usedName} options config =
                 Nothing ->
                     External.executeCommand appNames config' cmd ["--help"]
 
-        -- TODO:
-        -- - We need to take aliases into account.
-        -- - We need to extend completion to list "subcommand-protocol",
-        --   "command-wrapper", etc.
-        -- - We need to generalise our approach so that any other
-        --   "command-wrapper-${TOPIC}" or "${TOOLSET}-${TOPIC}" manual
-        --   pages are also accessible.
-        -- - When no subcommand/topic name is give we should be able to default
-        --   to "command-wrapper" if a more concrete manual page desn't exist.
-        --   At the moment we assume that manual page for toolset is always
-        --   present.
         ManPage topic config' -> do
             let internalCommandManPage =
                     ("command-wrapper-" <>) <$> topic
@@ -218,10 +207,6 @@ findSubcommandManualPageName
     subcommands = names <&> \prefix ->
         prefix <> "-" <> subcommandName
 
--- TODO:
---
--- > TOOLSET [GLOBAL_OPTIONS] help [SUBCOMMAND]
--- > TOOLSET [GLOBAL_OPTIONS] help --man [SUBCOMMAND|TOPIC]
 parseOptions :: AppNames -> Config -> [String] -> IO (Endo (HelpMode Config))
 parseOptions appNames config options =
     execParser $ foldEndo
