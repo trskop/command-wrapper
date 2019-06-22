@@ -1,0 +1,42 @@
+let CommandWrapper = ../Types.dhall
+
+let command/withExtraArguments = ../command/withExtraArguments
+
+let command/simple = ../command/simple
+
+let emptyEnvironment = ../command/emptyEnvironment
+
+let emptyArguments = ../command/emptyArguments
+
+let directoryOption =
+        λ(directory : Optional Text)
+      → λ(mkDirectoryOption : Text → List Text)
+      → Optional/fold Text directory (List Text) mkDirectoryOption
+          emptyArguments
+
+let executeCommandOptions =
+        λ(cmd : Optional CommandWrapper.Command)
+      → λ(mkCmdOptions : CommandWrapper.Command → List Text)
+      → Optional/fold CommandWrapper.Command cmd (List Text) mkCmdOptions
+          emptyArguments
+
+let withOptions =
+        λ(termCmd : Text)
+      → λ(mkDirectoryOption : Text → List Text)
+      → λ(mkCmdOptions : CommandWrapper.Command → List Text)
+      → λ(directory : Optional Text)
+      → λ(cmd : Optional CommandWrapper.Command)
+      →   command/withExtraArguments (command/simple termCmd)
+            (  directoryOption directory mkDirectoryOption
+            # executeCommandOptions cmd mkCmdOptions
+            )
+        ∧ {environment = emptyEnvironment}
+      : CommandWrapper.CommandWithEnvironment
+
+in  withOptions "gnome-terminal"
+      (λ(directory : Text) → ["--working-directory=${directory}"])
+      ( λ(c : CommandWrapper.Command)
+      → ["--execute", c.command] # c.arguments
+      )
+
+-- vim: filetype=dhall

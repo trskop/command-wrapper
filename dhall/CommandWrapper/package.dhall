@@ -63,8 +63,9 @@
 -- These are some known terminal emulators that support setting working
 -- directory via command line option.
 , terminalEmulator =
-    { urxvt = ./terminal-emulator/urxvt
+    { gnome-terminal = ./terminal-emulator/gnome-terminal
     , kitty = ./terminal-emulator/kitty
+    , urxvt = ./terminal-emulator/urxvt
     }
 
 , verbosity =
