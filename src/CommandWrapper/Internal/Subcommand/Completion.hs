@@ -537,7 +537,7 @@ colourValues = ["always", "auto", "never"]
 
 -- TODO: Generate these values instead of hard-coding them.
 supportedShells :: [String]
-supportedShells = ["bash", "fish"{-, "zsh"-}]
+supportedShells = ["bash", "fish", "zsh"]
 
 matchGlobalOptions :: String -> [String]
 matchGlobalOptions pat =

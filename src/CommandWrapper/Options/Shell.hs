@@ -64,7 +64,7 @@ shellOption =
     Options.option parse' (Options.long "shell" <> Options.metavar "SHELL")
   where
     parse' = Options.eitherReader $ \s -> case parse (CI.mk s) of
-        Just Zsh -> Left "Zsh not supported at the moment"
+--      Just Zsh -> Left "Zsh not supported at the moment"
         Just sh  -> Right (setShell sh)
         _        -> Left "Unrecognised shell name"
 

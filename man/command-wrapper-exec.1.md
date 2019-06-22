@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 22th June 2019
+% 22nd June 2019
 
 
 # NAME

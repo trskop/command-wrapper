@@ -60,7 +60,7 @@ complete --no-files --command "${name}" --arguments '(_${name})'
             ""
 
       in  ''
-#compdef ${name}
+function _${name} {
 
 local completions
 local word
@@ -91,5 +91,8 @@ for word in $completions; do
     compadd -f -- $word
   fi
 done
+}
+
+compdef _${name} ${name}
 ''
   }

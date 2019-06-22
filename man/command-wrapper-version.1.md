@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-VERSION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 12th May 2019
+% 22nd June 2019
 
 
 # NAME
@@ -32,7 +32,7 @@ Display version information.
 
 \--shell=*SHELL*
 :   Print version information in format suitable for *SHELL*.  Supported *SHELL*
-    values are: *bash* and *fish*.
+    values are: *bash*, *fish*, and *zsh*.
 
 \--output=*FILE*, -o *FILE*
 :   Write optput into FILE instead of standard output.

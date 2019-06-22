@@ -126,11 +126,26 @@ page, including list of external subcommands installed along with it.
 
 3.  Enable command line completion for new toolset.
 
-    Include following in your `~/.bashrc`:
+    *   If you're using **Bash** then include following in your `~/.bashrc`:
 
-    ```
-    source <(yx completion --script --shell=bash)
-    ```
+        ```Bash
+        source <(yx completion --script --shell=bash)
+        ```
+
+    *   If you're using **Fish** then include following in your
+        `~/.config/fish/config.fish`, or add as
+        `~/.config/fish/completions/yx.fish`:
+
+        ```Bash
+        yx completion --script --shell=fish | source
+        ```
+
+    *   If you're using **Zsh** then include following in your `~/.zshrc`, it has
+        to be after `compinit` call:
+
+        ```Bash
+        source <(yx completion --script --shell=zsh)
+        ```
 
 
 ## How To Choose a Toolset Name
