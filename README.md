@@ -287,7 +287,7 @@ aliases).  An alias looks like this:
 
 ```
 { alias = "man"
-, description = Some "Short hand for \"help --man\"."
+, description = Some "Shorthand for \"help --man\"."
 , command = "help"
 , arguments = [ "--man" ]
 }
