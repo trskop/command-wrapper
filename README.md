@@ -18,7 +18,7 @@ theme, or a purpose.
 
     *   [What is a Toolset](#what-is-a-toolset)
     *   [How To Choose a Toolset Name](#how-to-choose-a-toolset-name)
-    *   [Available Subcommands](#available-subcommands)
+    *   [List Available Subcommands](#list-available-subcommands)
     *   [Introducing New Subcommand](#introducing-new-subcommand)
     *   [Internal Subcommands](#internal-subcommands)
     *   [External Subcommands](#external-subcommands)
@@ -132,7 +132,7 @@ Good toolset name should be:
 * Easy to type on your keyboard layout
 
 
-### Available Subcommands
+### List Available Subcommands
 
 All available subcommands and aliases can be listed using:
 
