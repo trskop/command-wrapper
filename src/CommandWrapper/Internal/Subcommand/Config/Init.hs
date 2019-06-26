@@ -180,27 +180,46 @@ init
         >>= createOrSkipFile
                 (configFileContent (CommonHelpTxt toolsetName))
 
-    when (usedName == "command-wrapper") do
-        let cdConfigDir = configDir </> "cd"
-            execConfigDir = configDir </> "exec"
-            skelConfigDir = configDir </> "skel"
+    let cdConfigDir = configDir </> "cd"
+        execConfigDir = configDir </> "exec"
+        skelConfigDir = configDir </> "skel"
 
-        dirsExistence [cdConfigDir, execConfigDir, skelConfigDir]
-            >>= createOrSkipDirectories
+        cdConfig = configDir </> "command-wrapper-cd.dhall"
+        execConfig = configDir </> "command-wrapper-exec.dhall"
+        skelConfig = configDir </> "command-wrapper-skel.dhall"
+
+        commonDirsConfig = cdConfigDir </> "directories-common.dhall"
+        commonCommandsConfig = execConfigDir </> "commands-common.dhall"
+
+    dirsExistence [cdConfigDir, execConfigDir, skelConfigDir]
+        >>= createOrSkipDirectories
+
+    checkFile cdConfig
+        >>= createOrSkipFile (configFileContent (CdConfig toolsetName))
+
+    checkFile commonDirsConfig
+        >>= createOrSkipFile
+                (configFileContent (CommonDirectoriesConfig toolsetName))
+
+    checkFile execConfig
+        >>= createOrSkipFile (configFileContent (ExecConfig toolsetName))
+
+    checkFile commonCommandsConfig
+        >>= createOrSkipFile
+                (configFileContent (CommonCommandsConfig toolsetName))
+
+    checkFile skelConfig
+        >>= createOrSkipFile (configFileContent (SkelConfig toolsetName))
+
+    when (usedName == "command-wrapper") do
 
         let libraryTypesDhall = configDir </> "Types.dhall"
             libraryDhall = configDir </> "library.dhall"
 
-            cdConfig = configDir </> "command-wrapper-cd.dhall"
-            execConfig = configDir </> "command-wrapper-exec.dhall"
-            skelConfig = configDir </> "command-wrapper-skel.dhall"
-
-            commonDirsConfig = cdConfigDir </> "directories-common.dhall"
-            commonCommandsConfig = execConfigDir </> "commands-common.dhall"
-
         checkFile libraryTypesDhall
             >>= createOrSkipFile (configFileContent LibraryTypes)
 
+        -- TODO: Freeze only when created.
         Dhall.freeze appNames config Dhall.defFreeze
             { Dhall.input = Dhall.InputFile libraryTypesDhall
             , Dhall.output = Dhall.OutputBasedOnInput
@@ -209,25 +228,11 @@ init
         checkFile libraryDhall
             >>= createOrSkipFile (configFileContent Library)
 
+        -- TODO: Freeze only when created.
         Dhall.freeze appNames config Dhall.defFreeze
             { Dhall.input = Dhall.InputFile libraryDhall
             , Dhall.output = Dhall.OutputBasedOnInput
             }
-
-        checkFile cdConfig
-            >>= createOrSkipFile (configFileContent CdConfig)
-
-        checkFile commonDirsConfig
-            >>= createOrSkipFile (configFileContent CommonDirectoriesConfig)
-
-        checkFile execConfig
-            >>= createOrSkipFile (configFileContent ExecConfig)
-
-        checkFile commonCommandsConfig
-            >>= createOrSkipFile (configFileContent CommonCommandsConfig)
-
-        checkFile skelConfig
-            >>= createOrSkipFile (configFileContent SkelConfig)
   where
     dieWith :: Int -> (forall ann. Pretty.Doc ann) -> IO a
     dieWith exitCode msg = do
@@ -338,11 +343,11 @@ data ConfigFile
     = DefaultConfig String FilePath
     | CommonAliasesConfig String
     | CommonHelpTxt String
-    | CdConfig
-    | CommonDirectoriesConfig
-    | ExecConfig
-    | CommonCommandsConfig
-    | SkelConfig
+    | CdConfig String
+    | CommonDirectoriesConfig String
+    | ExecConfig String
+    | CommonCommandsConfig String
+    | SkelConfig String
     | Library
     | LibraryTypes
 
@@ -518,7 +523,7 @@ configFileContent = Text.unlines . \case
         , "    }"
         ]
 
-    CdConfig ->
+    CdConfig "command-wrapper" ->
         [ "let CommandWrapper = ./Types.dhall"
         , ""
         , "let commandWrapper = ./library.dhall"
@@ -541,7 +546,7 @@ configFileContent = Text.unlines . \case
         , "                  //  { arguments = [\"--height=40%\"] # fzf.arguments"
         , "                      }"
         , ""
-        , "        -- Here we can set what terminal emulator should be execu  Some"
+        , "        -- Here we can set what terminal emulator should be executed.  Some"
         , "        -- definitions are already available in Command Wrapper librato list"
         , "        -- them one can use Dhall REPL `TOOLSET config --dhaepl` where"
         , "        -- following expression can be evaluated:"
@@ -554,19 +559,45 @@ configFileContent = Text.unlines . \case
         , "    : CommandWrapper.CdConfig"
         ]
 
-    CommonDirectoriesConfig ->
+    CdConfig _ ->
+        [ "let global = ../command-wrapper/command-wrapper-cd.dhall"
+        , ""
+        , "in    global"
+        , "in  //  { directories ="
+        , "              global.directories"
+        , "            # ./cd/directories-common.dhall"
+        , "            # (./cd/directories.dhall ? empty)"
+        , "            # (./cd/directories-local.dhall ? empty)"
+        , "        }"
+        ]
+
+    CommonDirectoriesConfig "command-wrapper" ->
         [ "let home = env:HOME as Text"
         , ""
         , "let config = env:XDG_CONFIG_HOME as Text ? \"${home}/.config\""
         , ""
         , "let local = \"${home}/.local\""
         , ""
-        , "in  [ \"${config}\""
-        , "    , \"${config}/command-wrapper\""
-        , "    , \"${local}/lib/command-wrapper\""
-        , "    , \"${home}/Downloads\""
-        , "    , \"${home}/.ssh\""
-        , "    ] : List Text"
+        , "in    [ \"${config}\""
+        , "      , \"${config}/command-wrapper\""
+        , "      , \"${local}/lib/command-wrapper\""
+        , "      , \"${home}/Downloads\""
+        , "      , \"${home}/.ssh\""
+        , "      ]"
+        , "    : List Text"
+        ]
+
+    CommonDirectoriesConfig toolsetName ->
+        [ "let home = env:HOME as Text"
+        , ""
+        , "let config = env:XDG_CONFIG_HOME as Text ? \"${home}/.config\""
+        , ""
+        , "let local = \"${home}/.local\""
+        , ""
+        , "in    [ \"${config}/" <> fromString toolsetName <> "\""
+        , "      , \"${local}/lib/" <> fromString toolsetName <> "\""
+        , "      ]"
+        , "    : List Text"
         ]
 
     CommonHelpTxt "command-wrapper" ->
@@ -587,7 +618,7 @@ configFileContent = Text.unlines . \case
         , "TODO: Custom help message, please, edit `help-common.txt`."
         ]
 
-    ExecConfig ->
+    ExecConfig "command-wrapper" ->
         [ "let CommandWrapper = ./Types.dhall"
         , ""
         , "let empty = [] : List CommandWrapper.ExecNamedCommand"
@@ -599,14 +630,77 @@ configFileContent = Text.unlines . \case
         , "    }"
         ]
 
-    CommonCommandsConfig ->
-        [ "let CommandWrapper = ../Types.dhall"
+    ExecConfig _ ->
+        [ "let global = ../command-wrapper/command-wrapper-exec.dhall"
         , ""
-        , "in  ["
-        , "    ] : List CommandWrapper.ExecNamedCommand"
+        , "in    global"
+        , "in  //  { commands ="
+        , "              global.commands"
+        , "            # ./exec/commands-common.dhall"
+        , "            # (./exec/commands.dhall ? empty)"
+        , "            # (./exec/commands-local.dhall ? empty)"
+        , "        }"
         ]
 
-    SkelConfig ->
+    CommonCommandsConfig "command-wrapper" ->
+        [ "let CommandWrapper = ../Types.dhall"
+        , ""
+        , "let commandWrapper = ../library.dhall"
+        , ""
+        , "let named = commandWrapper.config.exec.namedCommand"
+        , ""
+        , "let noExtraEnvironment = [] : List CommandWrapper.EnvironmentVariable"
+        , ""
+        , "in"
+        , "      [{- named \"echo\""
+        , "            ( λ(verbosity : CommandWrapper.Verbosity)"
+        , "              → λ(colourOutput : CommandWrapper.ColourOutput)"
+        , "              → λ(arguments : List Text)"
+        , "              → { command = \"echo\""
+        , "                , arguments = arguments"
+        , "                , environment = noExtraEnvironment"
+        , "                , searchPath = True"
+        , "                , workingDirectory = None Text"
+        , "                }"
+        , "              )"
+        , "        //  { description ="
+        , "                Some \"TODO: I hereby promise to describe this command.\""
+        , "            }"
+        , "      -}"
+        , "      ]"
+        , "    : List CommandWrapper.ExecNamedCommand"
+        ]
+
+    CommonCommandsConfig _ ->
+        [ "let CommandWrapper = ../command-wrapper/Types.dhall"
+        , ""
+        , "let commandWrapper = ../command-wrapper/library.dhall"
+        , ""
+        , "let named = commandWrapper.config.exec.namedCommand"
+        , ""
+        , "let noExtraEnvironment = [] : List CommandWrapper.EnvironmentVariable"
+        , ""
+        , "in"
+        , "      [{- named \"echo\""
+        , "            ( λ(verbosity : CommandWrapper.Verbosity)"
+        , "              → λ(colourOutput : CommandWrapper.ColourOutput)"
+        , "              → λ(arguments : List Text)"
+        , "              → { command = \"echo\""
+        , "                , arguments = arguments"
+        , "                , environment = noExtraEnvironment"
+        , "                , searchPath = True"
+        , "                , workingDirectory = None Text"
+        , "                }"
+        , "              )"
+        , "        //  { description ="
+        , "                Some \"TODO: I hereby promise to describe this command.\""
+        , "            }"
+        , "      -}"
+        , "      ]"
+        , "    : List CommandWrapper.ExecNamedCommand"
+        ]
+
+    SkelConfig "command-wrapper" ->
         [ "let CommandWrapper = ./Types.dhall"
         , ""
         , "let commandWrapper = ./library.dhall"
@@ -654,6 +748,17 @@ configFileContent = Text.unlines . \case
         , "        , editAfterwards = True"
         , "        }"
         , "      : CommandWrapper.SkelConfig"
+        ]
+
+    SkelConfig _ ->
+        [ "let mkGlobal = ../command-wrapper/command-wrapper-skel.dhall"
+        , ""
+        , "in    λ(toolset : Text)"
+        , "    → λ(subcommand : Text)"
+        , "    → λ(command : Text)"
+        , "    →   let global = mkGlobal toolset subcommand command"
+        , "        in    global"
+        , "            //  {=}"
         ]
 
     Library ->

@@ -75,7 +75,7 @@ subcommand will be listed below.
 
 # FILES
 
-`${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/command-wrapper-skel.dhall`
+`${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/command-wrapper-skel.dhall`
 :   Configuration file specifies templates for individual *LANGUAGE*s, how the
     new *SUBCOMMAND* files will be named, and where they will be stored.
 
@@ -97,14 +97,14 @@ mentioned there applies to this subcommand as well.
       file has path:
 
         ```
-        ${XDG_CONFIG_HOME}/command-wrapper/command-wrapper-skel.dhall
+        ${XDG_CONFIG_HOME}/${toolset}/command-wrapper-skel.dhall
         ```
 
     * If `XDG_CONFIG_HOME` environment variable is not set then default value
       is used instead:
 
         ```
-        ${HOME}/.config/command-wrapper/command-wrapper-skel.dhall
+        ${HOME}/.config/${toolset}/command-wrapper-skel.dhall
         ```
 
     See [XDG Base Directory Specification

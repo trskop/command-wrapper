@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 6th June 2019
+% 26th June 2019
 
 
 # NAME
@@ -100,7 +100,7 @@ ${HOME}/.local/lib/command-wrapper/command-wrapper
 
 # FILES
 
-`${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/command-wrapper-cd.dhall`
+`${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/command-wrapper-cd.dhall`
 :   Configuration file specifies list of directories that are listed when this
     subcommand is invoked, and it allows to configure selection tool and
     terminal emulator command.
@@ -123,14 +123,14 @@ mentioned there applies to this subcommand as well.
       file has path:
 
         ```
-        ${XDG_CONFIG_HOME}/command-wrapper/command-wrapper-cd.dhall
+        ${XDG_CONFIG_HOME}/${toolset}/command-wrapper-cd.dhall
         ```
 
     * If `XDG_CONFIG_HOME` environment variable is not set then default value
       is used instead:
 
         ```
-        ${HOME}/.config/command-wrapper/command-wrapper-cd.dhall
+        ${HOME}/.config/${toolset}/command-wrapper-cd.dhall
         ```
 
     See [XDG Base Directory Specification

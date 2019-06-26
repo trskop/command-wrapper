@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 9th June 2019
+% 26th June 2019
 
 
 # NAME
@@ -242,6 +242,33 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     * `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better understand
       how the location of the configuration file is determined.
 
+`${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/command-wrapper-${subcommand}.dhall`
+:   Subcommand specific configuration file for a *subcommand* that is part of the
+    Command Wrapper distribution.  This allows each *toolset* to provide
+    its own configuration for these subcommands.
+
+    If global configuration should be reused by the *toolset* then following
+    pattern should be employed.  Example is for `exec` subcommand, but it can
+    be used for any subcommand:
+
+    ```
+    -- This file has following file path:
+    -- ${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/command-wrapper-exec.dhall
+
+    let global = ../command-wrapper/command-wrapper-exec.dhall
+
+    in    global
+        //  { commands =
+                  ./exec/commands.dhall
+                # global.commands
+            }
+    ```
+
+    Preserving `command-wrapper-` prefix in `command-wrapper-${subcommand}.dhall`
+    configuration file name makes it explicit from where the subcommand came
+    from.  Toolsets may define subcommands with the same name, but the prefix
+    will be different.
+
 `${XDG_CONFIG_HOME:-$HOME/.local}/share/man/`
 :   Command Wrapper manual pages are installed into this directory so that
     standard `man` command is able to find them.
@@ -326,6 +353,9 @@ locations.
 │   │   └── ...
 │   └── ${toolset}/
 │       ├── default.dhall
+│       ├── command-wrapper-cd.dhall
+│       ├── command-wrapper-exec.dhall
+│       ├── command-wrapper-skel.dhall
 │       ├── ${toolset}-${toolsetSubcommand0}.dhall
 │       ├── ...
 │       └── ${toolset}-${toolsetSubcommand0}.dhall

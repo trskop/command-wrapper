@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 22nd June 2019
+% 26th June 2019
 
 
 # NAME
@@ -211,7 +211,7 @@ subcommand will be listed below.
 
 # FILES
 
-`${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/command-wrapper-exec.dhall`
+`${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/command-wrapper-exec.dhall`
 :   Configuration file specifies *COMMAND*s that can be invoked.  Command
     configuration is actually a function with a name associated with it.
 
@@ -233,14 +233,14 @@ mentioned there applies to this subcommand as well.
       file has path:
 
         ```
-        ${XDG_CONFIG_HOME}/command-wrapper/command-wrapper-exec.dhall
+        ${XDG_CONFIG_HOME}/${toolset}/command-wrapper-exec.dhall
         ```
 
     * If `XDG_CONFIG_HOME` environment variable is not set then default value
       is used instead:
 
         ```
-        ${HOME}/.config/command-wrapper/command-wrapper-exec.dhall
+        ${HOME}/.config/${toolset}/command-wrapper-exec.dhall
         ```
 
     See [XDG Base Directory Specification

@@ -14,6 +14,11 @@
     TOOLSET --config=FILE --subcommand-config=FILE SUBCOMMAND [OPTIONS]
     ```
 
+*   Fallback configuration files for subcommands.  If there is no configuration
+    file for a subcommand inside toolset-specific config directory, then these
+    would be used.
+
+
 ## Internal Subcommands
 
 ### Completion

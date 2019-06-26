@@ -139,8 +139,10 @@ executeCommandWith f appNames globalConfig subcommand arguments =
     Environment.AppNames{exePath, usedName, names} = appNames
     Global.Config{verbosity, colourOutput} = globalConfig
 
-    getParams prefix command = do
-        config <- getXdgDirectory XdgConfig (prefix </> command <.> "dhall")
+    getParams _prefix command = do
+        -- TODO: For some external subcommands it would be useful if we could
+        -- fallback to (prefix </> command <.> "dhall")
+        config <- getXdgDirectory XdgConfig (usedName </> command <.> "dhall")
         pure Environment.Params
             { exePath
             , name = usedName
