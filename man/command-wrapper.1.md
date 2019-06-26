@@ -135,27 +135,29 @@ this manual.
 There are two kind of subcommands, external, and internal.  Internal
 subcommands are:
 
-* *help* -- Print help information for top-level toolset command or a specified
-  *SUBCOMMAND*.
+*   *help* -- Print help information for top-level toolset command or a
+    specified *SUBCOMMAND*.  See `command-wrapper-help(1)` for more information.
 
-* *config* -- Currently not implemented.
+*   *config* -- Configuration swiss army knife.  See `command-wrapper-config(1)`
+    for more information.
 
-* *completion* -- Provides shell completion.  Currently only partially
-  implemented for Bash shell.
+*   *completion* -- Provides shell completion.  See
+    `command-wrapper-completion(1)` for more information.
 
-* *version* -- Print version information to *stdout* and exit.
+*   *version* -- Print version information to *stdout* and exit.  See
+    `command-wrapper-version(1)` for more information.
 
 Some external subcommands are bundled with Command Wrapper itself:
 
-* *cd* -- Start a new subshell / Tmux window / Kitten terminal emulator window /
-  terminal emulator in a selected directory.  See `command-wrapper-cd(1)` for
-  more details.
+*   *cd* -- Start a new subshell / Tmux window / Kitten terminal emulator
+    window / terminal emulator in a selected directory.  See
+    `command-wrapper-cd(1)` for more details.
 
-* *exec* -- Execute predefined command with a user specified environment.  See
-  `command-wrapper-exec(1)` for more details.
+*   *exec* -- Execute predefined command with a user specified environment.
+    See `command-wrapper-exec(1)` for more details.
 
-* *skel* -- Generate subcommand skeleton for specific Command Wrapper
-  environment, i.e. toolset.  See `command-wrapper-skel(1)` for more details.
+*   *skel* -- Generate subcommand skeleton for specific Command Wrapper
+    environment, i.e. toolset.  See `command-wrapper-skel(1)` for more details.
 
 
 # EXIT STATUS
@@ -635,8 +637,9 @@ protocol is described in `command-wrapper-subcommand-protocol(7)` manual page.
 
 # SEE ALSO
 
-command-wrapper-cd(1), command-wrapper-exec(1), command-wrapper-skel(1),
-command-wrapper-subcommand-protocol(7)
+command-wrapper-cd(1), command-wrapper-completion(1), command-wrapper-config(1),
+command-wrapper-exec(1), command-wrapper-help(1), command-wrapper-skel(1),
+command-wrapper-version(1), command-wrapper-subcommand-protocol(7)
 
 * [Dhall configuration language](https://dhall-lang.org)
 * [XDG Base Directory Specification

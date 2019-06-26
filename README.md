@@ -3,6 +3,28 @@
 [![Haskell Programming Language](https://img.shields.io/badge/language-Haskell-blue.svg)][Haskell.org]
 [![BSD3 License](http://img.shields.io/badge/license-BSD3-brightgreen.svg)][tl;dr Legal: BSD3]
 
+Command Wrapper is a meta tool.  A tool to create tools with a nice and
+consistent UI.  We call these tools **toolsets**, sets of commands with a common
+theme, or a purpose.
+
+
+## Table of Contents
+
+*   [Description](#description)
+
+*   [Some Interesting Features](#some-interesting-features)
+
+*   [Documentation](#documentation)
+
+    *   [What is Toolset](#what-is-toolset)
+    *   [How To Choose a Toolset Name](#how-to-choose-a-toolset-name)
+    *   [Available Subcommands](#available-subcommands)
+    *   [Introducing New Subcommand](#introducing-new-subcommand)
+    *   [Internal Subcommands](#internal-subcommands)
+    *   [External Subcommands](#external-subcommands)
+
+*   [Installation](#installation)
+
 
 ## Description
 
@@ -43,7 +65,7 @@ which is described in its own manual page
     integrated into its `config` (internal) subcommand.  It also provides very
     useful Dhall library [`dhall/CommandWrapper`](dhall/CommandWrapper/).
 
-*   Command line completion for Bash and Fish shells.
+*   Command line completion for Bash, Fish, and Zsh.
 
 *   Subcommands can be written in any language, they just need to respect
     Subcommand Protocol (described in [`command-wrapper-subcommand-protocol(7)`
@@ -68,8 +90,9 @@ which is described in its own manual page
 
 ## Documentation
 
-Documentation is in the form of manual pages written in Markdown and compiled
-using `pandoc`.  See [`man/`](./man/) directory.
+In this section we will focus only on basic and some interesting use cases.
+Detailed documentation is in the form of manual pages written in Markdown and
+compiled using `pandoc`.  See [`man/`](./man/) directory.
 
 When installed these can be viewed using:
 
@@ -78,10 +101,124 @@ TOOLSET_COMMAND help --man [SUBCOMMAND|TOPIC]
 ```
 
 
-### Basic Usage
+### What is Toolset
+
+Toolset is just a name-space for commands.  Easiest way to initialise a toolset
+named `yx` is:
 
 ```
-TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
+~/.local/lib/command-wrapper/command-wrapper config --init --toolset=yx
+```
+
+Which creates a bunch of configuration files in `~/.config/yx` and most
+importantly a symbolic link pointing to `command-wrapper` executable.
+
+Whenever something like `yx SUBCOMMAND` is executed, and `SUBCOMMAND` is not an
+internal command (command implemented inside Command Wrapper), then Command
+Wrapper will look for executable named `yx-${SUBCOMMAND}` to execute.
+
+Command Wrapper looks for these commands in directories specified in its
+configuration file, and if it fails, then it looks for them in directories
+specified by `PATH` environment variable.
+
+
+### How To Choose a Toolset Name
+
+Good toolset name should be:
+
+* Short
+* Memorable (to you)
+* Easy to type on your keyboard layout
+
+
+### Available Subcommands
+
+All available subcommands and aliases can be listed using:
+
+```
+TOOLSET_COMMAND completion --query --subcommands
+```
+
+To list only subcommands we can use following:
+
+```
+TOOLSET_COMMAND --no-aliases completion --query --subcommands
+```
+
+The list printed by the above command includes internal and external
+subcommands.
+
+To list only aliases we can use either:
+
+```
+TOOLSET_COMMAND completion --query --subcommand-aliases
+```
+
+Or we can use `help` to print not only their names, but also their short
+descriptions:
+
+```
+TOOLSET_COMMAND help --aliases
+```
+
+Help for individual subcommands can be printed using
+
+```
+TOOLSET_COMMAND help SUBCOMMAND
+```
+
+If `SUBCOMMAND` has a manual page then following command will display it:
+
+```
+TOOLSET_COMMAND help --man SUBCOMMAND
+```
+
+Calling `TOOLSET_COMMAND help ALIAS` works as well, but it prints help for the
+subcommand that will be invoked, not the alias itself.
+
+
+### Introducing New Subcommand
+
+Following command will create a skeleton of a new subcommand:
+
+```
+TOOLSET_COMMAND skel [--language={bash|haskell}] [--edit] SUBCOMMAND
+```
+
+If `--edit` is specified then it immediately opens the created file in an
+editor.  Preferred editor and enabling `--edit` by default can be done in a
+configuration file, see [`command-wrapper-skel(1)`
+](man/command-wrapper-skel.1.md) manual page for more information.
+
+By default subcommands written in Bash are stored under following name:
+
+```
+~/.local/lib/${toolset}/${toolset}-${subcommand}
+```
+
+In contrast Haskell subcommands are stored as:
+
+```
+~/.config/${toolset}/toolset/app-${toolset}-${subcommand}/Main.hs
+```
+
+These paths are configurable, see [`command-wrapper-skel(1)`
+](man/command-wrapper-skel.1.md) manual page.  The reason for subcommands
+written in Haskell to be named this way is that we expect
+`~/.config/${toolset}/toolset/` to be a Haskell package so that code can be
+shared among subcommands in the form of library.
+
+Best approach is to create Bash script first, and later rewrite it using a
+proper programming language.  The later step may never come, it depends on how
+complex the functionality is.
+
+
+### Internal Subcommands
+
+Command Wrapper provides few internal commands that are intended to make user
+experience nice, and to provide basic utilities to external subcommands.
+
+```
 TOOLSET_COMMAND [GLOBAL_OPTIONS] help [HELP_OPTIONS] [SUBCOMMAND]
 TOOLSET_COMMAND [GLOBAL_OPTIONS] config [CONFIG_OPTIONS] [SUBCOMMAND]
 TOOLSET_COMMAND [GLOBAL_OPTIONS] version [VERSION_OPTIONS]
@@ -90,11 +227,56 @@ TOOLSET_COMMAND [GLOBAL_OPTIONS] {--version|-V}
 TOOLSET_COMMAND [GLOBAL_OPTIONS] {--help|-h}
 ```
 
+If `TOOLSET_COMMAND` is named `yx` then invoking help for it is:
+
+```
+yx help
+```
+
 More can be found in [`command-wrapper(1)`](man/command-wrapper.1.md) manual
-page, including list of external subcommands installed along with it.
+page.  Individual internal subcommands are:
+
+*   [`command-wrapper-help(1)`](man/command-wrapper-help.1.md) -- Display help
+    message or manual page for Command Wrapper or one of its subcommands.
+
+*   [`command-wrapper-config(1)`](man/command-wrapper-config.1.md) -- Command
+    Wrapper's configuration swiss army knife.  It includes
+    [Dhall](https://dhall-lang.org/) interpreter.
+
+*   [`command-wrapper-version(1)`](man/command-wrapper-version.1.md) -- Print
+    version information either in human readable format, or in a machine
+    readable one.
+
+*   [`command-wrapper-completion(1)`](man/command-wrapper-completion.1.md) --
+    Command line completion toolbox.
 
 
-## Install
+### External Subcommands
+
+Basic invocation:
+
+```
+TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
+```
+
+If our tooset is named `yx` and we are calling `cd` subcommand then this
+becomes, for example:
+
+```
+yx cd
+```
+
+Command Wrapper installation comes with following commands that are implemented
+as separate executables (external subcommands):
+
+*   [`command-wrapper-cd(1)`](man/command-wrapper-cd.1.md)
+
+*   [`command-wrapper-exec(1)`](man/command-wrapper-exec.1.md)
+
+*   [`command-wrapper-skel(1)`](man/command-wrapper-skel.1.md)
+
+
+## Installation
 
 1.  Install `command-wrapper`:
 
@@ -146,15 +328,6 @@ page, including list of external subcommands installed along with it.
         ```Bash
         source <(yx completion --script --shell=zsh)
         ```
-
-
-## How To Choose a Toolset Name
-
-Good toolset name should be:
-
-* Short
-* Memorable (to you)
-* Easy to type on your keyboard layout
 
 
 
