@@ -122,7 +122,7 @@ init
                         )
                 Just dir -> pure dir
 
-    unless (usedName == "command-wrapper")
+    unless (toolsetName == "command-wrapper")
         $ findExecutable toolsetName >>= \case
             Nothing -> do
                 let dst = destination </> toolsetName
@@ -211,7 +211,7 @@ init
     checkFile skelConfig
         >>= createOrSkipFile (configFileContent (SkelConfig toolsetName))
 
-    when (usedName == "command-wrapper") do
+    when (toolsetName == "command-wrapper") do
 
         let libraryTypesDhall = configDir </> "Types.dhall"
             libraryDhall = configDir </> "library.dhall"
