@@ -16,12 +16,13 @@ theme, or a purpose.
 
 *   [Documentation](#documentation)
 
-    *   [What is Toolset](#what-is-toolset)
+    *   [What is a Toolset](#what-is-a-toolset)
     *   [How To Choose a Toolset Name](#how-to-choose-a-toolset-name)
     *   [Available Subcommands](#available-subcommands)
     *   [Introducing New Subcommand](#introducing-new-subcommand)
     *   [Internal Subcommands](#internal-subcommands)
     *   [External Subcommands](#external-subcommands)
+    *   [Subcommand Aliases](#subcommand-aliases)
 
 *   [Installation](#installation)
 
@@ -90,7 +91,7 @@ which is described in its own manual page
 
 ## Documentation
 
-In this section we will focus only on basic and some interesting use cases.
+In this section we will focus only on basics, and some interesting use cases.
 Detailed documentation is in the form of manual pages written in Markdown and
 compiled using `pandoc`.  See [`man/`](./man/) directory.
 
@@ -101,7 +102,7 @@ TOOLSET_COMMAND help --man [SUBCOMMAND|TOPIC]
 ```
 
 
-### What is Toolset
+### What is a Toolset
 
 Toolset is just a name-space for commands.  Easiest way to initialise a toolset
 named `yx` is:
@@ -110,7 +111,7 @@ named `yx` is:
 ~/.local/lib/command-wrapper/command-wrapper config --init --toolset=yx
 ```
 
-Which creates a bunch of configuration files in `~/.config/yx` and most
+Which creates a bunch of configuration files in `~/.config/yx`, and most
 importantly a symbolic link pointing to `command-wrapper` executable.
 
 Whenever something like `yx SUBCOMMAND` is executed, and `SUBCOMMAND` is not an
@@ -139,7 +140,8 @@ All available subcommands and aliases can be listed using:
 TOOLSET_COMMAND completion --query --subcommands
 ```
 
-To list only subcommands we can use following:
+To list only subcommands, omitting aliases (see [Subcommand Aliases
+](#subcommand-aliases) section), we can use following:
 
 ```
 TOOLSET_COMMAND --no-aliases completion --query --subcommands
@@ -274,6 +276,49 @@ as separate executables (external subcommands):
 *   [`command-wrapper-exec(1)`](man/command-wrapper-exec.1.md)
 
 *   [`command-wrapper-skel(1)`](man/command-wrapper-skel.1.md)
+
+
+### Subcommand Aliases
+
+Command Wrapper allows us to define aliases in a similar way as Git.  These are
+defined either in `~/config/${toolset}/default.dhall` (global aliases, shared
+by all toolsets) or in `~/config/${toolset}/default.dhall` (toolset specific
+aliases).  An alias looks like this:
+
+```
+{ alias = "man"
+, description = Some "Short hand for \"help --man\"."
+, command = "help"
+, arguments = [ "--man" ]
+}
+```
+
+Invoking such alias looks like any other subcommand invocation:
+
+```
+TOOLSET_COMMAND man [SUBCOMMAND|TOPIC]
+```
+
+And it is the same as calling:
+
+```
+TOOLSET_COMMAND help --man [SUBCOMMAND|TOPIC]
+```
+
+The `description` field is printed when listing aliases using:
+
+```
+TOOLSET_COMMAND help --aliases
+```
+
+Command line completion, and other standard subcommand goodies, work for
+aliases as well, however, one must be aware that calling `help` on an alias
+gives help for the underlying command.  In case of our `man` alias it would be
+the same as if we called:
+
+```
+TOOLSET_COMMAND help help
+```
 
 
 ## Installation
