@@ -23,6 +23,7 @@ theme, or a purpose.
     *   [Internal Subcommands](#internal-subcommands)
     *   [External Subcommands](#external-subcommands)
     *   [Subcommand Aliases](#subcommand-aliases)
+    *   [Command Line Completion](#command-line-completion)
 
 *   [Installation](#installation)
 
@@ -208,7 +209,7 @@ These paths are configurable, see [`command-wrapper-skel(1)`
 ](man/command-wrapper-skel.1.md) manual page.  The reason for subcommands
 written in Haskell to be named this way is that we expect
 `~/.config/${toolset}/toolset/` to be a Haskell package so that code can be
-shared among subcommands in the form of library.
+shared among subcommands in the form of a library.
 
 Best approach is to create Bash script first, and later rewrite it using a
 proper programming language.  The later step may never come, it depends on how
@@ -319,6 +320,87 @@ the same as if we called:
 ```
 TOOLSET_COMMAND help help
 ```
+
+For more information see [`command-wrapper(1)`](man/command-wrapper.1.md) which
+provides more information on how aliases are defined.
+
+
+### Command Line Completion
+
+All subcommands have to provide command line completion.  This is a requirement
+specified in [`command-wrapper-subcommand-protocol(7)`
+](man/command-wrapper-subcommand-protocol.7.md).  The benefit of the approach
+that is documented in mentioned Subcommand Protocol is that there is no need
+to hook it up into our shell if our toolset is already.
+
+Command Wrapper provides its own script for enabling command line completion
+in Bash, Fish or Zsh:
+
+```
+TOOLSET_COMMAND completion --script [--shell=SHELL] [--output=FILE] [--alias=ALIAS ...]
+```
+
+There are two basic ways of hooking it into your shell:
+
+*   **Sourcing.**  For example, enabling it for Bash means adding following line
+    into `~/.bashrc`:
+
+    ```Bash
+    source <("${TOOLSET_COMMAND}" completion --script --shell=bash)
+    ```
+
+*   **Standalone file.**  The above approach has the disadvantage that every time
+    we start a shell we need to run Command Wrapper to get the completion
+    script.  This can be avoided by writting it somewhere.  For example we can
+    do following in `~/.bashrc`:
+
+    ```Bash
+    if [[ ! -e "${XDG_CACHE_HOME:-${HOME}/.cache}/${TOOLSET_COMMAND}/completion.sh" ]]; then
+        mkdir -p "${XDG_CACHE_HOME:-${HOME}/.cache}/${TOOLSET_COMMAND}"
+        "${TOOLSET_COMMAND}" completion --script --shell=bash \
+            --output="${XDG_CACHE_HOME:-${HOME}/.cache}/${TOOLSET_COMMAND}/completion.sh"
+    fi
+
+    source "${XDG_CACHE_HOME:-${HOME}/.cache}/${TOOLSET_COMMAND}/completion.sh"
+    ```
+
+If we are invoking our toolset under multiple names (only one name can be
+tooset name, rest are shell aliases) then we can generate completion for all of
+them.  For example if our toolset is called `habit` and we use `hb` as an alias
+we can enable completion for both:
+
+```Bash
+alias hb=habit
+source <(habit completion --script --shell=bash --alias=hb)
+```
+
+If we want to define shell alias for a subcommand we will need to enable
+command line completion in our shell.  For example if our toolset is named
+`habit`, and we want to use its Dhall interpreter under the name `dhall`.
+Doing this consists of two steps:
+
+1.  Define an alias for `config --dhall`:
+
+    ```
+    { alias = "dhall"
+    , description = Some "Shorthand for \"config --dhall\"."
+    , command = "config"
+    , arguments = [ "--dhall" ]
+    }
+    ```
+
+    See also [Subcommand Aliases](#subcommand-aliases) section.
+
+2.  Add following into `~/.bashrc`:
+
+    ```Bash
+    alias dhall='habit dhall'
+    source <(habit completion --script --shell=bash --subcommand=dhall --alias=dhall)
+    ```
+
+The reason why we can't use `alias dhall='habit config --dhall' is that, at the
+moment, Command Wrapper has now way of knowing that we are passing `--dhall`
+option to `config` command.
 
 
 ## Installation
