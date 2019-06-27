@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 22nd June 2019
+% 27th June 2019
 
 
 # NAME
@@ -157,7 +157,7 @@ interface for querying Command Wrapper's command line interface (CLI).
     `--verbosity=VERBOSITY` option, and `command-wrapper-subcommand-protocol(7)`
     regarding `COMMAND_WRAPPER_VERBOSITY` environment variable.
 
-\--colo[u]r-values
+\--colo\[u]r-values
 :   Query possible *WHEN* colour output values.  These can be set using global
     `--colo[u]r=WHEN` option, or are passed down to subcommands via
     `COMMAND_WRAPPER_COLOUR` environment variable.
@@ -222,8 +222,42 @@ alias this='toolset this'
 source <(toolset completion --script --subcommand=this --alias=this)
 ```
 
+As an alternative to executing Command Wrapper to get completion script we can
+use cached value instead:
+
+```Bash
+declare toolset='toolset'  # TODO: Set toolset name.
+declare toolsetCacheDir="${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}"
+declare toolsetCompletionFile="${toolsetCacheDir}/completion.bash"
+if [[ ! -e "${toolsetCompletionFile}" ]]; then
+    mkdir -p "${toolsetCacheDir}"
+
+    # Using temporary file prevents us from having a conflict when two shells
+    # are started and there is no completion file.  We are relying on the fact
+    # that 'mv' operation is atomic, therefore, all shells will see consistent
+    # version of completion file.
+
+    declare toolsetCompletionTempFile
+    toolsetCompletionTempFile=$(
+        mktemp --tmpdir="${toolsetCacheDir}" --suffix=.bash completion.XXXXXXXXXX
+    )
+
+    "${toolset}" completion --script --shell=bash --output="${toolsetCompletionTempFile}"
+    mv "${toolsetCompletionTempFile}" "${toolsetCompletionFile}"
+fi
+
+source "${toolsetCompletionFile}"
+unset -v toolset toolsetCacheDir toolsetCompletionFile toolsetCompletionTempFile
+```
+
+In the above example we used `toolset` as an variable so that it can be more
+easily copy-pasted.
+
 
 # FISH CONFIGURATION
+
+Include following in your `~/.config/fish/config.fish`, or add as
+`~/.config/fish/completions/yx.fish`:
 
 ```
 toolset completion --script --shell=bash | source
@@ -234,8 +268,7 @@ aliases for `toolset` are used we can provide completion for them as well:
 
 ```
 alias ts toolset
-# shellcheck source=/dev/null
-source <(toolset completion --script --shell=bash --alias='ts')
+toolset completion --script --shell=bash --alias='ts' | source
 ```
 
 It is also possible to get completion for an alias to a subcommand:
@@ -243,6 +276,30 @@ It is also possible to get completion for an alias to a subcommand:
 ```
 alias this 'toolset this'
 toolset completion --script --subcommand=this --alias=this | source
+```
+
+
+# ZSH CONFIGURATION
+
+Include following in your `~/.zshrc`, it has to be after `compinit` call:
+
+```Bash
+source <(toolset completion --script --shell=zsh)
+```
+
+Where `toolset` is the name under which `command-wrapper` is used.  If any
+aliases for `toolset` are used we can provide completion for them as well:
+
+```
+alias ts=toolset
+source <(toolset completion --script --shell=bash --alias='ts')
+```
+
+It is also possible to get completion for an alias to a subcommand:
+
+```
+alias this='toolset this'
+source <(toolset completion --script --subcommand=this --alias=this)
 ```
 
 

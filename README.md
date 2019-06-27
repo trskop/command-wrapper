@@ -340,13 +340,14 @@ in Bash, Fish or Zsh:
 TOOLSET_COMMAND completion --script [--shell=SHELL] [--output=FILE] [--alias=ALIAS ...]
 ```
 
-There are two basic ways of hooking it into your shell:
+There are two basic ways of hooking toolset command line completion into your
+shell:
 
 *   **Sourcing.**  For example, enabling it for Bash means adding following line
     into `~/.bashrc`:
 
     ```Bash
-    source <("${TOOLSET_COMMAND}" completion --script --shell=bash)
+    source <("${toolset}" completion --script --shell=bash)
     ```
 
 *   **Standalone file.**  The above approach has the disadvantage that every time
@@ -355,13 +356,29 @@ There are two basic ways of hooking it into your shell:
     do following in `~/.bashrc`:
 
     ```Bash
-    if [[ ! -e "${XDG_CACHE_HOME:-${HOME}/.cache}/${TOOLSET_COMMAND}/completion.sh" ]]; then
-        mkdir -p "${XDG_CACHE_HOME:-${HOME}/.cache}/${TOOLSET_COMMAND}"
-        "${TOOLSET_COMMAND}" completion --script --shell=bash \
-            --output="${XDG_CACHE_HOME:-${HOME}/.cache}/${TOOLSET_COMMAND}/completion.sh"
+    declare toolset='toolset'  # TODO: Set toolset name.
+    declare toolsetCacheDir="${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}"
+    declare toolsetCompletionFile="${toolsetCacheDir}/completion.bash"
+    if [[ ! -e "${toolsetCompletionFile}" ]]; then
+        mkdir -p "${toolsetCacheDir}"
+
+        # Using temporary file prevents us from having a conflict when two shells
+        # are started and there is no completion file.  We are relying on the fact
+        # that 'mv' operation is atomic, therefore, all shells will see consistent
+        # version of completion file.
+
+        declare toolsetCompletionTempFile
+        toolsetCompletionTempFile=$(
+            mktemp --tmpdir="${toolsetCacheDir}" --suffix=.bash completion.XXXXXXXXXX
+        )
+
+        "${toolset}" completion --script --shell=bash --output="${toolsetCompletionTempFile}"
+        mv "${toolsetCompletionTempFile}" "${toolsetCompletionFile}"
     fi
 
-    source "${XDG_CACHE_HOME:-${HOME}/.cache}/${TOOLSET_COMMAND}/completion.sh"
+    source "${toolsetCompletionFile}"
+    unset -v toolsetCacheDir toolsetCompletionFile toolsetCompletionTempFile
+    unset -v toolset toolsetCacheDir toolsetCompletionFile toolsetCompletionTempFile
     ```
 
 If we are invoking our toolset under multiple names (only one name can be
