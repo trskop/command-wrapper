@@ -75,6 +75,10 @@
 , utils =
     { `List` =
         { head-and-tail = ./List/head-and-tail
+        , index = ./List/index
+        }
+    , `Optional` =
+        { from = ./Optional/from
         }
     , url =
         { defaultPort = ./url/defaultPort
