@@ -16,12 +16,14 @@
 module Main (main)
   where
 
+import Prelude hiding (words)
+
 import Control.Applicative (many, optional)
 import Control.Monad (unless, when)
 import Data.Foldable (asum)
 import Data.Function (on)
 import Data.Functor ((<&>))
-import qualified Data.List as List (filter, isPrefixOf)
+import qualified Data.List as List (filter, isPrefixOf, take)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Last(Last, getLast), (<>))
 import Data.String (fromString)
@@ -149,8 +151,8 @@ main = do
         CompletionInfo ->
             printCommandWrapperStyleCompletionInfoExpression stdout
 
-        Completion index _shell words' ->
-            doCompletion params index words'
+        Completion index shell words ->
+            doCompletion params shell index words
 
         Help ->
             let Params{verbosity, colour} = params
@@ -310,18 +312,44 @@ parseLanguage t = case CI.mk t of
     "dhall" -> Just Dhall
     _ -> Nothing
 
-doCompletion :: Params -> Word -> [String] -> IO ()
-doCompletion Params{} index words' =
-    mapM_ putStrLn (List.filter (pat `List.isPrefixOf`) allOptions)
-  where
-    pat = fromMaybe (lastDef "" words') (atMay words' (fromIntegral index))
+doCompletion :: Params -> Shell -> Word -> [String] -> IO ()
+doCompletion Params{} _shell index words =
+    mapM_ putStrLn $ List.filter (pat `List.isPrefixOf`) if
+      | null wordsBeforePattern ->
+            mconcat [helpOptions, parentsOptions, languageOptions, editOptions]
 
-    allOptions =
-        [ "-l", "--language=bash", "--language=dhall", "--language=haskell"
-        , "-p", "--parents"
-        , "-e", "--edit", "-E", "--no-edit"
-        , "-h", "--help"
-        ]
+      | Just "-l" <- atMay words (fromIntegral index - 1) ->
+            languages
+
+      | hadHelpOption ->
+            []
+
+      | otherwise ->
+            mconcat
+                [ if hadParentsOption then [] else parentsOptions
+                , if hadLanguageOption then [] else languageOptions
+                , editOptions
+                ]
+  where
+    pat = fromMaybe (lastDef "" words) (atMay words (fromIntegral index))
+
+    wordsBeforePattern = List.take (fromIntegral index) words
+
+    editOptions =  ["-e", "--edit", "-E", "--no-edit"]
+
+    hadHelpOption = any (`elem` helpOptions) wordsBeforePattern
+
+    helpOptions = ["-h", "--help"]
+
+    hadParentsOption = any (`elem` parentsOptions) wordsBeforePattern
+
+    parentsOptions = ["-p", "--parents" ]
+
+    hadLanguageOption = any (`elem` languageOptions) wordsBeforePattern
+
+    languageOptions = ("-l" : ["--language=" <> lang | lang <- languages])
+
+    languages = ["bash", "dhall", "haskell"]
 
 helpMsg :: Params -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpMsg Params{name, subcommand} = Pretty.vsep
