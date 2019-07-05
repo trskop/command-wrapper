@@ -475,10 +475,10 @@ parseOptions = asum
         , Options.long "ls"
         ]
     , Options.flag' (const Tree) (Options.long "tree" <> Options.short 't')
-    , Options.flag' (const DryRun) (Options.long "print")
     , Options.flag' (\i s _ -> DryRunCompletion i s) (Options.long "print-completion")
         <*> indexOption
         <*> shellOption
+    , Options.flag' (const DryRun) (Options.long "print")
 
     , Options.flag' (const Help) (Options.short 'h' <> Options.long "help")
 
