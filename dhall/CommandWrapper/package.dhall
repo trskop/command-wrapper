@@ -16,6 +16,8 @@
         { defaults = ./exec/defaults
         , emptyCommands = ./exec/emptyCommands
         , namedCommand = ./exec/namedCommand
+        , namedCommandToAlias = ./exec/namedCommandToAlias
+        , namedCommandsToAliases = ./exec/namedCommandsToAliases
 
         , bazel = ./exec/bazel
         , direnv = ./exec/direnv

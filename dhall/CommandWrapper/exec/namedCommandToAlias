@@ -1,0 +1,15 @@
+let CommandWrapper = ../Types.dhall
+
+in    λ(x : CommandWrapper.ExecNamedCommand)
+    →   { alias =
+            x.name
+        , description =
+            x.description
+        , command =
+            "exec"
+        , arguments =
+            [ x.name ]
+        }
+      : CommandWrapper.SubcommandAlias
+
+-- vim: filetype=dhall
