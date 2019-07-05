@@ -9,7 +9,10 @@ if [[ "''${COMMAND_WRAPPER_VERBOSITY:-}" == 'annoying' ]]; then
 fi
 
 # shellcheck source=/dev/null
-source <(COMMAND_WRAPPER_INVOKE_AS="''${COMMAND_WRAPPER_NAME}" "''${COMMAND_WRAPPER_EXE}" completion --library --shell=bash)
+source <(
+    COMMAND_WRAPPER_INVOKE_AS="''${COMMAND_WRAPPER_NAME}" "''${COMMAND_WRAPPER_EXE}" \
+        completion --library --shell=bash
+)
 
 # Print help message to standard output.
 function printHelp() {
@@ -37,10 +40,15 @@ EOF
 # `command-wrapper-subcommand-protocol(7)` for more details on how this works.
 function completionInfo() {
     cat <<"EOF"
-  λ(_ : < Bash | Fish | Zsh >)
+  λ(shell : < Bash | Fish | Zsh >)
 → λ(index : Natural)
 → λ(words : List Text)
-→ [ "--completion", "--index=''${Natural/show index}", "--" ] # words
+→   [ "--completion"
+    , "--index=''${Natural/show index}"
+    , "--shell=''${merge {Bash = "bash", Fish = "fish", Zsh = "zsh"} shell}"
+    , "--"
+    ]
+  # words
 EOF
 }
 
@@ -48,7 +56,7 @@ EOF
 #
 # Usage:
 #
-#   completion [--index=INDEX] [[--] WORD [...]]
+#   completion [--index=INDEX] [--shell=SHELL] [[--] WORD [...]]
 #
 # Bash itself provides `compgen` builtin command that can do a lot of standard
 # command line completion functions.  See `bash(1)` or `help compgen` for more
@@ -63,6 +71,9 @@ function completion() {
         case "''${arg}" in
             --index=*)
                 index="''${arg#*=}"
+                ;;
+            --shell=*)
+                # Ignored.
                 ;;
             --)
                 words=("$@")
@@ -82,7 +93,31 @@ function completion() {
         words=("")
     fi
 
-    compgen -W '--help -h' -- "''${words[''${index}]}"
+    local -r currentWord="''${words[''${index}]}"
+
+    local -i hadDashDash=0
+    local -a previousWords=()
+    if (( index )); then
+        previousWords=("''${words[@]:0:$((index - 1))}")
+    fi
+
+    for opt in "''${previousWords[@]}"; do
+        if [[ "''${opt}" = '--' ]]; then
+            hadDashDash=1
+            break
+        fi
+    done
+
+    local -r -a options=(
+        --help -h
+    )
+
+    if (( ! hadDashDash )) && [[ "''${currentWord}" == -* ]]; then
+        compgen -W "''${options[*]}" -- "''${currentWord}"
+    else
+        # File completion.
+        compgen -f -- "''${currentWord}"
+    fi
 }
 
 # Read configuration file in Dhall format and declare Bash variables based on
