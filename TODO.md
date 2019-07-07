@@ -127,8 +127,13 @@
 *   Command line completion should have access to `Verbosity` and
    `ColourOutput`.  These can affect how `ExecCommand` value is constructed.
 
+*   Use Haskell Dbus client and desktop notifications library so that we don't
+    need `notify-send` to be installed.
 
-### Skell
+*   Find a better way how to play sound when command is done.
+
+
+### Skel
 
 *   Generalise `skel` command by merging in `yx new` functionality.
 
@@ -146,10 +151,8 @@
     TOOLSET skel {--config|-c} {--toolset|SUBCOMMAND}
     ```
 
-*   Use Haskell Dbus client and desktop notifications library so that we don't
-    need `notify-send` to be installed.
-
-*   Find a better way how to play sound when command is done.
+*   Something like `--edit-only` to edit already created file?  How would this
+    play wity `yx new` functionality?  Two kind of templates?
 
 
 ## Ideas For New Subcommands
