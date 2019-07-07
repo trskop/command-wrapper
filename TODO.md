@@ -32,6 +32,8 @@
     TOOLSET completion --script [--standalone|--source] ...
     ```
 
+*   Support fuzzy search when doing `--query`.
+
 ### Config
 
 *   Provide `dhall-json`, `dhall-bash`, and `dhall-text` functionality.

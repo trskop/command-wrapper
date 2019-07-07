@@ -28,13 +28,13 @@ module CommandWrapper.Internal.Subcommand.Completion
 import Prelude ((+), (-), fromIntegral)
 
 import Control.Applicative ((<*>), (<|>), many, optional, pure, some)
-import Control.Monad ((>>=), join, when)
+import Control.Monad ((=<<), (>>=), join, when)
 import Data.Bool (Bool(False), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
-import Data.Eq ((/=), (==))
+import Data.Eq (Eq, (/=), (==))
 import Data.Foldable (all, any, asum, forM_, length, mapM_, null)
-import Data.Function (($), (.), id)
+import Data.Function (($), (.), id, on)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List
     ( break
@@ -63,6 +63,8 @@ import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
 import qualified Data.ByteString as ByteString (putStr, writeFile)
+import Data.CaseInsensitive (CI)
+import qualified Data.CaseInsensitive as CI (foldedCase, mk)
 import Data.FileEmbed (embedFile)
 import Data.Generics.Product.Typed (typed)
 import Data.Monoid.Endo (mapEndo)
@@ -152,6 +154,11 @@ type Completer =
     ->  [String]
     ->  IO [String]
 
+data MatchingAlgorithm
+    = PrefixEquivalence
+    | FuzzyMatch
+  deriving stock (Generic, Show)
+
 data Query = Query
     { what :: WhatToQuery
 
@@ -160,6 +167,8 @@ data Query = Query
     -- should support multiple patterns, in which case this will nicely unite
     -- with 'CompletionOptions'.
 
+    , matchingAlgorithm :: MatchingAlgorithm
+
     , caseSensitive :: Bool
     -- ^ Be case sensitive when pattern matching values.
     --
@@ -167,7 +176,7 @@ data Query = Query
     -- * @True@: be case sensitive when pattern matching.
     , output :: OutputStdoutOrFile
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
     -- TODO: Extend this data type to be able to list various combinations of
     -- following groups:
     --
@@ -186,12 +195,13 @@ data WhatToQuery
     | QueryVerbosityValues
     | QueryColourValues
     | QuerySupportedShells
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
 
 defQueryOptions :: Query
 defQueryOptions = Query
     { what = QuerySubcommands
     , patternToMatch = ""
+    , matchingAlgorithm = PrefixEquivalence
     , caseSensitive = False
     , output = OutputStdoutOnly
     }
@@ -446,46 +456,68 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                         >>= outputStringLines output
 
               | otherwise ->
-                    findSubcommandsFuzzy config' query
-                        >>= outputStringLines output . fmap Fuzzy.original
+                    outputStringLines output =<< case matchingAlgorithm of
+                        PrefixEquivalence ->
+                            findSubcommandsPrefix config' query
+
+                        FuzzyMatch ->
+                            fmap Fuzzy.original
+                                <$> findSubcommandsFuzzy config' query
 
             QuerySubcommandAliases
               | null patternToMatch ->
                     outputStringLines output (getAliases config')
 
               | otherwise ->
-                    outputStringLines output $ fmap Fuzzy.original
-                        (findSubcommandAliasesFuzzy config' query)
+                    outputStringLines output case matchingAlgorithm of
+                        PrefixEquivalence ->
+                            findSubcommandAliasesPrefix config' query
+
+                        FuzzyMatch ->
+                            Fuzzy.original
+                                <$> findSubcommandAliasesFuzzy config' query
 
             QueryVerbosityValues
               | null patternToMatch ->
                     outputStringLines output verbosityValues
 
               | otherwise ->
-                    outputStringLines output $ fmap Fuzzy.original
-                        ( Fuzzy.filter patternToMatch verbosityValues "" "" id
-                            caseSensitive
-                        )
+                    outputStringLines output case matchingAlgorithm of
+                        PrefixEquivalence ->
+                            prefixEquivalence query verbosityValues
+
+                        FuzzyMatch ->
+                            Fuzzy.original
+                                <$> Fuzzy.filter patternToMatch verbosityValues
+                                        "" "" id caseSensitive
 
             QueryColourValues
               | null patternToMatch ->
                     outputStringLines output colourValues
 
               | otherwise ->
-                    outputStringLines output $ fmap Fuzzy.original
-                        ( Fuzzy.filter patternToMatch colourValues "" "" id
-                            caseSensitive
-                        )
+                    outputStringLines output case matchingAlgorithm of
+                        PrefixEquivalence ->
+                            prefixEquivalence query colourValues
+
+                        FuzzyMatch ->
+                            Fuzzy.original
+                                <$> Fuzzy.filter patternToMatch colourValues ""
+                                        "" id caseSensitive
 
             QuerySupportedShells
               | null patternToMatch ->
                     outputStringLines output supportedShells
 
               | otherwise ->
-                    outputStringLines output $ fmap Fuzzy.original
-                        ( Fuzzy.filter patternToMatch supportedShells "" "" id
-                            caseSensitive
-                        )
+                    outputStringLines output case matchingAlgorithm of
+                        PrefixEquivalence ->
+                            prefixEquivalence query supportedShells
+
+                        FuzzyMatch ->
+                            Fuzzy.original
+                                <$> Fuzzy.filter patternToMatch supportedShells
+                                        "" "" id caseSensitive
 
         HelpMode config'@Global.Config{colourOutput, verbosity} ->
             message defaultLayoutOptions verbosity colourOutput stdout
@@ -510,12 +542,29 @@ completion completionConfig@CompletionConfig{..} appNames options config =
         cmds <- getSubcommands appNames cfg internalSubcommands
         pure (Fuzzy.filter patternToMatch cmds "" "" id caseSensitive)
 
+    findSubcommandsPrefix :: Global.Config -> Query -> IO [String]
+    findSubcommandsPrefix cfg query =
+        prefixEquivalence query
+            <$> getSubcommands appNames cfg internalSubcommands
+
+    prefixEquivalence :: Query -> [String] -> [String]
+    prefixEquivalence Query{patternToMatch, caseSensitive} possibilities =
+        List.filter match possibilities
+      where
+        match
+          | caseSensitive = (patternToMatch `List.isPrefixOf`)
+          | otherwise     = (CI.mk patternToMatch `ciIsPrefixOf`) . CI.mk
+
     findSubcommandAliasesFuzzy
         :: Global.Config
         -> Query
         -> [Fuzzy String String]
     findSubcommandAliasesFuzzy cfg Query{patternToMatch, caseSensitive} =
         Fuzzy.filter patternToMatch (getAliases cfg) "" "" id caseSensitive
+
+    findSubcommandAliasesPrefix :: Global.Config -> Query -> [String]
+    findSubcommandAliasesPrefix cfg query =
+        prefixEquivalence query (getAliases cfg)
 
     outputStringLines :: OutputStdoutOrFile -> [String] -> IO ()
     outputStringLines = \case
@@ -853,7 +902,13 @@ parseOptions appNames config arguments = do
                     <|> colourValuesFlag
                     )
                 )
---          <*> optional (updateQueryOptions patternArgument)
+            <*> updateQueryOptions
+                ( pure $ Endo \q ->
+                    -- TODO: This is not very intuitive if user passes more
+                    -- than one pattern on the command line.  What we should do
+                    -- is fail with a reasonable error message.
+                    q{patternToMatch = fromMaybe "" (headMay words)}
+                )
 
         , helpFlag
 
@@ -1030,7 +1085,7 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 <> "|" <> longOption "verbosity-values"
                 <> "|" <> longOption "colo[u]r-values"
                 )
---          <+> Pretty.brackets (metavar "PATTERN")
+            <+> Pretty.brackets (metavar "PATTERN")
 
         , "completion"
             <+> longOption "library"
@@ -1158,9 +1213,10 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.reflow "environment variable."
             ]
 
---      , optionDescription ["PATTERN"]
---          [ Pretty.reflow "TODO: Document"
---          ]
+        , optionDescription ["PATTERN"]
+            [ Pretty.reflow "Print only values that are matching"
+            , metavar "PATTERN" <> "."
+            ]
         ]
 
     , section "Library options:"
@@ -1194,3 +1250,6 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
     , ""
     ]
+
+ciIsPrefixOf :: forall a. Eq a => CI [a] -> CI [a] -> Bool
+ciIsPrefixOf = List.isPrefixOf `on` CI.foldedCase

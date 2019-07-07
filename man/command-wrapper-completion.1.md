@@ -24,7 +24,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library \[\--shell=*SHELL*]
 \[\--output=*FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[\--output=*FILE*]
-\[*QUERY\_OPTIONS*]
+\[*QUERY\_OPTIONS*] \[PATTERN]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion {\--help|-h}
 
@@ -165,6 +165,9 @@ interface for querying Command Wrapper's command line interface (CLI).
     See `TOOLSET_COMMAND help` or `command-wrapper(1)` for more information on
     `--colo[u]r=WHEN` option, and `command-wrapper-subcommand-protocol(7)`
     regarding `COMMAND_WRAPPER_COLOUR` environment variable.
+
+*PATTERN*
+:   Print only values that are matching *PATTERN*.
 
 
 # COMMON OPTIONS
