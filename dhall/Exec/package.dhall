@@ -1,5 +1,5 @@
 { bazel =
-    ./bazel/command
+    { command = ./bazel/command }
 , completion =
     { optparse-applicative =
         ./completion/optparse-applicative
@@ -7,25 +7,29 @@
         ./completion/wordlist
     }
 , docker-compose =
-    ./docker-compose/command
+    { command =
+        ./docker-compose/command
+    , noAction =
+        ./docker-compose/noAction
+    }
 , docker =
-    ./docker/command
+    { command = ./docker/command }
 , yarn =
-    ./yarn/command
+    { command = ./yarn/command }
 , direnv =
-    ./direnv/command
+    { command = ./direnv/command }
 , firefox =
-    ./firefox/command
+    { command = ./firefox/command }
 , pg_dump =
-    ./pg_dump/command
+    { command = ./pg_dump/command }
 , psql =
-    ./psql/command
+    { command = ./psql/command }
 , run-mailcap =
-    ./run-mailcap/command
+    { command = ./run-mailcap/command }
 , stack =
-    ./stack/command
+    { command = ./stack/command }
 , tmux =
-    ./tmux/command
+    { command = ./tmux/command }
 , xdg-open =
-    ./xdg-open/command
+    { command = ./xdg-open/command }
 }
