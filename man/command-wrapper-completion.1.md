@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 27th June 2019
+% 7th July 2019
 
 
 # NAME
@@ -236,14 +236,16 @@ if [[ ! -e "${toolsetCompletionFile}" ]]; then
     # are started and there is no completion file.  We are relying on the fact
     # that 'mv' operation is atomic, therefore, all shells will see consistent
     # version of completion file.
+    #
+    # Since this is `~/.bashrc` we cannot rely on `set -e` to handle errors for
+    # us, hence the `&&` chain.
 
     declare toolsetCompletionTempFile
-    toolsetCompletionTempFile=$(
+    toolsetCompletionTempFile="$(
         mktemp --tmpdir="${toolsetCacheDir}" --suffix=.bash completion.XXXXXXXXXX
-    )
-
-    "${toolset}" completion --script --shell=bash --output="${toolsetCompletionTempFile}"
-    mv "${toolsetCompletionTempFile}" "${toolsetCompletionFile}"
+    )" \
+        && "${toolset}" completion --script --shell=bash --output="${toolsetCompletionTempFile}" \
+        && mv --force "${toolsetCompletionTempFile}" "${toolsetCompletionFile}"
 fi
 
 source "${toolsetCompletionFile}"
