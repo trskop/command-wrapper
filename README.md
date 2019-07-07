@@ -263,11 +263,25 @@ TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
 ```
 
 If our tooset is named `yx` and we are calling `cd` subcommand then this
-becomes, for example:
+becomes:
 
 ```
-yx cd
+yx cd [CD_ARGUMENTS]
 ```
+
+When Command Wrapper is looking for external commands it first tries
+
+1.  Directories that are specified in its global configuration file
+    `${XDG_CONFIG_HOME:-${HOME}/.config}/command-wrapper/default.dhall`.  By
+    default this contains only one directory, which is
+    `${HOME}/.local/lib/command-wrapper/`.
+2.  Directories specified in toolset specific configuration file
+    `${XDG_CONFIG_HOME:-${HOME}/.config}/${toolset}/default.dhall`.  By default
+    only `${HOME}/.local/lib/${toolset}` directory is configured here.
+3.  Directories specified in `COMMAND_WRAPPER_PATH` environment variable, which
+    contains list of directories separated by `:` character.  This environment
+    variable is here to allow experimentation.
+4.  Directories specified in `PATH` environment variable.
 
 Command Wrapper installation comes with following commands that are implemented
 as separate executables (external subcommands):
