@@ -1,4 +1,4 @@
-let CommandWrapper = ../Types.dhall
+let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let DockerGlobalOptions : Type = ./DockerGlobalOptions
 

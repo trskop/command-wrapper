@@ -1,0 +1,27 @@
+let CommandWrapper = ../../CommandWrapper/Types.dhall
+
+let commandWrapper = ../../CommandWrapper/package.dhall
+
+let emptyArguments = commandWrapper.command.emptyArguments
+
+in    λ(changeDirectory : Optional Text)
+    → λ(prefixArguments : List Text)
+    → λ(_ : CommandWrapper.Verbosity)
+    → λ(colourOutput : CommandWrapper.ColourOutput)
+    → λ(arguments : List Text)
+    → { command = "yarn"
+      , arguments =
+            Optional/fold
+            Text
+            changeDirectory
+            (List Text)
+            (λ(_ : Text) → [ "--cwd=${_}" ])
+            emptyArguments
+          # prefixArguments
+          # arguments
+      , environment = commandWrapper.command.emptyEnvironment
+      , searchPath = True
+      , workingDirectory = None Text
+      }
+
+-- vim: filetype=dhall

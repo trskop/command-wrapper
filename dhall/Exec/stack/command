@@ -1,8 +1,10 @@
-let CommandWrapper = ../Types.dhall
+let CommandWrapper = ../../CommandWrapper/Types.dhall
 
-let colour-output/toText = (../colour-output).toText
+let commandWrapper = ../../CommandWrapper/package.dhall
 
-let Verbosity/fold = ../verbosity/fold
+let colour-output/toText = commandWrapper.colourOutput.toText
+
+let Verbosity/fold = commandWrapper.verbosity.fold
 
 let verbosityOption = Verbosity/fold (List Text)
       { Silent = ["--silent"]
@@ -42,3 +44,5 @@ in    λ ( context
       , searchPath = True
       , workingDirectory = context.workingDirectory
       } : CommandWrapper.ExecCommand
+
+-- vim: filetype=dhall

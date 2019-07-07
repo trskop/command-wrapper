@@ -1,0 +1,9 @@
+let CommandWrapper = ../../CommandWrapper/Types.dhall
+
+in    CommandWrapper.ColourOutput
+    → { noColour : Bool
+      , buildImages : Optional Bool
+      , detach : Bool
+      }
+
+-- vim: filetype=dhall

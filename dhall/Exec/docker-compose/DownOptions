@@ -1,0 +1,6 @@
+{ removeImages : Optional <All | Local>
+, removeNamedVolumes : Bool
+, removeOrphanContainers : Bool
+}
+
+-- vim: filetype=dhall

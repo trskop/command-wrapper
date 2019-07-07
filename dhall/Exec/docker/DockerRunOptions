@@ -5,3 +5,5 @@ let DockerRunOptions = DockerExecOptions
         }
 
 in  DockerRunOptions
+
+-- vim: filetype=dhall

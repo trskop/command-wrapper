@@ -1,0 +1,37 @@
+-- compgen -W "${wordlist}" -- "${pattern}"
+
+let CommandWrapper = ../../CommandWrapper/Types.dhall
+
+let commandWrapper = ../../CommandWrapper/package.dhall
+
+let List/index = commandWrapper.utils.List.index
+
+let Optional/from = commandWrapper.utils.Optional.from
+
+in    λ(wordlist : List Text)
+    → λ(_ : CommandWrapper.Shell)
+    → λ(index : Natural)
+    → λ(words : List Text)
+    → { command =
+          "bash"
+      , arguments =
+          let completions =
+                List/fold
+                Text
+                wordlist
+                Text
+                (λ(word : Text) → λ(acc : Text) → "${acc} ${word}")
+                ""
+          
+          let pattern = Optional/from Text "" (List/index index Text words)
+          
+          in  [ "-c", "compgen -W \"${completions}\" -- '${pattern}'" ]
+      , environment =
+          commandWrapper.command.emptyEnvironment
+      , searchPath =
+          True
+      , workingDirectory =
+          None Text
+      }
+
+-- vim: filetype=dhall

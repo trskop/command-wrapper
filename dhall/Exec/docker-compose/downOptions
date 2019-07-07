@@ -1,0 +1,25 @@
+let commandWrapper = ../../CommandWrapper/package.dhall
+
+let emptyArguments = commandWrapper.command.emptyArguments
+
+let DownOptions = ./DownOptions
+
+in    λ(options : DownOptions)
+    →   Optional/fold
+        < All | Local >
+        options.removeImages
+        (List Text)
+        (   λ(_ : < All | Local >)
+          → [ "--rmi=" ++ (merge { All = "all", Local = "local" } _) ]
+        )
+        emptyArguments
+      # ( if options.removeNamedVolumes
+            then [ "--volumes" ]
+            else emptyArguments
+        )
+      # ( if options.removeOrphanContainers
+            then  [ "--remove-orphans" ]
+            else  emptyArguments
+        )
+
+-- vim: filetype=dhall

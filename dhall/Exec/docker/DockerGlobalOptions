@@ -5,3 +5,5 @@ let DockerGlobalOptions =
       }
 
 in  DockerGlobalOptions
+
+-- vim: filetype=dhall

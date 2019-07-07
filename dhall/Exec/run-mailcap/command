@@ -1,4 +1,4 @@
-let CommandWrapper = ../Types.dhall
+let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let Action =
       < View : {}
@@ -34,3 +34,5 @@ in    λ(action : Action)
       , searchPath = True
       , workingDirectory = None Text
       } : CommandWrapper.ExecCommand
+
+-- vim: filetype=dhall

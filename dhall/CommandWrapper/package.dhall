@@ -18,17 +18,6 @@
         , namedCommand = ./exec/namedCommand
         , namedCommandToAlias = ./exec/namedCommandToAlias
         , namedCommandsToAliases = ./exec/namedCommandsToAliases
-
-        , bazel = ./exec/bazel
-        , direnv = ./exec/direnv
-        , docker = ./exec/docker
-        , firefox = ./exec/firefox
-        , pg_dump = ./exec/pg_dump
-        , psql = ./exec/psql
-        , run-mailcap = ./exec/run-mailcap
-        , stack = ./exec/stack
-        , tmux = ./exec/tmux
-        , xdg-open = ./exec/xdg-open
         } 
 
     , skel =
