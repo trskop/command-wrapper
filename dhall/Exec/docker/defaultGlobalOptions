@@ -1,0 +1,4 @@
+  { host = [] : List Text, logLevel = None Text, config = None Text }
+: ./DockerGlobalOptions
+
+-- vim: filetype=dhall

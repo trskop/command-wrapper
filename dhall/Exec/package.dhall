@@ -13,7 +13,23 @@
         ./docker-compose/noAction
     }
 , docker =
-    { command = ./docker/command }
+    { globalOptions = ./docker/globalOptions
+    , defaultGlobalOptions = ./docker/defaultGlobalOptions
+
+    , envOptions = ./docker/envOptions
+
+    , execOptions = ./docker/execOptions
+    , defaultExecOptions = ./docker/defaultExecOptions
+    , interactiveExecOptions = ./docker/interactiveExecOptions
+
+    , runOptions = ./docker/runOptions
+    , interactiveRunOptions = ./docker/interactiveRunOptions
+    , ephemeralRunOptions = ./docker/ephemeralRunOptions
+
+    , prune = ./docker/prune
+    , exec = ./docker/exec
+    , run = ./docker/run
+    }
 , yarn =
     { command = ./yarn/command }
 , direnv =

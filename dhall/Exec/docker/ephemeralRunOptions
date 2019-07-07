@@ -1,0 +1,13 @@
+let DockerRunOptions : Type = ./DockerRunOptions
+
+in    λ(runOptions : DockerRunOptions)
+    →     runOptions.{ interactive
+                     , allocateTty
+                     , detach
+                     , user
+                     , workingDirectory
+                     }
+        ∧ { remove = True }
+      : DockerRunOptions
+
+-- vim: filetype=dhall

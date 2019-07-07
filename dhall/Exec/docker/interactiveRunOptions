@@ -1,0 +1,3 @@
+./interactiveExecOptions ∧ { remove = False } : ./DockerRunOptions
+
+-- vim: filetype=dhall

@@ -1,0 +1,25 @@
+let CommandWrapper = ../../CommandWrapper/Types.dhall
+
+let DockerExecOptions : Type = ./DockerExecOptions
+
+in    λ(execOptions : DockerExecOptions)
+    →   ( if execOptions.interactive
+            then  [ "--interactive" ]
+            else  [] : List Text
+        )
+      # (if execOptions.allocateTty then [ "--tty" ] else [] : List Text)
+      # (if execOptions.detach then [ "--detach" ] else [] : List Text)
+      # Optional/fold
+        Text
+        execOptions.user
+        (List Text)
+        (λ(user : Text) → [ "--user", user ])
+        ([] : List Text)
+      # Optional/fold
+        Text
+        execOptions.workingDirectory
+        (List Text)
+        (λ(dir : Text) → [ "--workdir", dir ])
+        ([] : List Text)
+
+-- vim: filetype=dhall

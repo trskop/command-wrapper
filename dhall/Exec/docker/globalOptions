@@ -1,0 +1,19 @@
+let CommandWrapper = ../../CommandWrapper/Types.dhall
+
+let DockerGlobalOptions : Type = ./DockerGlobalOptions
+
+in    λ(globalOptions : DockerGlobalOptions)
+    →   List/fold Text globalOptions.host (List Text)
+          (   λ(host : Text)
+            → λ(options : List Text)
+            → options # ["--host", host]
+          )
+          ([] : List Text)
+      # Optional/fold Text globalOptions.logLevel (List Text)
+          (λ(config : Text) → ["--config", config])
+          ([] : List Text)
+      # Optional/fold Text globalOptions.config (List Text)
+          (λ(config : Text) → ["--config", config])
+          ([] : List Text)
+
+-- vim: filetype=dhall

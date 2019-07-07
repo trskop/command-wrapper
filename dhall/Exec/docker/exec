@@ -1,0 +1,43 @@
+-- Transform a command into:
+--
+-- ```
+-- docker GLOBAL_OPTIONS exec EXEC_OPTIONS CONTAINER COMMAND
+-- ```
+let CommandWrapper = ../../CommandWrapper/Types.dhall
+
+in    λ(container : Text)
+    → λ(globalOptions : ./DockerGlobalOptions)
+    → λ(execOptions : ./DockerExecOptions)
+    → λ ( mkCommand
+        :   ∀(environment : List CommandWrapper.EnvironmentVariable)
+          → ∀(verbosity : CommandWrapper.Verbosity)
+          → ∀(colourOutput : CommandWrapper.ColourOutput)
+          → ∀(arguments : List Text)
+          → CommandWrapper.ExecCommand
+        )
+    → λ(environment : List CommandWrapper.EnvironmentVariable)
+    → λ(verbosity : CommandWrapper.Verbosity)
+    → λ(colourOutput : CommandWrapper.ColourOutput)
+    → λ(arguments : List Text)
+    → let command = mkCommand environment verbosity colourOutput arguments
+      
+      in    { command =
+                "docker"
+            , arguments =
+                  ./globalOptions globalOptions
+                # [ "exec" ]
+                # ./execOptions execOptions
+                # [ container ]
+                # ./envOptions command.environment
+                # [ command.command ]
+                # command.arguments
+            , environment =
+                [] : List CommandWrapper.EnvironmentVariable
+            , searchPath =
+                True
+            , workingDirectory =
+                None Text
+            }
+          : CommandWrapper.ExecCommand
+
+-- vim: filetype=dhall
