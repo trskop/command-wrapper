@@ -26,6 +26,11 @@
 *   Expand `completion` to support basic `compgen` actions.  This way we can
     get rid of Bash dependency.
 
+    ```
+    TOOLSET completion --query --directories [--regex=REGEX|--glob=GLOB] [PATTERN]
+    TOOLSET completion --query --files [--regex=REGEX|--glob=GLOB] [PATTERN]
+    ```
+
 *   Consider having:
 
     ```
@@ -33,6 +38,7 @@
     ```
 
 *   Support fuzzy search when doing `--query`.
+
 
 ### Config
 
