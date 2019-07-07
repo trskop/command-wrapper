@@ -47,6 +47,16 @@
 
 *   Find a way how we can set history file for `TOOLSET config --dhall-repl`.
 
+*   Include editor and shell settings in Command Wrappers global (default)
+    config.  Expose them via `config` command to allow scripts and subcommands
+    to get access to it.  Also, having something like
+
+    ```
+    config --run-editor [FILE [+LINE]]
+    ```
+
+    Would be really convenient for multitude of existing use cases.
+
 
 ### Help
 
