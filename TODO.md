@@ -132,6 +132,10 @@
 
 *   Find a better way how to play sound when command is done.
 
+*   Create a separate Dhall library for `exec` commands and completions.  This
+    will allow us to evolve it without having to modify the Command Wrapper's
+    Dhall library.
+
 
 ### Skel
 
