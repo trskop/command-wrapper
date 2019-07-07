@@ -215,6 +215,7 @@ init
 
         let libraryTypesDhall = configDir </> "Types.dhall"
             libraryDhall = configDir </> "library.dhall"
+            execLibraryDhall = configDir </> "exec" </> "library.dhall"
 
         checkFile libraryTypesDhall
             >>= createOrSkipFile (configFileContent LibraryTypes)
@@ -231,6 +232,15 @@ init
         -- TODO: Freeze only when created.
         Dhall.freeze appNames config Dhall.defFreeze
             { Dhall.input = Dhall.InputFile libraryDhall
+            , Dhall.output = Dhall.OutputBasedOnInput
+            }
+
+        checkFile execLibraryDhall
+            >>= createOrSkipFile (configFileContent ExecLibrary)
+
+        -- TODO: Freeze only when created.
+        Dhall.freeze appNames config Dhall.defFreeze
+            { Dhall.input = Dhall.InputFile execLibraryDhall
             , Dhall.output = Dhall.OutputBasedOnInput
             }
   where
@@ -345,6 +355,7 @@ data ConfigFile
     | CommonHelpTxt String
     | CdConfig String
     | CommonDirectoriesConfig String
+    | ExecLibrary
     | ExecConfig String
     | CommonCommandsConfig String
     | SkelConfig String
@@ -618,6 +629,11 @@ configFileContent = Text.unlines . \case
     CommonHelpTxt _ ->
         [ ""
         , "TODO: Custom help message, please, edit `help-common.txt`."
+        ]
+
+    -- ${CONFIG_DIR}/command-wrapper/exec/library.dhall
+    ExecLibrary ->
+        [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall"
         ]
 
     -- ${CONFIG_DIR}/command-wrapper/command-wrapper-exec.dhall
