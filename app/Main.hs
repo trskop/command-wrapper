@@ -349,6 +349,11 @@ helpMessage AppNames{usedName} Global.Config{description} = Pretty.vsep
                 \ the script behaves."
             ]
 
+        , Help.optionDescription ["--change-directory=DIRECTORY"]
+            [ Pretty.reflow "Change current wworking directory to"
+            , Help.metavar  "DIRECTORY" <> "."
+            ]
+
         , Help.optionDescription ["--version", "-V"]
             [ Pretty.reflow "Print version information to stdout and exit."
             ]

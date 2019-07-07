@@ -607,6 +607,7 @@ matchGlobalOptions pat =
             , ("--no-colour", Nothing)
             , ("--version", Nothing)
             , ("--verbosity=", Just (matchKeywords verbosityValues))
+            , ("--change-directory=", Nothing)
             ]
 
     in  case List.takeWhile (== '-') pat of
@@ -696,15 +697,23 @@ getCompletions CompletionConfig{..} appNames config CompletionOptions{..} =
                     completer appNames config shell realIndex
                         realSubcommandArguments
 
+    globalCompletion :: IO [String]
     globalCompletion =
         let pat = fromMaybe "" $ atMay words (fromIntegral index')
             subcommands = findSubcommands appNames config internalSubcommands pat
 
          in case headMay pat of
-                Nothing  ->
+                Nothing ->
                     (matchGlobalOptions ('-' : pat) <>) <$> subcommands
-                Just '-' ->
-                    pure (matchGlobalOptions pat)
+
+                Just '-'
+                  | "--change-directory=" `List.isPrefixOf` pat ->
+                        -- TODO: This requires `bash` to be available.
+                        Options.bashCompleter "directory" "--change-directory="
+                            pat
+
+                  | otherwise ->
+                        pure (matchGlobalOptions pat)
                 _ ->
                     subcommands
 
