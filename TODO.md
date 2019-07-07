@@ -112,9 +112,19 @@
 *   Support other types of Dhall expression when invoked with
     `--dhall=EXPRESSION`:
 
-    - Already supported: `Verbosity -> ColourOutput -> [Text] -> Command`
-    - `Command` -- This would be nice dual to `--print`
-    - `NamedCommand`
+    - Already supported: `Verbosity -> ColourOutput -> [Text] -> ExecCommand`
+    - `ExecCommand` -- This would be nice dual to `--print`
+    - `ExecNamedCommand`  -- Should completion work in this case?  Probably yes.
+
+    We may want to consider having:
+
+    ```
+    TOOLSET exec --commands=DHALL_EXPRESSION [--] COMMAND [COMMAND_ARGUMENTS]
+    ```
+
+    Where `DHALL_EXPRESSION` has type `List ExecNamedCommand`.  This would be
+    very useful for trying new stuff and debugging without having to change
+    `exec`'s config file.  Command line completion should work as well for this.
 
 *   Configuration for desktop notifications:
 
