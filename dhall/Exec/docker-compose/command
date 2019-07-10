@@ -10,19 +10,18 @@ let upOptions = ./upOptions
 
 let Action = ./Action
 
-in    λ(config : Optional Text)
+let GlobalOptions = ./GlobalOptions
+
+let globalOptions = ./globalOptions
+
+in    λ(options : GlobalOptions)
     → λ(action : Optional Action)
     → λ(_ : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(arguments : List Text)
     → { command = "docker-compose"
       , arguments =
-            Optional/fold
-            Text
-            config
-            (List Text)
-            (λ(file : Text) → [ "--file=${file}" ])
-            emptyArguments
+            globalOptions options
           # Optional/fold
             Action
             action

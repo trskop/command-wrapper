@@ -11,24 +11,36 @@
         ./docker-compose/command
     , noAction =
         ./docker-compose/noAction
+    , defaultGlobalOptions =
+        ./docker-compose/defaultGlobalOptions
+    , globalOptions =
+        ./docker-compose/globalOptions
     }
 , docker =
-    { globalOptions = ./docker/globalOptions
-    , defaultGlobalOptions = ./docker/defaultGlobalOptions
-
-    , envOptions = ./docker/envOptions
-
-    , execOptions = ./docker/execOptions
-    , defaultExecOptions = ./docker/defaultExecOptions
-    , interactiveExecOptions = ./docker/interactiveExecOptions
-
-    , runOptions = ./docker/runOptions
-    , interactiveRunOptions = ./docker/interactiveRunOptions
-    , ephemeralRunOptions = ./docker/ephemeralRunOptions
-
-    , prune = ./docker/prune
-    , exec = ./docker/exec
-    , run = ./docker/run
+    { globalOptions =
+        ./docker/globalOptions
+    , defaultGlobalOptions =
+        ./docker/defaultGlobalOptions
+    , envOptions =
+        ./docker/envOptions
+    , execOptions =
+        ./docker/execOptions
+    , defaultExecOptions =
+        ./docker/defaultExecOptions
+    , interactiveExecOptions =
+        ./docker/interactiveExecOptions
+    , runOptions =
+        ./docker/runOptions
+    , interactiveRunOptions =
+        ./docker/interactiveRunOptions
+    , ephemeralRunOptions =
+        ./docker/ephemeralRunOptions
+    , prune =
+        ./docker/prune
+    , exec =
+        ./docker/exec
+    , run =
+        ./docker/run
     }
 , yarn =
     { command = ./yarn/command }

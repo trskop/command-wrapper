@@ -1,0 +1,3 @@
+{ files : List Text }
+
+-- vim: filetype=dhall
