@@ -12,7 +12,12 @@
 module CommandWrapper.Internal.Dhall
     (
     -- * Interpret Combinators
-      UnionType(..)
+      interpretWord
+    , interpretLazyByteString
+    , interpretStrictByteString
+
+    -- ** Unions
+    , UnionType(..)
     , constructor
     , constructor0
     , union
@@ -41,7 +46,11 @@ import Data.String (fromString)
 import GHC.Exts (IsList(fromList))
 import System.IO (Handle)
 
+import qualified Data.ByteString as Strict (ByteString)
+import qualified Data.ByteString.Lazy as Lazy (ByteString)
 import Data.Text (Text)
+import qualified Data.Text.Encoding as Strict.Text (encodeUtf8)
+import qualified Data.Text.Lazy.Encoding as Lazy.Text (encodeUtf8)
 import Data.Text.Prettyprint.Doc (Pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -55,6 +64,9 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (renderIO)
 import qualified Dhall
     ( InputType(InputType, declared, embed)
     , Type(Type, expected, extract)
+    , lazyText
+    , natural
+    , strictText
     )
 import qualified Dhall.Core as Dhall
     ( Expr
@@ -120,7 +132,10 @@ newtype UnionType a =
 instance Functor UnionType where
     fmap :: forall a b. (a -> b) -> UnionType a -> UnionType b
     fmap f =
-        coerce @(Dhall.Map Text (Either a (Dhall.Type a)) -> Dhall.Map Text (Either b (Dhall.Type b)))
+        coerce
+            @( Dhall.Map Text (Either a (Dhall.Type a))
+            -> Dhall.Map Text (Either b (Dhall.Type b))
+            )
             (fmap (bimap f (fmap f)))
 
 instance Semigroup (UnionType a) where
@@ -181,6 +196,15 @@ notEmptyRecord :: Dhall.Expr s a -> Maybe (Dhall.Expr s a)
 notEmptyRecord = \case
     Dhall.Record m | null m -> empty
     e                       -> pure e
+
+interpretWord :: Dhall.Type Word
+interpretWord = fromIntegral <$> Dhall.natural
+
+interpretLazyByteString :: Dhall.Type Lazy.ByteString
+interpretLazyByteString = Lazy.Text.encodeUtf8 <$> Dhall.lazyText
+
+interpretStrictByteString :: Dhall.Type Strict.ByteString
+interpretStrictByteString = Strict.Text.encodeUtf8 <$> Dhall.strictText
 
 -- }}} Interpret Combinators --------------------------------------------------
 -- {{{ I/O --------------------------------------------------------------------
