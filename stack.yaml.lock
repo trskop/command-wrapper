@@ -61,12 +61,12 @@ packages:
     version: 0.0.1.0
     git: https://github.com/trskop/host-and-port.git
     pantry-tree:
-      size: 710
-      sha256: c4fc639865c79e598a307978b54558fb6c782a2c2c3439ced61de66da514deb9
-    commit: f4639d63f5c2e4c4faef94f5214111625af2a85d
+      size: 765
+      sha256: d046215703f0fd8e8058ad238f1b509948ed304c61ccc382aa6e6e642ccaa392
+    commit: f8cbf6c84e859bd5020685ac677ff04937a866d6
   original:
     git: https://github.com/trskop/host-and-port.git
-    commit: f4639d63f5c2e4c4faef94f5214111625af2a85d
+    commit: f8cbf6c84e859bd5020685ac677ff04937a866d6
 - completed:
     cabal-file:
       size: 1744
