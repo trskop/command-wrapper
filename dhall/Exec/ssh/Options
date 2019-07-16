@@ -1,0 +1,5 @@
+{ forwardings : List ./Forwarding
+, identityFile : Optional Text
+}
+
+-- vim: filetype=dhall

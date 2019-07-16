@@ -1,0 +1,54 @@
+let Forwarding = ./Forwarding
+
+let ForwardingOptions = ./ForwardingOptions
+
+let DynamicForwardingOptions = ./DynamicForwardingOptions
+
+let hostAndPort =
+        λ(_ : { host : Optional Text, port : Natural })
+      →     Optional/fold Text _.host Text (λ(_ : Text) → _ ++ ":") ""
+        ++  Natural/show _.port
+
+let forwardingOptions =
+        λ(_ : ForwardingOptions)
+      →     ( merge
+              { HostAndPort =
+                  hostAndPort
+              , UnixSocket =
+                  λ(_ : { path : Text }) → _.path
+              }
+              _.listenOn
+            )
+        ++  ":${_.connectTo.host}.${Natural/show _.connectTo.port}"
+
+let dynamicForwarding =
+        λ(_ : DynamicForwardingOptions)
+      →     Optional/fold Text _.bindTo Text (λ(_ : Text) → _ ++ ":") ""
+        ++  Natural/show _.listenOn
+
+let forwarding =
+        λ(_ : Forwarding)
+      → merge
+        { Local =
+            λ(_ : ForwardingOptions) → [ "-L", forwardingOptions _ ]
+        , Remote =
+            λ(_ : ForwardingOptions) → [ "-R", forwardingOptions _ ]
+        , Dynamic =
+            λ(_ : DynamicForwardingOptions) → [ dynamicForwarding _ ]
+        }
+        _
+
+let List/concatMap =
+      https://prelude.dhall-lang.org/List/concatMap
+      sha256:3b2167061d11fda1e4f6de0522cbe83e0d5ac4ef5ddf6bb0b2064470c5d3fb64
+
+in    λ(options : ./Options)
+    →   Optional/fold
+        Text
+        options.identityFile
+        (List Text)
+        (λ(_ : Text) → [ "-i", _ ])
+        ([] : List Text)
+      # List/concatMap Forwarding Text forwarding options.forwardings
+
+-- vim: filetype=dhall

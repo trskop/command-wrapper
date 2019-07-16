@@ -1,0 +1,3 @@
+{ host : Text, port : Natural }
+
+-- vim: filetype=dhall

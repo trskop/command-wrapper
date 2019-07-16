@@ -1,0 +1,7 @@
+< HostAndPort :
+    { host : Optional Text, port : Natural }
+| UnixSocket :
+    { path : Text }
+>
+
+-- vim: filetype=dhall
