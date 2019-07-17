@@ -46,6 +46,21 @@
     TOOLSET completion --script [--standalone|--source] ...
     ```
 
+*   Generate and execute wrapper scripts.  This way we can reuse e.g. Bash
+    completion script.
+
+    ```
+    TOOLSET completion --wrapper
+      {--interpreter=COMMAND --interpreter-argument=ARGUMENT [...]|--exec}
+      [--template=EXPRESSION|--input=FILE] [--output=FILE] [[--] ARGUMENTS]
+    ```
+
+    Similar to running `dhall-to-text`, writing its output into temporary file,
+    and then executing it as a script.
+
+    This may be a functionality that we actually want to have as part of
+    `config`'s Dhall functionality.
+
 *   Support fuzzy search when doing `--query`.
 
 
