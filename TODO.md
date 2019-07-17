@@ -31,6 +31,15 @@
     TOOLSET completion --query --files [--regex=REGEX|--glob=GLOB] [PATTERN]
     ```
 
+*   Hosts completion:
+
+    ```
+    TOOLSET completion --query --hosts --input=FORMAT:FILE [...] [PATTERN]
+    ```
+
+    Where `FORMAT` is one of `hosts`, `known_hosts`, or `ssh_config`.  By
+    default it should behave as if executed as:
+
 *   Consider having:
 
     ```
