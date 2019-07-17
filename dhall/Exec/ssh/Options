@@ -1,5 +1,13 @@
 { forwardings : List ./Forwarding
 , identityFile : Optional Text
+, configFile : Optional Text
+, allocatePseudoTerminal : Optional Bool
+
+-- See documentation of `-N` opthion.
+, doNotExecuteRemoteCommand : Bool
+
+-- Redirects stdin from `/dev/null`.  See documentation of `-n` opthion.
+, preventReadingOfStdin : Bool
 }
 
 -- vim: filetype=dhall

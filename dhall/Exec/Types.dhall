@@ -16,4 +16,18 @@
     , RunOptions =
         ./docker/DockerRunOptions
     }
+, ssh =
+    { ConnectTo =
+        ./ssh/ConnectTo
+    , DynamicForwardingOptions =
+        ./ssh/DynamicForwardingOptions
+    , Forwarding =
+        ./ssh/Forwarding
+    , ForwardingOptions =
+        ./ssh/ForwardingOptions
+    , ListenOn =
+        ./ssh/ListenOn
+    , Options =
+        ./ssh/Options
+    }
 }

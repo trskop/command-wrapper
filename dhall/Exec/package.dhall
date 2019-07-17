@@ -54,6 +54,8 @@
     { command = ./psql/command }
 , run-mailcap =
     { command = ./run-mailcap/command }
+, ssh =
+    { command = ./ssh/command, defaultOptions = ./ssh/defaultOptions, options = ./ssh/options }
 , stack =
     { command = ./stack/command }
 , tmux =

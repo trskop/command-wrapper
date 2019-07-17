@@ -42,13 +42,21 @@ let List/concatMap =
       https://prelude.dhall-lang.org/List/concatMap
       sha256:3b2167061d11fda1e4f6de0522cbe83e0d5ac4ef5ddf6bb0b2064470c5d3fb64
 
+let optional =
+        λ(a : Type)
+      → λ(o : Optional a)
+      → λ(f : a → List Text)
+      → Optional/fold a o (List Text) f ([] : List Text)
+
 in    λ(options : ./Options)
-    →   Optional/fold
-        Text
-        options.identityFile
-        (List Text)
-        (λ(_ : Text) → [ "-i", _ ])
-        ([] : List Text)
+    →   optional Text options.identityFile (λ(_ : Text) → [ "-i", _ ])
       # List/concatMap Forwarding Text forwarding options.forwardings
+      # optional Text options.configFile (λ(_ : Text) → [ "-F", _ ])
+      # optional
+        Bool
+        options.allocatePseudoTerminal
+        (λ(_ : Bool) → if _ then [ "-t" ] else [ "-T" ])
+      # (if options.doNotExecuteRemoteCommand then [ "-N" ] else [] : List Text)
+      # (if options.preventReadingOfStdin then [ "-n" ] else [] : List Text)
 
 -- vim: filetype=dhall

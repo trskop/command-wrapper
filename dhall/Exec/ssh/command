@@ -5,6 +5,7 @@ in    λ(options : ./Options)
         : { user : Optional Text, host : Text, port : Optional Natural }
         )
     → λ(environment : List CommandWrapper.EnvironmentVariable)
+    → λ(extraOptions : List Text)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(arguments : List Text)
@@ -18,6 +19,7 @@ in    λ(options : ./Options)
               (List Text)
               (λ(_ : Natural) → [ "-p", Natural/show _ ])
               ([] : List Text)
+            # extraOptions
             # [ Optional/fold
                 Text
                 connectTo.user

@@ -1,0 +1,16 @@
+  { forwardings =
+      [] : List ./Forwarding
+  , identityFile =
+      None Text
+  , configFile =
+      None Text
+  , allocatePseudoTerminal =
+      None Bool
+  , doNotExecuteRemoteCommand =
+      False
+  , preventReadingOfStdin =
+      False
+  }
+: ./Options
+
+-- vim: filetype=dhall
