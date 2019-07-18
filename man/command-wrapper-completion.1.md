@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 7th July 2019
+% 18th July 2019
 
 
 # NAME
@@ -25,6 +25,9 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library \[\--shell=*SHELL*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[\--output=*FILE*]
 \[*QUERY\_OPTIONS*] \[PATTERN]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--wrapper
+\--expression=*EXPRESSION* \--exec
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion {\--help|-h}
 
@@ -168,6 +171,19 @@ interface for querying Command Wrapper's command line interface (CLI).
 
 *PATTERN*
 :   Print only values that are matching *PATTERN*.
+
+
+# COMPLETION WRAPPER OPTIONS
+
+\--wrapper
+:   Generate and execute a script for command line completion.  Useful when
+    reusing existing completion scripts.
+
+\--expression=*EXPRESSION*
+:   Dhall *EXPRESSION* to be used to generate executable script.
+
+\--exec
+:   Execute generated script directly.
 
 
 # COMMON OPTIONS

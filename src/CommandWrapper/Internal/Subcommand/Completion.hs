@@ -27,9 +27,10 @@ module CommandWrapper.Internal.Subcommand.Completion
 
 import Prelude ((+), (-), fromIntegral)
 
-import Control.Applicative ((<*>), (<|>), many, optional, pure, some)
+import Control.Applicative ((<*), (<*>), (<|>), many, optional, pure, some)
+import Control.Exception (bracket)
 import Control.Monad ((=<<), (>>=), join, when)
-import Data.Bool (Bool(False), otherwise)
+import Data.Bool (Bool(False, True), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq (Eq, (/=), (==))
@@ -58,7 +59,7 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
-import System.IO (IO, putStrLn, stderr, stdout, writeFile)
+import System.IO (IO, hClose, openTempFile, putStrLn, stderr, stdout, writeFile)
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
@@ -80,7 +81,7 @@ import Data.Output
 import qualified Data.Output as Output (HasOutput(output))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines, unpack)
-import qualified Data.Text.IO as Text (putStrLn, writeFile)
+import qualified Data.Text.IO as Text (hPutStr, putStrLn, writeFile)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -98,6 +99,7 @@ import qualified Options.Applicative as Options
     , defaultPrefs
     , eitherReader
     , flag
+    , flag'
     , info
     , long
     , metavar
@@ -107,6 +109,15 @@ import qualified Options.Applicative as Options
     )
 import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, headMay, lastMay)
+import System.Directory
+    ( XdgDirectory(XdgCache)
+    , createDirectoryIfMissing
+    , getPermissions
+    , getXdgDirectory
+    , setOwnerExecutable
+    , setPermissions
+    )
+import System.Posix.Process (executeFile)
 import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
@@ -117,6 +128,9 @@ import qualified CommandWrapper.External as External
     ( executeCommand
     , executeCommandWith
     , findSubcommands
+    )
+import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
+    ( handleExceptions
     )
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
@@ -211,6 +225,7 @@ data CompletionMode a
     | ScriptMode ScriptOptions a
     | LibraryMode LibraryOptions a
     | QueryMode Query a
+    | WrapperMode WrapperOptions a
     | HelpMode a
   deriving stock (Functor, Generic, Show)
 
@@ -220,6 +235,7 @@ updateOutput o = Endo \case
     ScriptMode opts a -> ScriptMode (setOutput o opts) a
     LibraryMode opts a -> LibraryMode (setOutput o opts) a
     QueryMode opts a -> QueryMode (setOutput o opts) a
+    WrapperMode opts a -> WrapperMode opts a
     HelpMode a -> HelpMode a
 
 data CompletionOptions = CompletionOptions
@@ -344,6 +360,13 @@ defLibraryOptions = LibraryOptions
     { shell = Options.Bash
     , output = OutputStdoutOnly
     }
+
+data WrapperOptions = WrapperOptions
+    { arguments :: [String]
+    , expression :: Text
+    -- ^ Dhall expression to execute.
+    }
+  deriving stock (Generic, Show)
 
 -- | Configuration of @completion@ internal subcommand.
 data CompletionConfig = CompletionConfig
@@ -518,6 +541,21 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                             Fuzzy.original
                                 <$> Fuzzy.filter patternToMatch supportedShells
                                         "" "" id caseSensitive
+
+        WrapperMode WrapperOptions{..} config' -> do
+            let AppNames{usedName} = appNames
+
+            Dhall.handleExceptions appNames config' do
+                cacheDir <- getXdgDirectory XdgCache (usedName <> "-completion")
+                content <- Dhall.input Dhall.auto expression
+
+                createDirectoryIfMissing True cacheDir
+                executable <- (openTempFile cacheDir "wrapper" `bracket` \(_, h) -> hClose h) \(fp, h) -> do
+                    Text.hPutStr h content
+                    getPermissions fp
+                        >>= setPermissions fp . setOwnerExecutable True
+                    pure fp
+                executeFile executable False arguments Nothing
 
         HelpMode config'@Global.Config{colourOutput, verbosity} ->
             message defaultLayoutOptions verbosity colourOutput stdout
@@ -814,6 +852,9 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
   | had "--script" =
         pure $ List.filter (pat `List.isPrefixOf`) scriptOptions
 
+  | had "--wrapper" =
+        pure $ List.filter (pat `List.isPrefixOf`) wrapperOptions
+
   | null pat  = pure modeOptions
   | otherwise = pure $ List.filter (pat `List.isPrefixOf`) modeOptions
   where
@@ -840,11 +881,14 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
 
     shellOptions = ("--shell=" <>) <$> ["bash", "fish"]
 
+    wrapperOptions = [ "--expression=", "--exec", "--" ]
+
     modeOptions = List.nub
         [ "--index="
         , "--library"
         , "--query"
         , "--script"
+        , "--wrapper"
         , "--help", "-h"
         ]
 
@@ -919,6 +963,13 @@ parseOptions appNames config arguments = do
                     q{patternToMatch = fromMaybe "" (headMay words)}
                 )
 
+        , dualFoldEndo
+            <$> ( wrapperFlag
+                <*> pure words
+                <*> expressionOption
+                <*  execFlag
+                )
+
         , helpFlag
 
         , updateCompletionOptions words $ foldEndo
@@ -933,12 +984,16 @@ parseOptions appNames config arguments = do
         ScriptMode _ a -> f a
         LibraryMode _ a -> f a
         QueryMode _ a -> f a
+        WrapperMode _ a -> f a
         HelpMode a -> f a
 
     switchToScriptMode = switchTo (ScriptMode defScriptOptions)
     switchToLibraryMode = switchTo (LibraryMode defLibraryOptions)
     switchToQueryMode = switchTo (QueryMode defQueryOptions)
     switchToHelpMode = switchTo HelpMode
+
+    switchToWrapperMode args expression =
+        switchTo (WrapperMode WrapperOptions{arguments = args, expression})
 
     updateCompletionOptions words =
         fmap . mapEndo $ \f ->
@@ -1037,6 +1092,21 @@ parseOptions appNames config arguments = do
     outputOption :: Options.Parser (Endo (CompletionMode Global.Config))
     outputOption = updateOutput <$> Options.outputOption
 
+    wrapperFlag
+        :: Options.Parser
+            ([String] -> Text -> Endo (CompletionMode Global.Config))
+    wrapperFlag =
+        Options.flag mempty switchToWrapperMode (Options.long "wrapper")
+
+    expressionOption :: Options.Parser Text
+    expressionOption = Options.strOption
+        (Options.long "expression" <> Options.metavar "EXPRESSION")
+
+    execFlag :: Options.Parser ()
+    execFlag = Options.flag' () (Options.long "exec")
+        -- TODO: At the moment '--exec' does nothing, but it will become
+        -- relevant when we introduce '--interpreter=COMMAND'.
+
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
         , Options.long "help"
@@ -1100,6 +1170,11 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             <+> longOption "library"
             <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+
+        , "completion"
+            <+> longOption "wrapper"
+            <+> longOptionWithArgument "expression" "EXPRESSION"
+            <+> longOption "exec"
 
         , "completion" <+> helpOptions
         , "help completion"
@@ -1239,6 +1314,28 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.reflow "Currently only supported value is"
             , value "bash" <> "."
             ]
+        ]
+
+    , section "Wrapper options:"
+        [ optionDescription ["--wrapper"]
+            [ Pretty.reflow "Generate and execute a script for command line\
+                \ completion.  Useful when reusing existing completion\
+                \ scripts."
+            ]
+        , optionDescription ["--expression=EXPRESSION"]
+            [ "Dhall", metavar "EXPRESSION", Pretty.reflow "to be used to\
+                \ generate executable script."
+            ]
+        , optionDescription ["--exec"]
+            [ Pretty.reflow "Execute generated script directly."
+              -- TODO: Mention --interpreter=COMMAND when implemented.
+            ]
+--      , optionDescription ["--interpreter=COMMAND"]
+--          [ Pretty.reflow "TODO"
+--          ]
+--      , optionDescription ["--interpreter-argument=ARGUMENT"]
+--          [ Pretty.reflow "TODO"
+--          ]
         ]
 
     , section "Common options:"

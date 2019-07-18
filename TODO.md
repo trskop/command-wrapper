@@ -52,7 +52,7 @@
     ```
     TOOLSET completion --wrapper
       {--interpreter=COMMAND --interpreter-argument=ARGUMENT [...]|--exec}
-      [--template=EXPRESSION|--input=FILE] [--output=FILE] [[--] ARGUMENTS]
+      [--expression=EXPRESSION|--input=FILE] [--output=FILE] [[--] ARGUMENTS]
     ```
 
     Similar to running `dhall-to-text`, writing its output into temporary file,
@@ -60,6 +60,8 @@
 
     This may be a functionality that we actually want to have as part of
     `config`'s Dhall functionality.
+
+    **Already partially implemented.**
 
 *   Support fuzzy search when doing `--query`.
 

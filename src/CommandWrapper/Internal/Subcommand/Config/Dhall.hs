@@ -62,6 +62,9 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , setInput
 
     , Output(..)
+
+    -- * Helpers
+    , handleExceptions
     )
   where
 
