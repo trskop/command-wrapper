@@ -1,0 +1,61 @@
+let CommandWrapper = ~/.config/command-wrapper/Types.dhall
+
+let commandWrapper = ~/.config/command-wrapper/library.dhall
+
+let noExtraEnvironment = commandWrapper.command.emptyEnvironment
+
+let Shell/toText =
+        λ(shell : CommandWrapper.Shell)
+      → merge { Bash = "bash", Fish = "fish", Zsh = "zsh" } shell
+
+let mkArguments =
+        λ(shell : CommandWrapper.Shell)
+      → λ(index : Natural)
+      → λ(words : List Text)
+      →   [ "--index=${Natural/show index}"
+          , "--shell=${merge
+                       { Bash = "bash", Fish = "fish", Zsh = "zsh" }
+                       shell}"
+          , "--"
+          ]
+        # words
+
+let script =
+      { url =
+          "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/completion/docker-compose.bash"
+      , hash =
+          "sha256:053665e49ce078f5c0c3fda44f3f616cc1ba3885bb224f93a5459fcb4b375513"
+      }
+
+in    λ(toolsetCommand : Text)
+    → λ(workingDirectory : Optional Text)
+    → λ(prefixArguments : List Text)
+    → λ(shell : CommandWrapper.Shell)
+    → λ(index : Natural)
+    → λ(words : List Text)
+    → { command =
+          toolsetCommand
+      , arguments =
+          let adjusted-index = index + List/length Text prefixArguments
+          
+          let arguments =
+                mkArguments
+                shell
+                adjusted-index
+                ([ "docker-compose" ] # prefixArguments # words)
+          
+          in    [ "completion"
+                , "--wrapper"
+                , "--template=${script.url} ${script.hash} as Text"
+                , "--"
+                ]
+              # arguments
+      , environment =
+          noExtraEnvironment
+      , searchPath =
+          True
+      , workingDirectory =
+          workingDirectory
+      }
+
+-- vim: filetype=dhall
