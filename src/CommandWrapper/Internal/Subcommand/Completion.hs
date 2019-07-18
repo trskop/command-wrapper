@@ -28,7 +28,6 @@ module CommandWrapper.Internal.Subcommand.Completion
 import Prelude ((+), (-), fromIntegral)
 
 import Control.Applicative ((<*), (<*>), (<|>), many, optional, pure, some)
-import Control.Exception (bracket)
 import Control.Monad ((=<<), (>>=), join, when)
 import Data.Bool (Bool(False, True), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
@@ -59,7 +58,7 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
-import System.IO (IO, hClose, openTempFile, putStrLn, stderr, stdout, writeFile)
+import System.IO (IO, hClose, putStrLn, stderr, stdout, writeFile)
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
@@ -117,6 +116,7 @@ import System.Directory
     , setOwnerExecutable
     , setPermissions
     )
+import System.IO.Temp (withTempFile)
 import System.Posix.Process (executeFile)
 import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
@@ -542,20 +542,8 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                                 <$> Fuzzy.filter patternToMatch supportedShells
                                         "" "" id caseSensitive
 
-        WrapperMode WrapperOptions{..} config' -> do
-            let AppNames{usedName} = appNames
-
-            Dhall.handleExceptions appNames config' do
-                cacheDir <- getXdgDirectory XdgCache (usedName <> "-completion")
-                content <- Dhall.input Dhall.auto expression
-
-                createDirectoryIfMissing True cacheDir
-                executable <- (openTempFile cacheDir "wrapper" `bracket` \(_, h) -> hClose h) \(fp, h) -> do
-                    Text.hPutStr h content
-                    getPermissions fp
-                        >>= setPermissions fp . setOwnerExecutable True
-                    pure fp
-                executeFile executable False arguments Nothing
+        WrapperMode opts config' ->
+            execWrapperScript appNames config' opts
 
         HelpMode config'@Global.Config{colourOutput, verbosity} ->
             message defaultLayoutOptions verbosity colourOutput stdout
@@ -613,6 +601,24 @@ completion completionConfig@CompletionConfig{..} appNames options config =
     outputTextLines = \case
         OutputHandle _ -> mapM_ Text.putStrLn
         OutputNotHandle (OutputFile fn) -> Text.writeFile fn . Text.unlines
+
+execWrapperScript :: AppNames -> Global.Config -> WrapperOptions -> IO ()
+execWrapperScript appNames@AppNames{usedName} config WrapperOptions{..} = do
+    Dhall.handleExceptions appNames config do
+        cacheDir <- getXdgDirectory XdgCache (usedName <> "-completion")
+        content <- Dhall.input Dhall.auto expression
+
+        createDirectoryIfMissing True cacheDir
+        withTempFile cacheDir "wrapper" \executable h -> do
+            Text.hPutStr h content
+            getPermissions executable
+                >>= setPermissions executable . setOwnerExecutable True
+
+            -- Closing the file flushes the content and releases the associated
+            -- resources so that `executeFile` can actually open it.
+            hClose h
+
+            executeFile executable False arguments Nothing
 
 -- TODO: Generate these values instead of hard-coding them.
 verbosityValues :: [String]
