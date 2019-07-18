@@ -1,5 +1,5 @@
 { bazel =
-    { command = ./bazel/command }
+    { command = ./bazel/command, completion = ./bazel/completion }
 , completion =
     { optparse-applicative =
         ./completion/optparse-applicative
@@ -15,6 +15,8 @@
         ./docker-compose/defaultGlobalOptions
     , globalOptions =
         ./docker-compose/globalOptions
+    , completion =
+        ./docker-compose/completion
     }
 , docker =
     { globalOptions =
@@ -43,7 +45,7 @@
         ./docker/run
     }
 , yarn =
-    { command = ./yarn/command }
+    { command = ./yarn/command, completion = ./yarn/completion }
 , direnv =
     { command = ./direnv/command }
 , firefox =
@@ -55,7 +57,13 @@
 , run-mailcap =
     { command = ./run-mailcap/command }
 , ssh =
-    { command = ./ssh/command, defaultOptions = ./ssh/defaultOptions, options = ./ssh/options }
+    { command =
+        ./ssh/command
+    , defaultOptions =
+        ./ssh/defaultOptions
+    , options =
+        ./ssh/options
+    }
 , stack =
     { command = ./stack/command }
 , tmux =
