@@ -46,7 +46,8 @@ in    λ(toolsetCommand : Text)
           
           in    [ "completion"
                 , "--wrapper"
-                , "--template=${script.url} ${script.hash} : Text"
+                , "--expression=${script.url} ${script.hash} : Text"
+                , "--exec"
                 , "--"
                 ]
               # arguments
