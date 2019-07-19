@@ -1,5 +1,7 @@
 { bazel =
     { command = ./bazel/command, completion = ./bazel/completion }
+, buildifier =
+    { command = ./buildifier/command }
 , completion =
     { optparse-applicative =
         ./completion/optparse-applicative
