@@ -1,6 +1,6 @@
-let CommandWrapper = ~/.config/command-wrapper/Types.dhall
+let CommandWrapper = ../../CommandWrapper/Types.dhall
 
-let commandWrapper = ~/.config/command-wrapper/library.dhall
+let commandWrapper = ../../CommandWrapper/package.dhall
 
 let noExtraEnvironment = commandWrapper.command.emptyEnvironment
 
