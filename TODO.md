@@ -186,6 +186,12 @@
 
 *   Find a better way how to play sound when command is done.
 
+*   Be able to call `--print` on Dhall expression:
+
+    ```
+    TOOLSET exec --expression=DHALL_EXPRESSION [--print] [--] [ARGUMENTS]
+    ```
+
 
 ### Skel
 

@@ -468,7 +468,7 @@ parseOptions :: Options.Parser (Action -> Action)
 parseOptions = asum
     [ completionInfoFlag
     , Options.flag' (const (Run True)) (Options.long "notify")
-    , dhallOption <*> Options.switch (Options.long "notify")
+    , expressionOption <*> Options.switch (Options.long "notify")
     , Options.flag' (const List) $ mconcat
         [ Options.short 'l'
         , Options.long "list"
@@ -493,8 +493,9 @@ parseOptions = asum
     , pure id
     ]
   where
-    dhallOption = Options.strOption (Options.long "dhall") <&> \expr m _ ->
-        RunDhall m expr
+    expressionOption =
+        Options.strOption (Options.long "expression") <&> \expr m _ ->
+            RunDhall m expr
 
     indexOption :: Options.Parser Word
     indexOption =
@@ -521,9 +522,9 @@ doCompletion params config@Config{commands} shell index words =
     completeExecSubcommand
       | hadListOrTreeOrHelp =
             pure ()
-      | hadDhall, any (== "--notify") wordsBeforePattern =
+      | hadExpression, any (== "--notify") wordsBeforePattern =
             pure ()
-      | hadDhall =
+      | hadExpression =
             printMatching ["--notify"]
       | hadNotifyOrPrint =
             printMatching commandNames
@@ -544,13 +545,13 @@ doCompletion params config@Config{commands} shell index words =
         (`elem` ["-l", "--ls", "--list", "-t", "--tree", "-h", "--help"])
         wordsBeforePattern
 
-    hadDhall = any ("--dhall=" `List.isPrefixOf`) wordsBeforePattern
+    hadExpression = any ("--expression=" `List.isPrefixOf`) wordsBeforePattern
 
     hadNotifyOrPrint = any (`elem` ["--notify", "--print"]) wordsBeforePattern
 
     hadPrintCompletion = any (== "--print-completion") wordsBeforePattern
 
-    canCompleteCommand = not (hadListOrTreeOrHelp || hadDhall)
+    canCompleteCommand = not (hadListOrTreeOrHelp || hadExpression)
 
     printCompletionOptions =
         ( if any ("--index=" `List.isPrefixOf`) wordsBeforePattern
@@ -567,7 +568,7 @@ doCompletion params config@Config{commands} shell index words =
         , "-t", "--tree"
         , "--print"
         , "--print-completion"
-        , "--dhall="
+        , "--expression="
         , "--notify"
         , "-h", "--help"
         , "--"
@@ -643,7 +644,7 @@ helpMsg Params{name, subcommand} = Pretty.vsep
             )
 
         , subcommand'
-            <+> Help.longOptionWithArgument "dhall" "EXPRESSION"
+            <+> Help.longOptionWithArgument "expression" "EXPRESSION"
             <+> Pretty.brackets (Help.longOption "notify")
             <+> Pretty.brackets (Help.metavar "--")
             <+> Pretty.brackets (Help.metavar "COMMAND_ARGUMENTS")
@@ -694,7 +695,7 @@ helpMsg Params{name, subcommand} = Pretty.vsep
                 "are passed to the command line completion command."
             ]
 
-        , Help.optionDescription ["--dhall=EXPRESSION"]
+        , Help.optionDescription ["--expression=EXPRESSION"]
             [ Pretty.reflow "Execute Dhall", Help.metavar "EXPRESSION" <> "."
             , Pretty.reflow "Expected type of", Help.metavar "EXPRESSION"
             , Pretty.reflow "is documented in"

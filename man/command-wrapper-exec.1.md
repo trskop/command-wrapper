@@ -16,8 +16,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \[\--notify] [\--] *COMMAND*
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec {\--list|\--ls|-l|\--tree|-t}
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--dhall=*EXPRESSION* \[\--notify] [\--]
-\[*COMMAND\_ARGUMENTS*]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--expression=*EXPRESSION* \[\--notify]
+[\--] \[*COMMAND\_ARGUMENTS*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] exec \--print [\--] *COMMAND*
 \[*COMMAND\_ARGUMENTS*]
@@ -88,7 +88,7 @@ scripting language like Bash.
     TOOLSET_COMMAND exec COMMAND [--] [COMMAND_ARGUMENTS]
     ```
 
-\--dhall=*EXPRESSION*
+\--expression=*EXPRESSION*
 :   Execute Dhall *EXPRESSION*.  The *EXPRESSION* has to have following type:
 
     ```
