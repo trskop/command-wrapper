@@ -64,12 +64,14 @@ thisGitRepo directory ThisGitRepo{} = do
     Stdout status <- cmd "git status -s --"
         [ "stack.yaml"
         , "package.yaml"
-        , "app/"
         , "app-cd/"
         , "app-exec/"
         , "app-skel/"
-        , "src/"
+        , "app/"
+        , "bash/"
+        , "dhall/"
         , "man/"
+        , "src/"
         ]
     if null @[] @Char status
         then do
