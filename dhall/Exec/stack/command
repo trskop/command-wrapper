@@ -17,13 +17,6 @@ let colorOption =
         λ(colourOutput : CommandWrapper.ColourOutput)
       → ["--color=${colour-output/toText colourOutput}"]
 
-let stackYamlOption =
-        λ(stackYaml : Optional Text)
-      → Optional/fold Text stackYaml
-          (List Text)
-          (λ(file : Text) → ["--stack-yaml=${file}"])
-          ([] : List Text)
-
 in    λ ( context
             : { workingDirectory : Optional Text
               , stackYaml : Optional Text
@@ -37,7 +30,7 @@ in    λ ( context
       , arguments =
             verbosityOption verbosity
           # colorOption colourOutput
-          # stackYamlOption context.stackYaml
+          # ./stackYamlOption context.stackYaml
           # args
           # arguments
       , environment = [] : List CommandWrapper.EnvironmentVariable

@@ -67,7 +67,7 @@
         ./ssh/options
     }
 , stack =
-    { command = ./stack/command }
+    { command = ./stack/command, completion = ./stack/completion }
 , tmux =
     { command = ./tmux/command }
 , xdg-open =
