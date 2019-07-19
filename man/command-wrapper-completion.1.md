@@ -281,7 +281,7 @@ Include following in your `~/.config/fish/config.fish`, or add as
 `~/.config/fish/completions/yx.fish`:
 
 ```
-toolset completion --script --shell=bash | source
+toolset completion --script --shell=fish | source
 ```
 
 Where `toolset` is the name under which `command-wrapper` is used.  If any
@@ -289,14 +289,14 @@ aliases for `toolset` are used we can provide completion for them as well:
 
 ```
 alias ts toolset
-toolset completion --script --shell=bash --alias='ts' | source
+toolset completion --script --shell=fish --alias='ts' | source
 ```
 
 It is also possible to get completion for an alias to a subcommand:
 
 ```
 alias this 'toolset this'
-toolset completion --script --subcommand=this --alias=this | source
+toolset completion --script --shell=fish --subcommand=this --alias=this | source
 ```
 
 
