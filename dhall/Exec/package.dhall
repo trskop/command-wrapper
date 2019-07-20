@@ -8,6 +8,8 @@
     , wordlist =
         ./completion/wordlist
     }
+, direnv =
+    { command = ./direnv/command }
 , docker-compose =
     { command =
         ./docker-compose/command
@@ -46,12 +48,13 @@
     , run =
         ./docker/run
     }
-, yarn =
-    { command = ./yarn/command, completion = ./yarn/completion }
-, direnv =
-    { command = ./direnv/command }
 , firefox =
     { command = ./firefox/command }
+, nix =
+    { command = ./nix/command
+    , completion = ./nix/completion
+    , Command/show = ./nix/Command/show
+    }
 , pg_dump =
     { command = ./pg_dump/command }
 , psql =
@@ -72,4 +75,6 @@
     { command = ./tmux/command }
 , xdg-open =
     { command = ./xdg-open/command }
+, yarn =
+    { command = ./yarn/command, completion = ./yarn/completion }
 }

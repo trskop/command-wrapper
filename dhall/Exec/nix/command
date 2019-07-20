@@ -1,0 +1,25 @@
+let CommandWrapper = ../../CommandWrapper/Types.dhall
+
+let Command = ./Command/Type
+
+let Command/show = ./Command/show
+
+in    λ(command : Command)
+    → λ(arguments : List Text)
+    → λ(verbosity : CommandWrapper.Verbosity)
+    → λ(colourOutput : CommandWrapper.ColourOutput)
+    → λ(extraArguments : List Text)
+    →   { command =
+            Command/show command
+        , arguments =
+            arguments # extraArguments
+        , environment =
+            [] : List CommandWrapper.EnvironmentVariable
+        , searchPath =
+            True
+        , workingDirectory =
+            None Text
+        }
+      : CommandWrapper.ExecCommand
+
+-- vim: filetype=dhall

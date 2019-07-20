@@ -1,4 +1,12 @@
-{ docker-compose =
+{ docker =
+    { GlobalOptions =
+        ./docker/DockerGlobalOptions
+    , ExecOptions =
+        ./docker/DockerExecOptions
+    , RunOptions =
+        ./docker/DockerRunOptions
+    }
+, docker-compose =
     { GlobalOptions =
         ./docker-compose/GlobalOptions
     , DownOptions =
@@ -8,14 +16,8 @@
     , Action =
         ./docker-compose/Action
     }
-, docker =
-    { GlobalOptions =
-        ./docker/DockerGlobalOptions
-    , ExecOptions =
-        ./docker/DockerExecOptions
-    , RunOptions =
-        ./docker/DockerRunOptions
-    }
+, nix =
+    { Command = ./nix/Command/Type }
 , ssh =
     { ConnectTo =
         ./ssh/ConnectTo

@@ -1,0 +1,23 @@
+let script =
+      { url =
+          "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/completion/nix.bash.dhall"
+      , hash =
+          "sha256:272734eefcca7d0128cdaeae2179f19a3ffa33492e6c11de089df2d09af8ae42"
+      }
+
+let Command = ./Command/Type
+
+let Command/show = ./Command/show
+
+in    λ(toolset : Text)
+    → λ(command : Command)
+    → ../completion/wrapper
+      { toolset =
+          toolset
+      , expression =
+          "${script.url} ${script.hash} : Text"
+      , command =
+          Command/show command
+      }
+
+-- vim: filetype=dhall
