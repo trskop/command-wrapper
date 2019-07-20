@@ -78,7 +78,9 @@ function main() {
     fi
 
     function concat() {
-        echo "$@"
+        # Reason for this contraption is to prevent interpretation of e.g. '-e'
+        # as an option to 'echo'.
+        IFS=' ' echo "$*"
     }
 
     local lineBefore
@@ -111,7 +113,7 @@ function main() {
     _docker_compose
 
     for reply in "${COMPREPLY[@]}"; do
-        echo "${reply% }"
+        printf -- '%s\n' "${reply% }"
     done
 }
 

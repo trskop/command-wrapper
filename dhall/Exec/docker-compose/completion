@@ -2,7 +2,7 @@ let script =
       { url =
           "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/completion/docker-compose.bash"
       , hash =
-          "sha256:053665e49ce078f5c0c3fda44f3f616cc1ba3885bb224f93a5459fcb4b375513"
+          "sha256:d922d0ebd30b13c55518ba905b0a0250b72ab41778f5196a8b1023ad2f5a2a3a"
       }
 
 in    λ(toolset : Text)

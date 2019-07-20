@@ -2,7 +2,7 @@ let script =
       { url =
           "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/completion/yarn.bash.dhall"
       , hash =
-          "sha256:1d434192b61a243cc7d1a311102caedb05b8d28d74466b8ba3ecdaebd973fb1e"
+          "sha256:3831560dc2772cea705e0957b32058319745e93642735aaf817fa2d3fb9aa7b4"
       }
 
 in    λ(toolset : Text)
@@ -10,7 +10,7 @@ in    λ(toolset : Text)
       { toolset =
           toolset
       , expression =
-          "${script.url} ${script.hash} as Text"
+          "${script.url} ${script.hash} : Text"
       , command =
           "yarn"
       }
