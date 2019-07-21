@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 18th July 2019
+% 21th July 2019
 
 
 # NAME
@@ -12,7 +12,7 @@ support.
 # USAGE
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \[\--index=*NUM*]
-\[\--shell=*SHELL*] \[\--output=*FILE*] \[\--subcommand=*SUBCOMMAND*] \-- [*WORD* ...]
+\[\--shell=*SHELL*] \[\--output=*FILE*] \[\--subcommand=*SUBCOMMAND*] [\-- *WORD* ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
 \[\--output=*FILE*] \[\--alias=*ALIAS* ...]
@@ -28,6 +28,10 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[\--output=*FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--wrapper
 \--expression=*EXPRESSION* \--exec
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--compgen
+\[\--\[no]-allow-imports] \[\--expression=*EXPRESSION*|\--input=*FILE*]
+\[\--index=*NUM*] \[\--shell=*SHELL*] \[\--output=*FILE*] \[\-- WORD ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion {\--help|-h}
 
@@ -184,6 +188,34 @@ interface for querying Command Wrapper's command line interface (CLI).
 
 \--exec
 :   Execute generated script directly.
+
+
+# COMPGEN OPTIONS
+
+\--compgen
+:   Complete command line based on provided definition in form of Dhall
+    expression.
+
+\--\[no-]allow-imports
+:   Controls whether imports in the input expression are allowed or not.  By
+    default imports are allowed.
+
+\--expression=*EXPRESSION*
+:   Dhall *EXPRESSION* to be used as completion definition.
+
+\--input=*FILE*, -i *FILE*
+:   Read Dhall expression to be used as completion definition from *FILE*.
+
+\--index=*NUM*
+:   Position of a *WORD* for which we want completion.  In Bash this is the value
+    of `COMP_CWORD` variable.
+
+\--shell=*SHELL*
+:   Provide completion for *SHELL*.  Supported *SHELL* values are: `bash`, `fish`,
+    and `zsh`.
+
+*WORD*
+:   *WORD*s to complete.  In Bash these are the elements of `COMP_WORDS` array.
 
 
 # COMMON OPTIONS

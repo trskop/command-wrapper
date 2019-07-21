@@ -155,6 +155,11 @@ import qualified CommandWrapper.Options.Optparse as Options
     , splitArguments'
     )
 import qualified CommandWrapper.Options.Shell as Options
+import CommandWrapper.Internal.Subcommand.Completion.Compgen
+    ( CompgenOptions(..)
+    , compgen
+    , defCompgenOptions
+    )
 
 
 -- | Returns completer if the first argument is a name of an internal command.
@@ -226,6 +231,7 @@ data CompletionMode a
     | LibraryMode LibraryOptions a
     | QueryMode Query a
     | WrapperMode WrapperOptions a
+    | CompgenMode CompgenOptions a
     | HelpMode a
   deriving stock (Functor, Generic, Show)
 
@@ -236,6 +242,7 @@ updateOutput o = Endo \case
     LibraryMode opts a -> LibraryMode (setOutput o opts) a
     QueryMode opts a -> QueryMode (setOutput o opts) a
     WrapperMode opts a -> WrapperMode opts a
+    CompgenMode opts a -> CompgenMode (setOutput o opts) a
     HelpMode a -> HelpMode a
 
 data CompletionOptions = CompletionOptions
@@ -545,6 +552,11 @@ completion completionConfig@CompletionConfig{..} appNames options config =
         WrapperMode opts config' ->
             execWrapperScript appNames config' opts
 
+        CompgenMode opts config' ->
+            putStrLn "TODO"
+
+            -- compgen appNames config' opts
+
         HelpMode config'@Global.Config{colourOutput, verbosity} ->
             message defaultLayoutOptions verbosity colourOutput stdout
                 (completionSubcommandHelp appNames config')
@@ -833,6 +845,18 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         -- TODO: This requires `bash` to be available.
         Options.bashCompleter "file" "--output=" pat
 
+  | Just "-i" <- lastBeforePattern =
+        -- TODO: This requires `bash` to be available.
+        Options.bashCompleter "file" "" pat
+
+  | Just "--input" <- lastBeforePattern =
+        -- TODO: This requires `bash` to be available.
+        Options.bashCompleter "file" "" pat
+
+  | "--input=" `List.isPrefixOf` pat =
+        -- TODO: This requires `bash` to be available.
+        Options.bashCompleter "file" "--input=" pat
+
   | "--shell=" `List.isPrefixOf` pat =
         pure if had "--library"
             then List.filter (pat `List.isPrefixOf`) ["--shell=bash"]
@@ -861,6 +885,9 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
   | had "--wrapper" =
         pure $ List.filter (pat `List.isPrefixOf`) wrapperOptions
 
+  | had "--compgen" =
+        pure $ List.filter (pat `List.isPrefixOf`) compgenOptions
+
   | null pat  = pure modeOptions
   | otherwise = pure $ List.filter (pat `List.isPrefixOf`) modeOptions
   where
@@ -887,7 +914,17 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
 
     shellOptions = ("--shell=" <>) <$> ["bash", "fish"]
 
-    wrapperOptions = [ "--expression=", "--exec", "--" ]
+    wrapperOptions = ["--expression=", "--exec", "--"]
+
+    compgenOptions =
+        [ "--allow-imports"
+        , "--expression="
+        , "--index="
+        , "--input=", "-i"
+        , "--no-allow-imports"
+        , "--shell="
+        , "--"
+        ]
 
     modeOptions = List.nub
         [ "--index="
@@ -895,6 +932,7 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         , "--query"
         , "--script"
         , "--wrapper"
+        , "--compgen"
         , "--help", "-h"
         ]
 
@@ -969,11 +1007,17 @@ parseOptions appNames config arguments = do
                     q{patternToMatch = fromMaybe "" (headMay words)}
                 )
 
-        , dualFoldEndo
-            <$> ( wrapperFlag
-                <*> pure words
-                <*> expressionOption
-                <*  execFlag
+        , wrapperFlag words
+            <*> expressionOption
+            <*  execFlag
+
+        , compgenFlag (fromString <$> words)
+            <*> ( dualFoldEndo
+--                  <$> many (allowImportsOption <|> noAllowImportsOption)
+--                  <*> optional (fmap _TODO expressionOption <|> inputOption)
+--                  <*> optional indexOption
+                    <$> optional Options.shellOption
+                    <*> optional (setOutput <$> Options.outputOption)
                 )
 
         , helpFlag
@@ -991,6 +1035,7 @@ parseOptions appNames config arguments = do
         LibraryMode _ a -> f a
         QueryMode _ a -> f a
         WrapperMode _ a -> f a
+        CompgenMode _ a -> f a
         HelpMode a -> f a
 
     switchToScriptMode = switchTo (ScriptMode defScriptOptions)
@@ -1000,6 +1045,9 @@ parseOptions appNames config arguments = do
 
     switchToWrapperMode args expression =
         switchTo (WrapperMode WrapperOptions{arguments = args, expression})
+
+    switchToCompgenMode words (Endo f) =
+        switchTo (CompgenMode (f defCompgenOptions){words})
 
     updateCompletionOptions words =
         fmap . mapEndo $ \f ->
@@ -1063,6 +1111,7 @@ parseOptions appNames config arguments = do
         Options.strOption (Options.long "subcommand") <&> \subcommand ->
             updateSubcommand (Endo \_ -> Just subcommand)
 
+    -- TODO: Generalise
     indexOption :: Options.Parser (Endo CompletionOptions)
     indexOption =
         Options.option parse (Options.long "index" <> Options.metavar "NUM")
@@ -1077,7 +1126,8 @@ parseOptions appNames config arguments = do
                             Left "Non-negative number expected"
 
                         index ->
-                            Right . Endo $ \opts -> opts{index}
+                            Right . Endo $ \opts ->
+                                (opts :: CompletionOptions){index}
 
                 | otherwise ->
                     Left "Non-negative number expected"
@@ -1099,10 +1149,10 @@ parseOptions appNames config arguments = do
     outputOption = updateOutput <$> Options.outputOption
 
     wrapperFlag
-        :: Options.Parser
-            ([String] -> Text -> Endo (CompletionMode Global.Config))
-    wrapperFlag =
-        Options.flag mempty switchToWrapperMode (Options.long "wrapper")
+        :: [String]
+        -> Options.Parser (Text -> Endo (CompletionMode Global.Config))
+    wrapperFlag words =
+        Options.flag mempty (switchToWrapperMode words) (Options.long "wrapper")
 
     expressionOption :: Options.Parser Text
     expressionOption = Options.strOption
@@ -1112,6 +1162,13 @@ parseOptions appNames config arguments = do
     execFlag = Options.flag' () (Options.long "exec")
         -- TODO: At the moment '--exec' does nothing, but it will become
         -- relevant when we introduce '--interpreter=COMMAND'.
+
+    compgenFlag
+        :: [Text]
+        -> Options.Parser
+            (Endo CompgenOptions -> Endo (CompletionMode Global.Config))
+    compgenFlag words =
+        Options.flag mempty (switchToCompgenMode words) (Options.long "compgen")
 
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
@@ -1137,8 +1194,7 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
             <+> Pretty.brackets
                 (longOptionWithArgument "subcommand" "SUBCOMMAND")
-            <+> value "--"
-            <+> Pretty.brackets (metavar "WORD" <+> "...")
+            <+> Pretty.brackets (value "--" <+> metavar "WORD" <+> "...")
 
         , "completion"
             <+> longOption "script"
@@ -1182,6 +1238,18 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             <+> longOptionWithArgument "expression" "EXPRESSION"
             <+> longOption "exec"
 
+        , "completion"
+            <+> longOption "compgen"
+            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
+            <+> Pretty.brackets (longOptionWithArgument "index" "NUM")
+            <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> Pretty.brackets (value "--" <+> metavar "WORD" <+> "...")
+
         , "completion" <+> helpOptions
         , "help completion"
         ]
@@ -1195,8 +1263,8 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , optionDescription ["--shell=SHELL"]
             [ Pretty.reflow "Provide completion for", metavar "SHELL" <> "."
-            , Pretty.reflow "Supported", metavar "SHELL", "values are: "
-            , value "bash", "and", value "fish" <> "."
+            , "Supported", metavar "SHELL", "values are: ", value "bash"
+            , value "fish", ",", "and", value "zsh" <> "."
             ]
 
         , optionDescription ["--subcommand=SUBCOMMAND"]
@@ -1219,8 +1287,8 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , optionDescription ["--shell=SHELL"]
             [ Pretty.reflow "Generate completion script for"
             , metavar "SHELL" <> "."
-            , Pretty.reflow "Supported", metavar "SHELL", "values are: "
-            , value "bash", "and", value "fish" <> "."
+            , "Supported", metavar "SHELL", "values are: ", value "bash"
+            , value "fish", ",", "and", value "zsh" <> "."
             ]
 
         , optionDescription ["--subcommand=SUBCOMMAND"]
@@ -1328,20 +1396,63 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 \ completion.  Useful when reusing existing completion\
                 \ scripts."
             ]
+
         , optionDescription ["--expression=EXPRESSION"]
             [ "Dhall", metavar "EXPRESSION", Pretty.reflow "to be used to\
                 \ generate executable script."
             ]
+
         , optionDescription ["--exec"]
             [ Pretty.reflow "Execute generated script directly."
               -- TODO: Mention --interpreter=COMMAND when implemented.
             ]
+
 --      , optionDescription ["--interpreter=COMMAND"]
 --          [ Pretty.reflow "TODO"
 --          ]
+
 --      , optionDescription ["--interpreter-argument=ARGUMENT"]
 --          [ Pretty.reflow "TODO"
 --          ]
+        ]
+
+    , section "Compgen options:"
+        [ optionDescription ["--compgen"]
+            [ Pretty.reflow "Complete command line based on provided\
+                \ definition in form of Dhall expression."
+            ]
+
+        , optionDescription ["--[no-]allow-imports"]
+            [ Pretty.reflow "Controls whether imports in the input expression\
+                \ are allowed or not. By default imports are allowed."
+            ]
+
+        , optionDescription ["--expression=EXPRESSION"]
+            [ "Dhall", metavar "EXPRESSION", Pretty.reflow "to be used as\
+                \ completion definition."
+            ]
+
+        , optionDescription ["--input=FILE", "-i FILE"]
+            [ Pretty.reflow "Read Dhall expression to be used as completion\
+                \ definition from", metavar "FILE" <> "."
+            ]
+
+        , optionDescription ["--index=NUM"]
+            [ Pretty.reflow "Position of a", metavar "WORD"
+            , Pretty.reflow "for which we want completion. In Bash this is the"
+            , Pretty.reflow "value of", value "COMP_CWORD", "variable."
+            ]
+
+        , optionDescription ["--shell=SHELL"]
+            [ Pretty.reflow "Provide completion for", metavar "SHELL" <> "."
+            , "Supported", metavar "SHELL", "values are: ", value "bash"
+            , value "fish", ",", "and", value "zsh" <> "."
+            ]
+
+        , optionDescription ["WORD"]
+            [ metavar "WORD" <> "s", Pretty.reflow "to complete. In Bash these"
+            , Pretty.reflow "are the elements of", value "COMP_WORDS", "array."
+            ]
         ]
 
     , section "Common options:"
