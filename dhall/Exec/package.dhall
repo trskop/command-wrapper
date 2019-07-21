@@ -9,7 +9,13 @@
         ./completion/wordlist
     }
 , direnv =
-    { command = ./direnv/command, completion = ./direnv/completion }
+    { command =
+        ./direnv/command
+    , completion =
+        ./direnv/completion
+    , exec =
+        ./direnv/exec
+    }
 , docker-compose =
     { command =
         ./docker-compose/command
@@ -51,9 +57,12 @@
 , firefox =
     { command = ./firefox/command }
 , nix =
-    { command = ./nix/command
-    , completion = ./nix/completion
-    , Command/show = ./nix/Command/show
+    { command =
+        ./nix/command
+    , completion =
+        ./nix/completion
+    , Command/show =
+        ./nix/Command/show
     }
 , pg_dump =
     { command = ./pg_dump/command }
