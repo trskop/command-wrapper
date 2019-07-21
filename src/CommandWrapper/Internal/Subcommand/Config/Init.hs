@@ -84,7 +84,7 @@ data InitOptions = InitOptions
     , binDir :: Maybe FilePath
     -- ^ Bin directory specified by the user.
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
 
 defInitOptions
     :: String

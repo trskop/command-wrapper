@@ -102,7 +102,7 @@ data Command
     | ConfigCommand [String]
     | CompletionCommand [String]
     | VersionCommand [String]
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
 
 -- | Smart constructor for 'Command'.
 command

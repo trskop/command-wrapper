@@ -158,7 +158,7 @@ data ConfigMode a
     | DhallRepl Dhall.Repl a
     | DhallResolve Dhall.Resolve a
     | Help a
-  deriving (Functor, Generic, Show)
+  deriving stock (Functor, Generic, Show)
 
 config :: AppNames -> [String] -> Global.Config -> IO ()
 config appNames options globalConfig =

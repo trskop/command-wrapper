@@ -31,7 +31,7 @@ data GlobalMode a
     | VersionMode a
     -- ^ Switch to internal @version@ command.
     | PreserveMode a
-  deriving (Functor)
+  deriving stock (Functor)
 
 instance Comonad GlobalMode where
     extract :: GlobalMode a -> a

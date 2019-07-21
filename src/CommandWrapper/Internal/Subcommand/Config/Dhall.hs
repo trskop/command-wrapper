@@ -155,7 +155,7 @@ data Interpreter = Interpreter
     , input           :: Input
     , output          :: Output
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
   deriving anyclass (HasInput)
 
 instance HasOutput Interpreter where
@@ -233,7 +233,7 @@ data Resolve = Resolve
     , input :: Input
     , output :: Output
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
   deriving anyclass (HasInput)
 
 instance HasOutput Resolve where
@@ -245,7 +245,7 @@ data ResolveMode
     | ListTransitiveDependencies
     | ListImmediateDependencies
 --  | Dot
-  deriving (Show)
+  deriving stock (Show)
 
 defResolve :: Resolve
 defResolve = Resolve
@@ -298,7 +298,7 @@ data Lint = Lint
     , output :: Output
     , characterSet :: Dhall.CharacterSet
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
   deriving anyclass (HasInput)
 
 instance HasOutput Lint where
@@ -388,8 +388,8 @@ command Options{..} = do
 
 -- {{{ Format -----------------------------------------------------------------
 
-deriving instance Show Dhall.Format.Format -- TODO Get rid of orphan
-deriving instance Show Dhall.Format.FormatMode -- TODO Get rid of orphan
+deriving stock instance Show Dhall.Format.Format -- TODO Get rid of orphan
+deriving stock instance Show Dhall.Format.FormatMode -- TODO Get rid of orphan
 
 defFormat :: Dhall.Format.Format
 defFormat = Dhall.Format.Format
@@ -410,7 +410,7 @@ data Freeze = Freeze
     , output :: Output
     , characterSet :: Dhall.CharacterSet
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
   deriving anyclass (HasInput)
 
 instance HasOutput Freeze where
@@ -473,7 +473,7 @@ data Diff = Diff
     , expr2 :: Text
     , output :: Output
     }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
 
 instance HasOutput Diff where
     type Output Diff = Output
@@ -505,9 +505,9 @@ data Repl = Repl
     -- ^ This is not currently supported by neither @dhall@ library nor by
     -- @repline@ which is used by @dhall@ to implement REPL functionality.
     }
-  deriving (Show)
+  deriving stock (Show)
 
-deriving instance Show Dhall.CharacterSet -- TODO Get rid of orphan
+deriving stock instance Show Dhall.CharacterSet -- TODO Get rid of orphan
 
 defRepl :: Repl
 defRepl = Repl
@@ -529,7 +529,7 @@ repl appNames config@Config{verbosity} Repl{..} =
 data Input
     = InputStdin
     | InputFile FilePath
-  deriving (Show)
+  deriving stock (Show)
 
 -- TODO: This is a generic pattern, like HasOutput, it should be moved to
 -- mainplate?
@@ -566,7 +566,7 @@ data Output
     -- * and if it's 'InputFile' then this is means that the input file will be
     --   modified in palace.
     | OutputFile FilePath
-  deriving (Show)
+  deriving stock (Show)
 
 instance IsOutput Output where
     parseOutput s = OutputFile <$> Data.Output.parseOutput s
@@ -578,7 +578,7 @@ data InputEncoding
     | InputJson
     | InputText
     | InputYaml
-  deriving (Show)
+  deriving stock (Show)
 
 data OutputEncoding
     = OutputCbor
@@ -587,7 +587,7 @@ data OutputEncoding
     | OutputDhallUnicode
     | OutputJson
     | OutputYaml
-  deriving (Show)
+  deriving stock (Show)
 
 readExpression :: Input -> IO (Expr Src Import, Dhall.Import.Status IO)
 readExpression = \case

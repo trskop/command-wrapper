@@ -10,6 +10,7 @@
 
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
@@ -55,7 +56,7 @@ import Development.Shake.Classes (Binary, Hashable, NFData)
 
 
 newtype ThisGitRepo = ThisGitRepo ()
-  deriving (Binary, Eq, Hashable, NFData, Show)
+  deriving newtype (Binary, Eq, Hashable, NFData, Show)
 
 type instance RuleResult ThisGitRepo = String
 
