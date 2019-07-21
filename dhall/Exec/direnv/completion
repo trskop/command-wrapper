@@ -1,0 +1,19 @@
+let script =
+      { url =
+          "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/completion/direnv.bash"
+      , hash =
+          -- dhall hash <<< '../completion/direnv.bash as Text'
+          "sha256:4a52e95eab0a2f746200e96bd68dc57b546eff587743a24034dd849c8cb08fab"
+      }
+
+in    λ(toolset : Text)
+    → ../completion/wrapper
+      { toolset =
+          toolset
+      , expression =
+          "${script.url} ${script.hash} as Text"
+      , command =
+          "direnv"
+      }
+
+-- vim: filetype=dhall

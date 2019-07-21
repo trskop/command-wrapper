@@ -9,7 +9,7 @@
         ./completion/wordlist
     }
 , direnv =
-    { command = ./direnv/command }
+    { command = ./direnv/command, completion = ./direnv/completion }
 , docker-compose =
     { command =
         ./docker-compose/command
