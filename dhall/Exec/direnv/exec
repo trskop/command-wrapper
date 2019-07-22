@@ -26,5 +26,9 @@ in    λ(directory : Optional Text)
           in  [ "exec" ] # dir # [ cmd.command ] # cmd.arguments
         )
         environment
+        verbosity
+        colourOutput
+        ([] : List Text)
+      : CommandWrapper.ExecCommand
 
 -- vim: filetype=dhall
