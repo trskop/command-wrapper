@@ -117,6 +117,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Diff(..)
     , Format(..)
     , Freeze(..)
+    , Input(..)
     , Interpreter(..)
     , Lint(..)
     , Output(..)
@@ -231,7 +232,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (annotateFlag <|> noAnnotateFlag)
                 <*> many (typeFlag <|> noTypeFlag)
                 <*> optional outputOption
-                <*> optional inputOption
+                <*> optional (expressionOption <|> inputOption)
             )
 
     , dhallReplFlag
@@ -249,7 +250,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> ( dualFoldEndo
                 <$> many (remoteOnlyFlag <|> noRemoteOnlyFlag)
                 <*> optional outputOption
-                <*> optional inputOption
+                <*> optional (expressionOption <|> inputOption)
             )
 
     , dhallFormatFlag
@@ -259,13 +260,13 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallLintFlag
         <*> ( dualFoldEndo
                 <$> optional outputOption
-                <*> optional inputOption
+                <*> optional (expressionOption <|> inputOption)
             )
 
     , dhallResolveFlag
         <*> ( dualFoldEndo
                 <$> optional outputOption
-                <*> optional inputOption
+                <*> optional (expressionOption <|> inputOption)
                 <*> optional listDependenciesOption
             )
 
@@ -365,6 +366,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     setType :: Bool -> Endo Dhall.Interpreter
     setType showType = Endo \opts -> opts{Dhall.showType}
+
+    expressionOption
+        :: HasInput a
+        => Options.Parser (Endo a)
+    expressionOption =
+        Endo . setInput . Dhall.InputExpression
+            <$> Options.strOption
+                (Options.long "expression" <> Options.metavar "EXPRESSION")
 
     inputOption
         :: HasInput a
@@ -485,35 +494,52 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                     <> "|" <> longOption "[no-]annotate"
                     <> "|" <> longOption "[no-]type"
                     )
-            <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-format"
 --          <+> Pretty.brackets (longOption "[no-]check")
---          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+--          <+> Pretty.brackets
+--              ( longOptionWithArgument "expression" "EXPRESSION"
+--              <> "|" <> longOptionWithArgument "input" "FILE"
+--              )
 --          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-lint"
-            <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-resolve"
             <+> Pretty.brackets (longOptionWithArgument "list-imports" "KIND")
-            <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-freeze"
             <+> Pretty.brackets (longOption "[no-]remote-only")
-            <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-hash"
---          <+> Pretty.brackets (longOptionWithArgument "input" "FILE")
+--              ( longOptionWithArgument "expression" "EXPRESSION"
+--              <> "|" <> longOptionWithArgument "input" "FILE"
+--              )
 --          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
 {-          <+> Pretty.brackets
@@ -563,6 +589,15 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , optionDescription ["--[no-]annotate"]
             [ Pretty.reflow "Add a type annotation to the output. Type\
                 \ annotations aren't included by default."
+            ]
+
+        , optionDescription
+            [ "--expression=EXPRESSION"
+            , "--expression EXPRESSION"
+            ]
+            [ "Use", metavar "EXPRESSION", Pretty.reflow "as an input instead\
+                \ of reading it from standard input or from a"
+            , metavar "FILE" <> "."
             ]
 
         , optionDescription ["--input=FILE", "--input FILE", "-i FILE"]
@@ -647,8 +682,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             ]
 
         , optionDescription ["EPRESSION"]
-            [ "Dhall", metavar "EXPRESSION"
-            , Pretty.reflow "that will be applied to configuration."
+            [ "Dhall", metavar "EXPRESSION" <> "."
             ]
 
         , globalOptionsHelp usedName
@@ -734,6 +768,11 @@ configSubcommandCompleter _appNames _cfg _shell index words
         , List.any ("--input=" `List.isPrefixOf`) wordsBeforePattern
         ]
 
+    hadExpression = List.or
+        [ "--expression" `List.elem` wordsBeforePattern
+        , List.any ("--expression=" `List.isPrefixOf`) wordsBeforePattern
+        ]
+
     mwhen p x = if p then x else mempty
     munless p = mwhen (not p)
 
@@ -785,10 +824,36 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     ]
                 , hadDhallDiff, hadDhallFormat, hadDhallHash, hadDhallRepl
                 , hadInit
-                , hadInput -- Input options can be specified only once.
+
+                -- Input options can be specified only once.
+                , hadInput
+
+                -- '--input' and '--expression' are mutually exclusive.
+                , hadExpression
                 ]
             )
             ["-i", "--input="]
+        <> munless
+            ( List.or
+                [ hadHelp
+                , not $ List.or
+                    [ hadDhall
+                    , hadDhallDiff
+                    , hadDhallFreeze
+                    , hadDhallLint
+                    , hadDhallResolve
+                    ]
+                , hadDhallDiff, hadDhallFormat, hadDhallHash, hadDhallRepl
+                , hadInit
+
+                -- Expression options can be specified only once.
+                , hadExpression
+
+                -- '--input' and '--expression' are mutually exclusive.
+                , hadInput
+                ]
+            )
+            ["--expression="]
         <> munless
             ( List.or
                 [ hadHelp, hadDhall, hadDhallDiff, not hadDhallFreeze

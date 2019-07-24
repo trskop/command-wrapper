@@ -322,6 +322,9 @@ lint appNames config Lint{input, output, characterSet} =
             InputFile file ->
                 Text.readFile file >>= parseExpr file
 
+            InputExpression expr ->
+                parseExpr "(expression)" expr
+
         withOutputHandle input output (renderDoc config)
             (   Pretty.pretty header
             <>  Dhall.Pretty.prettyCharacterSet characterSet
@@ -442,6 +445,10 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
                 >>= parseExpr file
             pure (header, expression, takeDirectory file)
 
+        InputExpression expr -> do
+            (header, expression) <- parseExpr "(expression)" expr
+            pure (header, expression, ".")
+
     let freezeFunction =
             ( if remoteOnly
                 then Dhall.freezeRemoteImport
@@ -529,6 +536,7 @@ repl appNames config@Config{verbosity} Repl{..} =
 data Input
     = InputStdin
     | InputFile FilePath
+    | InputExpression Text
   deriving stock (Show)
 
 -- TODO: This is a generic pattern, like HasOutput, it should be moved to
@@ -596,6 +604,9 @@ readExpression = \case
 
     InputFile file ->
         Text.readFile file >>= parseExpr file file
+
+    InputExpression expr ->
+        parseExpr "(expression)" "." expr
   where
     parseExpr f c txt =
         (,) <$> Dhall.Core.throws (Dhall.Parser.exprFromText f txt)
@@ -614,6 +625,9 @@ withOutputHandle input = \case
             -- TODO: Consider using a temporary file so that this operation can
             -- be perceived as atomic from the outside.
             \m a -> withFile filePath WriteMode \h -> m h a
+
+        InputExpression _ ->
+            ($ stdout)
 
     OutputFile filePath ->
         \m a -> withFile filePath WriteMode \h -> m h a

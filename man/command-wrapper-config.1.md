@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 27th May 2019
+% 24th July 2019
 
 
 # NAME
@@ -13,19 +13,23 @@ toolset configuration.
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 \[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type]
-\[\--input=*FILE*|\--input *FILE*|-i *FILE*] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+\[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-lint
-\[\--input=*FILE*|\--input *FILE*|-i *FILE*] \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+\[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-resolve
-\[\--list-imports=*KIND*] \[\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--list-imports=*KIND*]
+\[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-freeze
-\[\--\[no-]remote-only] \[\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--\[no-]remote-only]
+\[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSION*
@@ -149,9 +153,13 @@ We can organise `config` subcommand abilities into following categories:
 :   Add a type annotation to the output.  Type annotations aren't included by
     default.  Can be specified multiple times, later instance is applied.
 
+\--expression=*EXPRESSION*, **\--expression=***EXPRESSION*
+:   Use Dhall *EXPRESSION*, as an input instead of reading it from standard input
+    or from a *FILE*.  See also **\--input=***FILE*.
+
 \--input=*FILE*, **\--input** *FILE*, **-i** *FILE*
 :   Read input from *FILE* instead of standard input.  Can be specified only
-    once.
+    once.  See also **\--expression=***EXPRESSION*.
 
 \--output=*FILE*, **\--output** *FILE*, **-o** *FILE*
 :   Write optput into *FILE* instead of standard output.  Can be specified only
