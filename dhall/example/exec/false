@@ -1,7 +1,7 @@
 -- Useful to test desktop notifications for commands that fail.
 --
 -- ```
--- $ TOOLSET exec --notify --dhall=$REPO/dhall/example/exec/false
+-- $ TOOLSET exec --notify --expession=$REPO/dhall/example/exec/false
 -- Hello World
 -- ```
 

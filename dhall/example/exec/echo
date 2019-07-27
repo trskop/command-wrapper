@@ -1,5 +1,5 @@
 -- ```
--- $ TOOLSET exec [--notify] --dhall=$REPO/dhall/example/exec/echo Hello World
+-- $ TOOLSET exec [--notify] --expession=$REPO/dhall/example/exec/echo Hello World
 -- Hello World
 -- ```
 

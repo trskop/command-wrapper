@@ -144,7 +144,7 @@
     arguments, but there is no obvious simple solution.
 
 *   Support other types of Dhall expression when invoked with
-    `--dhall=EXPRESSION`:
+    `--expression=EXPRESSION`:
 
     - Already supported: `Verbosity -> ColourOutput -> [Text] -> ExecCommand`
     - `ExecCommand` -- This would be nice dual to `--print`
