@@ -145,7 +145,7 @@ import CommandWrapper.Internal.Subcommand.Help
     , value
     )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message (Result, defaultLayoutOptions, errorMsg, message)
+import CommandWrapper.Message (Result, errorMsg, out)
 import CommandWrapper.Options.Alias (Alias(alias))
 import qualified CommandWrapper.Options.Alias as Options (applyAliasCompletion)
 import qualified CommandWrapper.Options.Optparse as Options
@@ -546,7 +546,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
             execWrapperScript appNames config' opts
 
         HelpMode config'@Global.Config{colourOutput, verbosity} ->
-            message defaultLayoutOptions verbosity colourOutput stdout
+            out verbosity colourOutput stdout
                 (completionSubcommandHelp appNames config')
   where
     defaults =
@@ -791,7 +791,7 @@ subcommandCompletion appNames config shell index words _invokedAs subcommand =
     -- line completion.
     completionInfo :: IO CompletionInfo
     completionInfo = do
-        (exitCode, out, err)
+        (exitCode, outH, errH)
             <- External.executeCommandWith readProcess appNames config
                 subcommand ["--completion-info"]
 
@@ -806,10 +806,10 @@ subcommandCompletion appNames config shell index words _invokedAs subcommand =
                 $ fromString subcommand
                 <> ": Subcommand protocol violated when called with\
                     \ '--completion-info':\n"
-                <> fromString err
+                <> fromString errH
             exitWith (ExitFailure 2)
 
-        Dhall.input Dhall.auto (fromString out)
+        Dhall.input Dhall.auto (fromString outH)
       where
         readProcess cmd _ args env =
             readCreateProcessWithExitCode (proc cmd args){env} ""

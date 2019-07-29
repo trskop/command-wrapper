@@ -16,6 +16,8 @@ module CommandWrapper.Message
     , warningMsg
     , noticeMsg
     , debugMsg
+    , outWith
+    , out
 
     , withTerminal
 
@@ -309,7 +311,7 @@ newtype Result ann = Result ann
 instance MessageType (Result Pretty.AnsiStyle) where
     messageMinVerbosity _ = Silent
 
-newtype (Error ann) = Error ann
+newtype Error ann = Error ann
 
 instance MessageType (Error Pretty.AnsiStyle) where
     messageMinVerbosity _ = Normal
@@ -368,6 +370,23 @@ message
 message mkLayoutOptions verbosity colourOutput h doc =
     when (verbosity >= messageMinVerbosity (Proxy @ann))
         $ hPutDoc mkLayoutOptions messageStyle colourOutput h doc
+
+-- | Specialised version of 'message' where @ann = 'Result' 'Pretty.AnsiStyle'@.
+outWith
+    :: (Maybe (Terminal.Window Int) -> Pretty.LayoutOptions)
+    -> Verbosity
+    -> ColourOutput
+    -> Handle
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
+    -> IO ()
+outWith = message
+
+out :: Verbosity
+    -> ColourOutput
+    -> Handle
+    -> Pretty.Doc (Result Pretty.AnsiStyle)
+    -> IO ()
+out = outWith defaultLayoutOptions
 
 hPutDoc
     :: forall ann

@@ -80,14 +80,15 @@ import qualified System.Editor as Editor (editor)
 import System.FilePath (takeDirectory)
 
 import qualified CommandWrapper.Internal.Subcommand.Help as Help
-import CommandWrapper.Message (Result, defaultLayoutOptions, message)
+import CommandWrapper.Message (Result)
 import CommandWrapper.Options.Shell (Shell)
 import CommandWrapper.Options.Shell as Shell (parse)
 import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
-    , Params(Params, colour, config, name, subcommand, verbosity)
+    , Params(Params, config, name, subcommand)
     , completionInfoFlag
     , dieWith
+    , out
     , printCommandWrapperStyleCompletionInfoExpression
     , stderr
     , stdout
@@ -155,9 +156,7 @@ main = do
             doCompletion params shell index words
 
         Help ->
-            let Params{verbosity, colour} = params
-             in message defaultLayoutOptions verbosity colour stdout
-                    (helpMsg params)
+             out params stdout (helpMsg params)
 
 mainAction :: Params -> DefaultModeOptions -> IO ()
 mainAction

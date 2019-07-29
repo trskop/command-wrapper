@@ -72,11 +72,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , freeze
     )
 import CommandWrapper.Internal.Subcommand.Help (command)
-import CommandWrapper.Message
-    ( defaultLayoutOptions
-    , errorMsg
-    , message
-    )
+import CommandWrapper.Message (errorMsg, out)
 
 
 data InitOptions = InitOptions
@@ -253,8 +249,7 @@ init
         exitWith (ExitFailure exitCode)
 
     messageLn fragments =
-        message defaultLayoutOptions verbosity colourOutput stdout
-            (Pretty.hsep fragments <> Pretty.line)
+        out verbosity colourOutput stdout (Pretty.hsep fragments <> Pretty.line)
 
     createOrSkipDirectories :: [Either FilePath FilePath] -> IO ()
     createOrSkipDirectories = traverse_ \case

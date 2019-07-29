@@ -91,7 +91,7 @@ import qualified CommandWrapper.Config.Environment as EnvironmentVariable
     )
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPut)
 import qualified CommandWrapper.Internal.Subcommand.Help as Help
-import CommandWrapper.Message (Result, defaultLayoutOptions, hPutDoc, message)
+import CommandWrapper.Message (Result, defaultLayoutOptions, hPutDoc)
 import qualified CommandWrapper.Options as Options
     ( splitArguments
     , splitArguments'
@@ -103,6 +103,7 @@ import CommandWrapper.Prelude
     , Params(Params, colour, config, name, subcommand, verbosity)
     , completionInfoFlag
     , dieWith
+    , out
     , printCommandWrapperStyleCompletionInfoExpression
     , stderr
     , stdout
@@ -191,9 +192,7 @@ main = do
             doCompletion params config shell index commandAndItsArguments
 
         Help ->
-            let Params{verbosity, colour} = params
-             in message defaultLayoutOptions verbosity colour stdout
-                    (helpMsg params)
+            out params stdout (helpMsg params)
   where
     getExecutableCommand :: Params -> Config -> [String] -> IO Command
     getExecutableCommand params Config{commands} commandAndItsArguments =
@@ -243,16 +242,14 @@ data MonitorOptions = MonitorOptions
     }
 
 executeAndMonitorCommand :: Params -> MonitorOptions -> Command -> IO ()
-executeAndMonitorCommand Params{..} MonitorOptions{..} command
+executeAndMonitorCommand params MonitorOptions{..} command
   | monitor = do
         getDuration <- startDuration
         pid <- Posix.forkProcess (executeCommand command)
         exitCode <- getProcessStatus pid
         duration <- getDuration
-        message defaultLayoutOptions verbosity colour stdout
-            ( "Action took: " <> Pretty.viaShow duration <> Pretty.line
-                :: Pretty.Doc (Result Pretty.AnsiStyle)
-            )
+        out params stdout
+            ("Action took: " <> Pretty.viaShow duration <> Pretty.line)
         -- TODO: Value of type `NotifyConfig` should be part of `Config`.
         doNotifyWhen defNotifyConfig True notificationMessage exitCode
         exitWith exitCode

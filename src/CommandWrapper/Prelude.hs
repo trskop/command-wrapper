@@ -39,14 +39,24 @@ module CommandWrapper.Prelude
     , printOptparseCompletionInfoExpression
     , printCommandWrapperStyleCompletionInfoExpression
 
+    -- * Messages
+    --
+    -- | Colour and terminal respectful messages.
+    , out
+    , outWith
+    , warningMsg
+    , errorMsg
+    , Message.MessageType(..)
+    , Message.Result(..)
+    , Message.defaultLayoutOptions
+    , message
+
     -- * Error Handling
     --
     -- | These functions respect 'verbosity' and 'colour'.
-    , errorMsg
-    , warningMsg
     , dieWith
 
-    -- ** IO
+    -- * IO
     --
     -- | Some of these are just reexported from "System.IO" from `base` package.
     , stderr
@@ -58,6 +68,7 @@ module CommandWrapper.Prelude
 import Data.Bool ((||))
 import Data.Function (id)
 import Data.Int (Int)
+import Data.Maybe (Maybe)
 import Data.Monoid ((<>))
 import Data.Ord ((<=), (>))
 import System.IO (Handle, IO, stderr, stdout)
@@ -67,6 +78,7 @@ import System.Exit (ExitCode(ExitFailure), exitWith)
 import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import Data.Verbosity (Verbosity(..))
 import qualified Dhall.Core as Dhall (Expr)
 import qualified Dhall.Parser as Dhall (Src)
@@ -81,12 +93,18 @@ import qualified Options.Applicative as Options
     , internal
     , long
     )
+import qualified System.Console.Terminal.Size as Terminal (Window)
 
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
 import CommandWrapper.Environment.Params (Params(..), askParams)
 import CommandWrapper.Environment.Parser (parseEnvIO)
 import qualified CommandWrapper.Message as Message
-    ( errorMsg
+    ( MessageType(..)
+    , Result(..)
+    , defaultLayoutOptions
+    , errorMsg
+    , message
+    , outWith
     , warningMsg
     , withTerminal
     )
@@ -102,13 +120,13 @@ subcommandParams = parseEnvIO protocolError askParams
         -- This is not the best thing we can use, but it's close enough to the
         -- `TOOLSET SUBCOMMAND@ format that it could be useful to the users.
         name <- getProgName
-        Message.errorMsg (pretty name) Normal Auto stderr (message err)
+        Message.errorMsg (pretty name) Normal Auto stderr (mkMessage err)
 
         -- See `command-wrapper-subcommand-protocol(1)` manual page section
         -- /EXIT STATUS/.
         exitWith (ExitFailure 1)
 
-    message err =
+    mkMessage err =
         "This command must be executed inside Command Wrapper environment:"
         <+> "Failed to parse environment variables:"
         <+> Pretty.viaShow err <> Pretty.colon
@@ -124,6 +142,32 @@ warningMsg :: Params -> Handle -> Text -> IO ()
 warningMsg Params{colour, name, subcommand, verbosity} h msg =
     let cmd = name <> " " <> subcommand
     in Message.warningMsg (pretty cmd) verbosity colour h (pretty msg)
+
+outWith
+    :: (Maybe (Terminal.Window Int) -> Pretty.LayoutOptions)
+    -> Params
+    -> Handle
+    -> Pretty.Doc (Message.Result Pretty.AnsiStyle)
+    -> IO ()
+outWith mkLayoutOptions Params{colour, verbosity} h doc =
+    Message.outWith mkLayoutOptions verbosity colour h doc
+
+out :: Params
+    -> Handle
+    -> Pretty.Doc (Message.Result Pretty.AnsiStyle)
+    -> IO ()
+out params h doc = outWith Message.defaultLayoutOptions params h doc
+
+message
+    :: forall ann
+    .  Message.MessageType ann
+    => (Maybe (Terminal.Window Int) -> Pretty.LayoutOptions)
+    -> Params
+    -> Handle
+    -> Pretty.Doc ann
+    -> IO ()
+message mkLayoutOptions Params{colour, verbosity} h doc =
+    Message.message mkLayoutOptions verbosity colour h doc
 
 dieWith
     :: Params

@@ -99,9 +99,8 @@ import CommandWrapper.Message
     ( Result(..)
     , debugMsg
     , defaultLayoutOptions
-    , defaultLayoutOptions
     , hPutDoc
-    , message
+    , out
     )
 import CommandWrapper.Options.Alias
     ( Alias(Alias, alias, description)
@@ -137,15 +136,13 @@ help
 help internalHelp mainHelp appNames@AppNames{usedName} options config =
     runMain (parseOptions appNames config options) defaults $ \case
         MainHelp config' -> do
-            message defaultLayoutOptions verbosity colourOutput stdout
-                (mainHelp appNames config')
+            out verbosity colourOutput stdout (mainHelp appNames config')
             traverse_ putStrLn extraHelpMessage
 
         SubcommandHelp cmd config' ->
             case internalHelp cmd of
                 Just mkMsg ->
-                    message defaultLayoutOptions verbosity colourOutput stdout
-                        (mkMsg appNames config')
+                    out verbosity colourOutput stdout (mkMsg appNames config')
 
                 Nothing ->
                     External.executeCommand appNames config' cmd ["--help"]

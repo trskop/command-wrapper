@@ -90,7 +90,7 @@ import CommandWrapper.Internal.Subcommand.Version.Info
     , versionQQ
     )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message (Result, defaultLayoutOptions, message)
+import CommandWrapper.Message (Result, out)
 --import qualified CommandWrapper.Message as Message (dieTooManyArguments)
 --import CommandWrapper.Options.Alias (applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
@@ -133,16 +133,15 @@ version versionInfo appNames options config =
                         Options.Zsh -> versionInfoBash -- Same syntax as Bash.
 
                 PlainFormat ->
-                    message defaultLayoutOptions verbosity colourOutput handle
+                    out verbosity colourOutput handle
                         (versionInfoDoc versionInfo)
 
         NumericVersion _field output Config{colourOutput, verbosity} -> do
             withOutputHandle output \handle ->
-                message defaultLayoutOptions verbosity colourOutput handle
-                    ("TODO" :: Pretty.Doc (Result Pretty.AnsiStyle))
+                out verbosity colourOutput handle "TODO: Implement"
 
         VersionHelp config'@Config{colourOutput, verbosity} -> do
-            message defaultLayoutOptions verbosity colourOutput stdout
+            out verbosity colourOutput stdout
                 (versionSubcommandHelp appNames config')
   where
     defaults = Mainplate.applySimpleDefaults

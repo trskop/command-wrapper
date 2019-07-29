@@ -84,7 +84,7 @@ import CommandWrapper.Config.Command (SimpleCommand(..))
 import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Environment as Environment
 import qualified CommandWrapper.Internal.Subcommand.Help as Help
-import CommandWrapper.Message (Result, defaultLayoutOptions, message)
+import CommandWrapper.Message (Result)
 import CommandWrapper.Options.Optparse (bashCompleter)
 import qualified CommandWrapper.Options.Shell as Options (Shell)
 import qualified CommandWrapper.Options.Shell as Options.Shell (parse)
@@ -92,6 +92,7 @@ import CommandWrapper.Prelude
     ( HaveCompletionInfo(completionInfoMode)
     , completionInfoFlag
     , dieWith
+    , out
     , printCommandWrapperStyleCompletionInfoExpression
     , stderr
     , stdout
@@ -157,12 +158,8 @@ main = do
             doCompletion params index words'
 
         Help ->
-            let Params
-                    { params = params'@Environment.Params{verbosity, colour}
-                    }
-                    = params
-             in message defaultLayoutOptions verbosity colour stdout
-                    (helpMsg params')
+            let Params{params = params'} = params
+             in out params' stdout (helpMsg params')
 
 mainAction :: Params FilePath -> Strategy -> Maybe Text -> Maybe Text -> IO ()
 mainAction params@Params{config = configFile} strategy query directory =

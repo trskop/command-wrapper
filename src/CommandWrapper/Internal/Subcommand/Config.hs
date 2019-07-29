@@ -97,9 +97,8 @@ import CommandWrapper.Internal.Subcommand.Help
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message
     ( Result
-    , defaultLayoutOptions
 --  , errorMsg
-    , message
+    , out
     )
 import qualified CommandWrapper.Options.Optparse as Options
     ( bashCompleter
@@ -170,7 +169,7 @@ config appNames options globalConfig =
         ConfigLib _ -> pure ()
 
         Help config'@Global.Config{colourOutput, verbosity} ->
-            message defaultLayoutOptions verbosity colourOutput stdout
+            out verbosity colourOutput stdout
                 (configSubcommandHelp appNames config')
 
         Dhall opts cfg ->
@@ -198,22 +197,6 @@ config appNames options globalConfig =
             Dhall.resolve appNames cfg resolveOpts
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
-
-    {-
-    dieWith :: Global.Config -> Int -> (forall ann. Pretty.Doc ann) -> IO a
-    dieWith cfg exitCode msg = do
-        let Global.Config{colourOutput, verbosity} = cfg
-
-            subcommand :: forall ann. Pretty.Doc ann
-            subcommand = pretty (usedName <> " config")
-
-        errorMsg subcommand verbosity colourOutput stderr msg
-        exitWith (ExitFailure exitCode)
-
-    messageLn Global.Config{colourOutput, verbosity} fragments =
-        message defaultLayoutOptions verbosity colourOutput stdout
-            (Pretty.hsep fragments <> Pretty.line)
-    -}
 
 parseOptions
     :: AppNames
