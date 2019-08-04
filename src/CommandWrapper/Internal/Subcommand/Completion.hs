@@ -65,6 +65,7 @@ import Text.Show (Show, show)
 import qualified Data.ByteString as ByteString (putStr, writeFile)
 import Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI (foldedCase, mk)
+import Data.Either.Validation (validationToEither)
 import Data.FileEmbed (embedFile)
 import Data.Generics.Product.Typed (typed)
 import Data.Monoid.Endo (mapEndo)
@@ -403,14 +404,19 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
                 AppNames{exePath, usedName} = appNames
 
-            case MkCompletionScript <$> Dhall.extract Dhall.auto mkCompletionScriptExpr of
-                Nothing -> do
+                script = MkCompletionScript
+                    <$> Dhall.extract Dhall.auto mkCompletionScriptExpr
+
+            case validationToEither script of
+                Left e -> do
                     -- TODO: Figure out how to handle this better.
                     let subcommand' :: forall ann. Pretty.Doc ann
                         subcommand' = pretty (usedName <> " completion")
 
                     errorMsg subcommand' verbosity colourOutput stderr
-                        "Failed to generate completion script."
+                        ( "Failed to generate completion script: "
+                        <> fromString (show e)
+                        )
                     -- TODO: This is probably not the best exit code.
                     exitWith (ExitFailure 1)
 
@@ -424,7 +430,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                 --
                 -- - Maybe we should consider passing Shell to the Dhall
                 --   function instead of expecting multiple results.
-                Just (MkCompletionScript mkScript) -> case subcommand of
+                Right (MkCompletionScript mkScript) -> case subcommand of
                     Nothing ->
                         forM_ (usedName : aliases) \name ->
                             let Scripts{..} = mkScript

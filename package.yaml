@@ -55,6 +55,7 @@ dependencies:
   - dhall-bash
   - dhall-json
   - directory
+  - either
   - endo
   - executable-path
   - file-embed

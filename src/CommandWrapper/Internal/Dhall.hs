@@ -41,6 +41,7 @@ import Control.Monad (guard)
 import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
 import Data.Functor ((<&>))
+import Data.Maybe (fromMaybe)
 import Data.Semigroup ((<>))
 import Data.String (fromString)
 import GHC.Exts (IsList(fromList))
@@ -62,11 +63,13 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (renderIO)
 import qualified Dhall
-    ( InputType(InputType, declared, embed)
+    ( Extractor
+    , InputType(InputType, declared, embed)
     , Type(Type, expected, extract)
     , lazyText
     , natural
     , strictText
+    , typeError
     )
 import qualified Dhall.Core as Dhall
     ( Expr
@@ -95,6 +98,8 @@ import qualified Dhall.Pretty as Dhall
     , layoutOpts
     , prettyCharacterSet
     )
+import qualified Dhall.Src as Dhall (Src)
+import qualified Dhall.TypeCheck as Dhall (X)
 import qualified System.Console.Terminal.Size as Terminal
     ( Window(Window, width)
     , hSize
@@ -165,7 +170,15 @@ union (UnionType constructors) = Dhall.Type
         either (const Nothing) (notEmptyRecord . Dhall.expected)
             <$> constructors
 
-    extractF e0 = do
+    unexpectedConstructor
+        :: Dhall.Expr Dhall.Src Dhall.X
+        -> Dhall.Extractor Dhall.Src Dhall.X a
+    unexpectedConstructor = Dhall.typeError (Dhall.Union expect)
+
+    extractF
+        :: Dhall.Expr Dhall.Src Dhall.X
+        -> Dhall.Extractor Dhall.Src Dhall.X a
+    extractF e0 = fromMaybe (unexpectedConstructor e0) do
         (field, e1, rest) <- extractUnionConstructor e0
 
         t <- Dhall.Map.lookup field constructors
@@ -174,7 +187,7 @@ union (UnionType constructors) = Dhall.Type
                 `Dhall.judgmentallyEqual`
                     Dhall.Union (Dhall.Map.delete field expect)
             )
-        either Just (`Dhall.extract` e1) t
+        either (Just . pure) (Just . (`Dhall.extract` e1)) t
 
 extractUnionConstructor
     :: Dhall.Expr s a

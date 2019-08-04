@@ -28,6 +28,7 @@ import System.IO (stdout)
 
 import Control.Monad.State.Strict (evalStateT)
 import Control.Monad.Except (liftEither, runExcept, withExcept)
+import Data.Either.Validation (validationToEither)
 import Data.Text (Text)
 import qualified Data.Text.IO as Text (putStrLn, readFile)
 import qualified Dhall
@@ -140,48 +141,51 @@ printPlain paths expression possiblyConfigExpression =
         "Error: Expected Text, Optional Text, Natural, Integer, or List of\
         \ them as result."
 
-    dieWithUnexpectedType t =
-        die ("Error: Expected " <> t <> " as result.")
+    extractText = validationToEither . Dhall.extract (Dhall.auto @Text)
 
-    Dhall.Type{extract = extractText} = Dhall.auto @Text
-    Dhall.Type{extract = extractMaybeText} = Dhall.auto @(Maybe Text)
-    Dhall.Type{extract = extractNatural} = Dhall.auto @Natural
-    Dhall.Type{extract = extractInteger} = Dhall.auto @Integer
-    Dhall.Type{extract = extractTextList} = Dhall.auto @[Text]
-    Dhall.Type{extract = extractNaturalList} = Dhall.auto @[Natural]
-    Dhall.Type{extract = extractIntegerList} = Dhall.auto @[Integer]
+    extractMaybeText =
+        validationToEither . Dhall.extract (Dhall.auto @(Maybe Text))
+
+    extractNatural =
+        validationToEither . Dhall.extract (Dhall.auto @Natural)
+
+    extractInteger =
+        validationToEither . Dhall.extract (Dhall.auto @Integer)
+
+    extractTextList =
+        validationToEither . Dhall.extract (Dhall.auto @[Text])
+
+    extractNaturalList =
+        validationToEither . Dhall.extract (Dhall.auto @[Natural])
+
+    extractIntegerList =
+        validationToEither . Dhall.extract (Dhall.auto @[Integer])
 
     printText, printOptionalText, printNatural, printInteger
         :: Dhall.Expr Dhall.Src Dhall.X
         -> IO ()
 
     printText =
-        maybe (dieWithUnexpectedType "Text") Text.putStrLn . extractText
+        either (die . show) Text.putStrLn . extractText
 
     printOptionalText =
-        maybe (dieWithUnexpectedType "Optional Text") (traverse_ Text.putStrLn)
-        . extractMaybeText
+        either (die . show) (traverse_ Text.putStrLn) . extractMaybeText
 
     printNatural =
-        maybe (dieWithUnexpectedType "Natural") (Text.putStrLn . showing)
-        . extractNatural
+        either (die . show) (Text.putStrLn . showing) . extractNatural
 
     printInteger =
-        maybe (dieWithUnexpectedType "Integer") (Text.putStrLn . showing)
-        . extractInteger
+        either (die . show) (Text.putStrLn . showing) . extractInteger
 
     printTextList =
-        maybe (dieWithUnexpectedType "List Text") (mapM_ Text.putStrLn)
-        . extractTextList
+        either (die . show) (mapM_ Text.putStrLn) . extractTextList
 
     printNaturalList =
-        maybe (dieWithUnexpectedType "List Natural")
-            (mapM_ $ Text.putStrLn . showing)
+        either (die . show) (mapM_ $ Text.putStrLn . showing)
         . extractNaturalList
 
     printIntegerList =
-        maybe (dieWithUnexpectedType "List Integer")
-            (mapM_ $ Text.putStrLn . showing)
+        either (die . show) (mapM_ $ Text.putStrLn . showing)
         . extractIntegerList
 
     showing :: Show a => a -> Text

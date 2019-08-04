@@ -99,7 +99,7 @@ import qualified Data.Map as Map (keys)
 import Dhall.Binary (defaultStandardVersion)
 import Dhall.Core (Expr(..), Import)
 import qualified Dhall.Freeze as Dhall (freezeImport, freezeRemoteImport)
-import Dhall.Import (Imported(..), MissingImports)
+import Dhall.Import (Chained(chainedImport), Imported(..), MissingImports)
 import qualified Dhall.Lint as Dhall (lint)
 import Dhall.Parser (ParseError, SourcedException, Src)
 import qualified Dhall.Pretty as Dhall (Ann, CharacterSet(..))
@@ -282,8 +282,9 @@ resolve appNames config Resolve{mode, input, output} =
                     -- TODO: Handle I/O correctly.
                     ( print
                     . Pretty.pretty
-                    . Dhall.Core.importType
+--                  . Dhall.Core.importType
                     . Dhall.Core.importHashed
+                    . chainedImport
                     )
 
             -- TODO: Unable to implement at the moment.
@@ -597,7 +598,7 @@ data OutputEncoding
     | OutputYaml
   deriving stock (Show)
 
-readExpression :: Input -> IO (Expr Src Import, Dhall.Import.Status IO)
+readExpression :: Input -> IO (Expr Src Import, Dhall.Import.Status)
 readExpression = \case
     InputStdin ->
         Text.getContents >>= parseExpr "(stdin)" "."

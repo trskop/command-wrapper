@@ -11,10 +11,10 @@ extra-deps:
   - fuzzy-0.1.0.0
   - verbosity-0.3.0.0
 
-  - dhall-1.24.0
-  - dhall-bash-1.0.21
-  - dhall-json-1.3.0
-  - dhall-text-1.0.18
+  - dhall-1.25.0
+  - dhall-bash-1.0.22
+  - dhall-json-1.4.0
+# - dhall-text-1.0.18
 
 # Keeping the following in case of new Dhall release:
   # Dhall dependencies:
