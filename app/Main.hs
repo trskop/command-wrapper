@@ -350,8 +350,11 @@ helpMessage AppNames{usedName} Global.Config{description} = Pretty.vsep
             ]
 
         , Help.optionDescription ["--change-directory=DIRECTORY"]
-            [ Pretty.reflow "Change current wworking directory to"
-            , Help.metavar  "DIRECTORY" <> "."
+            [ Pretty.reflow "Change current working directory to"
+            , Help.metavar "DIRECTORY"
+            , Pretty.reflow "before doing anything.  Internal and external\
+                \ subcommands are always executed after changing working\
+                \ directory."
             ]
 
         , Help.optionDescription ["--version", "-V"]

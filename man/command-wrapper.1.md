@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 26th June 2019
+% 6th August 2019
 
 
 # NAME
@@ -101,8 +101,8 @@ this manual.
     script behaves.
 
 \--change-directory=*DIRECTORY*
-:   Change working directory before doing anything, especially executing a
-    subcommand.
+:   Change working directory to *DIRECTORY* before doing anything.  Internal and
+    external subcommands are always executed after changing working directory.
 
 \--help, -h
 :   Print toolset (*TOOLSET_COMMAND*) help information and exit.  Using *help*
