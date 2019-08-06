@@ -16,6 +16,12 @@
     , Action =
         ./docker-compose/Action
     }
+, firefox =
+    { Options = ./firefox/Options/Type
+    , Profile = ./firefox/Profile/Type
+    , Remote = ./firefox/Remote/Type
+    , Open = ./firefox/Open/Type
+    }
 , nix =
     { Command = ./nix/Command/Type }
 , ssh =

@@ -1,0 +1,18 @@
+  λ(_ : ./Type)
+→ merge
+  { NewWindow =
+      λ(url : Text) → [ "--new-window", url ]
+  , NewTab =
+      λ(url : Text) → [ "--new-tab", url ]
+  , PrivateWindow =
+      λ(url : Text) → [ "--private-window", url ]
+  , Url =
+      λ(url : Text) → [ url ]
+  , Search =
+      λ(term : Text) → [ "--search", term ]
+  , BrowserWindow =
+      [ "--browser" ]
+  }
+  _
+
+-- vim: filetype=dhall

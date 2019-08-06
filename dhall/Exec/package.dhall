@@ -55,7 +55,13 @@
         ./docker/run
     }
 , firefox =
-    { command = ./firefox/command }
+    { command =
+        ./firefox/command
+    , defaultOptions =
+        ./firefox/Options/default
+    , options =
+        ./firefox/Options/options
+    }
 , nix =
     { command =
         ./nix/command

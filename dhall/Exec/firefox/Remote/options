@@ -1,0 +1,4 @@
+  λ(_ : ./Type)
+→ merge { NoRemote = [ "--no-remote" ], NewInstance = [ "--new-instance" ] } _
+
+-- vim: filetype=dhall
