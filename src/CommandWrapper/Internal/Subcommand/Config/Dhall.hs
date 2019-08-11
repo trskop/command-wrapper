@@ -55,6 +55,9 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , defRepl
     , repl
 
+    -- * Exec
+    , exec
+
     -- * Input\/Output
     , Input(..)
     , HasInput(..)
@@ -68,10 +71,12 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     )
   where
 
-import Control.Exception (Exception, SomeException, handle, throwIO)
+import Control.Exception (Exception, SomeException, bracket, handle, throwIO)
 import Control.Monad (unless)
 import Data.Foldable (for_, traverse_)
+import Data.Functor ((<&>))
 import Data.List as List (dropWhile, span)
+import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Monoid ((<>))
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
@@ -80,6 +85,7 @@ import System.Exit (exitFailure)
 import System.IO
     ( Handle
     , IOMode(WriteMode)
+    , hClose
     , hPutStrLn
     , stderr
     , stdout
@@ -87,13 +93,17 @@ import System.IO
     )
 import qualified System.IO as IO (utf8)
 
+import Crypto.Hash (Digest, SHA256)
+import qualified Crypto.Hash as Crypto (hash)
 import Data.Generics.Internal.VL.Lens (set)
 import Data.Generics.Product.Fields (field')
 import Data.Generics.Product.Typed (HasType, typed)
 import Data.Output (IsOutput, HasOutput)
 import qualified Data.Output (IsOutput(..), HasOutput(..))
 import Data.Text (Text)
-import qualified Data.Text.IO as Text (getContents, readFile)
+import qualified Data.Text as Text (unpack)
+import qualified Data.Text.Encoding as Text (encodeUtf8)
+import qualified Data.Text.IO as Text (hPutStr, getContents, readFile)
 import Data.Text.Prettyprint.Doc (Doc)
 import qualified Data.Map as Map (keys)
 import Dhall.Binary (defaultStandardVersion)
@@ -104,8 +114,27 @@ import qualified Dhall.Lint as Dhall (lint)
 import Dhall.Parser (ParseError, SourcedException, Src)
 import qualified Dhall.Pretty as Dhall (Ann, CharacterSet(..))
 import Dhall.TypeCheck (DetailedTypeError(..), TypeError, X)
-import System.FilePath (takeDirectory)
+import System.Directory
+    ( XdgDirectory(XdgCache)
+    , createDirectoryIfMissing
+    , emptyPermissions
+    , getPermissions
+    , getXdgDirectory
+    , setOwnerExecutable
+    , setOwnerReadable
+    , setOwnerSearchable
+    , setOwnerWritable
+    , setPermissions
+    )
+import System.FilePath ((</>), takeDirectory)
 import System.FilePath.Parse (parseFilePath)
+import System.IO.LockFile.Internal
+    ( LockingException(..)
+    , LockingParameters(LockingParameters)
+    , RetryStrategy(No)
+    , lock
+    )
+import System.Posix.Process (executeFile)
 
 --import qualified Codec.CBOR.JSON
 --import qualified Codec.CBOR.Read
@@ -531,6 +560,93 @@ repl appNames config@Config{verbosity} Repl{..} =
     explain = verbosity > Verbosity.Normal
 
 -- }}} REPL -------------------------------------------------------------------
+
+-- {{{ Exec -------------------------------------------------------------------
+
+data Exec = Exec
+    { expression :: Text
+    -- ^ Dhall @expression : Text@.
+
+    , interpret :: Maybe (NonEmpty Text)
+    -- ^ Describes how the Dhall expression should be interpreted.
+    --
+    -- * 'Nothing' - Write expression into a file, set executable bit, and
+    --   execute it.
+    --
+    -- * @'Just' (interpreterCommand ':|' interpreterArguments)@ - Write
+    --   expression into a file, and pass it to @interpreterCommand@.
+
+    , arguments :: [Text]
+    -- ^ Arguments passed to script.  If an interpreter command is specified
+    -- then it is executed as:
+    --
+    -- > INTERPRETER_COMMAND [INTERPRETER_ARGUMENTS] SCRIPT [SCRIPT_ARGUMENTS]
+    --
+    -- Where @SCRIPT@ is a file into which 'expression' was written.
+    }
+
+exec :: AppNames -> Config -> Exec -> IO ()
+exec appNames@AppNames{usedName} config Exec{..} =
+    handleExceptions appNames config do
+        cacheDir <- getXdgDirectory XdgCache (usedName <> "-dhall-exec")
+        content <- Dhall.input Dhall.auto expression
+        let checksum = Crypto.hash (Text.encodeUtf8 content)
+
+        withScript cacheDir checksum \executable possiblyHandle -> do
+            for_ possiblyHandle \h -> do
+                Text.hPutStr h content
+
+                -- Closing the file flushes the content and releases the
+                -- associated resources so that `executeFile` can actually open
+                -- it.
+                hClose h
+
+            execute =<< case interpret of
+                Nothing -> do
+                    getPermissions executable
+                        >>= setPermissions executable . setOwnerExecutable True
+
+                    pure (executable, Text.unpack <$> arguments, False)
+
+                Just (interpreterCommand :| interpreterArguments) -> do
+                    let arguments' = mconcat
+                            [ Text.unpack <$> interpreterArguments
+                            , [executable]
+                            , Text.unpack <$> interpreterArguments
+                            ]
+
+                    pure (Text.unpack interpreterCommand, arguments', True)
+  where
+    execute (cmd, args, searchPath) = executeFile cmd searchPath args Nothing
+
+    withScript :: FilePath -> Digest SHA256 -> (FilePath -> Maybe Handle -> IO a) -> IO a
+    withScript file checksum action = bracket
+        (getScript file checksum)
+        (\(_, h) -> maybe (pure ()) hClose h)
+        (uncurry action)
+
+    getScript :: FilePath -> Digest SHA256 -> IO (FilePath, Maybe Handle)
+    getScript dir checksum = handle lockingException do
+        createDirectoryIfMissing True dir
+        setPermissions dir
+            ( setOwnerReadable   True
+            . setOwnerWritable   True
+            . setOwnerSearchable True
+            $ emptyPermissions
+            )
+
+        let file = dir </> show checksum
+        lock (LockingParameters No 0) file <&> \h -> (file, Just h)
+
+    lockingException :: LockingException -> IO (FilePath, Maybe Handle)
+    lockingException = \case
+        UnableToAcquireLockFile file ->
+            pure (file, Nothing)
+
+        CaughtIOException e ->
+            throwIO e
+
+-- }}} Exec -------------------------------------------------------------------
 
 -- {{{ Input/Output -----------------------------------------------------------
 

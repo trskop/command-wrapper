@@ -47,6 +47,13 @@ packages:
   original:
     hackage: dhall-json-1.4.0
 - completed:
+    hackage: lock-file-0.7.0.0@sha256:3ad84b5e454145e1d928063b56abb96db24a99a21b493989520e58fa0ab37b00,4484
+    pantry-tree:
+      size: 718
+      sha256: 3634593ce191e82793ea0e060598ab3cf67f2ef2fe1d65345dc9335ad529d25f
+  original:
+    hackage: lock-file-0.7.0.0
+- completed:
     cabal-file:
       size: 2311
       sha256: ce507ef3bca6a04f21f91f7c57f95a854470af0375198cc1b0739e8457c7da5a

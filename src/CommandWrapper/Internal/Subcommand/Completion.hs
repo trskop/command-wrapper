@@ -609,7 +609,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
         OutputNotHandle (OutputFile fn) -> Text.writeFile fn . Text.unlines
 
 execWrapperScript :: AppNames -> Global.Config -> WrapperOptions -> IO ()
-execWrapperScript appNames@AppNames{usedName} config WrapperOptions{..} = do
+execWrapperScript appNames@AppNames{usedName} config WrapperOptions{..} =
     Dhall.handleExceptions appNames config do
         cacheDir <- getXdgDirectory XdgCache (usedName <> "-completion")
         content <- Dhall.input Dhall.auto expression

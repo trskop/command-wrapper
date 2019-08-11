@@ -133,6 +133,9 @@
 -   Make it aware of Vim/Neovim terminal, which can prevent us to create new
     terminal window.
 
+-   Provide default menu tool implementation so that command can work without
+    `fzf`/`fzy` installed.
+
 
 ### Exec
 

@@ -51,6 +51,7 @@ dependencies:
   - case-insensitive
   - comonad
   - containers
+  - cryptonite
   - dhall >=1.23  # Functioning support of Dhall Standard 7.0.0
   - dhall-bash
   - dhall-json
@@ -63,6 +64,7 @@ dependencies:
   - fuzzy
   - generic-lens
   - host-and-port
+  - lock-file
   - mainplate
   - mtl
   - optparse-applicative
