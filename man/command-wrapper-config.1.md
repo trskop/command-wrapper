@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 24th July 2019
+% 21th August 2019
 
 
 # NAME
@@ -39,6 +39,11 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-hash
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-exec
+{\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*}
+\[\--interpreter=*COMMAND* \[\--interpreter-argument=*ARGUMENT* ...]]
+[*ARGUMENT* ...]
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init \[\--toolset=*NAME*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
@@ -68,6 +73,41 @@ We can organise `config` subcommand abilities into following categories:
     *   [dhall-text](http://hackage.haskell.org/package/dhall-text) (**TODO**)
 
     Which is integrated with Command Wrapper and with a nicer command line UX.
+
+    Extra Dhall functionality:
+
+    \--dhall-exec
+    :   Execute rendered Dhall expression as a script.  This is done in following steps:
+
+        1.  Dhall expression of type Text is parsed and rendered into text.
+
+        2.  Text is written into a file
+            `${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}-dhall-exec/${hash}`,
+            where `${hash}` is a SHA256 of its content.
+
+        3.  Script is executed:
+
+            1.  If `--interpreter=`*COMMAND* is passed then it is executed as:
+
+                ```
+                INTERPRETER_COMMAND [INTERPRETER_ARGUMENTS] SCRIPT_FILE [SCRIPT_ARGUMENTS]
+                ```
+
+            2.  If no `--interpreter=`*COMMAND* is specified then executable
+                bit is set on it and script is executed as:
+
+                ```
+                SCRIPT_FILE [SCRIPT_ARGUMENTS]
+                ```
+
+        Some examples:
+
+        ```
+        $ TOOLSET_COMMAND config --dhall-exec --expression='"#!/bin/bash\necho Hello World"'
+        Hello World
+        $ TOOLSET_COMMAND config --dhall-exec --expression='"echo Hello World"' --interpreter=bash
+        Hello World
+        ```
 
 **Initialisation** (`--init`)
 :   Initialise toolset configuration.  This action tries to be as safe as
@@ -204,11 +244,24 @@ We can organise `config` subcommand abilities into following categories:
     is initialised.  Alternatively `COMMAND_WRAPPER_INVOKE_AS=`*NAME* can be
     used.  See `command-wrapper(1) section *ENVIRONMENT VARIABLES* for details.
 
+\--dhall-exec
+:   Render Dhall expression as Text and execute the result. See also --interpreter=COMMAND.
+
+\--interpreter=*COMMAND*, **\--interpreter** *COMMAND*
+:   Run rendered Dhall expression as a script using *COMMAND* as an interpreter.
+    See also `--interpreter-argument=`*ARGUMENT*.
+
+\--interpreter-argument=*ARGUMENT*, **\--interpreter-argument** *ARGUMENT*
+:   Pass *ARGUMENT* to interpreter *COMMAND*.
+
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
 
 *EXPRESSION*
 :   Dhall expression.
+
+*ARGUMENT*
+:   Command line argument passed to executed script in `--dhall-exec` mode.
 
 **TODO: Following options aren't currently implemented!**
 
@@ -256,6 +309,11 @@ configuration file.
 
 `${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/user-config/`
 :   **TODO**
+
+`${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}-dhall-exec/${hash}`
+:   Scripts rendered as part of `TOOLSET_COMMAND config --dhall-exec`
+    invocation are cached under this paths.  The value of `${hash}` is the
+    SHA256 of generated script.
 
 
 # ENVIRONMENT VARIABLES

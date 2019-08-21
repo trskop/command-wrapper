@@ -36,7 +36,7 @@ import qualified Data.List as List
     , or
     , take
     )
---import Data.List.NonEmpty (NonEmpty((:|)))
+import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Just), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
 import Data.String (String)
@@ -264,8 +264,11 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallExecFlag
         <*> (expressionOption <|> inputOption)
         <*> ( dualFoldEndo
-                <$> optional interpreterOption
---              <*> many interpreterArgumentOption
+                <$> optional
+                    ( setInterpreter
+                        <$> interpreterOption
+                        <*> many interpreterArgumentOption
+                    )
                 <*> many scriptArgument
             )
 
@@ -454,14 +457,19 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.flag mempty switchToDhallExecMode
             (Options.long "dhall-exec")
 
-    interpreterOption :: Options.Parser (Endo Dhall.Exec)
-    interpreterOption =
-        Options.strOption
-            (Options.long "interpreter" <> Options.metavar "COMMAND")
-        <&> \interpreter ->
-            Endo \opts@Dhall.Exec{} -> opts
-                { Dhall.interpret = Just (pure interpreter)
-                }
+    interpreterOption :: Options.Parser Text
+    interpreterOption = Options.strOption
+        (Options.long "interpreter" <> Options.metavar "COMMAND")
+
+    interpreterArgumentOption :: Options.Parser Text
+    interpreterArgumentOption = Options.strOption
+        (Options.long "interpreter-argument" <> Options.metavar "ARGUMENT")
+
+    setInterpreter :: Text -> [Text] -> Endo Dhall.Exec
+    setInterpreter cmd args =
+        Endo \opts -> opts
+            { Dhall.interpret = Just (cmd :| args)
+            }
 
     scriptArgument :: Options.Parser (Endo Dhall.Exec)
     scriptArgument =
