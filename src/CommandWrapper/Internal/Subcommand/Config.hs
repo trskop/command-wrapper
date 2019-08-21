@@ -614,10 +614,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 ( longOptionWithArgument "interpreter" "COMMAND"
                 <+> Pretty.brackets
                     ( longOptionWithArgument "interpreter-argument" "ARGUMENT"
-                    <+> "[...]"
+                    <+> "..."
                     )
                 )
-            <+> Pretty.brackets (metavar "ARGUMENTS")
+            <+> Pretty.brackets (metavar "ARGUMENT" <+> "...")
 
         , "config"
             <+> longOption "init"
@@ -756,6 +756,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , optionDescription ["EPRESSION"]
             [ "Dhall", metavar "EXPRESSION" <> "."
+            ]
+
+        , optionDescription ["ARGUMENT"]
+            [ Pretty.reflow "Command line argument passed to executed script in"
+            , longOption "dhall-exec", "mode."
             ]
 
         , globalOptionsHelp usedName
