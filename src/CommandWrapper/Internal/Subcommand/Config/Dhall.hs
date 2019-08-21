@@ -56,6 +56,8 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , repl
 
     -- * Exec
+    , Exec(..)
+    , defExec
     , exec
 
     -- * Input\/Output
@@ -85,7 +87,9 @@ import System.Exit (exitFailure)
 import System.IO
     ( Handle
     , IOMode(WriteMode)
+    , SeekMode(AbsoluteSeek)
     , hClose
+    , hSeek
     , hPutStrLn
     , stderr
     , stdout
@@ -564,8 +568,8 @@ repl appNames config@Config{verbosity} Repl{..} =
 -- {{{ Exec -------------------------------------------------------------------
 
 data Exec = Exec
-    { expression :: Text
-    -- ^ Dhall @expression : Text@.
+    { input :: Input
+    -- ^ Dhall expression.
 
     , interpret :: Maybe (NonEmpty Text)
     -- ^ Describes how the Dhall expression should be interpreted.
@@ -584,16 +588,32 @@ data Exec = Exec
     --
     -- Where @SCRIPT@ is a file into which 'expression' was written.
     }
+  deriving stock (Generic, Show)
+  deriving anyclass (HasInput)
+
+defExec :: Input -> Exec
+defExec input = Exec
+    { input
+    , interpret = Nothing
+    , arguments = []
+    }
 
 exec :: AppNames -> Config -> Exec -> IO ()
 exec appNames@AppNames{usedName} config Exec{..} =
     handleExceptions appNames config do
         cacheDir <- getXdgDirectory XdgCache (usedName <> "-dhall-exec")
+        expression <- case input of
+            InputExpression e -> pure e
+            _ -> undefined
+
         content <- Dhall.input Dhall.auto expression
         let checksum = Crypto.hash (Text.encodeUtf8 content)
 
         withScript cacheDir checksum \executable possiblyHandle -> do
             for_ possiblyHandle \h -> do
+                -- TODO: We can get rid of hSeek when we switch to an
+                -- implementation that doesn't write PID into the file.
+                hSeek h AbsoluteSeek 0
                 Text.hPutStr h content
 
                 -- Closing the file flushes the content and releases the
@@ -619,7 +639,11 @@ exec appNames@AppNames{usedName} config Exec{..} =
   where
     execute (cmd, args, searchPath) = executeFile cmd searchPath args Nothing
 
-    withScript :: FilePath -> Digest SHA256 -> (FilePath -> Maybe Handle -> IO a) -> IO a
+    withScript
+        :: FilePath
+        -> Digest SHA256
+        -> (FilePath -> Maybe Handle -> IO a)
+        -> IO a
     withScript file checksum action = bracket
         (getScript file checksum)
         (\(_, h) -> maybe (pure ()) hClose h)
@@ -678,6 +702,9 @@ class HasInput a where
         -> a
         -> f a
     inputL = typed @Input
+
+instance HasInput Input where
+    inputL = id
 
 setInput :: HasInput a => Input -> a -> a
 setInput = set inputL
