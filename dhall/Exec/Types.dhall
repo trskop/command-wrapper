@@ -17,10 +17,17 @@
         ./docker-compose/Action
     }
 , firefox =
-    { Options = ./firefox/Options/Type
-    , Profile = ./firefox/Profile/Type
-    , Remote = ./firefox/Remote/Type
-    , Open = ./firefox/Open/Type
+    { Options =
+        ./firefox/Options/Type
+    , Profile =
+        ./firefox/Profile/Type
+    , Remote =
+        ./firefox/Remote/Type
+    , Open =
+        ./firefox/Open/Type
+    }
+, go-jira =
+    { Options = ./go-jira/Options
     }
 , nix =
     { Command = ./nix/Command/Type }

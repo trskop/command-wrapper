@@ -4,11 +4,11 @@ let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let commandWrapper = ../../CommandWrapper/package.dhall
 
-in    λ(config : ./Config)
+in    λ(options : ./Options)
     → λ(verbosity : CommandWrapper.Verbosity)
-    →   [ "--endpoint=${config.baseUrl}"
-        , "--login=${config.login}"
-        , "--user=${config.user}"
+    →   [ "--endpoint=${options.baseUrl}"
+        , "--login=${options.login}"
+        , "--user=${options.user}"
         ]
       # commandWrapper.verbosity.fold
         (List Text)

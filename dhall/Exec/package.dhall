@@ -62,6 +62,14 @@
     , options =
         ./firefox/Options/options
     }
+, go-jira =
+    { command =
+        ./go-jira/command
+    , completion =
+        ./go-jira/completion
+    , options =
+        ./go-jira/options
+    }
 , nix =
     { command =
         ./nix/command

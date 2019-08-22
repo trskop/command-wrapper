@@ -11,16 +11,16 @@ let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let commandWrapper = ../../CommandWrapper/package.dhall
 
-in    λ(config : ./Config)
+in    λ(options : ./Options)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(arguments : List Text)
     → { command =
           "jira"
       , arguments =
-          ./config config verbosity # arguments
+          ./options options verbosity # arguments
       , environment =
-          [ { name = "JIRA_API_TOKEN", value = config.token } ]
+          [ { name = "JIRA_API_TOKEN", value = options.token } ]
       , searchPath =
           True
       , workingDirectory =
