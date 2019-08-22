@@ -60,6 +60,12 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , defExec
     , exec
 
+    -- * Bash
+    , Bash(..)
+    , BashMode(..)
+    , defBash
+    , bash
+
     -- * Input\/Output
     , Input(..)
     , HasInput(..)
@@ -69,6 +75,7 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , Output(..)
 
     -- * Helpers
+    , setAllowImports
     , handleExceptions
     )
   where
@@ -99,8 +106,10 @@ import qualified System.IO as IO (utf8)
 
 import Crypto.Hash (Digest, SHA256)
 import qualified Crypto.Hash as Crypto (hash)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as ByteString (hPutStr)
 import Data.Generics.Internal.VL.Lens (set)
-import Data.Generics.Product.Fields (field')
+import Data.Generics.Product.Fields (HasField', field')
 import Data.Generics.Product.Typed (HasType, typed)
 import Data.Output (IsOutput, HasOutput)
 import qualified Data.Output (IsOutput(..), HasOutput(..))
@@ -110,6 +119,12 @@ import qualified Data.Text.Encoding as Text (encodeUtf8)
 import qualified Data.Text.IO as Text (hPutStr, getContents, readFile)
 import Data.Text.Prettyprint.Doc (Doc)
 import qualified Data.Map as Map (keys)
+import qualified Dhall.Bash as Bash
+    ( ExpressionError
+    , StatementError
+    , dhallToExpression
+    , dhallToStatement
+    )
 import Dhall.Binary (defaultStandardVersion)
 import Dhall.Core (Expr(..), Import)
 import qualified Dhall.Freeze as Dhall (freezeImport, freezeRemoteImport)
@@ -672,6 +687,60 @@ exec appNames@AppNames{usedName} config Exec{..} =
 
 -- }}} Exec -------------------------------------------------------------------
 
+-- {{{ Bash -------------------------------------------------------------------
+
+data BashMode = BashExpressionMode | BashStatementMode ByteString
+  deriving stock (Generic, Show)
+
+data Bash = Bash
+    { input :: Input
+    , allowImports :: Bool
+    , mode :: BashMode
+    , output :: Output
+    }
+  deriving stock (Generic, Show)
+  deriving anyclass (HasInput)
+
+instance HasOutput Bash where
+    type Output Bash = Output
+    output = field' @"output"
+
+defBash :: Bash
+defBash = Bash
+    { input = InputStdin
+    , allowImports = True
+    , mode = BashExpressionMode
+    , output = OutputStdout
+    }
+
+bash :: AppNames -> Config -> Bash -> IO ()
+bash appNames config Bash{..} = handleExceptions appNames config do
+
+    IO.setLocaleEncoding IO.utf8
+    (expression, status) <- readExpression input
+
+    resolvedExpression <- do
+        expr <- if allowImports
+            then
+                State.evalStateT (Dhall.Import.loadWith expression) status
+            else
+                Dhall.Import.assertNoImports expression
+
+        _ <- Dhall.Core.throws (Dhall.TypeCheck.typeOf expr)
+
+        pure expr
+
+    r <- case mode of
+        BashExpressionMode ->
+            Dhall.Core.throws (Bash.dhallToExpression resolvedExpression)
+
+        BashStatementMode name ->
+            Dhall.Core.throws (Bash.dhallToStatement resolvedExpression name)
+
+    withOutputHandle input output ByteString.hPutStr r
+
+-- }}} Bash -------------------------------------------------------------------
+
 -- {{{ Input/Output -----------------------------------------------------------
 
 data Input
@@ -780,6 +849,9 @@ withOutputHandle input = \case
 
 -- {{{ Helper Functions -------------------------------------------------------
 
+setAllowImports :: HasField' "allowImports" a Bool => Bool -> a -> a
+setAllowImports = set (field' @"allowImports")
+
 renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
 renderDoc Config{colourOutput} h doc =
     Dhall.hPutDoc colourOutput h (doc <> Pretty.line)
@@ -849,8 +921,8 @@ throwDhallException AppNames{usedName} Config{colourOutput} h msg e = do
 
 handleExceptions :: AppNames -> Config -> IO () -> IO ()
 handleExceptions appNames config@Config{verbosity} =
-    handle handlerFinal . handle handler3 . handle handler2 . handle handler1
-    . handle handler0
+    handle handlerFinal . handle handler5 . handle handler4 . handle handler3
+    . handle handler2 . handle handler1 . handle handler0
   where
     explain = verbosity > Verbosity.Normal
 
@@ -871,6 +943,12 @@ handleExceptions appNames config@Config{verbosity} =
 
     handler3 :: ParseError -> IO ()
     handler3 = throwDhallException' ""
+
+    handler4 :: Bash.ExpressionError -> IO ()
+    handler4 = throwDhallException' ""
+
+    handler5 :: Bash.StatementError -> IO ()
+    handler5 = throwDhallException' ""
 
     handlerFinal :: SomeException -> IO ()
     handlerFinal e = do

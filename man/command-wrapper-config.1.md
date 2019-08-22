@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 21th August 2019
+% 22th August 2019
 
 
 # NAME
@@ -39,6 +39,11 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-hash
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-bash
+\[\--\[no-]allow-imports] \[\--declare=*NAME*]
+\[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-exec
 {\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*}
 \[\--interpreter=*COMMAND* \[\--interpreter-argument=*ARGUMENT* ...]]
@@ -67,8 +72,9 @@ We can organise `config` subcommand abilities into following categories:
 **Dhall** (`--dhall*`)
 :   All the functionality of:
 
-    *   [dhall](http://hackage.haskell.org/package/dhall)
-    *   [dhall-bash](http://hackage.haskell.org/package/dhall-bash) (**TODO**)
+    *   [dhall](http://hackage.haskell.org/package/dhall) (**close to full
+        support**)
+    *   [dhall-bash](http://hackage.haskell.org/package/dhall-bash)
     *   [dhall-json](http://hackage.haskell.org/package/dhall-json) (**TODO**)
     *   [dhall-text](http://hackage.haskell.org/package/dhall-text) (**TODO**)
 
@@ -243,6 +249,31 @@ We can organise `config` subcommand abilities into following categories:
 :   When specified allong with `--init` then configuration for toolset *NAME*
     is initialised.  Alternatively `COMMAND_WRAPPER_INVOKE_AS=`*NAME* can be
     used.  See `command-wrapper(1) section *ENVIRONMENT VARIABLES* for details.
+
+\--dhall-bash
+:   Compile Dhall expression into Bash expression or statement.
+
+    ```
+    $ TOOLSET_COMMAND config --dhall-bash <<< True; echo
+    true
+    $ TOOLSET_COMMAND config --dhall-bash --decalre=foo <<< True; echo
+    declare -r foo=true
+    ```
+
+    The `echo` command at the end is to provide newline, since `--dhall-bash`
+    doesn't print newline at the end of its output.
+
+\--declare=*NAME*
+:   Compile Dhall expression into a declaration statement, which declares
+    variable *NAME*.
+
+    ```
+    $ TOOLSET_COMMAND config --dhall-bash --decalre=foo <<< True; echo
+    declare -r foo=true
+    ```
+
+    The `echo` command at the end is to provide newline, since `--dhall-bash`
+    doesn't print newline at the end of its output.
 
 \--dhall-exec
 :   Render Dhall expression as Text and execute the result. See also --interpreter=COMMAND.

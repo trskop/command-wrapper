@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      $Header$
@@ -47,6 +48,7 @@ import System.IO (IO{-, stderr-}, stdout)
 import Text.Show (Show)
 
 import Data.CaseInsensitive as CI (mk)
+import Data.Generics.Product.Fields (HasField')
 import Data.Monoid.Endo.Fold (dualFoldEndo)
 import Data.Output (HasOutput(Output), setOutput)
 import Data.Text (Text)
@@ -114,7 +116,9 @@ import CommandWrapper.Internal.Subcommand.Config.Dhall
     , setInput
     )
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
-    ( Diff(..)
+    ( Bash(..)
+    , BashMode(..)
+    , Diff(..)
     , Exec(..)
     , Format(..)
     , Freeze(..)
@@ -125,6 +129,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Repl(..)
     , Resolve(..)
     , ResolveMode(..)
+    , defBash
     , defDiff
     , defExec
     , defFormat
@@ -133,6 +138,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defLint
     , defRepl
     , defResolve
+    , bash
     , diff
     , exec
     , format
@@ -142,6 +148,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , lint
     , repl
     , resolve
+    , setAllowImports
     )
 import CommandWrapper.Internal.Subcommand.Config.Init
     ( InitOptions(..)
@@ -162,6 +169,7 @@ data ConfigMode a
     | DhallRepl Dhall.Repl a
     | DhallResolve Dhall.Resolve a
     | DhallExec Dhall.Exec a
+    | DhallBash Dhall.Bash a
     | Help a
   deriving stock (Functor, Generic, Show)
 
@@ -203,6 +211,9 @@ config appNames options globalConfig =
 
         DhallExec opts cfg ->
             Dhall.exec appNames cfg opts
+
+        DhallBash opts cfg ->
+            Dhall.bash appNames cfg opts
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
 
@@ -259,6 +270,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <$> optional outputOption
                 <*> optional (expressionOption <|> inputOption)
                 <*> optional listDependenciesOption
+            )
+
+    , dhallBashFlag
+        <*> ( dualFoldEndo
+                <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> optional declareOption
+                <*> optional (expressionOption <|> inputOption)
+                <*> optional outputOption
             )
 
     , dhallExecFlag
@@ -325,8 +344,15 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         :: Endo Dhall.Input
         -> Endo Dhall.Exec
         -> Endo (ConfigMode Global.Config)
-    switchToDhallExecMode f g =
-        switchTo (DhallExec (g `appEndo` Dhall.defExec (f `appEndo` Dhall.InputStdin)) globalConfig)
+    switchToDhallExecMode f g = switchTo (DhallExec opts globalConfig)
+      where
+        opts = g `appEndo` Dhall.defExec (f `appEndo` Dhall.InputStdin)
+
+    switchToDhallBashMode
+        :: Endo Dhall.Bash
+        -> Endo (ConfigMode Global.Config)
+    switchToDhallBashMode f =
+        switchTo (DhallBash (f `appEndo` Dhall.defBash) globalConfig)
 
     initFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
@@ -356,16 +382,17 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     setAnnotate :: Bool -> Endo Dhall.Interpreter
     setAnnotate annotate = Endo \opts -> opts{Dhall.annotate}
 
-    allowImportsFlag :: Options.Parser (Endo Dhall.Interpreter)
+    allowImportsFlag
+        :: HasField' "allowImports" a Bool => Options.Parser (a -> a)
     allowImportsFlag =
-        Options.flag' (setAllowImports True) (Options.long "allow-imports")
+        Options.flag' (Dhall.setAllowImports True)
+            (Options.long "allow-imports")
 
-    noAllowImportsFlag :: Options.Parser (Endo Dhall.Interpreter)
+    noAllowImportsFlag
+        :: HasField' "allowImports" a Bool => Options.Parser (a -> a)
     noAllowImportsFlag =
-        Options.flag' (setAllowImports False) (Options.long "no-allow-imports")
-
-    setAllowImports :: Bool -> Endo Dhall.Interpreter
-    setAllowImports allowImports = Endo \opts -> opts{Dhall.allowImports}
+        Options.flag' (Dhall.setAllowImports False)
+        (Options.long "no-allow-imports")
 
     typeFlag :: Options.Parser (Endo Dhall.Interpreter)
     typeFlag = Options.flag' (setType True) (Options.long "type")
@@ -447,6 +474,24 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.flag mempty switchToDhallResolveMode
             (Options.long "dhall-resolve")
 
+    listDependenciesOption :: Options.Parser (Endo Dhall.Resolve)
+    listDependenciesOption =
+        Options.option parser
+            (Options.long "list-imports" <> Options.metavar "KIND")
+      where
+        parser = Options.eitherReader \s -> case CI.mk s of
+            "immediate" -> Right $ Endo \r ->
+                (r :: Dhall.Resolve)
+                    { Dhall.mode = Dhall.ListImmediateDependencies
+                    }
+
+            "transitive" -> Right $ Endo \r ->
+                (r :: Dhall.Resolve)
+                    { Dhall.mode = Dhall.ListTransitiveDependencies
+                    }
+
+            _ -> Left "Expected 'immediate' or 'transitive'"
+
     dhallExecFlag
         :: Options.Parser
             ( Endo Dhall.Input
@@ -454,8 +499,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
             -> Endo (ConfigMode Global.Config)
             )
     dhallExecFlag =
-        Options.flag mempty switchToDhallExecMode
-            (Options.long "dhall-exec")
+        Options.flag mempty switchToDhallExecMode (Options.long "dhall-exec")
 
     interpreterOption :: Options.Parser Text
     interpreterOption = Options.strOption
@@ -475,23 +519,21 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     scriptArgument =
         Options.strArgument (Options.metavar "ARGUMENT") <&> \argument ->
             Endo \opts@Dhall.Exec{arguments} -> opts
-                {Dhall.arguments = arguments <> [argument]
+                { Dhall.arguments = arguments <> [argument]
                 }
 
+    dhallBashFlag
+        :: Options.Parser
+            (Endo Dhall.Bash -> Endo (ConfigMode Global.Config))
+    dhallBashFlag =
+        Options.flag mempty switchToDhallBashMode (Options.long "dhall-bash")
 
-    listDependenciesOption :: Options.Parser (Endo Dhall.Resolve)
-    listDependenciesOption =
-        Options.option parser
-            (Options.long "list-imports" <> Options.metavar "KIND")
-      where
-        parser = Options.eitherReader \s -> case CI.mk s of
-            "immediate" -> Right $ Endo \r ->
-                r{Dhall.mode = Dhall.ListImmediateDependencies}
-
-            "transitive" -> Right $ Endo \r ->
-                r{Dhall.mode = Dhall.ListTransitiveDependencies}
-
-            _ -> Left "Expected 'immediate' or 'transitive'"
+    declareOption :: Options.Parser (Endo Dhall.Bash)
+    declareOption =
+        Options.strOption (Options.long "declare" <> Options.metavar "NAME")
+        <&> \name ->
+            Endo \opts ->
+                (opts :: Dhall.Bash){Dhall.mode = Dhall.BashStatementMode name}
 
     toolsetOption :: Options.Parser (Endo (ConfigMode Global.Config))
     toolsetOption =
@@ -603,6 +645,16 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 --                  ( longOptionWithArgument "history-file" "FILE"
 --                  <> "|" <> longOption "no-history-file"
 --                  )
+
+        , "config"
+            <+> longOption "dhall-bash"
+            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOptionWithArgument "--declare" "NAME")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-exec"
@@ -722,6 +774,17 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 --          [ Pretty.reflow "TODO"
 --          ]
 
+        , optionDescription ["--dhall-bash"]
+            [ Pretty.reflow "Compile Dhall expression into Bash expression or\
+                \ statement."
+            ]
+
+        , optionDescription ["--declare=NAME"]
+            [ Pretty.reflow "Compile Dhall expression into a declaration\
+                \ statement, which declares variable"
+            , metavar "NAME" <> "."
+            ]
+
         , optionDescription ["--dhall-exec"]
             [ Pretty.reflow "Render Dhall expression as Text and execute the\
                 \ result. See also"
@@ -829,6 +892,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
     hadDhallRepl = "--dhall-repl" `List.elem` wordsBeforePattern
     hadDhallResolve = "--dhall-resolve" `List.elem` wordsBeforePattern
     hadDhallExec = "--dhall-exec" `List.elem` wordsBeforePattern
+    hadDhallBash = "--dhall-bash" `List.elem` wordsBeforePattern
 
     hadSomeDhall = List.or
         [ hadDhall
@@ -840,6 +904,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
         , hadDhallRepl
         , hadDhallResolve
         , hadDhallExec
+        , hadDhallBash
         ]
 
     hadOutput = List.or
@@ -864,6 +929,11 @@ configSubcommandCompleter _appNames _cfg _shell index words
         , List.any ("--interpreter=" `List.isPrefixOf`) wordsBeforePattern
         ]
 
+    hadDeclare = List.or
+        [ "--declare" `List.elem` wordsBeforePattern
+        , List.any ("--declare=" `List.isPrefixOf`) wordsBeforePattern
+        ]
+
     mwhen p x = if p then x else mempty
     munless p = mwhen (not p)
 
@@ -874,62 +944,66 @@ configSubcommandCompleter _appNames _cfg _shell index words
 
             , "--dhall", "--dhall-diff", "--dhall-format", "--dhall-freeze"
             , "--dhall-hash", "--dhall-lint", "--dhall-repl", "--dhall-resolve"
-            , "--dhall-exec"
+            , "--dhall-exec", "--dhall-bash"
             ]
         <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
         <> munless
             ( List.or
-                [ hadHelp, not hadDhall, hadDhallDiff, hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadDhallLint, hadDhallRepl
-                , hadDhallResolve, hadInit
+                [ hadHelp, hadDhallDiff, hadDhallFreeze, hadDhallFormat
+                , hadDhallHash, hadDhallLint, hadDhallRepl, hadDhallResolve
+                , hadInit
+
+                , not hadDhall
                 ]
             )
             [ "--alpha", "--no-alpha"
-            , "--allow-imports", "--no-allow-imports"
             , "--annotate", "--no-annotate"
             , "--type", "--no-type"
             ]
         <> munless
             ( List.or
-                [ hadHelp
+                [ hadHelp, hadDhallDiff, hadDhallFreeze
+                , hadDhallFormat, hadDhallHash, hadDhallLint, hadDhallRepl
+                , hadDhallResolve, hadInit
+
+                , not $ List.or
+                    [ hadDhall
+                    , hadDhallBash
+                    ]
+                ]
+            )
+            [ "--allow-imports", "--no-allow-imports"
+            ]
+        <> munless
+            ( List.or
+                [ hadHelp, hadDhallFormat, hadDhallHash, hadDhallRepl
+                , hadDhallExec, hadInit
+
+                -- Output options can be specified only once.
+                , hadOutput
+
                 , not $ List.or
                     [ hadDhall
                     , hadDhallDiff
                     , hadDhallFreeze
                     , hadDhallLint
                     , hadDhallResolve
+                    , hadDhallBash
                     ]
-                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallExec
-                , hadInit
-                , hadOutput -- Output options can be specified only once.
                 ]
             )
             ["-o", "--output="]
         <> munless
             ( List.or
-                [ hadHelp
-                , not $ List.or
-                    [ hadDhall
-                    , hadDhallDiff
-                    , hadDhallFreeze
-                    , hadDhallLint
-                    , hadDhallResolve
-                    , hadDhallExec
-                    ]
-                , hadDhallDiff, hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadInit
+                [ hadHelp, hadDhallDiff, hadDhallFormat, hadDhallHash
+                , hadDhallRepl, hadInit
 
                 -- Input options can be specified only once.
                 , hadInput
 
                 -- '--input' and '--expression' are mutually exclusive.
                 , hadExpression
-                ]
-            )
-            ["-i", "--input="]
-        <> munless
-            ( List.or
-                [ hadHelp
+
                 , not $ List.or
                     [ hadDhall
                     , hadDhallDiff
@@ -937,23 +1011,40 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallLint
                     , hadDhallResolve
                     , hadDhallExec
+                    , hadDhallBash
                     ]
-                , hadDhallDiff, hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadInit
+                ]
+            )
+            ["-i", "--input="]
+        <> munless
+            ( List.or
+                [ hadHelp, hadDhallDiff, hadDhallFormat, hadDhallHash
+                , hadDhallRepl, hadInit
 
                 -- Expression options can be specified only once.
                 , hadExpression
 
                 -- '--input' and '--expression' are mutually exclusive.
                 , hadInput
+
+                , not $ List.or
+                    [ hadDhall
+                    , hadDhallDiff
+                    , hadDhallFreeze
+                    , hadDhallLint
+                    , hadDhallResolve
+                    , hadDhallExec
+                    , hadDhallBash
+                    ]
                 ]
             )
             ["--expression="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhall, hadDhallDiff, not hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
-                , hadDhallExec, hadInit
+                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFormat, hadDhallHash
+                , hadDhallRepl, hadDhallResolve, hadDhallExec, hadInit
+
+                , not hadDhallFreeze
                 ]
             )
             ["--remote-only", "--no-remote-only"]
@@ -969,7 +1060,9 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ( List.or
                 [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
                 , hadDhallFormat, hadDhallHash, hadDhallRepl
-                , not hadDhallResolve, hadDhallExec, hadInit
+                , hadDhallExec, hadDhallBash, hadInit
+
+                , not hadDhallResolve
                 ]
             )
             ["--list-imports=immediate", "--list-imports=transitive"]
@@ -977,8 +1070,12 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ( List.or
                 [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
                 , hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadDhallResolve, not hadDhallExec, hadInit
+                , hadDhallResolve, hadDhallBash, hadInit
+
+                -- This option can be specified only once.
                 , hadInterpreter
+
+                , not hadDhallExec
                 ]
             )
             ["--interpreter="]
@@ -986,10 +1083,23 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ( List.or
                 [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
                 , hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadDhallResolve, not hadDhallExec, hadInit
+                , hadDhallResolve, not hadDhallExec, hadDhallBash, hadInit
                 ]
             )
             ["--interpreter-argument="]
+        <> munless
+            ( List.or
+                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
+                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
+                , hadDhallExec, hadInit
+
+                -- This option can be specified only once.
+                , hadDeclare
+
+                , not hadDhallBash
+                ]
+            )
+            ["--declare="]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 
