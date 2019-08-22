@@ -37,7 +37,6 @@ module Main (main)
   where
 
 import Control.Monad (unless)
-import Data.List (isPrefixOf)
 import System.Exit (die)
 
 import Data.Time.Clock.POSIX (getCurrentTime)
@@ -112,7 +111,6 @@ main = do
 shakeMain :: Directories -> ShakeOptions -> IO ()
 shakeMain Directories{..} opts = shakeArgs opts do
     let localLibDir = localDir </> "lib"
-        localBinDir = localDir </> "bin"
 
         commandWrapperLibexecDir = localLibDir </> "command-wrapper"
 
@@ -132,11 +130,6 @@ shakeMain Directories{..} opts = shakeArgs opts do
         , cdBin
         , execBin
         , skelBin
-
-        , localBinDir </> "dhall"
-        , localBinDir </> "dhall-to-bash"
-        , localBinDir </> "dhall-to-json"  -- Implies "dhall-to-yaml".
-        , localBinDir </> "dhall-to-text"
 
         , man1Dir </> "command-wrapper.1.gz"
         , man1Dir </> "command-wrapper-cd.1.gz"
@@ -159,16 +152,6 @@ shakeMain Directories{..} opts = shakeArgs opts do
             $ cmd_ "mkdir -p" [dst]
 
         cmd_ "stack" ["--local-bin-path=" <> dst] "install"
-
-    (localBinDir </> "dhall*") %> \out -> do
-        -- TODO: Oracle that checks version.
-        let outFile = takeFileName out
-            package =
-                if "dhall-to-" `isPrefixOf` outFile
-                    then "dhall" <> drop 8 outFile
-                    else outFile
-
-        cmd_ "stack install" [package]
 
     [man1Dir </> "*.1.gz", man7Dir </> "*.7.gz"] |%> \out -> do
         let tempOut = dropExtension out
