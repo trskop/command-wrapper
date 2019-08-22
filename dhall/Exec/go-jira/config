@@ -1,0 +1,24 @@
+-- vim: filetype=dhall
+
+let CommandWrapper = ../../CommandWrapper/Types.dhall
+
+let commandWrapper = ../../CommandWrapper/package.dhall
+
+in    λ(config : ./Config)
+    → λ(verbosity : CommandWrapper.Verbosity)
+    →   [ "--endpoint=${config.baseUrl}"
+        , "--login=${config.login}"
+        , "--user=${config.user}"
+        ]
+      # commandWrapper.verbosity.fold
+        (List Text)
+        { Annoying =
+            [ "-vvv" ]
+        , Normal =
+            [] : List Text
+        , Silent =
+            [ "--quiet" ]
+        , Verbose =
+            [ "--verbose" ]
+        }
+        verbosity

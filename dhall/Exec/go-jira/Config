@@ -1,0 +1,1 @@
+{ baseUrl : Text, login : Text, user : Text, token : Text }

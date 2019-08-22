@@ -1,0 +1,28 @@
+-- vim: filetype=dhall
+--
+-- JIRA command line tool: https://github.com/go-jira/jira
+--
+-- How to get API token is documented on
+-- <https://confluence.atlassian.com/cloud/api-tokens-938839638.html>.
+-- TL;DR: API token can be created on
+-- <https://id.atlassian.com/manage/api-tokens>.
+
+let CommandWrapper = ../../CommandWrapper/Types.dhall
+
+let commandWrapper = ../../CommandWrapper/package.dhall
+
+in    λ(config : ./Config)
+    → λ(verbosity : CommandWrapper.Verbosity)
+    → λ(colourOutput : CommandWrapper.ColourOutput)
+    → λ(arguments : List Text)
+    → { command =
+          "jira"
+      , arguments =
+          ./config config verbosity # arguments
+      , environment =
+          [ { name = "JIRA_API_TOKEN", value = config.token } ]
+      , searchPath =
+          True
+      , workingDirectory =
+          None Text
+      }
