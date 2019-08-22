@@ -66,6 +66,12 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , defBash
     , bash
 
+    -- * To Text
+    , ToText(..)
+    , ToTextMode(..)
+    , defToText
+    , toText
+
     -- * Input\/Output
     , Input(..)
     , HasInput(..)
@@ -108,13 +114,14 @@ import Crypto.Hash (Digest, SHA256)
 import qualified Crypto.Hash as Crypto (hash)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (hPutStr)
+import Data.Either.Validation (validationToEither)
 import Data.Generics.Internal.VL.Lens (set)
 import Data.Generics.Product.Fields (HasField', field')
 import Data.Generics.Product.Typed (HasType, typed)
 import Data.Output (IsOutput, HasOutput)
 import qualified Data.Output (IsOutput(..), HasOutput(..))
 import Data.Text (Text)
-import qualified Data.Text as Text (unpack)
+import qualified Data.Text as Text (unlines, unpack)
 import qualified Data.Text.Encoding as Text (encodeUtf8)
 import qualified Data.Text.IO as Text (hPutStr, getContents, readFile)
 import Data.Text.Prettyprint.Doc (Doc)
@@ -740,6 +747,67 @@ bash appNames config Bash{..} = handleExceptions appNames config do
     withOutputHandle input output ByteString.hPutStr r
 
 -- }}} Bash -------------------------------------------------------------------
+
+-- {{{ To Text ----------------------------------------------------------------
+
+data ToTextMode = PlainTextMode | ListTextMode
+  deriving stock (Generic, Show)
+
+data ToText = ToText
+    { input :: Input
+    , output :: Output
+    , allowImports :: Bool
+    , mode :: ToTextMode
+    }
+  deriving stock (Generic, Show)
+  deriving anyclass (HasInput)
+
+instance HasOutput ToText where
+    type Output ToText = Output
+    output = field' @"output"
+
+defToText :: ToText
+defToText = ToText
+    { input = InputStdin
+    , output = OutputStdout
+    , allowImports = True
+    , mode = PlainTextMode
+    }
+
+toText :: AppNames -> Config -> ToText -> IO ()
+toText appNames config ToText{..} = handleExceptions appNames config do
+
+    IO.setLocaleEncoding IO.utf8
+    (expression, status) <- readExpression input
+
+    let dhallInput :: Dhall.Type a -> IO a
+        dhallInput Dhall.Type{..} = do
+            expr <- if allowImports
+                then
+                    State.evalStateT (Dhall.Import.loadWith expression) status
+                else
+                    Dhall.Import.assertNoImports expression
+
+            _ <- Dhall.Core.throws
+                (Dhall.TypeCheck.typeOf (Dhall.Core.Annot expr expected))
+
+            Dhall.Core.throws
+                $ validationToEither (extract (Dhall.Core.normalize expr))
+
+    case mode of
+        PlainTextMode ->
+            dhallInput (Dhall.auto @Text)
+            >>= withOutputHandle' Text.hPutStr
+
+        ListTextMode ->
+            dhallInput (Dhall.auto @[Text])
+            >>= withOutputHandle' (\h -> Text.hPutStr h . Text.unlines)
+
+    where
+        withOutputHandle' :: (Handle -> a -> IO ()) -> a -> IO ()
+        withOutputHandle' = withOutputHandle input output
+
+-- }}} To Text ----------------------------------------------------------------
 
 -- {{{ Input/Output -----------------------------------------------------------
 

@@ -68,7 +68,7 @@
 
 ### Config
 
-*   Provide `dhall-json`, and `dhall-text` functionality.
+*   Provide `dhall-json` functionality.
 
 *   Support `EnvironmentVariable` and `List EnvironmentVariable` encoding for
     shell variables.

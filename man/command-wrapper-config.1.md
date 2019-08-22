@@ -44,6 +44,11 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-bash
 \[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-text
+\[\--\[no-]allow-imports] \[\--list]
+\[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-exec
 {\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*}
 \[\--interpreter=*COMMAND* \[\--interpreter-argument=*ARGUMENT* ...]]
@@ -76,7 +81,7 @@ We can organise `config` subcommand abilities into following categories:
         support**)
     *   [dhall-bash](http://hackage.haskell.org/package/dhall-bash)
     *   [dhall-json](http://hackage.haskell.org/package/dhall-json) (**TODO**)
-    *   [dhall-text](http://hackage.haskell.org/package/dhall-text) (**TODO**)
+    *   [dhall-text](http://hackage.haskell.org/package/dhall-text)
 
     Which is integrated with Command Wrapper and with a nicer command line UX.
 
@@ -262,6 +267,24 @@ We can organise `config` subcommand abilities into following categories:
 
     The `echo` command at the end is to provide newline, since `--dhall-bash`
     doesn't print newline at the end of its output.
+
+\--dhall-text
+:   Render Dhall expression as a text.  This allows us to use Dhall as a text
+    templating language.
+
+    ```
+    $ TOOLSET_COMMAND config --dhall-text --list <<< '"${env:SHELL as Text}\n"'
+    /bin/bash
+    ```
+
+\--list
+:   Render Dhall expression of type **List Text** as lines of text.
+
+    ```
+    $ TOOLSET_COMMAND config --dhall-text --list <<< '["foo", "bar"]'
+    foo
+    bar
+    ```
 
 \--declare=*NAME*
 :   Compile Dhall expression into a declaration statement, which declares

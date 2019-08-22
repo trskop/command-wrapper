@@ -129,6 +129,8 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Repl(..)
     , Resolve(..)
     , ResolveMode(..)
+    , ToText(..)
+    , ToTextMode(..)
     , defBash
     , defDiff
     , defExec
@@ -138,6 +140,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defLint
     , defRepl
     , defResolve
+    , defToText
     , bash
     , diff
     , exec
@@ -149,6 +152,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , repl
     , resolve
     , setAllowImports
+    , toText
     )
 import CommandWrapper.Internal.Subcommand.Config.Init
     ( InitOptions(..)
@@ -170,6 +174,7 @@ data ConfigMode a
     | DhallResolve Dhall.Resolve a
     | DhallExec Dhall.Exec a
     | DhallBash Dhall.Bash a
+    | DhallText Dhall.ToText a
     | Help a
   deriving stock (Functor, Generic, Show)
 
@@ -214,6 +219,9 @@ config appNames options globalConfig =
 
         DhallBash opts cfg ->
             Dhall.bash appNames cfg opts
+
+        DhallText opts cfg ->
+            Dhall.toText appNames cfg opts
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
 
@@ -291,6 +299,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many scriptArgument
             )
 
+    , dhallTextFlag
+        <*> ( dualFoldEndo
+                <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many listFlag
+                <*> optional (expressionOption <|> inputOption)
+                <*> optional outputOption
+            )
+
     , helpFlag
 
     , pure mempty
@@ -353,6 +369,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         -> Endo (ConfigMode Global.Config)
     switchToDhallBashMode f =
         switchTo (DhallBash (f `appEndo` Dhall.defBash) globalConfig)
+
+    switchToDhallTextMode
+        :: Endo Dhall.ToText
+        -> Endo (ConfigMode Global.Config)
+    switchToDhallTextMode f =
+        switchTo (DhallText (f `appEndo` Dhall.defToText) globalConfig)
 
     initFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
@@ -534,6 +556,17 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <&> \name ->
             Endo \opts ->
                 (opts :: Dhall.Bash){Dhall.mode = Dhall.BashStatementMode name}
+
+    dhallTextFlag
+        :: Options.Parser (Endo Dhall.ToText -> Endo (ConfigMode Global.Config))
+    dhallTextFlag =
+        Options.flag mempty switchToDhallTextMode (Options.long "dhall-text")
+
+    listFlag :: Options.Parser (Endo Dhall.ToText)
+    listFlag = Options.flag' setListMode (Options.long "list")
+      where
+        setListMode = Endo \opts ->
+            (opts :: Dhall.ToText){Dhall.mode = Dhall.ListTextMode}
 
     toolsetOption :: Options.Parser (Endo (ConfigMode Global.Config))
     toolsetOption =
@@ -785,6 +818,17 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , metavar "NAME" <> "."
             ]
 
+        , optionDescription ["--dhall-text"]
+            [ Pretty.reflow "Render Dhall expression as a text. This allows us\
+                \ to use Dhall as a text templating language."
+            ]
+
+        , optionDescription ["--list"]
+            [ Pretty.reflow "Render Dhall expression of type"
+            , value "List Text"
+            , Pretty.reflow "as lines of text."
+            ]
+
         , optionDescription ["--dhall-exec"]
             [ Pretty.reflow "Render Dhall expression as Text and execute the\
                 \ result. See also"
@@ -893,6 +937,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
     hadDhallResolve = "--dhall-resolve" `List.elem` wordsBeforePattern
     hadDhallExec = "--dhall-exec" `List.elem` wordsBeforePattern
     hadDhallBash = "--dhall-bash" `List.elem` wordsBeforePattern
+    hadDhallText = "--dhall-text" `List.elem` wordsBeforePattern
 
     hadSomeDhall = List.or
         [ hadDhall
@@ -905,6 +950,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
         , hadDhallResolve
         , hadDhallExec
         , hadDhallBash
+        , hadDhallText
         ]
 
     hadOutput = List.or
@@ -969,6 +1015,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , not $ List.or
                     [ hadDhall
                     , hadDhallBash
+                    , hadDhallText
                     ]
                 ]
             )
@@ -989,6 +1036,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallLint
                     , hadDhallResolve
                     , hadDhallBash
+                    , hadDhallText
                     ]
                 ]
             )
@@ -1012,6 +1060,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallResolve
                     , hadDhallExec
                     , hadDhallBash
+                    , hadDhallText
                     ]
                 ]
             )
@@ -1035,6 +1084,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallResolve
                     , hadDhallExec
                     , hadDhallBash
+                    , hadDhallText
                     ]
                 ]
             )
@@ -1060,7 +1110,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ( List.or
                 [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
                 , hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadDhallExec, hadDhallBash, hadInit
+                , hadDhallExec, hadDhallBash, hadDhallText, hadInit
 
                 , not hadDhallResolve
                 ]
@@ -1070,7 +1120,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ( List.or
                 [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
                 , hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadDhallResolve, hadDhallBash, hadInit
+                , hadDhallResolve, hadDhallBash, hadDhallText, hadInit
 
                 -- This option can be specified only once.
                 , hadInterpreter
@@ -1083,7 +1133,8 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ( List.or
                 [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
                 , hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadDhallResolve, not hadDhallExec, hadDhallBash, hadInit
+                , hadDhallResolve, not hadDhallExec, hadDhallBash, hadDhallText
+                , hadInit
                 ]
             )
             ["--interpreter-argument="]
@@ -1100,6 +1151,16 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 ]
             )
             ["--declare="]
+        <> munless
+            ( List.or
+                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
+                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
+                , hadDhallExec, hadDhallBash, hadInit
+
+                , not hadDhallText
+                ]
+            )
+            ["--list"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 
