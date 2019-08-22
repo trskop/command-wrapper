@@ -138,7 +138,9 @@ function declareCfg() {
     local -r configFile="$1"; shift
     local -r name="$1"; shift
 
-    dhall-to-bash --declare "''${name}" < "''${configFile}"
+    ''${COMMAND_WRAPPER_EXE} config --dhall-bash \
+        --declare="''${name}" \
+        --expression="(''${configFile}).''${name}"
 }
 
 function main() {
