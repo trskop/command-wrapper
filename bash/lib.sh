@@ -142,7 +142,7 @@ function msgf() {
         local -r fullFormat="${cmd}: ${messageType}${messageType:+: }${format}"
 
         # shellcheck disable=SC2059
-        printf "${colour}${fullFormat}${colour:+${resetColour}}\n" "$@"
+        printf "${colour:-}${fullFormat}${colour:+${resetColour}}\n" "$@"
     fi
 }
 
