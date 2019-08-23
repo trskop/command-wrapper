@@ -1,7 +1,13 @@
 ''
 #!/usr/bin/env bash
 
-set -e
+set -eo pipefail
+
+if (( BASH_VERSINFO[0] > 4 || ( BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4 ) )); then
+    # Treat unset variables and parameters as an error when expanding.  This
+    # wasn't very reliable in older Bash versions, hence the version check.
+    set -u
+fi
 
 if [[ "''${COMMAND_WRAPPER_VERBOSITY:-}" == 'annoying' ]]; then
     # This will cause Bash to print commands before executing them.
@@ -39,17 +45,7 @@ EOF
 # when performing command line completion.  See
 # `command-wrapper-subcommand-protocol(7)` for more details on how this works.
 function completionInfo() {
-    cat <<"EOF"
-  λ(shell : < Bash | Fish | Zsh >)
-→ λ(index : Natural)
-→ λ(words : List Text)
-→   [ "--completion"
-    , "--index=''${Natural/show index}"
-    , "--shell=''${merge {Bash = "bash", Fish = "fish", Zsh = "zsh"} shell}"
-    , "--"
-    ]
-  # words
-EOF
+    stdCompletionInfo
 }
 
 # Perform command line completion.

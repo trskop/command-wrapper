@@ -361,3 +361,29 @@ function dhall-to-text() {
     # specific toolset configuration.
     "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-text "$@"
 }
+
+# Print Dhall expression that describes how this subcommand should be invoked
+# when performing command line completion.  Function printed by this command
+# uses invocation syntax standard to Command Wrapper tools, which is:
+#
+#   --completion --index=INDEX --shell=SHELL -- [WORD ...]
+#
+# Usage:
+#
+#   stdCompletionInfo
+#
+# See `command-wrapper-subcommand-protocol(7)` for more details on how this
+# works.
+function stdCompletionInfo() {
+    cat <<'EOF'
+  λ(shell : < Bash | Fish | Zsh >)
+→ λ(index : Natural)
+→ λ(words : List Text)
+→   [ "--completion"
+    , "--index=${Natural/show index}"
+    , "--shell=${merge {Bash = "bash", Fish = "fish", Zsh = "zsh"} shell}"
+    , "--"
+    ]
+  # words
+EOF
+}
