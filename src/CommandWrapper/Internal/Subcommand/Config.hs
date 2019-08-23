@@ -682,7 +682,17 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "config"
             <+> longOption "dhall-bash"
             <+> Pretty.brackets (longOption "[no-]allow-imports")
-            <+> Pretty.brackets (longOptionWithArgument "--declare" "NAME")
+            <+> Pretty.brackets (longOptionWithArgument "declare" "NAME")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+
+        , "config"
+            <+> longOption "dhall-text"
+            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "list")
             <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
                 <> "|" <> longOptionWithArgument "input" "FILE"
