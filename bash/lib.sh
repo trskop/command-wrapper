@@ -325,3 +325,39 @@ function toolset() {
         "${COMMAND_WRAPPER_EXE}" \
         --no-aliases "$@"
 }
+
+# Compile Dhall expression into Bash expression or statement.
+#
+# Usage:
+#
+#   dhall-to-bash [--[no-]allow-imports] [--declare=NAME]
+#     [--expression=EXPRESSION|--input=FILE|--input FILE|-i FILE]
+#     [--output=FILE|--output FILE|-o FILE]
+#
+# See `TOOLSET help config` and `TOOLSET man config` for more details.
+function dhall-to-bash() {
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    #
+    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
+    # specific toolset configuration.
+    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-bash "$@"
+}
+
+# Compile Dhall expression into Bash expression or statement.
+#
+# Usage:
+#
+#   dhall-to-text [--[no-]allow-imports] [--list]
+#     [--expression=EXPRESSION|--input=FILE|--input FILE|-i FILE]
+#     [--output=FILE|--output FILE|-o FILE]
+#
+# See `TOOLSET help config` and `TOOLSET man config` for more details.
+function dhall-to-text() {
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    #
+    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
+    # specific toolset configuration.
+    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-text "$@"
+}
