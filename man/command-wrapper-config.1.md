@@ -38,6 +38,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSIO
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-hash
+\[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-bash
 \[\--\[no-]allow-imports] \[\--declare=*NAME*]
@@ -51,10 +53,11 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-text
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-exec
 {\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*}
-\[\--interpreter=*COMMAND* \[\--interpreter-argument=*ARGUMENT* ...]]
+\[{\--interpreter=*COMMAND*|\--interpreter *COMMAND*} \[{\--interpreter-argument=*ARGUMENT*|\--interpreter-argument *ARGUMENT*} ...]]
 [*ARGUMENT* ...]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init \[\--toolset=*NAME*]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init
+\[\--toolset=*NAME*|\--toolset *NAME*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 

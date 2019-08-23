@@ -326,12 +326,63 @@ function toolset() {
         --no-aliases "$@"
 }
 
+# Format Dhall expression
+#
+# Usage:
+#
+#   dhall-format
+#
+# See `TOOLSET help config` and `TOOLSET man config` for more details.
+function dhall-format() {
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    #
+    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
+    # specific toolset configuration.
+    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-format "$@"
+}
+
+# Add integrity checks to import statements of a Dhall expression.
+#
+# Usage:
+#   dhall-freeze [--[no-]remote-only]
+#     [--expression=EXPRESSION|--expression EXPRESSION|--input=FILE|--input FILE|-i FILE]
+#     [--output=FILE|--output FILE|-o FILE]
+#
+# See `TOOLSET help config` and `TOOLSET man config` for more details.
+function dhall-freeze() {
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    #
+    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
+    # specific toolset configuration.
+    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-freeze "$@"
+}
+
+# Compute semantic hashes for Dhall expressions.
+#
+# Usage:
+#
+#   dhall-hash
+#     [--expression=EXPRESSION|--expression EXPRESSION|--input=FILE|--input FILE|-i FILE]
+#     [--output=FILE|--output FILE|-o FILE]
+#
+# See `TOOLSET help config` and `TOOLSET man config` for more details.
+function dhall-hash() {
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    #
+    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
+    # specific toolset configuration.
+    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-hash "$@"
+}
+
 # Compile Dhall expression into Bash expression or statement.
 #
 # Usage:
 #
 #   dhall-to-bash [--[no-]allow-imports] [--declare=NAME]
-#     [--expression=EXPRESSION|--input=FILE|--input FILE|-i FILE]
+#     [--expression=EXPRESSION|--expression EXPRESSION|--input=FILE|--input FILE|-i FILE]
 #     [--output=FILE|--output FILE|-o FILE]
 #
 # See `TOOLSET help config` and `TOOLSET man config` for more details.
@@ -349,7 +400,7 @@ function dhall-to-bash() {
 # Usage:
 #
 #   dhall-to-text [--[no-]allow-imports] [--list]
-#     [--expression=EXPRESSION|--input=FILE|--input FILE|-i FILE]
+#     [--expression=EXPRESSION|--expression EXPRESSION|--input=FILE|--input FILE|-i FILE]
 #     [--output=FILE|--output FILE|-o FILE]
 #
 # See `TOOLSET help config` and `TOOLSET man config` for more details.
@@ -360,6 +411,25 @@ function dhall-to-text() {
     # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
     # specific toolset configuration.
     "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-text "$@"
+}
+
+# Render Dhall expression as Text and execute the result.
+#
+# Usage:
+#
+#   dhall-exec
+#     [--expression=EXPRESSION|--expression EXPRESSION|--input=FILE|--input FILE|-i FILE]
+#     [--interpreter=COMMAND [--interpreter-argument=ARGUMENT ...]]
+#     [ARGUMENT ...]
+#
+# See `TOOLSET help config` and `TOOLSET man config` for more details.
+function dhall-exec() {
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    #
+    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
+    # specific toolset configuration.
+    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-exec "$@"
 }
 
 # Print Dhall expression that describes how this subcommand should be invoked

@@ -122,6 +122,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Exec(..)
     , Format(..)
     , Freeze(..)
+    , Hash(..)
     , Input(..)
     , Interpreter(..)
     , Lint(..)
@@ -136,6 +137,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defExec
     , defFormat
     , defFreeze
+    , defHash
     , defInterpreter
     , defLint
     , defRepl
@@ -168,7 +170,7 @@ data ConfigMode a
     | DhallDiff Dhall.Diff a
     | DhallFormat Dhall.Format a
     | DhallFreeze Dhall.Freeze a
-    | DhallHash a
+    | DhallHash Dhall.Hash a
     | DhallLint Dhall.Lint a
     | DhallRepl Dhall.Repl a
     | DhallResolve Dhall.Resolve a
@@ -202,8 +204,8 @@ config appNames options globalConfig =
         DhallFreeze opts cfg ->
             Dhall.freeze appNames cfg opts
 
-        DhallHash cfg ->
-            Dhall.hash appNames cfg
+        DhallHash opts cfg ->
+            Dhall.hash appNames cfg opts
 
         DhallLint opts cfg ->
             Dhall.lint appNames cfg opts
@@ -255,6 +257,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
             )
 
     , dhallHashFlag
+        <*> ( dualFoldEndo
+                <$> optional (expressionOption <|> inputOption)
+                <*> optional outputOption
+            )
 
     , dhallFreezeFlag
         <*> ( dualFoldEndo
@@ -315,14 +321,22 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchTo :: ConfigMode Global.Config -> Endo (ConfigMode Global.Config)
     switchTo = Endo . const
 
-    switchToHelpMode, switchToInitMode, switchToDhallHashMode,
-        switchToDhallReplMode :: Endo (ConfigMode Global.Config)
-
+    switchToHelpMode :: Endo (ConfigMode Global.Config)
     switchToHelpMode = switchTo (Help globalConfig)
+
+    switchToInitMode :: Endo (ConfigMode Global.Config)
     switchToInitMode = switchTo (Init (defInitOptions usedName) globalConfig)
-    switchToDhallHashMode = switchTo (DhallHash globalConfig)
+
+    switchToDhallHashMode :: Endo Dhall.Hash -> Endo (ConfigMode Global.Config)
+    switchToDhallHashMode f =
+        switchTo (DhallHash (f `appEndo` Dhall.defHash) globalConfig)
+
+    switchToDhallReplMode :: Endo (ConfigMode Global.Config)
     switchToDhallReplMode = switchTo (DhallRepl Dhall.defRepl globalConfig)
 
+    switchToDhallMode
+        :: Endo Dhall.Interpreter
+        -> Endo (ConfigMode Global.Config)
     switchToDhallMode f =
         switchTo (Dhall (f `appEndo` Dhall.defInterpreter) globalConfig)
 
@@ -469,7 +483,8 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     setRemoteOnly :: Bool -> Endo Dhall.Freeze
     setRemoteOnly remoteOnly = Endo \opts -> opts{Dhall.remoteOnly}
 
-    dhallHashFlag :: Options.Parser (Endo (ConfigMode Global.Config))
+    dhallHashFlag
+        :: Options.Parser (Endo Dhall.Hash -> Endo (ConfigMode Global.Config))
     dhallHashFlag =
         Options.flag mempty switchToDhallHashMode (Options.long "dhall-hash")
 
@@ -653,10 +668,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-hash"
---              ( longOptionWithArgument "expression" "EXPRESSION"
---              <> "|" <> longOptionWithArgument "input" "FILE"
---              )
---          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
 {-          <+> Pretty.brackets
                     -- cbor, cbor-json, json, text,
@@ -1033,8 +1049,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ]
         <> munless
             ( List.or
-                [ hadHelp, hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadDhallExec, hadInit
+                [ hadHelp, hadDhallFormat, hadDhallRepl, hadDhallExec, hadInit
 
                 -- Output options can be specified only once.
                 , hadOutput
@@ -1045,6 +1060,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallFreeze
                     , hadDhallLint
                     , hadDhallResolve
+                    , hadDhallHash
                     , hadDhallBash
                     , hadDhallText
                     ]
@@ -1053,8 +1069,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ["-o", "--output="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhallDiff, hadDhallFormat, hadDhallHash
-                , hadDhallRepl, hadInit
+                [ hadHelp, hadDhallDiff, hadDhallFormat, hadDhallRepl, hadInit
 
                 -- Input options can be specified only once.
                 , hadInput
@@ -1068,6 +1083,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallFreeze
                     , hadDhallLint
                     , hadDhallResolve
+                    , hadDhallHash
                     , hadDhallExec
                     , hadDhallBash
                     , hadDhallText
@@ -1077,8 +1093,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ["-i", "--input="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhallDiff, hadDhallFormat, hadDhallHash
-                , hadDhallRepl, hadInit
+                [ hadHelp, hadDhallDiff, hadDhallFormat, hadDhallRepl, hadInit
 
                 -- Expression options can be specified only once.
                 , hadExpression
@@ -1092,6 +1107,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallFreeze
                     , hadDhallLint
                     , hadDhallResolve
+                    , hadDhallHash
                     , hadDhallExec
                     , hadDhallBash
                     , hadDhallText

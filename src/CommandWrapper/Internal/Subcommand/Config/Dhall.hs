@@ -43,6 +43,8 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , freeze
 
     -- * Hash
+    , Hash(..)
+    , defHash
     , hash
 
     -- * Diff
@@ -123,7 +125,12 @@ import qualified Data.Output (IsOutput(..), HasOutput(..))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines, unpack)
 import qualified Data.Text.Encoding as Text (encodeUtf8)
-import qualified Data.Text.IO as Text (hPutStr, getContents, readFile)
+import qualified Data.Text.IO as Text
+    ( hPutStr
+    , hPutStrLn
+    , getContents
+    , readFile
+    )
 import Data.Text.Prettyprint.Doc (Doc)
 import qualified Data.Map as Map (keys)
 import qualified Dhall.Bash as Bash
@@ -179,7 +186,6 @@ import qualified Dhall
 import qualified Dhall.Core
 import qualified Dhall.Diff
 import qualified Dhall.Format
-import qualified Dhall.Hash
 import qualified Dhall.Import
 --import qualified Dhall.Import.Types
 import qualified Dhall.Parser
@@ -523,9 +529,41 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
 
 -- {{{ Hash -------------------------------------------------------------------
 
-hash :: AppNames -> Config -> IO ()
-hash appNames config =
-    handleExceptions appNames config (Dhall.Hash.hash defaultStandardVersion)
+data Hash = Hash
+    { input :: Input
+    , output :: Output
+    }
+  deriving stock (Generic, Show)
+  deriving anyclass (HasInput)
+
+instance HasOutput Hash where
+    type Output Hash = Output
+    output = field' @"output"
+
+defHash :: Hash
+defHash = Hash
+    { input = InputStdin
+    , output = OutputStdout
+    }
+
+hash :: AppNames -> Config -> Hash -> IO ()
+hash appNames config Hash{..} = handleExceptions appNames config do
+
+    IO.setLocaleEncoding IO.utf8
+    (expression, status) <- readExpression input
+
+    resolvedExpression <- State.evalStateT
+        (Dhall.Import.loadWith expression) status
+
+    _ <- Dhall.Core.throws (Dhall.TypeCheck.typeOf resolvedExpression)
+
+    let normalizedExpression =
+            Dhall.Core.alphaNormalize (Dhall.Core.normalize resolvedExpression)
+
+    withOutputHandle input output Text.hPutStrLn
+        ( Dhall.Import.hashExpressionToCode defaultStandardVersion
+            normalizedExpression
+        )
 
 -- }}} Hash -------------------------------------------------------------------
 
