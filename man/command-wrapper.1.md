@@ -360,7 +360,7 @@ locations.
 │       ├── command-wrapper-skel.dhall
 │       ├── ${toolset}-${toolsetSubcommand0}.dhall
 │       ├── ...
-│       └── ${toolset}-${toolsetSubcommand0}.dhall
+│       └── ${toolset}-${toolsetSubcommandN}.dhall
 │
 ├── .local/
 │   ├── ...

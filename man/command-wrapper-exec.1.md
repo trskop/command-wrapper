@@ -70,7 +70,6 @@ scripting language like Bash.
 
     ```
     ├── build
-    │   │
     │   ├── back-end*
     │   │   ├── locally*
     │   │   └── remotely*
