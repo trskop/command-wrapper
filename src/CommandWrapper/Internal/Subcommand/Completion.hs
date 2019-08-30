@@ -29,7 +29,7 @@ import Prelude ((+), (-), fromIntegral)
 
 import Control.Applicative ((<*), (<*>), (<|>), many, optional, pure, some)
 import Control.Monad ((=<<), (>>=), join, when)
-import Data.Bool (Bool(False, True), otherwise)
+import Data.Bool (Bool(False), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq (Eq, (/=), (==))
@@ -58,7 +58,7 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
-import System.IO (IO, hClose, putStrLn, stderr, stdout, writeFile)
+import System.IO (IO, putStrLn, stderr, stdout, writeFile)
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
@@ -81,7 +81,7 @@ import Data.Output
 import qualified Data.Output as Output (HasOutput(output))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines, unpack)
-import qualified Data.Text.IO as Text (hPutStr, putStrLn, writeFile)
+import qualified Data.Text.IO as Text (putStrLn, writeFile)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -109,16 +109,6 @@ import qualified Options.Applicative as Options
     )
 import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, headMay, lastMay)
-import System.Directory
-    ( XdgDirectory(XdgCache)
-    , createDirectoryIfMissing
-    , getPermissions
-    , getXdgDirectory
-    , setOwnerExecutable
-    , setPermissions
-    )
-import System.IO.Temp (withTempFile)
-import System.Posix.Process (executeFile)
 import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
@@ -131,7 +121,10 @@ import qualified CommandWrapper.External as External
     , findSubcommands
     )
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
-    ( handleExceptions
+    ( Exec(arguments)
+    , Input(..)
+    , defExec
+    , exec
     )
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
@@ -548,8 +541,12 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                                 <$> Fuzzy.filter patternToMatch supportedShells
                                         "" "" id caseSensitive
 
-        WrapperMode opts config' ->
-            execWrapperScript appNames config' opts
+        WrapperMode WrapperOptions{arguments, expression} config' -> do
+            Dhall.exec appNames config'
+                ( (Dhall.defExec $ Dhall.InputExpression expression)
+                    { Dhall.arguments = fromString <$> arguments
+                    }
+                )
 
         HelpMode config'@Global.Config{colourOutput, verbosity} ->
             out verbosity colourOutput stdout
@@ -607,24 +604,6 @@ completion completionConfig@CompletionConfig{..} appNames options config =
     outputTextLines = \case
         OutputHandle _ -> mapM_ Text.putStrLn
         OutputNotHandle (OutputFile fn) -> Text.writeFile fn . Text.unlines
-
-execWrapperScript :: AppNames -> Global.Config -> WrapperOptions -> IO ()
-execWrapperScript appNames@AppNames{usedName} config WrapperOptions{..} =
-    Dhall.handleExceptions appNames config do
-        cacheDir <- getXdgDirectory XdgCache (usedName <> "-completion")
-        content <- Dhall.input Dhall.auto expression
-
-        createDirectoryIfMissing True cacheDir
-        withTempFile cacheDir "wrapper" \executable h -> do
-            Text.hPutStr h content
-            getPermissions executable
-                >>= setPermissions executable . setOwnerExecutable True
-
-            -- Closing the file flushes the content and releases the associated
-            -- resources so that `executeFile` can actually open it.
-            hClose h
-
-            executeFile executable False arguments Nothing
 
 -- TODO: Generate these values instead of hard-coding them.
 verbosityValues :: [String]
