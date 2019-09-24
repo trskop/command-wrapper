@@ -117,9 +117,11 @@ inputString = Dhall.InputType
 
 inputList :: Dhall.InputType a -> Dhall.InputType [a]
 inputList Dhall.InputType{..} = Dhall.InputType
-    { declared = Dhall.List `Dhall.App` declared
-    , embed = Dhall.ListLit (Just declared) . fromList . fmap embed
+    { declared = declared'
+    , embed = Dhall.ListLit (Just declared') . fromList . fmap embed
     }
+  where
+    declared' = Dhall.List `Dhall.App` declared
 
 inputMaybe :: Dhall.InputType a -> Dhall.InputType (Maybe a)
 inputMaybe Dhall.InputType{..} = Dhall.InputType
