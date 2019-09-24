@@ -85,7 +85,6 @@ import qualified Dhall.Core as Dhall
         , Text
         , TextLit
         , Union
-        , UnionLit
         )
     , judgmentallyEqual
     )
@@ -193,9 +192,6 @@ extractUnionConstructor
     :: Dhall.Expr s a
     -> Maybe (Text, Dhall.Expr s a, Dhall.Map Text (Maybe (Dhall.Expr s a)))
 extractUnionConstructor = \case
-    Dhall.UnionLit fld e rest ->
-        pure (fld, e, rest)
-
     Dhall.App (Dhall.Field (Dhall.Union kts) fld) e ->
         pure (fld, e, Dhall.Map.delete fld kts)
 
@@ -239,7 +235,7 @@ hPutExpr
     => ColourOutput
     -> Dhall.CharacterSet
     -> Handle
-    -> Dhall.Expr s a
+    -> Dhall.Expr Dhall.Src a
     -> IO ()
 hPutExpr colour charset handle expr =
     hPutDoc colour handle (Dhall.prettyCharacterSet charset expr <> Pretty.line)

@@ -26,26 +26,26 @@ packages:
   original:
     hackage: verbosity-0.3.0.0
 - completed:
-    hackage: dhall-1.25.0@sha256:1c6724d963bf3428ddf0336f916e3f9bc429bf81ed2e27a8855dbbee11d89fe2,40352
+    hackage: dhall-1.26.0@sha256:0f559ab8ed9d7b7f1ed0e2a99a9aadee00d8c6c63b92e9be209d84f7f4197b10,33247
     pantry-tree:
-      size: 225143
-      sha256: 0ed1fb4d2bc400d71e9445199f5af8985ba8e1faad029b416745aa4ac5c8f20d
+      size: 221712
+      sha256: cbd35293fc6b2ef77e5d64fca3775b2915aea86ad0c3425e08d21c950fcd06ea
   original:
-    hackage: dhall-1.25.0
+    hackage: dhall-1.26.0
 - completed:
-    hackage: dhall-bash-1.0.22@sha256:7b0d3a10fdf7ba31d87ea3fef3e97447b6ecb69cb19a22afa2fbf90d2f58cae8,1740
+    hackage: dhall-bash-1.0.23@sha256:42275dfe76773677e3f746be8a44b2b88c514601e6a79b78b97179b23e8e96d9,1740
     pantry-tree:
       size: 266
-      sha256: c57963e2f954fdc706db7f929a4d222bc9987af943a3c264e3779ca4b46e9270
+      sha256: 6932e218dd59723a79b14e5e2553328b77e9b419b984cf79d54e29a76cccba46
   original:
-    hackage: dhall-bash-1.0.22
+    hackage: dhall-bash-1.0.23
 - completed:
-    hackage: dhall-json-1.4.0@sha256:74f6422e7b84d32f9965b604e09bc1eb10dc4b9693f735be30a5fb1e4dd61478,5240
+    hackage: dhall-json-1.4.1@sha256:5b0dac356e84d03e855aa4e8aa455532c4c4a274154e26756ae77ebbc82c89a4,5398
     pantry-tree:
-      size: 2261
-      sha256: fee6d6d1be4a2e1ef1ce1986a89f71a5ef95fb55e519db475e1f3ac9e76b9662
+      size: 3387
+      sha256: 77290c47daa5960e967ff219ce9c44ffd3035e64acd6a1d42268eb366b2c4264
   original:
-    hackage: dhall-json-1.4.0
+    hackage: dhall-json-1.4.1
 - completed:
     hackage: lock-file-0.7.0.0@sha256:3ad84b5e454145e1d928063b56abb96db24a99a21b493989520e58fa0ab37b00,4484
     pantry-tree:
@@ -97,7 +97,7 @@ packages:
     commit: eec72c9c99fd8bd89866bdd85a23343a4a6fbae8
 snapshots:
 - completed:
-    size: 500539
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/13/27.yaml
-    sha256: 690db832392afe55733b4c7023fd29b1b1c660ee42f1fb505b86b07394ca994e
-  original: lts-13.27
+    size: 523700
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/7.yaml
+    sha256: 8e3f3c894be74d71fa4bf085e0a8baae7e4d7622d07ea31a52736b80f8b9bb1a
+  original: lts-14.7

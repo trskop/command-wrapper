@@ -52,7 +52,7 @@ dependencies:
   - comonad
   - containers
   - cryptonite
-  - dhall >=1.23  # Functioning support of Dhall Standard 7.0.0
+  - dhall >=1.26  # Functioning support of Dhall Standard 10.0.0
   - dhall-bash
   - dhall-json
   - directory

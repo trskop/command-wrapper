@@ -19,7 +19,6 @@ module CommandWrapper.Internal.Subcommand.Config.UserConfig
 import Control.Exception (Exception, throwIO)
 import Data.Foldable (asum, traverse_)
 import Data.Functor ((<&>))
-import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.String (fromString)
 import Data.Maybe (fromMaybe)
 import Data.Traversable (for)
@@ -36,6 +35,9 @@ import qualified Dhall.Core as Dhall
     ( Binding
         ( Binding
         , annotation
+        , bindingSrc0
+        , bindingSrc1
+        , bindingSrc2
         , value
         , variable
         )
@@ -257,38 +259,65 @@ mkExpressionAndTypeCheck possiblyResultType bodyExpression configExpression path
                 { Dhall.variable = "Paths"
                 , Dhall.annotation = Nothing
                 , Dhall.value = declared
+                , Dhall.bindingSrc0 = Nothing
+                , Dhall.bindingSrc1 = Nothing
+                , Dhall.bindingSrc2 = Nothing
                 }
-            :|  [ Dhall.Binding
+            )
+            ( Dhall.Let
+                ( Dhall.Binding
                     { Dhall.variable = "Config"
                     , Dhall.annotation = Nothing
                     , Dhall.value = configExpressionType
+                    , Dhall.bindingSrc0 = Nothing
+                    , Dhall.bindingSrc1 = Nothing
+                    , Dhall.bindingSrc2 = Nothing
                     }
-                , Dhall.Binding
-                    { Dhall.variable = "config"
-                    , Dhall.annotation = Just configExpressionType
-                    , Dhall.value = configExpression
-                    }
-                , Dhall.Binding
-                    { Dhall.variable = "paths"
-                    , Dhall.annotation = Just declared
-                    , Dhall.value = embed paths
-                    }
-                , Dhall.Binding
-                    { Dhall.variable = "data"
-                    , Dhall.annotation = Just
-                        ( recordType
-                            [ ("paths", declared)
-                            , ("config", configExpressionType)
-                            ]
+                )
+                ( Dhall.Let
+                    ( Dhall.Binding
+                        { Dhall.variable = "config"
+                        , Dhall.annotation = Just (Nothing, configExpressionType)
+                        , Dhall.value = configExpression
+                        , Dhall.bindingSrc0 = Nothing
+                        , Dhall.bindingSrc1 = Nothing
+                        , Dhall.bindingSrc2 = Nothing
+                        }
+                    )
+                    ( Dhall.Let
+                        ( Dhall.Binding
+                            { Dhall.variable = "paths"
+                            , Dhall.annotation = Just (Nothing, declared)
+                            , Dhall.value = embed paths
+                            , Dhall.bindingSrc0 = Nothing
+                            , Dhall.bindingSrc1 = Nothing
+                            , Dhall.bindingSrc2 = Nothing
+                            }
                         )
-                    , Dhall.value = record
-                        [ ("paths", embed paths)
-                        , ("config", configExpression)
-                        ]
-                    }
-                ]
+                        ( Dhall.Let
+                            ( Dhall.Binding
+                                { Dhall.variable = "data"
+                                , Dhall.annotation = Just
+                                    ( Nothing
+                                    , recordType
+                                        [ ("paths", declared)
+                                        , ("config", configExpressionType)
+                                        ]
+                                    )
+                                , Dhall.value = record
+                                    [ ("paths", embed paths)
+                                    , ("config", configExpression)
+                                    ]
+                                , Dhall.bindingSrc0 = Nothing
+                                , Dhall.bindingSrc1 = Nothing
+                                , Dhall.bindingSrc2 = Nothing
+                                }
+                            )
+                            bodyExpression'
+                        )
+                    )
+                )
             )
-            bodyExpression'
 
 throwLeft :: Exception e => Either e r -> IO r
 throwLeft = either throwIO pure

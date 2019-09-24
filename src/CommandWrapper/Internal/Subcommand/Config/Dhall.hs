@@ -139,7 +139,6 @@ import qualified Dhall.Bash as Bash
     , dhallToExpression
     , dhallToStatement
     )
-import Dhall.Binary (defaultStandardVersion)
 import Dhall.Core (Expr(..), Import)
 import qualified Dhall.Freeze as Dhall (freezeImport, freezeRemoteImport)
 import Dhall.Import (Chained(chainedImport), Imported(..), MissingImports)
@@ -515,7 +514,7 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
             ( if remoteOnly
                 then Dhall.freezeRemoteImport
                 else Dhall.freezeImport
-            ) directory defaultStandardVersion
+            ) directory
 
     frozenExpression <- traverse freezeFunction expression
     withOutputHandle input output (renderDoc config)
@@ -561,9 +560,7 @@ hash appNames config Hash{..} = handleExceptions appNames config do
             Dhall.Core.alphaNormalize (Dhall.Core.normalize resolvedExpression)
 
     withOutputHandle input output Text.hPutStrLn
-        ( Dhall.Import.hashExpressionToCode defaultStandardVersion
-            normalizedExpression
-        )
+        (Dhall.Import.hashExpressionToCode normalizedExpression)
 
 -- }}} Hash -------------------------------------------------------------------
 
@@ -589,11 +586,11 @@ defDiff expr1 expr2 = Diff
 
 diff :: AppNames -> Config -> Diff -> IO ()
 diff appNames config Diff{..} = handleExceptions appNames config do
-    diffDoc <- Dhall.Diff.diffNormalized
+    Dhall.Diff.Diff{doc} <- Dhall.Diff.diffNormalized
         <$> Dhall.inputExpr expr1
         <*> Dhall.inputExpr expr2
 
-    withOutputHandle InputStdin output (renderDoc config) diffDoc
+    withOutputHandle InputStdin output (renderDoc config) doc
 
 -- }}} Diff -------------------------------------------------------------------
 
@@ -619,7 +616,7 @@ defRepl = Repl
 repl :: AppNames -> Config -> Repl -> IO ()
 repl appNames config@Config{verbosity} Repl{..} =
     handleExceptions appNames config
-        (Dhall.Repl.repl characterSet explain defaultStandardVersion)
+        (Dhall.Repl.repl characterSet explain)
   where
     explain = verbosity > Verbosity.Normal
 
