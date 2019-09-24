@@ -1,3 +1,15 @@
+-- This script can be used in multiple ways, here are two of them:
+--
+-- ```
+-- ${TOOLSET_COMMAND} exec --print ${COMMAND} > command.dhall
+-- ${TOOLSET_COMMAND} config --dhall-text <<< './exec-command-to-shell.dhall ./command.dhall'
+-- ```
+--
+-- ```
+-- export EXEC_COMMAND="$(${TOOLSET_COMMAND} exec --print ${COMMAND})"
+-- ${TOOLSET_COMMAND} config --dhall-text <<< './exec-command-to-shell.dhall env:EXEC_COMMAND'
+-- ```
+
 let ExecCommand = ./CommandWrapper/Type/ExecCommand
 
 let EnvironmentVariable = ./CommandWrapper/Type/EnvironmentVariable
@@ -13,14 +25,33 @@ let Text/concatSep =
 
 let envVarToText = λ(var : EnvironmentVariable) → "${var.name}=${var.value}"
 
+let -- Alternative would be to use `env --chdir=${dir}` instead, but how
+    -- portable is it?
+    withWorkingDirectory =
+        λ(dir : Optional Text)
+      → λ(cmd : Text)
+      → Optional/fold
+          Text
+          dir
+          Text
+          (λ(_ : Text) → "( cd ${Text/show _} && ${cmd} )")
+          cmd
+
 in    λ(cmd : ExecCommand)
-    →     "env "
-      ++  Text/concatMapSep
-            " "
-            Text
-            Text/show
-            (   List/map EnvironmentVariable Text envVarToText cmd.environment
-              # [ cmd.command ]
-              # cmd.arguments
+    →     withWorkingDirectory
+            cmd.workingDirectory
+            (     "env "
+              ++  Text/concatMapSep
+                    " "
+                    Text
+                    Text/show
+                    (   List/map
+                          EnvironmentVariable
+                          Text
+                          envVarToText
+                          cmd.environment
+                      # [ cmd.command ]
+                      # cmd.arguments
+                    )
             )
       ++  "\n"
