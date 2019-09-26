@@ -26,12 +26,12 @@ packages:
   original:
     hackage: verbosity-0.3.0.0
 - completed:
-    hackage: dhall-1.26.0@sha256:0f559ab8ed9d7b7f1ed0e2a99a9aadee00d8c6c63b92e9be209d84f7f4197b10,33247
+    hackage: dhall-1.26.1@sha256:e291354ce0191b51b1c65c4f857f59c4bc2ed1983ea69a6e11a2f814dcd74709,30033
     pantry-tree:
-      size: 221712
-      sha256: cbd35293fc6b2ef77e5d64fca3775b2915aea86ad0c3425e08d21c950fcd06ea
+      size: 225515
+      sha256: 28615732061471cb0ff479cbdf048523dbb4530c9712c5da2ba2c5b3d026b487
   original:
-    hackage: dhall-1.26.0
+    hackage: dhall-1.26.1
 - completed:
     hackage: dhall-bash-1.0.23@sha256:42275dfe76773677e3f746be8a44b2b88c514601e6a79b78b97179b23e8e96d9,1740
     pantry-tree:

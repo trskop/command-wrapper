@@ -271,7 +271,11 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , dhallFormatFlag
         <*> pure mempty
---      <*> (checkFlag <|> noCheckFlag)
+--      <*> ( dualFoldEndo
+--              <$> many (checkFlag <|> noCheckFlag)
+--              <*> optional outputOption
+--              <$> optional (expressionOption <|> inputOption)
+--          )
 
     , dhallLintFlag
         <*> ( dualFoldEndo
@@ -1056,12 +1060,12 @@ configSubcommandCompleter _appNames _cfg _shell index words
 
                 , not $ List.or
                     [ hadDhall
+                    , hadDhallBash
                     , hadDhallDiff
                     , hadDhallFreeze
+                    , hadDhallHash
                     , hadDhallLint
                     , hadDhallResolve
-                    , hadDhallHash
-                    , hadDhallBash
                     , hadDhallText
                     ]
                 ]
@@ -1079,13 +1083,13 @@ configSubcommandCompleter _appNames _cfg _shell index words
 
                 , not $ List.or
                     [ hadDhall
+                    , hadDhallBash
                     , hadDhallDiff
+                    , hadDhallExec
                     , hadDhallFreeze
+                    , hadDhallHash
                     , hadDhallLint
                     , hadDhallResolve
-                    , hadDhallHash
-                    , hadDhallExec
-                    , hadDhallBash
                     , hadDhallText
                     ]
                 ]
@@ -1103,13 +1107,13 @@ configSubcommandCompleter _appNames _cfg _shell index words
 
                 , not $ List.or
                     [ hadDhall
+                    , hadDhallBash
                     , hadDhallDiff
+                    , hadDhallExec
                     , hadDhallFreeze
+                    , hadDhallHash
                     , hadDhallLint
                     , hadDhallResolve
-                    , hadDhallHash
-                    , hadDhallExec
-                    , hadDhallBash
                     , hadDhallText
                     ]
                 ]

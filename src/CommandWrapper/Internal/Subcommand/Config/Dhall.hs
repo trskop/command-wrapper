@@ -32,8 +32,7 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , lint
 
     -- * Format
-    , Dhall.Format.Format(..)
-    , Dhall.Format.FormatMode(..)
+    , Format(..)
     , defFormat
     , format
 
@@ -146,6 +145,10 @@ import qualified Dhall.Lint as Dhall (lint)
 import Dhall.Parser (ParseError, SourcedException, Src)
 import qualified Dhall.Pretty as Dhall (Ann, CharacterSet(..))
 import Dhall.TypeCheck (DetailedTypeError(..), TypeError, X)
+import qualified Dhall.Util as Dhall
+  ( Censor(NoCensor)
+  , Input(File, StandardInput)
+  )
 import System.Directory
     ( XdgDirectory(XdgCache)
     , createDirectoryIfMissing
@@ -452,17 +455,33 @@ command Options{..} = do
 
 -- {{{ Format -----------------------------------------------------------------
 
-deriving stock instance Show Dhall.Format.Format -- TODO Get rid of orphan
-deriving stock instance Show Dhall.Format.FormatMode -- TODO Get rid of orphan
+data Format = Format
+    { input :: Input
+    }
+  deriving stock (Generic, Show)
+  deriving anyclass (HasInput)
 
-defFormat :: Dhall.Format.Format
-defFormat = Dhall.Format.Format
-    { characterSet = Dhall.Unicode
-    , formatMode = Dhall.Format.Modify Nothing
+defFormat :: Format
+defFormat = Format
+    { input = InputStdin
     }
 
-format :: AppNames -> Config -> Dhall.Format.Format -> IO ()
-format appNames config = handleExceptions appNames config . Dhall.Format.format
+format :: AppNames -> Config -> Format -> IO ()
+format appNames config Format{..} =
+    handleExceptions appNames config $ Dhall.Format.format Dhall.Format.Format
+        { characterSet = Dhall.Unicode
+        , censor = Dhall.NoCensor
+        , formatMode = Dhall.Format.Modify case input of
+            InputStdin ->
+                Dhall.StandardInput
+
+            InputFile file ->
+                Dhall.File file
+
+            InputExpression _ ->
+                -- TODO: Is there a way how we can handle this gracefully?
+                undefined
+        }
 
 -- }}} Format -----------------------------------------------------------------
 
