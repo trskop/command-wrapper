@@ -637,6 +637,8 @@ matchGlobalOptions pat =
             , ("--version", Nothing)
             , ("--verbosity=", Just (matchKeywords verbosityValues))
             , ("--change-directory=", Nothing)
+            , ("--silent", Nothing)
+            , ("--quiet", Nothing)
             ]
 
     in  case List.takeWhile (== '-') pat of
