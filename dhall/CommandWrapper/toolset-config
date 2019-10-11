@@ -24,17 +24,21 @@ let emptyAliases = [] : List CommandWrapper.SubcommandAlias
 
 let emptySearchPath = [] : List Text
 
+let emptyManPath = [] : List Text
+
 in  { defaults =
         { aliases = emptyAliases
         , searchPath = emptySearchPath
+        , manPath = emptyManPath
         , description = None Text
         , extraHelpMessage = None Text
         , verbosity = None CommandWrapper.Verbosity
         , colourOutput = None CommandWrapper.ColourOutput
-        }
+        } : CommandWrapper.ToolsetConfig
 
     , emptyAliases = emptyAliases
     , emptySearchPath = emptySearchPath
+    , emptyManPath = emptyManPath
     , addSubcommandAliases = addSubcommandAliases
 
     , defaultSearchPath =

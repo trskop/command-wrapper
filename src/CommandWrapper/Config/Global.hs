@@ -36,6 +36,7 @@ import CommandWrapper.Options.ColourOutput (ColourOutput)
 data Config = Config
     { aliases :: [Alias]
     , searchPath :: [FilePath]
+    , manPath :: [FilePath]
     , description :: Maybe String
     , extraHelpMessage :: Maybe String
     , verbosity :: Verbosity
@@ -50,6 +51,7 @@ def :: ColourOutput -> Config
 def colourOutput = Config
     { aliases = []
     , searchPath = []
+    , manPath = []
     , description = Nothing
     , extraHelpMessage = Nothing
     , verbosity = Verbosity.Normal

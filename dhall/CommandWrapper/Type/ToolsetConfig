@@ -7,6 +7,7 @@ let SubcommandAlias = ./SubcommandAlias
 let ToolsetConfig =
       { aliases : List SubcommandAlias
       , searchPath : List Text
+      , manPath : List Text
       , description : Optional Text
       , extraHelpMessage : Optional Text
       , verbosity : Optional Verbosity
