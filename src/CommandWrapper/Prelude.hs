@@ -46,6 +46,7 @@ module CommandWrapper.Prelude
     , outWith
     , warningMsg
     , errorMsg
+    , debugMsg
     , Message.MessageType(..)
     , Message.Result(..)
     , Message.defaultLayoutOptions
@@ -103,6 +104,7 @@ import qualified CommandWrapper.Message as Message
     , Result(..)
     , defaultLayoutOptions
     , errorMsg
+    , debugMsg
     , message
     , outWith
     , warningMsg
@@ -142,6 +144,11 @@ warningMsg :: Params -> Handle -> Text -> IO ()
 warningMsg Params{colour, name, subcommand, verbosity} h msg =
     let cmd = name <> " " <> subcommand
     in Message.warningMsg (pretty cmd) verbosity colour h (pretty msg)
+
+debugMsg :: Params -> Handle -> Text -> IO ()
+debugMsg Params{colour, name, subcommand, verbosity} h msg =
+    let cmd = name <> " " <> subcommand
+    in Message.debugMsg (pretty cmd) verbosity colour h (pretty msg)
 
 outWith
     :: (Maybe (Terminal.Window Int) -> Pretty.LayoutOptions)
