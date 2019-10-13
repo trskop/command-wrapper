@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let commandWrapper = ../../CommandWrapper/package.dhall
@@ -8,17 +10,19 @@ let Verbosity/fold = commandWrapper.verbosity.fold
 
 let List/head-and-tail = commandWrapper.utils.List.head-and-tail
 
-let verbosityOptions = Verbosity/fold (List Text)
-      { Silent = ["--logging=0"]
-      , Normal = [] : List Text
-      , Verbose = ["--logging=5", "--explain"]
-      , Annoying =
-          [ "--logging=6"
-          , "--explain"
-          , "--verbose_explanations"
-          , "--verbose_failures"
-          ]
-      }
+let verbosityOptions =
+      Verbosity/fold
+        (List Text)
+        { Silent = [ "--logging=0" ]
+        , Normal = [] : List Text
+        , Verbose = [ "--logging=5", "--explain" ]
+        , Annoying =
+            [ "--logging=6"
+            , "--explain"
+            , "--verbose_explanations"
+            , "--verbose_failures"
+            ]
+        }
 
 let colorOption =
         λ(colourOutput : CommandWrapper.ColourOutput)
@@ -29,17 +33,20 @@ in    λ(workingDirectory : Optional Text)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(extraArgs : List Text)
-    → { command = "bazel"
-      , arguments =
-          let arguments = List/head-and-tail Text (args # extraArgs)
-          in    verbosityOptions verbosity
-              # Optional/fold Text arguments.head (List Text)
-                  (λ(cmd : Text) → [cmd, colorOption colourOutput])
-                  ([] : List Text)
-              # arguments.tail
-      , environment = [] : List CommandWrapper.EnvironmentVariable
-      , searchPath = True
-      , workingDirectory = workingDirectory
-      } : CommandWrapper.ExecCommand
+    →   { command = "bazel"
+        , arguments =
+            let arguments = List/head-and-tail Text (args # extraArgs)
 
--- vim: filetype=dhall
+            in    verbosityOptions verbosity
+                # Optional/fold
+                    Text
+                    arguments.head
+                    (List Text)
+                    (λ(cmd : Text) → [ cmd, colorOption colourOutput ])
+                    ([] : List Text)
+                # arguments.tail
+        , environment = [] : List CommandWrapper.EnvironmentVariable
+        , searchPath = True
+        , workingDirectory = workingDirectory
+        }
+      : CommandWrapper.ExecCommand

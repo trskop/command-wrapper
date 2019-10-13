@@ -1,3 +1,8 @@
+-- vim: filetype=dhall
+--
+-- See <https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options>
+-- for more details on Firefox command line options.
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 in    λ(options : ./Options/Type)
@@ -5,12 +10,10 @@ in    λ(options : ./Options/Type)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(arguments : List Text)
-    → { command = "firefox"
-      -- https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options
-      , arguments = ./Options/options options # arguments
-      , environment = environment
-      , searchPath = True
-      , workingDirectory = None Text
-      } : CommandWrapper.ExecCommand
-
--- vim: filetype=dhall
+    →   { command = "firefox"
+        , arguments = ./Options/options options # arguments
+        , environment = environment
+        , searchPath = True
+        , workingDirectory = None Text
+        }
+      : CommandWrapper.ExecCommand

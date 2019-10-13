@@ -1,14 +1,14 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 in    λ(environment : List CommandWrapper.EnvironmentVariable)
     → List/fold
-      CommandWrapper.EnvironmentVariable
-      environment
-      (List Text)
-      (   λ(var : CommandWrapper.EnvironmentVariable)
-        → λ(accum : List Text)
-        → [ "--env", "${var.name}=${var.value}" ] # accum
-      )
-      ([] : List Text)
-
--- vim: filetype=dhall
+        CommandWrapper.EnvironmentVariable
+        environment
+        (List Text)
+        (   λ(var : CommandWrapper.EnvironmentVariable)
+          → λ(accum : List Text)
+          → [ "--env", "${var.name}=${var.value}" ] # accum
+        )
+        ([] : List Text)

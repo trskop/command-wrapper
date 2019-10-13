@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 in    λ ( options
@@ -9,20 +11,18 @@ in    λ ( options
     → λ(words : List Text)
     → let completionCommand =
             ../completion/optparse-applicative
-            "stack"
-            (./stackYamlOption options.stackYaml # arguments)
-            shell
-            index
-            words
+              "stack"
+              (./stackYamlOption options.stackYaml # arguments)
+              shell
+              index
+              words
       
       in      completionCommand
           //  { workingDirectory =
                   Optional/fold
-                  Text
-                  options.workingDirectory
-                  (Optional Text)
-                  (λ(_ : Text) → Some _)
-                  completionCommand.workingDirectory
+                    Text
+                    options.workingDirectory
+                    (Optional Text)
+                    (λ(_ : Text) → Some _)
+                    completionCommand.workingDirectory
               }
-
--- vim: filetype=dhall

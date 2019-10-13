@@ -1,12 +1,9 @@
+-- vim: filetype=dhall
+
   λ(_ : ./Type)
 → merge
-  { Name =
-      λ(name : Text) → [ "-P", name ]
-  , Path =
-      λ(path : Text) → [ "--profile", path ]
-  , Manager =
-      [ "--ProfileManager" ]
-  }
-  _
-
--- vim: filetype=dhall
+    { Name = λ(name : Text) → [ "-P", name ]
+    , Path = λ(path : Text) → [ "--profile", path ]
+    , Manager = [ "--ProfileManager" ]
+    }
+    _

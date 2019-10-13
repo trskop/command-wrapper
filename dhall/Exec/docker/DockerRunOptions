@@ -1,9 +1,7 @@
+-- vim: filetype=dhall
+
 let DockerExecOptions = ./DockerExecOptions
 
-let DockerRunOptions = DockerExecOptions
-      ⩓ { remove : Bool
-        }
+let DockerRunOptions = DockerExecOptions ⩓ { remove : Bool }
 
 in  DockerRunOptions
-
--- vim: filetype=dhall

@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let Forwarding = ./Forwarding
 
 let ForwardingOptions = ./ForwardingOptions
@@ -12,12 +14,10 @@ let hostAndPort =
 let forwardingOptions =
         λ(_ : ForwardingOptions)
       →     ( merge
-              { HostAndPort =
-                  hostAndPort
-              , UnixSocket =
-                  λ(_ : { path : Text }) → _.path
-              }
-              _.listenOn
+                { HostAndPort = hostAndPort
+                , UnixSocket = λ(_ : { path : Text }) → _.path
+                }
+                _.listenOn
             )
         ++  ":${_.connectTo.host}.${Natural/show _.connectTo.port}"
 
@@ -29,14 +29,11 @@ let dynamicForwarding =
 let forwarding =
         λ(_ : Forwarding)
       → merge
-        { Local =
-            λ(_ : ForwardingOptions) → [ "-L", forwardingOptions _ ]
-        , Remote =
-            λ(_ : ForwardingOptions) → [ "-R", forwardingOptions _ ]
-        , Dynamic =
-            λ(_ : DynamicForwardingOptions) → [ dynamicForwarding _ ]
-        }
-        _
+          { Local = λ(_ : ForwardingOptions) → [ "-L", forwardingOptions _ ]
+          , Remote = λ(_ : ForwardingOptions) → [ "-R", forwardingOptions _ ]
+          , Dynamic = λ(_ : DynamicForwardingOptions) → [ dynamicForwarding _ ]
+          }
+          _
 
 let List/concatMap =
       https://prelude.dhall-lang.org/List/concatMap
@@ -53,10 +50,8 @@ in    λ(options : ./Options)
       # List/concatMap Forwarding Text forwarding options.forwardings
       # optional Text options.configFile (λ(_ : Text) → [ "-F", _ ])
       # optional
-        Bool
-        options.allocatePseudoTerminal
-        (λ(_ : Bool) → if _ then [ "-t" ] else [ "-T" ])
+          Bool
+          options.allocatePseudoTerminal
+          (λ(_ : Bool) → if _ then [ "-t" ] else [ "-T" ])
       # (if options.doNotExecuteRemoteCommand then [ "-N" ] else [] : List Text)
       # (if options.preventReadingOfStdin then [ "-n" ] else [] : List Text)
-
--- vim: filetype=dhall

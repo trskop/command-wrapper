@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let commandWrapper = ../../CommandWrapper/package.dhall
@@ -12,16 +14,14 @@ in    λ(changeDirectory : Optional Text)
     → { command = "yarn"
       , arguments =
             Optional/fold
-            Text
-            changeDirectory
-            (List Text)
-            (λ(_ : Text) → [ "--cwd=${_}" ])
-            emptyArguments
+              Text
+              changeDirectory
+              (List Text)
+              (λ(_ : Text) → [ "--cwd=${_}" ])
+              emptyArguments
           # prefixArguments
           # arguments
       , environment = commandWrapper.command.emptyEnvironment
       , searchPath = True
       , workingDirectory = None Text
       }
-
--- vim: filetype=dhall

@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 { forwardings : List ./Forwarding
 , identityFile : Optional Text
 , configFile : Optional Text
@@ -9,5 +11,3 @@
 -- Redirects stdin from `/dev/null`.  See documentation of `-n` opthion.
 , preventReadingOfStdin : Bool
 }
-
--- vim: filetype=dhall

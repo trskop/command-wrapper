@@ -1,4 +1,8 @@
--- compgen -W "${wordlist}" -- "${pattern}"
+-- vim: filetype=dhall
+--
+-- ```
+-- bash -c "compgen -W \"${wordlist}\" -- '${words[${index}]}'"
+-- ```
 
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
@@ -22,9 +26,9 @@ in    λ(wordlist : List Text)
                 Text
                 (λ(word : Text) → λ(acc : Text) → "${acc} ${word}")
                 ""
-          
+
           let pattern = Optional/from Text "" (List/index index Text words)
-          
+
           in  [ "-c", "compgen -W \"${completions}\" -- '${pattern}'" ]
       , environment =
           commandWrapper.command.emptyEnvironment
@@ -33,5 +37,3 @@ in    λ(wordlist : List Text)
       , workingDirectory =
           None Text
       }
-
--- vim: filetype=dhall

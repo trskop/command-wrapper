@@ -1,3 +1,3 @@
-./defaultExecOptions ∧ { remove = False } : ./DockerRunOptions
-
 -- vim: filetype=dhall
+
+./defaultExecOptions ∧ { remove = False } : ./DockerRunOptions

@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 in    λ(directory : Optional Text)
@@ -6,17 +8,10 @@ in    λ(directory : Optional Text)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(extraArguments : List Text)
-    →   { command =
-            "direnv"
-        , arguments =
-            arguments # extraArguments
-        , environment =
-            environment
-        , searchPath =
-            True
-        , workingDirectory =
-            directory
+    →   { command = "direnv"
+        , arguments = arguments # extraArguments
+        , environment = environment
+        , searchPath = True
+        , workingDirectory = directory
         }
       : CommandWrapper.ExecCommand
-
--- vim: filetype=dhall

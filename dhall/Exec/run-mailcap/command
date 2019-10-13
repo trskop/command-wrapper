@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let Action =
@@ -9,8 +11,9 @@ let Action =
       | Print : {}
       >
 
-let actionToOption : ∀(action : Action) → Text =
-        λ(action : Action)
+let actionToOption
+    : ∀(action : Action) → Text
+    =   λ(action : Action)
       → merge
           { View = λ(_ : {}) → "--action=view"
           , Cat = λ(_ : {}) → "--action=cat"
@@ -26,13 +29,10 @@ in    λ(action : Action)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(arguments : List Text)
-    → { command = "run-mailcap"
-      , arguments =
-          [ actionToOption action
-          ] # arguments
-      , environment = environment
-      , searchPath = True
-      , workingDirectory = None Text
-      } : CommandWrapper.ExecCommand
-
--- vim: filetype=dhall
+    →   { command = "run-mailcap"
+        , arguments = [ actionToOption action ] # arguments
+        , environment = environment
+        , searchPath = True
+        , workingDirectory = None Text
+        }
+      : CommandWrapper.ExecCommand

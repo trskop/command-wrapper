@@ -1,7 +1,9 @@
-  λ(stackYaml : Optional Text)
-→ Optional/fold Text stackYaml
-    (List Text)
-    (λ(file : Text) → ["--stack-yaml=${file}"])
-    ([] : List Text)
-
 -- vim: filetype=dhall
+
+  λ(stackYaml : Optional Text)
+→ Optional/fold
+    Text
+    stackYaml
+    (List Text)
+    (λ(file : Text) → [ "--stack-yaml=${file}" ])
+    ([] : List Text)

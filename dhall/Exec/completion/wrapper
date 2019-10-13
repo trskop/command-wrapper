@@ -1,3 +1,10 @@
+-- vim: filetype=dhall
+--
+-- ```
+-- TOOLSET completion --wrapper --expression=EXPRESSION --exec -- --index=INDEX
+--     --shell=SHELL -- [WORD ...]
+-- ```
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let commandWrapper = ../../CommandWrapper/package.dhall
@@ -51,5 +58,3 @@ in    λ(options : {toolset : Text, expression : Text, command : Text})
       , workingDirectory =
           workingDirectory
       }
-
--- vim: filetype=dhall

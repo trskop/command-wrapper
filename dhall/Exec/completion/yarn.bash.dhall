@@ -1,5 +1,7 @@
-let yarn-completion =
-      -- This version of yarn-completion.bash works for yarn 1.17.x
+-- vim: filetype=dhall
+
+let -- This version of yarn-completion.bash works for yarn 1.17.x
+    yarn-completion =
       https://raw.githubusercontent.com/dsifford/yarn-completion/f208d3ae3c5d8e0de2789348aec9265ddc385dcc/yarn-completion.bash
       sha256:cd6e752db396b34a4f639c118e81fc73e390d1a9d6086de29699c0381eb5cd31
       as Text

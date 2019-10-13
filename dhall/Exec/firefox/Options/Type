@@ -1,6 +1,6 @@
+-- vim: filetype=dhall
+
 { profile : Optional ../Profile/Type
 , remote : Optional ../Remote/Type
 , open : List ../Open/Type
 }
-
--- vim: filetype=dhall

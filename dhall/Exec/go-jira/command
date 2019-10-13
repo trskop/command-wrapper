@@ -15,14 +15,9 @@ in    λ(options : ./Options)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(arguments : List Text)
-    → { command =
-          "jira"
-      , arguments =
-          ./options options verbosity # arguments
-      , environment =
-          [ { name = "JIRA_API_TOKEN", value = options.token } ]
-      , searchPath =
-          True
-      , workingDirectory =
-          None Text
+    → { command = "jira"
+      , arguments = ./options options verbosity # arguments
+      , environment = [ { name = "JIRA_API_TOKEN", value = options.token } ]
+      , searchPath = True
+      , workingDirectory = None Text
       }

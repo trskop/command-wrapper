@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let nix-completion =
       https://raw.githubusercontent.com/hedning/nix-bash-completions/43dfe677f58a0443dde2493fdee36395f3b64865/_nix
       sha256:749f88ded2f8a66ce3d5dc4f60d77e8e9de5ad4c05152d51ab66f333cf7f9d7d

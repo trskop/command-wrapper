@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let DockerGlobalOptions : Type = ./DockerGlobalOptions
@@ -7,14 +9,13 @@ in    λ(globalOptions : DockerGlobalOptions)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(arguments : List Text)
-    → { command = "docker"
-      , arguments =
-            ./globalOptions globalOptions
-          # ["system", "prune", "--volumes"]
-          # arguments
-      , environment = environment
-      , searchPath = True
-      , workingDirectory = None Text
-      } : CommandWrapper.ExecCommand
-
--- vim: filetype=dhall
+    →   { command = "docker"
+        , arguments =
+              ./globalOptions globalOptions
+            # [ "system", "prune", "--volumes" ]
+            # arguments
+        , environment = environment
+        , searchPath = True
+        , workingDirectory = None Text
+        }
+      : CommandWrapper.ExecCommand

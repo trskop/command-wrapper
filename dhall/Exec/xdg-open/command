@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 in    λ(fileOrUrl : Optional Text)
@@ -5,15 +7,17 @@ in    λ(fileOrUrl : Optional Text)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(arguments : List Text)
-    → { command = "xdg-open"
-      , arguments =
-            Optional/fold Text fileOrUrl (List Text)
-              (λ(value : Text) → [value] : List Text)
-              ([] : List Text)
-          # arguments
-      , environment = environment
-      , searchPath = True
-      , workingDirectory = None Text
-      } : CommandWrapper.ExecCommand
-
--- vim: filetype=dhall
+    →   { command = "xdg-open"
+        , arguments =
+              Optional/fold
+                Text
+                fileOrUrl
+                (List Text)
+                (λ(value : Text) → [ value ] : List Text)
+                ([] : List Text)
+            # arguments
+        , environment = environment
+        , searchPath = True
+        , workingDirectory = None Text
+        }
+      : CommandWrapper.ExecCommand

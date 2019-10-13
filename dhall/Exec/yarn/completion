@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let script =
       { url =
           "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/completion/yarn.bash.dhall"
@@ -7,12 +9,7 @@ let script =
 
 in    λ(toolset : Text)
     → ../completion/wrapper
-      { toolset =
-          toolset
-      , expression =
-          "${script.url} ${script.hash} : Text"
-      , command =
-          "yarn"
-      }
-
--- vim: filetype=dhall
+        { toolset = toolset
+        , expression = "${script.url} ${script.hash} : Text"
+        , command = "yarn"
+        }

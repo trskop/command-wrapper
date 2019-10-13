@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let commandWrapper = ../../CommandWrapper/package.dhall
@@ -11,12 +13,10 @@ in    λ(colourOutput : CommandWrapper.ColourOutput)
     → let options = mkOptions colourOutput
       
       in    Optional/fold
-            Bool
-            options.buildImages
-            (List Text)
-            (λ(_ : Bool) → if _ then [ "--build" ] else [ "--no-build" ])
-            emptyArguments
+              Bool
+              options.buildImages
+              (List Text)
+              (λ(_ : Bool) → if _ then [ "--build" ] else [ "--no-build" ])
+              emptyArguments
           # (if options.noColour then [ "--no-colour" ] else emptyArguments)
           # (if options.detach then [ "--detach" ] else emptyArguments)
-
--- vim: filetype=dhall

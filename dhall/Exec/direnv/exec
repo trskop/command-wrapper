@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 in    λ(directory : Optional Text)
@@ -12,23 +14,21 @@ in    λ(directory : Optional Text)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(extraArguments : List Text)
     →   ./command
-        directory
-        ( let dir =
-                Optional/fold
-                Text
-                directory
-                (List Text)
-                (λ(d : Text) → [ d ])
-                ([] : List Text)
-          
-          let cmd = mkCommand verbosity colourOutput extraArguments
-          
-          in  [ "exec" ] # dir # [ cmd.command ] # cmd.arguments
-        )
-        environment
-        verbosity
-        colourOutput
-        ([] : List Text)
-      : CommandWrapper.ExecCommand
+          directory
+          ( let dir =
+                  Optional/fold
+                    Text
+                    directory
+                    (List Text)
+                    (λ(d : Text) → [ d ])
+                    ([] : List Text)
 
--- vim: filetype=dhall
+            let cmd = mkCommand verbosity colourOutput extraArguments
+
+            in  [ "exec" ] # dir # [ cmd.command ] # cmd.arguments
+          )
+          environment
+          verbosity
+          colourOutput
+          ([] : List Text)
+      : CommandWrapper.ExecCommand

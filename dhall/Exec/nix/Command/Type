@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 < nix
 | nix-build
 | nix-channel
@@ -19,5 +21,3 @@
 | nixos-rebuild
 | nixos-version
 >
-
--- vim: filetype=dhall

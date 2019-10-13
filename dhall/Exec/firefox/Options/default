@@ -1,10 +1,7 @@
-  { profile =
-      None ../Profile/Type
-  , remote =
-      None ../Remote/Type
-  , open =
-      [] : List ../Open/Type
+-- vim: filetype=dhall
+
+  { profile = None ../Profile/Type
+  , remote = None ../Remote/Type
+  , open = [] : List ../Open/Type
   }
 : ./Type
-
--- vim: filetype=dhall

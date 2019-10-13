@@ -1,14 +1,9 @@
-  { interactive =
-      True
-  , allocateTty =
-      True
-  , detach =
-      False
-  , user =
-      None Text
-  , workingDirectory =
-      None Text
+-- vim: filetype=dhall
+
+  { interactive = True
+  , allocateTty = True
+  , detach = False
+  , user = None Text
+  , workingDirectory = None Text
   }
 : ./DockerExecOptions
-
--- vim: filetype=dhall

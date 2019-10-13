@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let commandWrapper = ../../CommandWrapper/package.dhall
@@ -23,17 +25,15 @@ in    λ(options : GlobalOptions)
       , arguments =
             globalOptions options
           # Optional/fold
-            Action
-            action
-            (List Text)
-            (   λ(_ : Action)
-              → merge { Down = downOptions, Up = upOptions colourOutput } _
-            )
-            emptyArguments
+              Action
+              action
+              (List Text)
+              (   λ(_ : Action)
+                → merge { Down = downOptions, Up = upOptions colourOutput } _
+              )
+              emptyArguments
           # arguments
       , environment = commandWrapper.command.emptyEnvironment
       , searchPath = True
       , workingDirectory = None Text
       }
-
--- vim: filetype=dhall

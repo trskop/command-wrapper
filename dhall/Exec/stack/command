@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let commandWrapper = ../../CommandWrapper/package.dhall
@@ -6,36 +8,35 @@ let colour-output/toText = commandWrapper.colourOutput.toText
 
 let Verbosity/fold = commandWrapper.verbosity.fold
 
-let verbosityOption = Verbosity/fold (List Text)
-      { Silent = ["--silent"]
-      , Normal = [] : List Text
-      , Verbose = ["--verbosity=info"]
-      , Annoying = ["--verbosity=debug"]
-      }
+let verbosityOption =
+      Verbosity/fold
+        (List Text)
+        { Silent = [ "--silent" ]
+        , Normal = [] : List Text
+        , Verbose = [ "--verbosity=info" ]
+        , Annoying = [ "--verbosity=debug" ]
+        }
 
 let colorOption =
         λ(colourOutput : CommandWrapper.ColourOutput)
-      → ["--color=${colour-output/toText colourOutput}"]
+      → [ "--color=${colour-output/toText colourOutput}" ]
 
 in    λ ( context
-            : { workingDirectory : Optional Text
-              , stackYaml : Optional Text
-              }
+        : { workingDirectory : Optional Text, stackYaml : Optional Text }
         )
     → λ(args : List Text)
     → λ(verbosity : CommandWrapper.Verbosity)
     → λ(colourOutput : CommandWrapper.ColourOutput)
     → λ(arguments : List Text)
-    → { command = "stack"
-      , arguments =
-            verbosityOption verbosity
-          # colorOption colourOutput
-          # ./stackYamlOption context.stackYaml
-          # args
-          # arguments
-      , environment = [] : List CommandWrapper.EnvironmentVariable
-      , searchPath = True
-      , workingDirectory = context.workingDirectory
-      } : CommandWrapper.ExecCommand
-
--- vim: filetype=dhall
+    →   { command = "stack"
+        , arguments =
+              verbosityOption verbosity
+            # colorOption colourOutput
+            # ./stackYamlOption context.stackYaml
+            # args
+            # arguments
+        , environment = [] : List CommandWrapper.EnvironmentVariable
+        , searchPath = True
+        , workingDirectory = context.workingDirectory
+        }
+      : CommandWrapper.ExecCommand

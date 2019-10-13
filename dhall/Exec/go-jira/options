@@ -11,14 +11,10 @@ in    λ(options : ./Options)
         , "--user=${options.user}"
         ]
       # commandWrapper.verbosity.fold
-        (List Text)
-        { Annoying =
-            [ "-vvv" ]
-        , Normal =
-            [] : List Text
-        , Silent =
-            [ "--quiet" ]
-        , Verbose =
-            [ "--verbose" ]
-        }
-        verbosity
+          (List Text)
+          { Annoying = [ "-vvv" ]
+          , Normal = [] : List Text
+          , Silent = [ "--quiet" ]
+          , Verbose = [ "--verbose" ]
+          }
+          verbosity

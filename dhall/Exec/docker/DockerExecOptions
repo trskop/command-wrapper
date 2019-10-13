@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 let DockerExecOptions =
       { interactive : Bool
       , allocateTty : Bool
@@ -7,5 +9,3 @@ let DockerExecOptions =
       }
 
 in  DockerExecOptions
-
--- vim: filetype=dhall

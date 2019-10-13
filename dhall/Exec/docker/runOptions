@@ -1,10 +1,15 @@
+-- vim: filetype=dhall
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let DockerRunOptions : Type = ./DockerRunOptions
 
 in    λ(runOptions : DockerRunOptions)
     →   ./execOptions
-        runOptions.{ interactive, allocateTty, detach, user, workingDirectory }
+          runOptions.{ interactive
+                     , allocateTty
+                     , detach
+                     , user
+                     , workingDirectory
+                     }
       # (if runOptions.remove then [ "--rm" ] else [] : List Text)
-
--- vim: filetype=dhall

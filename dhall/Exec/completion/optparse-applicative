@@ -1,3 +1,10 @@
+-- vim: filetype=dhall
+--
+-- ```
+-- COMMAND --bash-completion-index=INDEX [--bash-completion-enriched]
+--     [--bash-completion-word=WORD ...]
+-- ```
+
 let CommandWrapper = ../../CommandWrapper/Types.dhall
 
 let List/map =
@@ -6,39 +13,28 @@ let List/map =
 
 let enrichedCompletion =
         λ(shell : CommandWrapper.Shell)
-      → merge
-        { Bash = False
-        , Fish = True
-        , Zsh = True
-        }
-        shell
+      → merge { Bash = False, Fish = True, Zsh = True } shell
 
 in    λ(command : Text)
     → λ(prefixArguments : List Text)
     → λ(shell : CommandWrapper.Shell)
     → λ(index : Natural)
     → λ(words : List Text)
-    → { command =
-          command
+    → { command = command
       , arguments =
           let adjustedIndex = index + List/length Text prefixArguments
-          
+
           in    [ "--bash-completion-index=${Natural/show adjustedIndex}" ]
               # ( if enrichedCompletion shell
-                    then [ "--bash-completion-enriched" ]
-                    else [] : List Text
+                    then  [ "--bash-completion-enriched" ]
+                    else  [] : List Text
                 )
               # List/map
-                Text
-                Text
-                (λ(word : Text) → "--bash-completion-word=${word}")
-                (prefixArguments # words)
-      , environment =
-          [] : List CommandWrapper.EnvironmentVariable
-      , searchPath =
-          True
-      , workingDirectory =
-          None Text
+                  Text
+                  Text
+                  (λ(word : Text) → "--bash-completion-word=${word}")
+                  (prefixArguments # words)
+      , environment = [] : List CommandWrapper.EnvironmentVariable
+      , searchPath = True
+      , workingDirectory = None Text
       }
-
--- vim: filetype=dhall
