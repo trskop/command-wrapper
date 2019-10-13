@@ -1,0 +1,3 @@
+-- vim: filetype=dhall
+
+λ(home : Text) → λ(toolsetName : Text) → [ "${home}/.local/lib/${toolsetName}" ]

@@ -1,0 +1,17 @@
+-- vim: filetype=dhall
+
+let CommandWrapper = ../../Types.dhall
+
+in    λ(query : Optional Text)
+    →   { command = "fzf"
+        , arguments =
+              [ "--reverse" ]
+            # Optional/fold
+                Text
+                query
+                (List Text)
+                (λ(query : Text) → [ "--query=${query}" ])
+                ([] : List Text)
+        , environment = [] : List CommandWrapper.EnvironmentVariable
+        }
+      : CommandWrapper.CommandWithEnvironment

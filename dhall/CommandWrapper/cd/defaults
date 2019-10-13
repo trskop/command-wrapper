@@ -1,0 +1,16 @@
+-- vim: filetype=dhall
+
+let CommandWrapper = ../Types.dhall
+
+let terminal-emulator/urxvt = ../terminal-emulator/urxvt
+
+in    { directories = ./emptyDirectories
+      , menuTool = ./menu-tools/fzf
+      , shell = ./systemShell
+      , terminalEmulator =
+            λ(directory : Text)
+          → λ(command : Optional CommandWrapper.Command)
+          →   terminal-emulator/urxvt (Some directory) command
+            : CommandWrapper.CommandWithEnvironment
+      }
+    : CommandWrapper.CdConfig

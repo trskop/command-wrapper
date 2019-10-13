@@ -1,0 +1,17 @@
+-- vim: filetype=dhall
+
+let CommandWrapper = ../Types.dhall
+
+let mkPrefix =
+        λ(optionalText : Optional Text)
+      → Optional/fold Text optionalText Text (λ(t : Text) → "${t}\n") ""
+
+in    λ(aliases : List CommandWrapper.SubcommandAlias)
+    → λ(helpMessage : Text)
+    → λ(defaults : CommandWrapper.ToolsetConfig)
+    →       defaults
+        //  { aliases = defaults.aliases # aliases
+            , extraHelpMessage =
+                Some "${mkPrefix defaults.extraHelpMessage}${helpMessage}"
+            }
+      : CommandWrapper.ToolsetConfig

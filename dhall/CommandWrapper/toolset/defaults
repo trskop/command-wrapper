@@ -1,0 +1,15 @@
+-- vim: filetype=dhall
+
+let CommandWrapper = ../Types.dhall
+
+let colourOutput = ../colour-output
+
+in    { aliases = ./emptyAliases
+      , searchPath = ./emptySearchPath
+      , manPath = ./emptyManPath
+      , description = None Text
+      , extraHelpMessage = None Text
+      , verbosity = None CommandWrapper.Verbosity
+      , colourOutput = None CommandWrapper.ColourOutput
+      }
+    : CommandWrapper.ToolsetConfig
