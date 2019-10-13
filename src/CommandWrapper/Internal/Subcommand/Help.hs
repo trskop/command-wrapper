@@ -46,16 +46,26 @@ import Data.Char (Char)
 import qualified Data.Char as Char (toLower)
 import Data.Eq ((==))
 import Data.Foldable (any, null, traverse_)
-import Data.Function (($), (.))
+import Data.Function (($), (.), on)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
-import qualified Data.List as List (elem, filter, isPrefixOf, nub, take)
+import qualified Data.List as List
+    ( deleteBy
+    , elem
+    , filter
+    , intercalate
+    , isPrefixOf
+    , nub
+    , take
+    )
 import qualified Data.List.NonEmpty as NonEmpty (toList)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe, listToMaybe)
 import Data.Monoid (Endo(Endo), mempty)
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
+import Data.Tuple (fst)
 import Data.Word (Word)
 import GHC.Generics (Generic)
+import System.Environment (getEnvironment)
 import System.IO (IO, putStrLn, stderr, stdout)
 import Text.Show (Show, show)
 
@@ -165,16 +175,33 @@ help internalHelp mainHelp appNames@AppNames{usedName} options config =
                     findSubcommandManualPageName appNames config' subcommandName
 
             case possiblyManualPageName of
-                Nothing -> pure () -- TODO: Error message.
-                Just manPageName ->
-                    executeFile "man" True [manPageName] Nothing
+                Nothing ->
+                    pure () -- TODO: Error message.
+
+                Just manPageName -> do
+                    env <- if null manPath
+                        then
+                            pure Nothing
+                        else
+                            Just . setManPath <$> getEnvironment
+
+                    executeFile "man" True [manPageName] env
 
         Aliases config' -> do
             listAliases appNames config'
   where
     defaults = Mainplate.applySimpleDefaults (MainHelp config)
 
-    Config{colourOutput, extraHelpMessage, verbosity} = config
+    Config{colourOutput, extraHelpMessage, manPath, verbosity} = config
+
+    setManPath :: [(String, String)] -> [(String, String)]
+    setManPath env =
+        -- We want to completely override MANPATH environment variable,
+        -- otherwise we would have to handle all the interections, and
+        -- possiblity of having MANPATH being too long.  At some point we may
+        -- want to revisit this.
+        ("MANPATH", List.intercalate ":" manPath)
+        : List.deleteBy ((==) `on` fst) ("MANPATH", "") env
 
 -- TODO: Consider moving this function or core of its functionality into
 -- "CommandWrapper.External" module.

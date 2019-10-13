@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 6th August 2019
+% 13th October 2019
 
 
 # NAME
@@ -528,6 +528,11 @@ used by `man` run `manpath` command, which should print out something like:
     Test World!
     ```
 
+`COMMAND_WRAPPER_MANPATH`
+:   Default search path for manual pages.  Any value that is specified
+    in configuration file (see *CONFIGURATION FILE* section for details) is
+    appended to this value.
+
 
 # CONFIGURATION FILE
 
@@ -597,16 +602,28 @@ in  -- Subcommand aliases.  These can be used to invoke subcommand in
     --     `${XDG_CONFIG_HOME:-${HOME}/.config}/${toolset}/default.dhall`
     , searchPath : List Text
 
+    -- Path where to search for manual pages.  Definition from
+    --
+    --     `${XDG_CONFIG_HOME:-${HOME}/.config}/command-wrapper/default.dhall`
+    --
+    -- are concatenated with those from
+    --
+    --     `${XDG_CONFIG_HOME:-${HOME}/.config}/${toolset}/default.dhall`
+    , manPath : List Text
+
+    -- Description of the toolset command printed as part of help message.
+    , description : Optional Text
+
     -- Allows user to override default command wrapper behaviour when
     -- it comes colourised output.  By default Command Wrapper uses
     -- the value:
     --
-    --     CommandWrapper.ColourOutput.Auto {=}
+    --     CommandWrapper.ColourOutput.Auto
     --
     -- Unless `NO_COLOR` environment variable is set, in which case
     -- following is used:
     --
-    --     CommandWrapper.ColourOutput.Never {=}
+    --     CommandWrapper.ColourOutput.Never
     --
     -- See also `--colour` option and `NO_COLOR` environment variable
     -- descriptions.

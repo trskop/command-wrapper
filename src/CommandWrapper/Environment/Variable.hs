@@ -150,6 +150,11 @@ data CommandWrapperToolsetVarName
     -- configuration.
     --
     -- > <prefix>_PATH
+
+    | CommandWrapperManPath
+    -- ^ `MANPATH` prepended to the one provided by configuration..
+    --
+    -- > <prefix>_MANPATH
   deriving stock (Bounded, Enum, Generic, Show)
 
 -- | Get fully formed Command Wrapper (toolset) variable name:
@@ -162,3 +167,4 @@ getCommandWrapperToolsetVarName
 getCommandWrapperToolsetVarName prefix = (prefix <>) . \case
     CommandWrapperInvokeAs -> "_INVOKE_AS"
     CommandWrapperPath -> "_PATH"
+    CommandWrapperManPath -> "_MANPATH"

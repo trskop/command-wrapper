@@ -42,9 +42,11 @@ import CommandWrapper.Options.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 
 
+-- | Represents toolset configuration file.
 data Config = Config
     { aliases :: [Alias]
     , searchPath :: [FilePath]
+    , manPath :: [FilePath]
     , description :: Maybe String
     , extraHelpMessage :: Maybe String
     , verbosity :: Maybe Verbosity
@@ -53,20 +55,24 @@ data Config = Config
   deriving stock (Generic, Show)
   deriving anyclass (Dhall.Interpret)
 
+-- | Apply configuration file to internal configuration that represents not
+-- only configuration file, but also command line options, see
+-- "CommandWrapper.Config.Global" module for more information.
 apply :: Config -> E Global.Config
 apply Config{..} config = config
     { Global.aliases = gAliases <> aliases
     , Global.searchPath = gSearchPath <> searchPath
+    , Global.manPath = gManPath <> manPath
     , Global.description = getLast $ ((<>) `on` Last) gDescription description
     , Global.extraHelpMessage = (<>) <$> gExtraHelpMessage <*> extraHelpMessage
     , Global.verbosity = fromMaybe gVerbosity verbosity
     , Global.colourOutput = fromMaybe gColourOutput colourOutput
     }
-
   where
     Global.Config
         { Global.aliases = gAliases
         , Global.searchPath = gSearchPath
+        , Global.manPath = gManPath
         , Global.description = gDescription
         , Global.extraHelpMessage = gExtraHelpMessage
         , Global.verbosity = gVerbosity
@@ -74,6 +80,7 @@ apply Config{..} config = config
         }
         = config
 
+-- | Read and parse Dhall configuration file.
 read :: FilePath -> IO (Either String Config)
 read = catchDhallExceptions . Dhall.inputFile Dhall.auto
   where

@@ -63,13 +63,17 @@ import System.FilePath ((</>), splitSearchPath)
 import qualified CommandWrapper.Config.Global as Global (Config(Config))
 import qualified CommandWrapper.Config.Global as Global.Config
     ( Config(..)
+    , ManPath(..)
+    , SearchPath(..)
     , def
     , getAliases
     )
 import qualified CommandWrapper.Config.File as Config.File (apply, read)
 import CommandWrapper.Environment
     ( AppNames(..)
-    , CommandWrapperToolsetVarName(CommandWrapperPath)
+    , CommandWrapperPrefix
+    , CommandWrapperToolsetVarName(CommandWrapperManPath, CommandWrapperPath)
+    , ParseEnv
     , commandWrapperToolsetVarName
     , defaultCommandWrapperPrefix
     , getAppNames
@@ -173,13 +177,18 @@ parseEnv :: IO Global.Config
 parseEnv = parseEnvIO (die . show) do
     defColour <- fromMaybe ColourOutput.Auto <$> ColourOutput.noColorEnvVar
 
-    searchPathVar <- commandWrapperToolsetVarName CommandWrapperPath
-    searchPath <- optionalVar searchPathVar
+    searchPath <- searchPathVar Global.Config.SearchPath CommandWrapperPath
+    manPath    <- searchPathVar Global.Config.ManPath    CommandWrapperManPath
 
-    pure (Global.Config.def defColour)
-        { Global.Config.searchPath =
-            maybe [] (splitSearchPath . Text.unpack) searchPath
-        }
+    pure (Global.Config.def defColour searchPath manPath)
+  where
+    searchPathVar
+        :: ([FilePath] -> a)
+        -> CommandWrapperToolsetVarName
+        -> ParseEnv CommandWrapperPrefix a
+    searchPathVar mk varName = do
+        varName' <- commandWrapperToolsetVarName varName
+        mk . maybe [] (splitSearchPath . Text.unpack) <$> optionalVar varName'
 
 parseOptions
     :: AppNames
