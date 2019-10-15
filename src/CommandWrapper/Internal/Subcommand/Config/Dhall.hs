@@ -73,6 +73,11 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , defToText
     , toText
 
+    -- * Filter
+    , Filter(..)
+    , defFilter
+    , filter
+
     -- * Input\/Output
     , Input(..)
     , HasInput(..)
@@ -86,6 +91,8 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , handleExceptions
     )
   where
+
+import Prelude hiding (filter)
 
 import Control.Exception (Exception, SomeException, bracket, handle, throwIO)
 import Control.Monad (unless)
@@ -856,12 +863,86 @@ toText appNames config ToText{..} = handleExceptions appNames config do
         ListTextMode ->
             dhallInput (Dhall.auto @[Text])
             >>= withOutputHandle' (\h -> Text.hPutStr h . Text.unlines)
-
-    where
-        withOutputHandle' :: (Handle -> a -> IO ()) -> a -> IO ()
-        withOutputHandle' = withOutputHandle input output
+  where
+    withOutputHandle' :: (Handle -> a -> IO ()) -> a -> IO ()
+    withOutputHandle' = withOutputHandle input output
 
 -- }}} To Text ----------------------------------------------------------------
+
+-- {{{ Filter -----------------------------------------------------------------
+
+data Filter = Filter
+    { input :: Input
+    , output :: Output
+    , expression :: Text
+    , allowImports :: Bool
+    }
+  deriving stock (Generic, Show)
+  deriving anyclass (HasInput)
+
+instance HasOutput Filter where
+    type Output Filter = Output
+    output = field' @"output"
+
+defFilter :: Text -> Filter
+defFilter expression = Filter
+    { input = InputStdin
+    , output = OutputStdout
+    , expression
+    , allowImports = True
+    }
+
+filter :: AppNames -> Config -> Filter -> IO ()
+filter appNames config Filter{..} = handleExceptions appNames config do
+
+    IO.setLocaleEncoding IO.utf8
+
+    (inVar, inVarType) <- readExpression input >>= \(expr, status) -> do
+        value <- resolveImports allowImports expr status
+        annotation <- typeOf value
+        pure
+            ( Dhall.Core.Binding
+                { variable = "input"
+                , annotation = Just (Nothing, annotation)
+                , value
+                , bindingSrc0 = Nothing
+                , bindingSrc1 = Nothing
+                , bindingSrc2 = Nothing
+                }
+            , Dhall.Core.Binding
+                { variable = "Input"
+                , annotation = Just (Nothing, Dhall.Core.Const Dhall.Core.Type)
+                , value = annotation
+                , bindingSrc0 = Nothing
+                , bindingSrc1 = Nothing
+                , bindingSrc2 = Nothing
+                }
+            )
+
+    parseExpression expression >>= \expr -> do
+        expr' <- Dhall.Core.Let inVar . Dhall.Core.Let inVarType
+            <$> resolveImports True expr (Dhall.Import.emptyStatus ".")
+        _ <- typeOf expr'
+        withOutputHandle' (hPutExpr config) (Dhall.Core.normalize expr')
+  where
+    withOutputHandle' :: (Handle -> a -> IO ()) -> a -> IO ()
+    withOutputHandle' = withOutputHandle input output
+
+    typeOf = Dhall.Core.throws . Dhall.TypeCheck.typeOf
+
+    resolveImports
+        :: Bool
+        -> Expr Src Import
+        -> Dhall.Import.Status
+        -> IO (Expr Src X)
+    resolveImports allowImports' expr status
+      | allowImports' = State.evalStateT (Dhall.Import.loadWith expr) status
+      | otherwise     = Dhall.Import.assertNoImports expr
+
+    parseExpression =
+        Dhall.Core.throws . Dhall.Parser.exprFromText "(expression)"
+
+-- }}} Filter -----------------------------------------------------------------
 
 -- {{{ Input/Output -----------------------------------------------------------
 

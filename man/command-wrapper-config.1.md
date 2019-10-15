@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 22th August 2019
+% 15th October 2019
 
 
 # NAME
@@ -15,6 +15,12 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 \[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-filter
+\[\--\[no-]allow-imports]
+\[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+*EXPRESSION*
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
 
@@ -218,6 +224,17 @@ We can organise `config` subcommand abilities into following categories:
 \--output=*FILE*, **\--output** *FILE*, **-o** *FILE*
 :   Write optput into *FILE* instead of standard output.  Can be specified only
     once.
+
+\--dhall-filter
+:   Puts Dhall input expression into the scope of *EXPRESSION* as a value
+    `input : Input`.
+
+    ```
+    $ TOOLSET_COMMAND config --dhall-filter 'input + 1' <<< 1
+    2
+    $ TOOLSET_COMMAND config --dhall-filter '"num=${Natural/show input}"' <<< 1 | TOOLSET_COMMAND config --dhall-text; echo
+    num=1
+    ```
 
 \--dhall-format
 :   Format Dhall expression.

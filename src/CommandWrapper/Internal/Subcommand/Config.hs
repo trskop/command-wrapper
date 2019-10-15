@@ -120,6 +120,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , BashMode(..)
     , Diff(..)
     , Exec(..)
+    , Filter(..)
     , Format(..)
     , Freeze(..)
     , Hash(..)
@@ -135,6 +136,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defBash
     , defDiff
     , defExec
+    , defFilter
     , defFormat
     , defFreeze
     , defHash
@@ -146,6 +148,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , bash
     , diff
     , exec
+    , filter
     , format
     , freeze
     , hash
@@ -177,6 +180,7 @@ data ConfigMode a
     | DhallExec Dhall.Exec a
     | DhallBash Dhall.Bash a
     | DhallText Dhall.ToText a
+    | DhallFilter Dhall.Filter a
     | Help a
   deriving stock (Functor, Generic, Show)
 
@@ -224,6 +228,9 @@ config appNames options globalConfig =
 
         DhallText opts cfg ->
             Dhall.toText appNames cfg opts
+
+        DhallFilter opts cfg ->
+            Dhall.filter appNames cfg opts
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
 
@@ -317,6 +324,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> optional outputOption
             )
 
+    , dhallFilterFlag
+        <*> Options.strArgument mempty
+        <*> ( dualFoldEndo
+                <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> optional outputOption
+                <*> optional (expressionOption <|> inputOption)
+            )
+
     , helpFlag
 
     , pure mempty
@@ -393,6 +408,13 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         -> Endo (ConfigMode Global.Config)
     switchToDhallTextMode f =
         switchTo (DhallText (f `appEndo` Dhall.defToText) globalConfig)
+
+    switchToDhallFilterMode
+        :: Text
+        -> Endo Dhall.Filter
+        -> Endo (ConfigMode Global.Config)
+    switchToDhallFilterMode expr f =
+        switchTo (DhallFilter (f `appEndo` Dhall.defFilter expr) globalConfig)
 
     initFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
@@ -587,6 +609,13 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         setListMode = Endo \opts ->
             (opts :: Dhall.ToText){Dhall.mode = Dhall.ListTextMode}
 
+    dhallFilterFlag
+        :: Options.Parser
+            (Text -> Endo Dhall.Filter -> Endo (ConfigMode Global.Config))
+    dhallFilterFlag =
+        Options.flag mempty switchToDhallFilterMode
+            (Options.long "dhall-filter")
+
     toolsetOption :: Options.Parser (Endo (ConfigMode Global.Config))
     toolsetOption =
         Options.strOption (Options.long "toolset" <> Options.metavar "NAME")
@@ -634,6 +663,16 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 <> "|" <> longOptionWithArgument "input" "FILE"
                 )
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+
+        , "config"
+            <+> longOption "dhall-filter"
+            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> metavar "EXPRESSION"
 
         , "config"
             <+> longOption "dhall-format"
@@ -779,6 +818,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , optionDescription ["--output=FILE", "--output FILE", "-o FILE"]
             [ Pretty.reflow "Write optput into", metavar "FILE"
             , Pretty.reflow "instead of standard output."
+            ]
+
+        , optionDescription ["--dhall-filter"]
+            [ Pretty.reflow "Puts Dhall input expression into the scope of"
+            , metavar "EXPRESSION", "as", value "input : Input", "."
             ]
 
         , optionDescription ["--dhall-format"]
@@ -958,28 +1002,30 @@ configSubcommandCompleter _appNames _cfg _shell index words
     hadInit = "--init" `List.elem` wordsBeforePattern
 
     hadDhall = "--dhall" `List.elem` wordsBeforePattern
+    hadDhallBash = "--dhall-bash" `List.elem` wordsBeforePattern
     hadDhallDiff = "--dhall-diff" `List.elem` wordsBeforePattern
+    hadDhallExec = "--dhall-exec" `List.elem` wordsBeforePattern
+    hadDhallFilter = "--dhall-filter" `List.elem` wordsBeforePattern
     hadDhallFormat = "--dhall-format" `List.elem` wordsBeforePattern
     hadDhallFreeze = "--dhall-freeze" `List.elem` wordsBeforePattern
     hadDhallHash = "--dhall-hash" `List.elem` wordsBeforePattern
     hadDhallLint = "--dhall-lint" `List.elem` wordsBeforePattern
     hadDhallRepl = "--dhall-repl" `List.elem` wordsBeforePattern
     hadDhallResolve = "--dhall-resolve" `List.elem` wordsBeforePattern
-    hadDhallExec = "--dhall-exec" `List.elem` wordsBeforePattern
-    hadDhallBash = "--dhall-bash" `List.elem` wordsBeforePattern
     hadDhallText = "--dhall-text" `List.elem` wordsBeforePattern
 
     hadSomeDhall = List.or
         [ hadDhall
+        , hadDhallBash
         , hadDhallDiff
+        , hadDhallExec
+        , hadDhallFilter
         , hadDhallFormat
         , hadDhallFreeze
         , hadDhallHash
         , hadDhallLint
         , hadDhallRepl
         , hadDhallResolve
-        , hadDhallExec
-        , hadDhallBash
         , hadDhallText
         ]
 
@@ -1015,18 +1061,32 @@ configSubcommandCompleter _appNames _cfg _shell index words
 
     possibleOptions =
         munless (hadHelp || hadInit || hadSomeDhall)
-            [ "--help", "-h"
+            [ "--dhall"
+            , "--dhall-bash"
+            , "--dhall-diff"
+            , "--dhall-exec"
+            , "--dhall-filter"
+            , "--dhall-format"
+            , "--dhall-freeze"
+            , "--dhall-hash"
+            , "--dhall-lint"
+            , "--dhall-repl"
+            , "--dhall-resolve"
+            , "--help", "-h"
             , "--init"
-
-            , "--dhall", "--dhall-diff", "--dhall-format", "--dhall-freeze"
-            , "--dhall-hash", "--dhall-lint", "--dhall-repl", "--dhall-resolve"
-            , "--dhall-exec", "--dhall-bash"
             ]
         <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhallDiff, hadDhallFreeze, hadDhallFormat
-                , hadDhallHash, hadDhallLint, hadDhallRepl, hadDhallResolve
+                [ hadDhallDiff
+                , hadDhallFilter
+                , hadDhallFormat
+                , hadDhallFreeze
+                , hadDhallHash
+                , hadDhallLint
+                , hadDhallRepl
+                , hadDhallResolve
+                , hadHelp
                 , hadInit
 
                 , not hadDhall
@@ -1038,13 +1098,20 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ]
         <> munless
             ( List.or
-                [ hadHelp, hadDhallDiff, hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadDhallLint, hadDhallRepl
-                , hadDhallResolve, hadInit
+                [ hadDhallDiff
+                , hadDhallFormat
+                , hadDhallFreeze
+                , hadDhallHash
+                , hadDhallLint
+                , hadDhallRepl
+                , hadDhallResolve
+                , hadHelp
+                , hadInit
 
                 , not $ List.or
                     [ hadDhall
                     , hadDhallBash
+                    , hadDhallFilter
                     , hadDhallText
                     ]
                 ]
@@ -1053,7 +1120,11 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ]
         <> munless
             ( List.or
-                [ hadHelp, hadDhallFormat, hadDhallRepl, hadDhallExec, hadInit
+                [ hadDhallExec
+                , hadDhallFormat
+                , hadDhallRepl
+                , hadHelp
+                , hadInit
 
                 -- Output options can be specified only once.
                 , hadOutput
@@ -1062,6 +1133,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     [ hadDhall
                     , hadDhallBash
                     , hadDhallDiff
+                    , hadDhallFilter
                     , hadDhallFreeze
                     , hadDhallHash
                     , hadDhallLint
@@ -1073,7 +1145,11 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ["-o", "--output="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhallDiff, hadDhallFormat, hadDhallRepl, hadInit
+                [ hadDhallDiff
+                , hadDhallFormat
+                , hadDhallRepl
+                , hadHelp
+                , hadInit
 
                 -- Input options can be specified only once.
                 , hadInput
@@ -1086,6 +1162,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallBash
                     , hadDhallDiff
                     , hadDhallExec
+                    , hadDhallFilter
                     , hadDhallFreeze
                     , hadDhallHash
                     , hadDhallLint
@@ -1097,7 +1174,11 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ["-i", "--input="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhallDiff, hadDhallFormat, hadDhallRepl, hadInit
+                [ hadDhallDiff
+                , hadDhallFormat
+                , hadDhallRepl
+                , hadHelp
+                , hadInit
 
                 -- Expression options can be specified only once.
                 , hadExpression
@@ -1110,6 +1191,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallBash
                     , hadDhallDiff
                     , hadDhallExec
+                    , hadDhallFilter
                     , hadDhallFreeze
                     , hadDhallHash
                     , hadDhallLint
@@ -1121,8 +1203,16 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ["--expression="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFormat, hadDhallHash
-                , hadDhallRepl, hadDhallResolve, hadDhallExec, hadInit
+                [ hadDhall
+                , hadDhallDiff
+                , hadDhallExec
+                , hadDhallFilter
+                , hadDhallFormat
+                , hadDhallHash
+                , hadDhallRepl
+                , hadDhallResolve
+                , hadHelp
+                , hadInit
 
                 , not hadDhallFreeze
                 ]
@@ -1130,17 +1220,36 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ["--remote-only", "--no-remote-only"]
 --      <> munless
 --          ( List.or
---              [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
---              , not hadDhallFormat, hadDhallHash, hadDhallRepl
---              , hadDhallResolve, hadDhallExec, hadInit
+--              [ hadDhall
+--              , hadDhallDiff
+--              , hadDhallExec
+--              , hadDhallFilter
+--              , hadDhallFreeze
+--              , hadDhallHash
+--              , hadDhallRepl
+--              , hadDhallResolve
+--              , hadDhallText
+--              , hadHelp
+--              , hadInit
+--
+--              , not hadDhallFormat
 --              ]
 --          )
 --          ["--check", "--no-check"]
         <> munless
             ( List.or
-                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadDhallExec, hadDhallBash, hadDhallText, hadInit
+                [ hadDhall
+                , hadDhallBash
+                , hadDhallDiff
+                , hadDhallExec
+                , hadDhallFilter
+                , hadDhallFormat
+                , hadDhallFreeze
+                , hadDhallHash
+                , hadDhallRepl
+                , hadDhallText
+                , hadHelp
+                , hadInit
 
                 , not hadDhallResolve
                 ]
@@ -1148,9 +1257,18 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ["--list-imports=immediate", "--list-imports=transitive"]
         <> munless
             ( List.or
-                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadDhallResolve, hadDhallBash, hadDhallText, hadInit
+                [ hadDhall
+                , hadDhallBash
+                , hadDhallDiff
+                , hadDhallFilter
+                , hadDhallFormat
+                , hadDhallFreeze
+                , hadDhallHash
+                , hadDhallRepl
+                , hadDhallResolve
+                , hadDhallText
+                , hadHelp
+                , hadInit
 
                 -- This option can be specified only once.
                 , hadInterpreter
@@ -1161,18 +1279,36 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ["--interpreter="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadDhallRepl
-                , hadDhallResolve, not hadDhallExec, hadDhallBash, hadDhallText
+                [ hadDhall
+                , hadDhallBash
+                , hadDhallDiff
+                , hadDhallFilter
+                , hadDhallFormat
+                , hadDhallFreeze
+                , hadDhallHash
+                , hadDhallRepl
+                , hadDhallResolve
+                , hadDhallText
+                , hadHelp
                 , hadInit
+
+                , not hadDhallExec
                 ]
             )
             ["--interpreter-argument="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
-                , hadDhallExec, hadInit
+                [ hadDhall
+                , hadDhallDiff
+                , hadDhallExec
+                , hadDhallFilter
+                , hadDhallFormat
+                , hadDhallFreeze
+                , hadDhallHash
+                , hadDhallRepl
+                , hadDhallResolve
+                , hadHelp
+                , hadInit
 
                 -- This option can be specified only once.
                 , hadDeclare
@@ -1183,9 +1319,18 @@ configSubcommandCompleter _appNames _cfg _shell index words
             ["--declare="]
         <> munless
             ( List.or
-                [ hadHelp, hadDhall, hadDhallDiff, hadDhallFreeze
-                , hadDhallFormat, hadDhallHash, hadDhallRepl, hadDhallResolve
-                , hadDhallExec, hadDhallBash, hadInit
+                [ hadDhall
+                , hadDhallBash
+                , hadDhallDiff
+                , hadDhallExec
+                , hadDhallFilter
+                , hadDhallFormat
+                , hadDhallFreeze
+                , hadDhallHash
+                , hadDhallRepl
+                , hadDhallResolve
+                , hadHelp
+                , hadInit
 
                 , not hadDhallText
                 ]
