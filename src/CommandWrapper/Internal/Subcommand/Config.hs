@@ -1072,13 +1072,16 @@ configSubcommandCompleter _appNames _cfg _shell index words
             , "--dhall-lint"
             , "--dhall-repl"
             , "--dhall-resolve"
+            , "--dhall-text"
             , "--help", "-h"
             , "--init"
             ]
         <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
         <> munless
             ( List.or
-                [ hadDhallDiff
+                [ hadDhallBash
+                , hadDhallDiff
+                , hadDhallExec
                 , hadDhallFilter
                 , hadDhallFormat
                 , hadDhallFreeze
@@ -1086,6 +1089,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , hadDhallLint
                 , hadDhallRepl
                 , hadDhallResolve
+                , hadDhallText
                 , hadHelp
                 , hadInit
 
@@ -1099,6 +1103,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
         <> munless
             ( List.or
                 [ hadDhallDiff
+                , hadDhallExec
                 , hadDhallFormat
                 , hadDhallFreeze
                 , hadDhallHash
@@ -1189,7 +1194,6 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , not $ List.or
                     [ hadDhall
                     , hadDhallBash
-                    , hadDhallDiff
                     , hadDhallExec
                     , hadDhallFilter
                     , hadDhallFreeze
@@ -1204,13 +1208,16 @@ configSubcommandCompleter _appNames _cfg _shell index words
         <> munless
             ( List.or
                 [ hadDhall
+                , hadDhallBash
                 , hadDhallDiff
                 , hadDhallExec
                 , hadDhallFilter
                 , hadDhallFormat
                 , hadDhallHash
+                , hadDhallLint
                 , hadDhallRepl
                 , hadDhallResolve
+                , hadDhallText
                 , hadHelp
                 , hadInit
 
@@ -1221,11 +1228,13 @@ configSubcommandCompleter _appNames _cfg _shell index words
 --      <> munless
 --          ( List.or
 --              [ hadDhall
+--              , hadDhallBash
 --              , hadDhallDiff
 --              , hadDhallExec
 --              , hadDhallFilter
 --              , hadDhallFreeze
 --              , hadDhallHash
+--              , hadDhallLint
 --              , hadDhallRepl
 --              , hadDhallResolve
 --              , hadDhallText
@@ -1246,6 +1255,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , hadDhallFormat
                 , hadDhallFreeze
                 , hadDhallHash
+                , hadDhallLint
                 , hadDhallRepl
                 , hadDhallText
                 , hadHelp
@@ -1264,6 +1274,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , hadDhallFormat
                 , hadDhallFreeze
                 , hadDhallHash
+                , hadDhallLint
                 , hadDhallRepl
                 , hadDhallResolve
                 , hadDhallText
@@ -1286,6 +1297,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , hadDhallFormat
                 , hadDhallFreeze
                 , hadDhallHash
+                , hadDhallLint
                 , hadDhallRepl
                 , hadDhallResolve
                 , hadDhallText
@@ -1305,8 +1317,10 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , hadDhallFormat
                 , hadDhallFreeze
                 , hadDhallHash
+                , hadDhallLint
                 , hadDhallRepl
                 , hadDhallResolve
+                , hadDhallText
                 , hadHelp
                 , hadInit
 
@@ -1327,6 +1341,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , hadDhallFormat
                 , hadDhallFreeze
                 , hadDhallHash
+                , hadDhallLint
                 , hadDhallRepl
                 , hadDhallResolve
                 , hadHelp
@@ -1348,6 +1363,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
         , ">"
         , ">&"
         , ">>"
+        , "<<<"
         ]
 
     bashCompleter a p = Options.bashCompleter a p pat
