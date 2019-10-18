@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+--
 -- This script can be used in multiple ways, here are two of them:
 --
 -- ```
@@ -10,9 +12,9 @@
 -- ${TOOLSET_COMMAND} config --dhall-text <<< './exec-command-to-shell.dhall env:EXEC_COMMAND'
 -- ```
 
-let ExecCommand = ./CommandWrapper/Type/ExecCommand
+let ExecCommand = ../../CommandWrapper/Type/ExecCommand
 
-let EnvironmentVariable = ./CommandWrapper/Type/EnvironmentVariable
+let EnvironmentVariable = ../../CommandWrapper/Type/EnvironmentVariable
 
 let List/map =
       https://prelude.dhall-lang.org/List/map sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680
