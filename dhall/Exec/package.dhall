@@ -1,31 +1,31 @@
 -- vim: filetype=dhall
 
 { bazel =
-      ./bazel/package.dhall sha256:1128d37404f94a83a1d084a38605eb0e7d45856fbae20ee49ccadaad4f2a0b6d
+      ./bazel/package.dhall sha256:f7500f8d2730acd5a16cbbab756276cbac4799fd35b6639fb0860dba97ac3da7
     ? ./bazel/package.dhall
 , buildifier =
       ./buildifier/package.dhall sha256:2db5e3723ff4a17092c826b9d9200eab106d720dd940c7b4024d5a847e68f404
     ? ./buildifier/package.dhall
 , completion =
-      ./completion/package.dhall sha256:e5a4d2f2a69a37cc1ec26cfd5f8f42cafd9c012aab8a42350e20f214ae876632
+      ./completion/package.dhall sha256:7f320680b49adfdc8a3e0406675dc92e9aea796a37558fe720b218a9ccf815a7
     ? ./completion/package.dhall
 , direnv =
-      ./direnv/package.dhall sha256:5470faa0712aa2689e8390bb51426d4404ff321904f8f453ff98fb88faf42ec9
+      ./direnv/package.dhall sha256:3f2befdc67cb37b9538f445baac73cfd7dfa5c18d2b350adcf13ab3f8047ce61
     ? ./direnv/package.dhall
 , docker =
       ./docker/package.dhall sha256:b45a336cdda1a1c293273e607199982214b02c53d1f8f6a6895ad0b02d4721e7
     ? ./docker/package.dhall
 , docker-compose =
-      ./docker-compose/package.dhall sha256:1bb4247d70f469ad0c80b4afdf1b37b254fe6be672beee356c658f117234a5dd
+      ./docker-compose/package.dhall sha256:42f113616b271e40fc6fcb3716616b1d697d9126071794291bd0b4a471c56cbc
     ? ./docker-compose/package.dhall
 , firefox =
       ./firefox/package.dhall sha256:7296badbac888c2c8a78bf5590b44231fbca7cf88d368574bace43134d0d5b81
     ? ./firefox/package.dhall
 , go-jira =
-      ./go-jira/package.dhall sha256:399134ddae00f4c4617bba93550d6b12b56a18deb9bb548835f724b15a222093
+      ./go-jira/package.dhall sha256:36854ec988f6ed9021d5c863e1373004cc108f17177978ca4918c0d846924734
     ? ./go-jira/package.dhall
 , nix =
-      ./nix/package.dhall sha256:bef79f326580afeab086a18701d379cab8b3b3d1c8e9f0cbfe52e8ee3b2cf8d9
+      ./nix/package.dhall sha256:89d94de59db98b217e06a77956750dfd2fe0767f3123e17245b1fbae8a1b8879
     ? ./nix/package.dhall
 , pg_dump =
       ./pg_dump/package.dhall sha256:0c0e9c664275c44fe289adf4972a0c8e16afc8d72238ab3c7eb449fa4a479628
@@ -52,6 +52,6 @@
       ./xdg-open/package.dhall sha256:141cea3791cf64099e76ae3245f60c248c386fce353c68d410d297af2d4191b8
     ? ./xdg-open/package.dhall
 , yarn =
-      ./yarn/package.dhall sha256:d345659d2980ed9e8fe8af6bd104a35d6d9a828b476b32a97e7cdcce1bb64aff
+      ./yarn/package.dhall sha256:d4e35b5a7574d2c33125d94bbf4af50bbdccf100eba34992c067662ddf3c2341
     ? ./yarn/package.dhall
 }

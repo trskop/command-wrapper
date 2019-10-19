@@ -1,20 +1,16 @@
 -- vim: filetype=dhall
 
-let -- To generate `hash` following command can be used:
-    --
-    -- ```Bash
-    -- dhall hash <<< '../completion/direnv.bash as Text'
-    -- ```
-    script =
-      { url =
-          "https://raw.githubusercontent.com/trskop/command-wrapper/f1d0363570f96f476ec68366f10f742d2702e845/dhall/Exec/completion/direnv.bash"
-      , hash =
-          "sha256:4a52e95eab0a2f746200e96bd68dc57b546eff587743a24034dd849c8cb08fab"
-      }
+let script =
+        ../completion/scripts.dhall sha256:f177a97cf61d93302fc3c0454b654269d0ad3938e8aaa1c80de74acfa7d8cce4
+      ? ../completion/scripts.dhall
+
+let wrapper =
+        ../completion/wrapper sha256:6f4115a040ee81275a40a8785baefbe391cf67cb57e5d4e79a8e0fedf572c036
+      ? ../completion/wrapper
 
 in    λ(toolset : Text)
-    → ../completion/wrapper
+    → wrapper
         { toolset = toolset
-        , expression = "${script.url} ${script.hash} as Text"
+        , expression = "(${script.url} ${script.hash}).direnv"
         , command = "direnv"
         }

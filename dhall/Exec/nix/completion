@@ -1,20 +1,25 @@
 -- vim: filetype=dhall
 
 let script =
-      { url =
-          "https://raw.githubusercontent.com/trskop/command-wrapper/f1d0363570f96f476ec68366f10f742d2702e845/dhall/Exec/completion/nix.bash.dhall"
-      , hash =
-          "sha256:272734eefcca7d0128cdaeae2179f19a3ffa33492e6c11de089df2d09af8ae42"
-      }
+        ../completion/scripts.dhall sha256:f177a97cf61d93302fc3c0454b654269d0ad3938e8aaa1c80de74acfa7d8cce4
+      ? ../completion/scripts.dhall
 
-let Command = ./Command/Type
+let Command =
+        ./Command/Type sha256:dc2b111daadb4265396dc562b757f208189242a884e704a4298686ce8984af27
+      ? ./Command/Type
 
-let Command/show = ./Command/show
+let Command/show =
+        ./Command/show sha256:802eda931b470db5c62b8c19260b9da1c87f5ea05ef5317ee241d87d9bc05961
+      ? ./Command/show
+
+let wrapper =
+        ../completion/wrapper sha256:6f4115a040ee81275a40a8785baefbe391cf67cb57e5d4e79a8e0fedf572c036
+      ? ../completion/wrapper
 
 in    λ(toolset : Text)
     → λ(command : Command)
-    → ../completion/wrapper
+    → wrapper
         { toolset = toolset
-        , expression = "${script.url} ${script.hash} : Text"
+        , expression = "(${script.url} ${script.hash}).nix"
         , command = Command/show command
         }
