@@ -25,4 +25,5 @@ compilation.
 
 *   [`./command-wrapper-style-completion-info.dhall`](./command-wrapper-style-completion-info.dhall)
 *   [`./completion.dhall`](./completion.dhall)
+*   [`./import-shell-library.dhall`](./import-shell-library.dhall)
 *   [`./optparse-completion-info.dhall`](./optparse-completion-info.dhall)

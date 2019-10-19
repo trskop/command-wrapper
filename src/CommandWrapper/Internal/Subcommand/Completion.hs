@@ -62,6 +62,7 @@ import System.IO (IO, putStrLn, stderr, stdout, writeFile)
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (putStr, writeFile)
 import Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI (foldedCase, mk)
@@ -81,7 +82,7 @@ import Data.Output
 import qualified Data.Output as Output (HasOutput(output))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines, unpack)
-import qualified Data.Text.IO as Text (putStrLn, writeFile)
+import qualified Data.Text.IO as Text (putStr, putStrLn, writeFile)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -257,9 +258,13 @@ instance HasOutput ScriptOptions where
     type Output ScriptOptions = OutputStdoutOrFile
     output = typed
 
+data ImportOrContent = Import | Content
+  deriving stock (Generic, Show)
+
 data LibraryOptions = LibraryOptions
     { shell :: Options.Shell
     , output :: OutputStdoutOrFile
+    , importOrContent :: ImportOrContent
     }
   deriving stock (Generic, Show)
 
@@ -353,6 +358,7 @@ defLibraryOptions :: LibraryOptions
 defLibraryOptions = LibraryOptions
     { shell = Options.Bash
     , output = OutputStdoutOnly
+    , importOrContent = Content
     }
 
 data WrapperOptions = WrapperOptions
@@ -449,27 +455,58 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                                     Options.Zsh  -> zsh
 
         LibraryMode
-          LibraryOptions{shell, output}
-          Global.Config{colourOutput, verbosity} -> case shell of
-            -- TODO: We should consider piping the output to a pager or similar
-            -- tool when the stdout is attached to a terminal.  For example
-            -- `bat` would be a great choice if it is installed.
-            Options.Bash ->
-                let lib = $(embedFile "bash/lib.sh")
-                 in case output of
+          LibraryOptions{shell, output, importOrContent}
+          Global.Config{colourOutput, verbosity} -> do
+
+            let lib :: ByteString
+                lib = $(embedFile "bash/lib.sh")
+
+                importScriptExpr =
+                    $(Dhall.TH.staticDhallExpression
+                        "./dhall/import-shell-library.dhall < Bash >.Bash"
+                    )
+                subcommand' :: forall ann. Pretty.Doc ann
+                subcommand' = pretty (usedName appNames <> " completion")
+
+                getImportScript :: IO Text
+                getImportScript = do
+                    let script = Dhall.extract Dhall.auto importScriptExpr
+                    case validationToEither script of
+                        Left e -> do
+                            errorMsg subcommand' verbosity colourOutput stderr
+                                ( "Failed to generate completion script: "
+                                <> fromString (show e)
+                                )
+                            -- TODO: This is probably not the best exit code.
+                            exitWith (ExitFailure 1)
+
+                        Right t ->
+                            pure t
+
+            case shell of
+                -- TODO: We should consider piping the output to a pager or
+                -- similar tool when the stdout is attached to a terminal.  For
+                -- example `bat` would be a great choice if it is installed.
+                Options.Bash -> do
+                    case output of
                         OutputHandle _ ->
-                            ByteString.putStr lib
+                            case importOrContent of
+                                Import ->
+                                    getImportScript >>= Text.putStr
+                                Content ->
+                                    ByteString.putStr lib
 
                         OutputNotHandle (OutputFile fn) ->
-                            ByteString.writeFile fn lib
+                            case importOrContent of
+                                Import ->
+                                    getImportScript >>= Text.writeFile fn
+                                Content ->
+                                    ByteString.writeFile fn lib
 
-            _ -> do
-                let subcommand :: forall ann. Pretty.Doc ann
-                    subcommand = pretty (usedName appNames <> " completion")
-
-                errorMsg subcommand verbosity colourOutput stderr
-                    $ fromString (show shell) <> ": Unsupported SHELL value."
-                exitWith (ExitFailure 125)
+                _ -> do
+                    errorMsg subcommand' verbosity colourOutput stderr
+                        $ fromString (show shell) <> ": Unsupported SHELL value."
+                    exitWith (ExitFailure 125)
 
         QueryMode query@Query{..} config' -> case what of
             QuerySubcommands
@@ -866,7 +903,7 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         ] <> outputOptions
 
     -- At the moment we have library only for Bash.
-    libraryOptions = ["--shell=bash"]
+    libraryOptions = ["--shell=bash", "--import", "--content"]
 
     completionOptions = ["--shell=", "--subcommand=", "--"] <> outputOptions
 
@@ -932,7 +969,11 @@ parseOptions appNames config arguments = do
                 ]
 
         , dualFoldEndo
-            <$> libraryFlag
+            <$> ( libraryFlag
+                <*> ( dualFoldEndo
+                    <$> many (importFlag <|> contentFlag)
+                    )
+                )
             <*> optional Options.shellOption
             <*> optional outputOption
 
@@ -981,9 +1022,11 @@ parseOptions appNames config arguments = do
         HelpMode a -> f a
 
     switchToScriptMode = switchTo (ScriptMode defScriptOptions)
-    switchToLibraryMode = switchTo (LibraryMode defLibraryOptions)
     switchToQueryMode = switchTo (QueryMode defQueryOptions)
     switchToHelpMode = switchTo HelpMode
+
+    switchToLibraryMode (Endo f) =
+        switchTo (LibraryMode $ f defLibraryOptions)
 
     switchToWrapperMode args expression =
         switchTo (WrapperMode WrapperOptions{arguments = args, expression})
@@ -1009,9 +1052,25 @@ parseOptions appNames config arguments = do
     scriptFlag :: Options.Parser (Endo (CompletionMode Global.Config))
     scriptFlag = Options.flag mempty switchToScriptMode (Options.long "script")
 
-    libraryFlag :: Options.Parser (Endo (CompletionMode Global.Config))
+    libraryFlag
+        :: Options.Parser
+            ( Endo LibraryOptions
+            -> Endo (CompletionMode Global.Config)
+            )
     libraryFlag =
         Options.flag mempty switchToLibraryMode (Options.long "library")
+
+    importFlag :: Options.Parser (Endo LibraryOptions)
+    importFlag =
+        Options.flag' setValue (Options.long "import")
+      where
+        setValue = Endo \opts -> opts{importOrContent = Import}
+
+    contentFlag :: Options.Parser (Endo LibraryOptions)
+    contentFlag =
+        Options.flag' setValue (Options.long "content")
+      where
+        setValue = Endo \opts -> opts{importOrContent = Content}
 
     queryFlag :: Options.Parser (Endo (CompletionMode Global.Config))
     queryFlag = Options.flag mempty switchToQueryMode (Options.long "query")
@@ -1151,7 +1210,7 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             <+> longOption "query"
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
             <+> Pretty.brackets
-                ( longOption "subcommands"
+                (         longOption "subcommands"
                 <> "|" <> longOption "subcommand-aliases"
                 <> "|" <> longOption "supported-shells"
                 <> "|" <> longOption "verbosity-values"
@@ -1162,6 +1221,10 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "completion"
             <+> longOption "library"
             <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
+            <+> Pretty.brackets
+                (         longOption "import"
+                <> "|" <> longOption "content"
+                )
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "completion"
@@ -1308,6 +1371,23 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ Pretty.reflow "Print library for", metavar "SHELL" <> "."
             , Pretty.reflow "Currently only supported value is"
             , value "bash" <> "."
+            ]
+
+        , optionDescription ["--import"]
+            [ Pretty.reflow "Print code snipped for ", metavar "SHELL"
+            , Pretty.reflow
+                "that imports Command Wrapper library for it.  If neither"
+            , longOption "content" <> ",", "nor", longOption "import"
+            , Pretty.reflow "is specified then", longOption "content"
+            , Pretty.reflow "is assumed."
+            ]
+
+        , optionDescription ["--content"]
+            [ Pretty.reflow "Print content of the Command Wrapper library for"
+            , metavar "SHELL" <> "."
+            , Pretty.reflow "This is the default behavior if neither"
+            , longOption "content" <> ",", "nor", longOption "import"
+            , Pretty.reflow "is specified."
             ]
         ]
 

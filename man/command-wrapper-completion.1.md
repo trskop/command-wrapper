@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 18th July 2019
+% 19th October 2019
 
 
 # NAME
@@ -21,7 +21,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
 \[\--output=*FILE*] \--subcommand=*SUBCOMMAND* \--alias=*ALIAS* \[\--alias=*ALIAS* ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library \[\--shell=*SHELL*]
-\[\--output=*FILE*]
+\[\--import|\--content] \[\--output=*FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[\--output=*FILE*]
 \[*QUERY\_OPTIONS*] \[PATTERN]
@@ -131,6 +131,15 @@ interface for querying Command Wrapper's command line interface (CLI).
 
 \--shell=*SHELL*
 :   Print library for *SHELL*.  Currently only supported value is *bash*.
+
+\--import
+:   Print code snipped for *SHELL* that imports Command Wrapper library for it.
+    If neither `--content`, nor `--import` is specified then --content is
+    assumed.
+
+\--content
+:   Print content of the Command Wrapper library for *SHELL*.  This is the
+    default behavior if neither `--content`, nor `--import` is specified.
 
 
 # QUERY OPTIONS

@@ -87,6 +87,14 @@
 
 *   Command line completion for `EXPRESSION` in `--let=VARIABLE=EXPRESSION`.
 
+*   `--dhall-list` functionality that takes a list as an input and produces
+    Dhall list as an output:
+
+    ```
+    $ printf 'foo\nbar\n' | "${TOOLSET}" config --dhall-list --as=Text
+    [ "foo", "bar" ]
+    ```
+
 
 ### Help
 
