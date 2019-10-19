@@ -1,7 +1,37 @@
 #!/usr/bin/env bash
 
-# Cannot be used due to sourced 'bash_completion'.
-#set -euo pipefail
+# Copyright (c) 2019, Peter Trsko
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
+#       with the distribution.
+#
+#     * Neither the name of Peter Trsko nor the names of other
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+set -euo pipefail
 
 function findCompletion() {
     local cmdName="$1"; shift
@@ -9,7 +39,7 @@ function findCompletion() {
 
     local -a shareDirectories=()
     shareDirectories=(
-        # E.g. /nix/store/${hash}-docker-compose-${version}/share
+        # E.g. /nix/store/${hash}-bazel-${version}/share
         "$(dirname "$(command -v "${cmd}")")/../share"
         "${HOME}/.nix-profile/share"
         '/usr/local/share'
@@ -32,7 +62,7 @@ function findCompletion() {
 
 function usage() {
     cat <<EOF
-Completion for docker-compose with Command Wrapper style UI.
+Completion for Bazel with Command Wrapper style UI.
 
 Usage:
 
@@ -68,7 +98,7 @@ function main() {
         esac
     done
 
-    if ! command -v 'docker-compose' &>/dev/null; then
+    if ! command -v 'bazel' &>/dev/null; then
         # TODO: Consider using default shell completion.
         exit 0
     fi
@@ -76,6 +106,9 @@ function main() {
     if (( index >= ${#words[@]} )); then
         words+=('')
     fi
+
+    # Debugging:
+    : index="${index}" 'words=(' "${words[@]}" ')'
 
     function concat() {
         # Reason for this contraption is to prevent interpretation of e.g. '-e'
@@ -93,9 +126,6 @@ function main() {
     local COMP_CWORD="${index}"
     local -a COMPREPLY
 
-    # Debugging:
-    : index="${index}" 'words=(' "${words[@]}" ')'
-
     function complete() {
         :
     }
@@ -105,12 +135,9 @@ function main() {
     }
 
     # shellcheck source=/dev/null
-    source /usr/share/bash-completion/bash_completion
+    source <(findCompletion 'bazel' 'bazel')
 
-    # shellcheck source=/dev/null
-    source <(findCompletion 'docker-compose' 'docker-compose')
-
-    _docker_compose
+    _bazel__complete
 
     for reply in "${COMPREPLY[@]}"; do
         printf -- '%s\n' "${reply% }"

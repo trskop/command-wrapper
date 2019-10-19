@@ -2,7 +2,7 @@
 
 let script =
       { url =
-          "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/completion/yarn.bash.dhall"
+          "https://raw.githubusercontent.com/trskop/command-wrapper/f1d0363570f96f476ec68366f10f742d2702e845/dhall/Exec/completion/yarn.bash.dhall"
       , hash =
           "sha256:3831560dc2772cea705e0957b32058319745e93642735aaf817fa2d3fb9aa7b4"
       }

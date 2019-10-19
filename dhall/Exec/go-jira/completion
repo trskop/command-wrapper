@@ -2,7 +2,7 @@
 
 let script =
       { url =
-          "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/completion/go-jira.bash"
+          "https://raw.githubusercontent.com/trskop/command-wrapper/f1d0363570f96f476ec68366f10f742d2702e845/dhall/Exec/completion/go-jira.bash"
       , hash =
           "sha256:c95405b6712dee0654df7ea17cbd6bb8f33a0435cec48cb5f8723ec9b94192d3"
       }
