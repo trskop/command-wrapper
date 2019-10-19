@@ -21,10 +21,11 @@ module CommandWrapper.Internal.Subcommand.Config
 import Prelude (fromIntegral)
 
 import Control.Applicative ((<*>), (<|>), many, optional, pure)
---import Control.Monad ((>>=), unless)
+import Control.Monad (when)
 import Data.Bool (Bool(False, True), (||), not, otherwise)
 import qualified Data.Char as Char (isDigit)
 import Data.Either (Either(Left, Right))
+import Data.Eq ((==))
 import Data.Foldable (asum, null)
 import Data.Function (($), (.), const)
 import Data.Functor (Functor, (<$>), (<&>))
@@ -40,18 +41,19 @@ import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Just), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
-import Data.String (String)
+import Data.String (String, fromString)
 import Data.Word (Word)
 import GHC.Generics (Generic)
 --import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (IO{-, stderr-}, stdout)
 import Text.Show (Show)
 
-import Data.CaseInsensitive as CI (mk)
+import qualified Data.CaseInsensitive as CI (mk)
 import Data.Generics.Product.Fields (HasField')
 import Data.Monoid.Endo.Fold (dualFoldEndo)
 import Data.Output (HasOutput(Output), setOutput)
 import Data.Text (Text)
+import qualified Data.Text as Text (break, drop, null)
 import Data.Text.Prettyprint.Doc ((<+>){-, pretty-})
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -67,6 +69,7 @@ import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Mainplate (applySimpleDefaults)
 import qualified Options.Applicative as Options
     ( Parser
+    , ReadM
     , defaultPrefs
     , eitherReader
     , flag
@@ -133,6 +136,8 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , ResolveMode(..)
     , ToText(..)
     , ToTextMode(..)
+    , Variable(..)
+    , addVariable
     , defBash
     , defDiff
     , defExec
@@ -250,6 +255,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (alphaFlag <|> noAlphaFlag)
                 <*> many (annotateFlag <|> noAnnotateFlag)
                 <*> many (typeFlag <|> noTypeFlag)
+                <*> many letOption
                 <*> optional outputOption
                 <*> optional (expressionOption <|> inputOption)
             )
@@ -328,6 +334,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> Options.strArgument mempty
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many letOption
                 <*> optional outputOption
                 <*> optional (expressionOption <|> inputOption)
             )
@@ -485,6 +492,27 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         :: (Output a ~ Dhall.Output, HasOutput a)
         => Options.Parser (Endo a)
     outputOption = Endo . setOutput <$> Options.outputOption
+
+    letOption
+        :: forall a
+        .  HasField' "variables" a [Dhall.Variable]
+        => Options.Parser (Endo a)
+    letOption =
+        Options.option parseLet
+            (Options.long "let" <> Options.metavar "NAME=EXPRESSION")
+      where
+        parseLet :: Options.ReadM (Endo a)
+        parseLet = Options.eitherReader \definition -> do
+            let (variable, expr) =
+                    Text.break (== '=') (fromString definition)
+
+            when (Text.null variable || Text.null expr || expr == "=")
+                (Left "Neither NAME nor EXPRESSION can be empty.")
+
+            pure . Endo $ Dhall.addVariable Dhall.Variable
+                { variable
+                , value = Text.drop 1 expr  -- "=EXPRESSION" --> "EXPRESSION"
+                }
 
     dhallDiffFlag
         :: Options.Parser
@@ -659,6 +687,9 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                     <> "|" <> longOption "[no-]type"
                     )
             <+> Pretty.brackets
+                ( longOptionWithArgument "let" "NAME=EXPRESSION"
+                )
+            <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
                 <> "|" <> longOptionWithArgument "input" "FILE"
                 )
@@ -667,6 +698,9 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "config"
             <+> longOption "dhall-filter"
             <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "let" "NAME=EXPRESSION"
+                )
             <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
                 <> "|" <> longOptionWithArgument "input" "FILE"
@@ -818,6 +852,13 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , optionDescription ["--output=FILE", "--output FILE", "-o FILE"]
             [ Pretty.reflow "Write optput into", metavar "FILE"
             , Pretty.reflow "instead of standard output."
+            ]
+
+        , optionDescription ["--let=NAME=EXPRESSION"]
+            [ Pretty.reflow "Declare variable", metavar "NAME"
+            , Pretty.reflow "with it's value set to"
+            , metavar "EXPRESSION" <> ","
+            , Pretty.reflow "as if it was part of the input."
             ]
 
         , optionDescription ["--dhall-filter"]
@@ -985,6 +1026,13 @@ configSubcommandCompleter _appNames _cfg _shell index words
 
   | "--interpreter=" `List.isPrefixOf` pat =
         bashCompleter "command" "--interpreter="
+
+{-
+  | "--let=" `List.isPrefixOf` pat =
+        TODO: Figure out if it contains another '=' sign to do completion on
+        file.
+        bashCompleter "file" ("--let=" <> variableName <> "=")
+-}
 
   | null pat =
         pure possibleOptions
@@ -1351,6 +1399,28 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 ]
             )
             ["--list"]
+        <> munless
+            ( List.or
+                [ hadDhallBash
+                , hadDhallDiff
+                , hadDhallExec
+                , hadDhallFormat
+                , hadDhallFreeze
+                , hadDhallHash
+                , hadDhallLint
+                , hadDhallRepl
+                , hadDhallResolve
+                , hadDhallText
+                , hadHelp
+                , hadInit
+
+                , not $ List.or
+                    [ hadDhall
+                    , hadDhallFilter
+                    ]
+                ]
+            )
+            ["--let="]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 

@@ -18,6 +18,8 @@
     file for a subcommand inside toolset-specific config directory, then these
     would be used.
 
+*   Pipe help message to pager if on terminal and the message is too long.
+
 
 ## Internal Subcommands
 
@@ -75,6 +77,15 @@
     Would be really convenient for multitude of existing use cases.
 
 *   Support most of options of `--dhall` mode in `--dhall-filter` mode as well.
+
+*   Following Dhall commands should have `--let=VARIABLE=EXPRESSION` option:
+
+    ```
+    TOOLSET config --dhall-text [OPTIONS]
+    TOOLSET config --dhall-bash [OPTIONS]
+    ```
+
+*   Command line completion for `EXPRESSION` in `--let=VARIABLE=EXPRESSION`.
 
 
 ### Help

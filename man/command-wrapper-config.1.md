@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 15th October 2019
+% 19th October 2019
 
 
 # NAME
@@ -13,11 +13,13 @@ toolset configuration.
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 \[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type]
+\[\--let=*NAME*=*EXPRESSION* ...]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-filter
 \[\--\[no-]allow-imports]
+\[\--let=*NAME*=*EXPRESSION* ...]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 *EXPRESSION*
@@ -224,6 +226,18 @@ We can organise `config` subcommand abilities into following categories:
 \--output=*FILE*, **\--output** *FILE*, **-o** *FILE*
 :   Write optput into *FILE* instead of standard output.  Can be specified only
     once.
+
+\--let=*NAME*=*EXPRESSION*
+:   Declare variable *NAME* with it's value set to *EXPRESSION*, as if it was part
+    of the input.  In pseudo Dhall it looks like:
+
+    ```
+    let NAME = EXPRESSION
+    in  INPUT
+    ```
+
+    This is useful if it's not possible to pass Dhall expressions via
+    environment variables.
 
 \--dhall-filter
 :   Puts Dhall input expression into the scope of *EXPRESSION* as a value

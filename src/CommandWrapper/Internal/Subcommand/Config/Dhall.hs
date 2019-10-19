@@ -86,6 +86,10 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
 
     , Output(..)
 
+    -- * Variable
+    , Variable(..)
+    , addVariable
+
     -- * Helpers
     , setAllowImports
     , handleExceptions
@@ -96,7 +100,7 @@ import Prelude hiding (filter)
 
 import Control.Exception (Exception, SomeException, bracket, handle, throwIO)
 import Control.Monad (unless)
-import Data.Foldable (for_, traverse_)
+import Data.Foldable (foldrM, for_, traverse_)
 import Data.Functor ((<&>))
 import Data.List as List (dropWhile, span)
 import Data.List.NonEmpty (NonEmpty((:|)))
@@ -123,7 +127,7 @@ import qualified Crypto.Hash as Crypto (hash)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (hPutStr)
 import Data.Either.Validation (validationToEither)
-import Data.Generics.Internal.VL.Lens (set)
+import Data.Generics.Internal.VL.Lens (set, view)
 import Data.Generics.Product.Fields (HasField', field')
 import Data.Generics.Product.Typed (HasType, typed)
 import Data.Output (IsOutput, HasOutput)
@@ -219,11 +223,13 @@ data Interpreter = Interpreter
     , annotate :: Bool
     , showType :: Bool
 
+    , variables :: [Variable]
+
 --  , inputEncoding   :: InputEncoding
 --  , outputEncoding  :: OutputEncoding
 
-    , input           :: Input
-    , output          :: Output
+    , input :: Input
+    , output :: Output
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
@@ -238,6 +244,7 @@ defInterpreter = Interpreter
     , alpha = False
     , allowImports = True
     , showType = False
+    , variables = []
 
 --  , inputEncoding   =
 --  , outputEncoding  =
@@ -258,27 +265,23 @@ interpreter :: AppNames -> Config -> Interpreter -> IO ()
 interpreter
   appNames
   config
-  Interpreter{allowImports, alpha, annotate, input, output, showType}
+  Interpreter{allowImports, alpha, annotate, input, output, showType, variables}
   = handleExceptions appNames config do
 
     IO.setLocaleEncoding IO.utf8
-    (expression, status) <- readExpression input
-
     (resolvedExpression, inferredType) <- do
-        expr <- if allowImports
-            then
-                State.evalStateT (Dhall.Import.loadWith expression) status
-            else
-                Dhall.Import.assertNoImports expression
+        expression <- readExpression input
+            >>= resolveImports
+            >>= doTheLetThing allowImports variables
 
-        exprType <- Dhall.Core.throws (Dhall.TypeCheck.typeOf expr)
+        expressionType <- Dhall.Core.throws (Dhall.TypeCheck.typeOf expression)
 
         if showType
             then
-                (exprType,) <$> Dhall.Core.throws
-                    (Dhall.TypeCheck.typeOf exprType)
+                (expressionType,) <$> Dhall.Core.throws
+                    (Dhall.TypeCheck.typeOf expressionType)
             else
-                pure (expr, exprType)
+                pure (expression, expressionType)
 
     let normalizedExpression = Dhall.Core.normalize resolvedExpression
 
@@ -293,6 +296,13 @@ interpreter
                 else alphaNormalizedExpression
 
     withOutputHandle input output (hPutExpr config) annotatedExpression
+  where
+    resolveImports
+        :: (Expr Src Import, Dhall.Import.Status)
+        -> IO (Expr Src X)
+    resolveImports (expr, status)
+      | allowImports = State.evalStateT (Dhall.Import.loadWith expr) status
+      | otherwise    = Dhall.Import.assertNoImports expr
 
 -- }}} Interpreter ------------------------------------------------------------
 
@@ -876,6 +886,7 @@ data Filter = Filter
     , output :: Output
     , expression :: Text
     , allowImports :: Bool
+    , variables :: [Variable]
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
@@ -890,6 +901,7 @@ defFilter expression = Filter
     , output = OutputStdout
     , expression
     , allowImports = True
+    , variables = []
     }
 
 filter :: AppNames -> Config -> Filter -> IO ()
@@ -897,33 +909,35 @@ filter appNames config Filter{..} = handleExceptions appNames config do
 
     IO.setLocaleEncoding IO.utf8
 
-    (inVar, inVarType) <- readExpression input >>= \(expr, status) -> do
-        value <- resolveImports allowImports expr status
-        annotation <- typeOf value
-        pure
-            ( Dhall.Core.Binding
-                { variable = "input"
-                , annotation = Just (Nothing, annotation)
-                , value
-                , bindingSrc0 = Nothing
-                , bindingSrc1 = Nothing
-                , bindingSrc2 = Nothing
-                }
-            , Dhall.Core.Binding
-                { variable = "Input"
-                , annotation = Just (Nothing, Dhall.Core.Const Dhall.Core.Type)
-                , value = annotation
-                , bindingSrc0 = Nothing
-                , bindingSrc1 = Nothing
-                , bindingSrc2 = Nothing
-                }
-            )
+    (inVar, inVarType) <- readExpression input >>= resolveImports allowImports
+        >>= \value -> do
+            annotation <- typeOf value
+            pure
+                ( Dhall.Core.Binding
+                    { variable = "input"
+                    , annotation = Just (Nothing, annotation)
+                    , value
+                    , bindingSrc0 = Nothing
+                    , bindingSrc1 = Nothing
+                    , bindingSrc2 = Nothing
+                    }
+                , Dhall.Core.Binding
+                    { variable = "Input"
+                    , annotation =
+                        Just (Nothing, Dhall.Core.Const Dhall.Core.Type)
+                    , value = annotation
+                    , bindingSrc0 = Nothing
+                    , bindingSrc1 = Nothing
+                    , bindingSrc2 = Nothing
+                    }
+                )
 
     parseExpression expression >>= \expr -> do
         expr' <- Dhall.Core.Let inVar . Dhall.Core.Let inVarType
-            <$> resolveImports True expr (Dhall.Import.emptyStatus ".")
-        _ <- typeOf expr'
-        withOutputHandle' (hPutExpr config) (Dhall.Core.normalize expr')
+            <$> resolveImports True (expr, Dhall.Import.emptyStatus ".")
+        expr'' <- doTheLetThing allowImports variables expr'
+        _ <- typeOf expr''
+        withOutputHandle' (hPutExpr config) (Dhall.Core.normalize expr'')
   where
     withOutputHandle' :: (Handle -> a -> IO ()) -> a -> IO ()
     withOutputHandle' = withOutputHandle input output
@@ -932,10 +946,9 @@ filter appNames config Filter{..} = handleExceptions appNames config do
 
     resolveImports
         :: Bool
-        -> Expr Src Import
-        -> Dhall.Import.Status
+        -> (Expr Src Import, Dhall.Import.Status)
         -> IO (Expr Src X)
-    resolveImports allowImports' expr status
+    resolveImports allowImports' (expr, status)
       | allowImports' = State.evalStateT (Dhall.Import.loadWith expr) status
       | otherwise     = Dhall.Import.assertNoImports expr
 
@@ -1164,5 +1177,59 @@ handleExceptions appNames config@Config{verbosity} =
 
     throwDhallException' :: Exception e => String -> e -> IO a
     throwDhallException' = throwDhallException appNames config stderr
+
+data Variable = Variable
+    { variable :: Text
+    -- ^ Variable name.
+    , value :: Text
+    -- ^ Dhall expression forming variable value\/body.
+    }
+  deriving stock (Eq, Show)
+
+addVariable
+    :: forall a
+    .  (HasField' "variables" a [Variable])
+    => Variable
+    -> a
+    -> a
+addVariable var a =
+    set (field' @"variables") (view (field' @"variables") a <> [var]) a
+
+doTheLetThing :: Bool -> [Variable] -> Expr Src X -> IO (Expr Src X)
+doTheLetThing allowImports = flip (foldrM let_)
+  where
+    let_ :: Variable -> Expr Src X -> IO (Expr Src X)
+    let_ Variable{variable, value = valueText} body = do
+        -- We are parsing and resolving imports for each variable separately.
+        -- It may be more efficient to do so once for the whole expression.
+        parseExpression valueText >>= \expr -> do
+            value <- resolveImports expr
+            _ <- typeOf value
+            pure
+                ( Dhall.Core.Binding
+                    { variable
+                    , annotation = Nothing
+                    , value
+                    , bindingSrc0 = Nothing
+                    , bindingSrc1 = Nothing
+                    , bindingSrc2 = Nothing
+                    }
+                `Dhall.Core.Let` body
+                )
+
+    parseExpression =
+        -- TODO: "(expression)" should mention variable name.
+        Dhall.Core.throws . Dhall.Parser.exprFromText "(expression)"
+
+    resolveImports
+        :: Expr Src Import
+        -> IO (Expr Src X)
+    resolveImports expr
+      | allowImports = State.evalStateT (Dhall.Import.loadWith expr) status
+      | otherwise    = Dhall.Import.assertNoImports expr
+      where
+        status = Dhall.Import.emptyStatus "."
+
+    typeOf = Dhall.Core.throws . Dhall.TypeCheck.typeOf
 
 -- }}} Helper Functions -------------------------------------------------------
