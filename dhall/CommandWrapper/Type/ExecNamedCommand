@@ -1,19 +1,35 @@
-let CommandWithEnvironment : Type = ./CommandWithEnvironment
+let CommandWithEnvironment
+    : Type
+    =   ../CommandWithEnvironment/Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
+      ? ../CommandWithEnvironment/Type
 
-let Verbosity : Type = ./Verbosity
+let Verbosity
+    : Type
+    =   ../Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
+      ? ../Verbosity/Type
 
-let ColourOutput : Type = ./ColourOutput
+let ColourOutput
+    : Type
+    =   ../ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../ColourOutput/Type
 
-let ExecCommand : Type = ./ExecCommand
+let ExecCommand
+    : Type
+    =   ./ExecCommand sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+      ? ./ExecCommand
 
-let Shell : Type = ./Shell
+let Shell
+    : Type
+    =   ./Shell sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
+      ? ./Shell
 
-let NotifyWhen : Type = ./NotifyWhen
+let NotifyWhen
+    : Type
+    =   ./NotifyWhen sha256:93f60a5cc48fb4249657620ea70b25553a89ec0190ed89795dd75890e6e0b2d6
+      ? ./NotifyWhen
 
-in  { name :
-        Text
-    , description :
-        Optional Text
+in  { name : Text
+    , description : Optional Text
     , command :
           ∀(verbosity : Verbosity)
         → ∀(colourOutput : ColourOutput)
@@ -21,13 +37,10 @@ in  { name :
         → ExecCommand
     , completion :
         Optional
-        (   ∀(shell : Shell)
-          → ∀(index : Natural)
-          → ∀(arguments : List Text)
-          → ExecCommand
-        )
-    , notifyWhen :
-        Optional NotifyWhen
+          (   ∀(shell : Shell)
+            → ∀(index : Natural)
+            → ∀(arguments : List Text)
+            → ExecCommand
+          )
+    , notifyWhen : Optional NotifyWhen
     }
-
--- vim: filetype=dhall

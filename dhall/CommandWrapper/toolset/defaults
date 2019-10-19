@@ -2,8 +2,6 @@
 
 let CommandWrapper = ../Types.dhall
 
-let colourOutput = ../colour-output
-
 in    { aliases = ./emptyAliases
       , searchPath = ./emptySearchPath
       , manPath = ./emptyManPath

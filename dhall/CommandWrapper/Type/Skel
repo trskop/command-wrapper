@@ -1,6 +1,10 @@
+-- vim: filetype=dhall
+
 let SkelLanguage : Type = <Bash | Dhall | Haskell >
 
-let Editor : Type = ./Editor
+let Editor : Type =
+        ../Editor/Type
+      ? ../Editor/Type
 
 let SkelTemplate : Type = ./SkelTemplate
 
@@ -18,5 +22,3 @@ let SkelConfig : Type =
 in  { Language = SkelLanguage
     , Config = SkelConfig
     }
-
--- vim: filetype=dhall

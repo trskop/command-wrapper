@@ -1,0 +1,17 @@
+-- vim: filetype=dhall
+
+let Command
+    : Type
+    =   ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
+      ? ../Command/Type
+
+let EnvironmentVariable
+    : Type
+    =   ../EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
+      ? ../EnvironmentVariable/Type
+
+let CommandWithEnvironment
+    : Type
+    = Command ⩓ { environment : List EnvironmentVariable }
+
+in  CommandWithEnvironment : Type

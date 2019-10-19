@@ -1,15 +1,23 @@
-let Schema = (../Types.dhall).Schema
+-- vim: filetype=dhall
 
-let Schema/fold = ../schema/fold
+let Schema =
+        ../Schema/Type sha256:9c43cff6b1099f18d662f6a9cf8dc7c9794ee3feb0a04f6c775d64ac2d3ace11
+      ? ../Schema/Type
 
-let Schema/show = ../schema/show
+let Schema/fold =
+        ../Schema/fold sha256:d1d6bf3fb2eef74ab6989098f2f9818fa1ec10bb477c79b0ab274e190d01dd8d
+      ? ../Schema/fold
 
-let portToText = ./portToText
+let Schema/show =
+        ../Schema/show sha256:ca2c7e183981ae9c8e66a98577c0a91fc851dbeae7c06216afcb8046b6c3d612
+      ? ../Schema/show
+
+let portToText =
+        ./portToText sha256:a1d2133ee6b8cd5a5f2bdbc439a80f4c0ceff48194617cd28c98a1a30ad917e3
+      ? ./portToText
 
 in    λ(s : Schema)
     → λ(host : Text)
     → λ(port : Optional Natural)
     → λ(path : Text)
     → "${Schema/show s}://${host}${portToText port}${path}"
-
--- vim: filetype=dhall

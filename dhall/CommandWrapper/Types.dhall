@@ -1,18 +1,18 @@
 let Skel = ./Type/Skel
 
-in  { ColourOutput = ./Type/ColourOutput
-    , Command = ./Type/Command
-    , CommandWithEnvironment = ./Type/CommandWithEnvironment
+in  { ColourOutput = ./ColourOutput/Type
+    , Command = ./Command/Type
+    , CommandWithEnvironment = ./CommandWithEnvironment/Type
     , ConnectToDatabase = ./Type/ConnectToDatabase
-    , Editor = ./Type/Editor
-    , EnvironmentVariable = ./Type/EnvironmentVariable
+    , Editor = ./Editor/Type
+    , EnvironmentVariable = ./EnvironmentVariable/Type
     , ExitCode = ./Type/ExitCode
     , NotifyWhen = ./Type/NotifyWhen
-    , Schema = ./Type/Schema
+    , Schema = ./Schema/Type
     , Shell = ./Type/Shell
     , SubcommandAlias = ./Type/SubcommandAlias
-    , TerminalEmulator = ./Type/TerminalEmulator
-    , Verbosity = ./Type/Verbosity
+    , TerminalEmulator = ./TerminalEmulator/Type
+    , Verbosity = ./Verbosity/Type
 
     -- Toolset default (main/global) configuration
     , ToolsetConfig = ./Type/ToolsetConfig

@@ -1,23 +1,26 @@
-let Command : Type = ./Command
+-- vim: filetype=dhall
+--
+-- When `shell` is set to `None Text` system shell is used.
 
-let CommandWithEnvironment : Type = ./CommandWithEnvironment
+let Command
+    : Type
+    =   ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
+      ? ../Command/Type
 
-let CdConfig : Type =
-      { directories : List Text
+let CommandWithEnvironment
+    : Type
+    =   ../CommandWithEnvironment/Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
+      ? ../CommandWithEnvironment/Type
 
-      , menuTool
-          : ∀(query : Optional Text)
-          → CommandWithEnvironment
-
-      -- When specified as `None Text` system shell is used.
+let CdConfig
+    : Type
+    = { directories : List Text
+      , menuTool : ∀(query : Optional Text) → CommandWithEnvironment
       , shell : Optional Text
-
-      , terminalEmulator
-          : ∀(directory : Text)
+      , terminalEmulator :
+            ∀(directory : Text)
           → ∀(command : Optional Command)
           → CommandWithEnvironment
       }
 
 in  CdConfig
-
--- vim: filetype=dhall

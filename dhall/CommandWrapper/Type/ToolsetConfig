@@ -1,6 +1,6 @@
-let Verbosity = ./Verbosity
+let Verbosity = ../Verbosity/Type
 
-let ColourOutput = ./ColourOutput
+let ColourOutput = ../ColourOutput/Type
 
 let SubcommandAlias = ./SubcommandAlias
 

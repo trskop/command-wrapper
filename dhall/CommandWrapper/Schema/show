@@ -1,0 +1,15 @@
+-- vim: filetype=dhall
+
+let Schema =
+        ./Type sha256:9c43cff6b1099f18d662f6a9cf8dc7c9794ee3feb0a04f6c775d64ac2d3ace11
+      ? ./Type
+
+let Schema/fold =
+        ./fold sha256:d1d6bf3fb2eef74ab6989098f2f9818fa1ec10bb477c79b0ab274e190d01dd8d
+      ? ./fold
+
+let Schema/show
+    : ∀(schema : Schema) → Text
+    = λ(s : Schema) → Schema/fold Text { Http = "http", Https = "https" } s
+
+in  Schema/show

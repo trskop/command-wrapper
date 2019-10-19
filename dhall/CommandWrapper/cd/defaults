@@ -1,16 +1,34 @@
 -- vim: filetype=dhall
 
-let CommandWrapper = ../Types.dhall
+let Command =
+        ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
+      ? ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
 
-let terminal-emulator/urxvt = ../terminal-emulator/urxvt
+let CommandWithEnvironment =
+        ../CommandWithEnvironment/Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
+      ? ../CommandWithEnvironment/Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
 
-in    { directories = ./emptyDirectories
-      , menuTool = ./menu-tools/fzf
-      , shell = ./systemShell
+let CdConfig =
+        ../Type/CdConfig sha256:cdde9b8672815af3ab1345e0c8fe95fa945cf2f62be00da964136770a4e44933
+      ? ../Type/CdConfig sha256:cdde9b8672815af3ab1345e0c8fe95fa945cf2f62be00da964136770a4e44933
+
+let TerminalEmulator/urxvt =
+        ../TerminalEmulator/urxvt sha256:a2a5f3204af9888a219f457ddf2040777564e3c420ee8e6554234ef08056fd91
+      ? ../TerminalEmulator/urxvt sha256:a2a5f3204af9888a219f457ddf2040777564e3c420ee8e6554234ef08056fd91
+
+in    { directories =
+            ./emptyDirectories sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
+          ? ./emptyDirectories
+      , menuTool =
+            ./menu-tools/fzf sha256:f6f1587c1adf9736b8653a2c7e575452c217e1470fc5bac85b4136fb8138949d
+          ? ./menu-tools/fzf
+      , shell =
+            ./systemShell sha256:12acd324db4f2ef5f9a79ae53f8e325eea080ded9befc5f73fe2235a725e7c92
+          ? ./systemShell
       , terminalEmulator =
             λ(directory : Text)
-          → λ(command : Optional CommandWrapper.Command)
-          →   terminal-emulator/urxvt (Some directory) command
-            : CommandWrapper.CommandWithEnvironment
+          → λ(command : Optional Command)
+          →   TerminalEmulator/urxvt (Some directory) command
+            : CommandWithEnvironment
       }
-    : CommandWrapper.CdConfig
+    : CdConfig
