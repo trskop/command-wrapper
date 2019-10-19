@@ -59,7 +59,8 @@
     ? ./Verbosity/package.dhall
 , utils =
     { List =
-        { head-and-tail = ./List/head-and-tail, index = ./List/index }
+          ./List/package.dhall sha256:1b97cbd979abcff98f78223e6320a6ba81c378392c9bc1476208832834c8aa68
+        ? ./List/package.dhall sha256:1b97cbd979abcff98f78223e6320a6ba81c378392c9bc1476208832834c8aa68
     , Optional =
           ./Optional/package.dhall sha256:33857949625599d84fb64d5b77946655d38fa1e3120ed397f2166a106b09e5f7
         ? ./Optional/package.dhall
