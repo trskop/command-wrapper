@@ -1,3 +1,12 @@
+-- vim: filetype=dhall
+--
+-- Dhall function that describes options for CommandWrapper-style command line
+-- completion API.
+--
+-- ```
+-- SOME_COMMAND --compltion --index=INDEX --shell={bash|fish|zsh} -- [WORD ...]
+-- ```
+
   λ(shell : < Bash | Fish | Zsh >)
 → λ(index : Natural)
 → λ(arguments : List Text)

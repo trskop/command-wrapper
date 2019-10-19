@@ -1,15 +1,20 @@
+-- vim: filetype=dhall
+--
+-- Dhall templates for shell scripts that enable CommandWrapper comamnd line
+-- completon for a specific toolset.
+
   λ(name : Text)
 → λ(toolset : Text)
 → λ(command : Text)
 → λ(subcommand : Optional Text)
 → { bash =
-      let subcommandOption = Optional/fold Text subcommand Text
-            ( λ(cmd : Text)
-            → ''
-              \
-                          --subcommand="${cmd}"''
-            )
-            ""
+      let subcommandOption =
+            Optional/fold
+              Text
+              subcommand
+              Text
+              (λ(cmd : Text) → "\\\n            --subcommand=\"${cmd}\"")
+              ""
 
       in  ''
           function _${name}()
@@ -25,74 +30,76 @@
           }
           complete -o filenames -F _${name} ${name}
           ''
-
   , fish =
-      let subcommandOption = Optional/fold Text subcommand Text
-            (λ(cmd : Text) → "--subcommand='${cmd}'") ""
+      let subcommandOption =
+            Optional/fold
+              Text
+              subcommand
+              Text
+              (λ(cmd : Text) → "--subcommand='${cmd}'")
+              ""
 
       in  ''
-function _${name}
-    set -l cl (commandline --tokenize --current-process)
-    # Hack around fish issue #3934
-    set -l cn (commandline --tokenize --cut-at-cursor --current-process)
-    set -l cn (count $cn)
-    set -l tmpline --index=$cn ${subcommandOption} --shell=fish -- $cl
-    for opt in (env COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion $tmpline)
-      if test -d $opt
-        echo -E "$opt/"
-      else
-        echo -E "$opt"
-      end
-    end
-end
+          function _${name}
+              set -l cl (commandline --tokenize --current-process)
+              # Hack around fish issue #3934
+              set -l cn (commandline --tokenize --cut-at-cursor --current-process)
+              set -l cn (count $cn)
+              set -l tmpline --index=$cn ${subcommandOption} --shell=fish -- $cl
+              for opt in (env COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion $tmpline)
+                if test -d $opt
+                  echo -E "$opt/"
+                else
+                  echo -E "$opt"
+                end
+              end
+          end
 
-complete --no-files --command "${name}" --arguments '(_${name})'
-''
-
-  -- TODO: This code is just a best guess, it was never tested.
+          complete --no-files --command "${name}" --arguments '(_${name})'
+          ''
   , zsh =
-      let subcommandOption = Optional/fold Text subcommand Text
-            ( λ(cmd : Text)
-            → ''
-              \
-                          --subcommand="${cmd}"''
-            )
-            ""
+      let subcommandOption =
+            Optional/fold
+              Text
+              subcommand
+              Text
+              (λ(cmd : Text) → "\\\n            --subcommand=\"${cmd}\"")
+              ""
 
       in  ''
-function _${name} {
+          function _${name} {
 
-local completions
-local word
-local index=$((CURRENT - 1))
+          local completions
+          local word
+          local index=$((CURRENT - 1))
 
-IFS=$'\n' completions=($(
-    COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion \
-        --index="''${index}" ${subcommandOption} \
-        --shell=zsh \
-        -- "''${words[@]}"
-))
+          IFS=$'\n' completions=($(
+              COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion \
+                  --index="''${index}" ${subcommandOption} \
+                  --shell=zsh \
+                  -- "''${words[@]}"
+          ))
 
-for word in $completions; do
-  local -a parts
+          for word in $completions; do
+            local -a parts
 
-  # Split the line at a tab if there is one.
-  IFS=$'\t' parts=($( echo $word ))
+            # Split the line at a tab if there is one.
+            IFS=$'\t' parts=($( echo $word ))
 
-  if [[ -n $parts[2] ]]; then
-     if [[ $word[1] == "-" ]]; then
-       local desc=("$parts[1] ($parts[2])")
-       compadd -d desc -- $parts[1]
-     else
-       local desc=($(print -f  "%-019s -- %s" $parts[1] $parts[2]))
-       compadd -l -d desc -- $parts[1]
-     fi
-  else
-    compadd -f -- $word
-  fi
-done
-}
+            if [[ -n $parts[2] ]]; then
+               if [[ $word[1] == "-" ]]; then
+                 local desc=("$parts[1] ($parts[2])")
+                 compadd -d desc -- $parts[1]
+               else
+                 local desc=($(print -f  "%-019s -- %s" $parts[1] $parts[2]))
+                 compadd -l -d desc -- $parts[1]
+               fi
+            else
+              compadd -f -- $word
+            fi
+          done
+          }
 
-compdef _${name} ${name}
-''
+          compdef _${name} ${name}
+          ''
   }
