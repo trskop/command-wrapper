@@ -1032,7 +1032,7 @@ readExpression = \case
         Text.getContents >>= parseExpr "(stdin)" "."
 
     InputFile file ->
-        Text.readFile file >>= parseExpr file file
+        Text.readFile file >>= parseExpr file (takeDirectory file)
 
     InputExpression expr ->
         parseExpr "(expression)" "." expr
