@@ -872,7 +872,7 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
 
     scriptOptions = ["--alias=", "--shell=", "--subcommand="] <> outputOptions
 
-    shellOptions = ("--shell=" <>) <$> ["bash", "fish"]
+    shellOptions = ("--shell=" <>) <$> supportedShells
 
     wrapperOptions = [ "--expression=", "--exec", "--" ]
 
@@ -1183,7 +1183,8 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , optionDescription ["--shell=SHELL"]
             [ Pretty.reflow "Provide completion for", metavar "SHELL" <> "."
             , Pretty.reflow "Supported", metavar "SHELL", "values are: "
-            , value "bash", "and", value "fish" <> "."
+            , value "bash" <> ",", value "fish" <> ",", "and"
+            , value "zsh" <> "."
             ]
 
         , optionDescription ["--subcommand=SUBCOMMAND"]
@@ -1207,7 +1208,8 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ Pretty.reflow "Generate completion script for"
             , metavar "SHELL" <> "."
             , Pretty.reflow "Supported", metavar "SHELL", "values are: "
-            , value "bash", "and", value "fish" <> "."
+            , value "bash" <> ",", value "fish" <> ",", "and"
+            , value "zsh" <> "."
             ]
 
         , optionDescription ["--subcommand=SUBCOMMAND"]
