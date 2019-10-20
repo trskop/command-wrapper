@@ -38,7 +38,9 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
 
     -- * Freeze
     , Freeze(..)
+    , FreezePurpose(..)
     , defFreeze
+    , setFreezePurpose
     , freeze
 
     -- * Hash
@@ -205,6 +207,7 @@ import qualified Dhall.Core
 import qualified Dhall.Diff
 import qualified Dhall.Format
 import qualified Dhall.Import
+import qualified Dhall.Optics (transformMOf)
 --import qualified Dhall.Import.Types
 import qualified Dhall.Parser
 import qualified Dhall.Pretty
@@ -522,11 +525,17 @@ format appNames config Format{..} =
 
 -- {{{ Freeze -----------------------------------------------------------------
 
+data FreezePurpose
+    = FreezeForSecurity
+    | FreezeForCaching
+  deriving stock (Generic, Show)
+
 data Freeze = Freeze
     { remoteOnly :: Bool
     , input :: Input
     , output :: Output
     , characterSet :: Dhall.CharacterSet
+    , purpose :: FreezePurpose
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
@@ -541,7 +550,15 @@ defFreeze = Freeze
     , input = InputStdin
     , output = OutputStdout
     , characterSet = Dhall.Unicode
+    , purpose = FreezeForSecurity
     }
+
+setFreezePurpose
+    :: HasField' "purpose" a FreezePurpose
+    => FreezePurpose
+    -> a
+    -> a
+setFreezePurpose = set (field' @"purpose")
 
 freeze
     :: AppNames
@@ -564,19 +581,77 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
             (header, expression) <- parseExpr "(expression)" expr
             pure (header, expression, ".")
 
-    let freezeFunction =
-            ( if remoteOnly
-                then Dhall.freezeRemoteImport
-                else Dhall.freezeImport
-            ) directory
+    frozenExpression <- case purpose of
+        FreezeForSecurity ->
+            traverse (freezeFunction directory) expression
 
-    frozenExpression <- traverse freezeFunction expression
+        FreezeForCaching  ->
+            Dhall.Optics.transformMOf
+                Dhall.Core.subExpressions
+                (rewriteForCaching directory)
+                (Dhall.Core.denote expression)
+
     withOutputHandle input output (renderDoc config)
         ( Pretty.pretty header
         <> Dhall.Pretty.prettyCharacterSet characterSet frozenExpression
         )
   where
     parseExpr f = Dhall.Core.throws . Dhall.Parser.exprAndHeaderFromText f
+
+    freezeFunction =
+        if remoteOnly
+            then Dhall.freezeRemoteImport
+            else Dhall.freezeImport
+
+    -- Following code is mostly copy-paste-reformatt from `dhall` library
+    -- version 1.27.0.
+    rewriteForCaching directory = \case
+        Dhall.Core.ImportAlt
+            ( Dhall.Core.Embed Dhall.Core.Import
+                { importHashed =
+                    Dhall.Core.ImportHashed{hash = Just _expectedHash}
+                }
+            )
+            import_@(
+                Dhall.Core.ImportAlt
+                    ( Dhall.Core.Embed Dhall.Core.Import
+                        { importHashed =
+                            Dhall.Core.ImportHashed{hash = Just _actualHash}
+                        }
+                    )
+                _
+            )
+            -> do
+                -- Here we could actually compare the `_expectedHash` and
+                -- `_actualHash` to see if they differ, but we choose not to do
+                -- so and instead automatically accept the `_actualHash`.  This
+                -- is done for the same reason that the `freeze*` functions
+                -- ignore hash mismatches: the user intention when using `dhall
+                -- freeze` is to update the hash, which they expect to possibly
+                -- change.
+                pure import_
+
+        Dhall.Core.Embed
+            import_@(
+                Dhall.Core.Import
+                    { importHashed = Dhall.Core.ImportHashed{hash = Nothing}
+                    }
+            )
+            -> do
+                frozenImport <- freezeFunction directory import_
+
+                -- The two imports can be the same if the import is local and
+                -- `freezeFunction` only freezes remote imports
+                pure if frozenImport /= import_
+                    then
+                        ImportAlt
+                            (Dhall.Core.Embed frozenImport)
+                            (Dhall.Core.Embed import_)
+                    else
+                        Dhall.Core.Embed import_
+
+        expression ->
+            pure expression
 
 -- }}} Freeze -----------------------------------------------------------------
 

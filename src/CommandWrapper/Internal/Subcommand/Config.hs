@@ -126,6 +126,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Filter(..)
     , Format(..)
     , Freeze(..)
+    , FreezePurpose(..)
     , Hash(..)
     , Input(..)
     , Interpreter(..)
@@ -163,6 +164,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , repl
     , resolve
     , setAllowImports
+    , setFreezePurpose
     , setSemanticCacheMode
     , toText
     )
@@ -281,6 +283,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallFreezeFlag
         <*> ( dualFoldEndo
                 <$> many (remoteOnlyFlag <|> noRemoteOnlyFlag)
+                <*> many (forSecurityFlag <|> forCachingFlag)
                 <*> optional outputOption
                 <*> optional (expressionOption <|> inputOption)
             )
@@ -558,6 +561,16 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     setRemoteOnly :: Bool -> Endo Dhall.Freeze
     setRemoteOnly remoteOnly = Endo \opts -> opts{Dhall.remoteOnly}
 
+    forCachingFlag :: Options.Parser (Dhall.Freeze -> Dhall.Freeze)
+    forCachingFlag =
+        Options.flag' (Dhall.setFreezePurpose Dhall.FreezeForCaching)
+            (Options.long "for-caching")
+
+    forSecurityFlag :: Options.Parser (Dhall.Freeze -> Dhall.Freeze)
+    forSecurityFlag =
+        Options.flag' (Dhall.setFreezePurpose Dhall.FreezeForSecurity)
+            (Options.long "for-security")
+
     dhallHashFlag
         :: Options.Parser (Endo Dhall.Hash -> Endo (ConfigMode Global.Config))
     dhallHashFlag =
@@ -764,6 +777,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             <+> longOption "dhall-freeze"
             <+> Pretty.brackets (longOption "[no-]remote-only")
             <+> Pretty.brackets
+                ( longOption "for-security"
+                <> "|" <> longOption "for-caching"
+                )
+            <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
                 <> "|" <> longOptionWithArgument "input" "FILE"
                 )
@@ -938,6 +955,14 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ Pretty.reflow "Specifies if integrity checks should be added to\
                 \ only remote imports or to all imports. By default they are\
                 \ added only to remote imports."
+            ]
+
+        , optionDescription ["--for-security", "--for-caching"]
+            [ Pretty.reflow
+                "Specifies if integrity checks should be added for the purpose\
+                \ of security or caching.  If for caching then alternative\
+                \ import without integrity hash is added.  By default we\
+                \ assume that freeze is for security purposes."
             ]
 
         , optionDescription ["--dhall-hash"]
@@ -1482,6 +1507,26 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 ]
             )
             ["--cache", "--no-cache"]
+        <> munless
+            ( List.or
+                [ hadDhall
+                , hadDhallBash
+                , hadDhallDiff
+                , hadDhallExec
+                , hadDhallFilter
+                , hadDhallFormat
+                , hadDhallHash
+                , hadDhallLint
+                , hadDhallRepl
+                , hadDhallResolve
+                , hadDhallText
+                , hadHelp
+                , hadInit
+
+                , not hadDhallFreeze
+                ]
+            )
+            ["--for-security", "--for-caching"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 

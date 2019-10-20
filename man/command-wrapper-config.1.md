@@ -39,6 +39,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-resolve
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-freeze
 \[\--\[no-]remote-only]
+\[\--for-security|\--for-caching]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
@@ -279,6 +280,11 @@ We can organise `config` subcommand abilities into following categories:
 :   Specifies if integrity checks should be added to only remote imports or to
     all imports.  By default they are added only to remote imports.  Can be
     specified multiple times, later instance is applied.
+
+\--for-security, \--for-caching
+:   Specifies if integrity checks should be added for the purpose of security
+    or caching.  If for caching then alternative import without integrity hash
+    is added.  By default we assume that freeze is for security purposes.
 
 \--dhall-hash
 :   Compute semantic hashes for Dhall expressions.
