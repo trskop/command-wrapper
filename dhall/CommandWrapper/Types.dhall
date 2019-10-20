@@ -15,7 +15,7 @@ in  { ColourOutput = ./ColourOutput/Type
     , Verbosity = ./Verbosity/Type
 
     -- Toolset default (main/global) configuration
-    , ToolsetConfig = ./Type/ToolsetConfig
+    , ToolsetConfig = ./ToolsetConfig/Type
 
     -- Configuration for `skel` subcommand
     , SkelTemplate = ./Type/SkelTemplate
@@ -23,7 +23,7 @@ in  { ColourOutput = ./ColourOutput/Type
     , SkelConfig = Skel.Config
 
     -- Configuration for `cd` subcommand
-    , CdConfig = ./Type/CdConfig
+    , CdConfig = ./CdConfig/Type
 
     -- Configuration for `exec` subcommand
     , ExecCommand = ./ExecCommand/Type

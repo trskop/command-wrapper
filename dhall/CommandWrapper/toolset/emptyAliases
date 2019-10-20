@@ -1,5 +1,0 @@
--- vim: filetype=dhall
-
-let CommandWrapper = ../Types.dhall
-
-in  [] : List CommandWrapper.SubcommandAlias

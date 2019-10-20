@@ -3,7 +3,10 @@
 -- Defaults and library of useful tools for toolset and external subcommands
 -- bundled with Command Wrapper.
 
-{ ColourOutput =
+{ CdConfig =
+      ./CdConfig/package.dhall sha256:2b1f0e05455adf874da059af0ec469968501de7d2f333d29346e14d122ee41b9
+    ? ./CdConfig/package.dhall
+, ColourOutput =
       ./ColourOutput/package.dhall sha256:ab063b4e29e5237c1bbb2c4ed07ed3cc80096c9cd2f9978d727d81ac1f1c8c68
     ? ./ColourOutput/package.dhall
 , Command =
@@ -51,30 +54,14 @@
 , TerminalEmulator =
       ./TerminalEmulator/package.dhall sha256:7af1af071f36f10b12d8f076016fad8f9d070e5da793f20e42a0f4ec074bd519
     ? ./TerminalEmulator/package.dhall
+, ToolsetConfig =
+      ./ToolsetConfig/package.dhall sha256:1c7797fd77cf4d0a802b04f42fc8d35188eb76bb26c55a88c2fb3228a168f416
+    ? ./ToolsetConfig/package.dhall
 , Verbosity =
       ./Verbosity/package.dhall sha256:488f95a5a27b82653c5a759b592b08e16940d1698dcf956fcbd9c153cb2547f2
     ? ./Verbosity/package.dhall
 , config =
-    { cd =
-        { defaults =
-              ./cd/defaults sha256:56aa1a9952e189ceb0a3371ffa5c58ac97191f7a183f7f1535e3c0f5ae710868
-            ? ./cd/defaults
-        , emptyDirectories =
-              ./cd/emptyDirectories sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
-            ? ./cd/emptyDirectories
-        , systemShell =
-              ./cd/systemShell sha256:12acd324db4f2ef5f9a79ae53f8e325eea080ded9befc5f73fe2235a725e7c92
-            ? ./cd/systemShell
-        , menuTools =
-            { fzf =
-                  ./cd/menu-tools/fzf sha256:f6f1587c1adf9736b8653a2c7e575452c217e1470fc5bac85b4136fb8138949d
-                ? ./cd/menu-tools/fzf
-            , fzy =
-                  ./cd/menu-tools/fzy sha256:20c4bb5892965553bb7cabe3de4e305552ebe8b397597fc863f1dd1ccf6b95e7
-                ? ./cd/menu-tools/fzy
-            }
-        }
-    , skel =
+    { skel =
         { defaults =
               ./skel/defaults sha256:f7bbe6987589d64f01d727392db83726e64c67e263eb45adf2b5655ad1a442f6
             ? ./skel/defaults
@@ -87,26 +74,6 @@
         , default-haskell-skel =
               ./skel/default-haskell-skel sha256:99efef7061c9b8c0fc5c3e73ba79be4fb9f23ce82e3accb4b913a3e4c6edf5dd
             ? ./skel/default-haskell-skel
-        }
-    , toolset =
-        { defaults =
-              ./toolset/defaults sha256:ab194fe375a7d7f20d62090cd2395b30c6eb3d4667bffe0ea383e9dd441e6248
-            ? ./toolset/defaults
-        , emptyAliases =
-              ./toolset/emptyAliases sha256:4e616d6b19f38731af31ca3fe11cb48332b6c81c339a506cbd2c576759ea12b9
-            ? ./toolset/emptyAliases
-        , emptySearchPath =
-              ./toolset/emptySearchPath sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
-            ? ./toolset/emptySearchPath
-        , emptyManPath =
-              ./toolset/emptyManPath sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
-            ? ./toolset/emptyManPath
-        , addSubcommandAliases =
-              ./toolset/addSubcommandAliases sha256:e69c4452bb4f2e77d057ab37e5d960a2e58f33b016f8b216cca9821052ae9868
-            ? ./toolset/addSubcommandAliases
-        , defaultSearchPath =
-              ./toolset/defaultSearchPath sha256:0fe3c22eafaf5048e919fc081a11af9629e8a730de1aca16a9dde3ab02461432
-            ? ./toolset/defaultSearchPath
         }
     }
 , help =

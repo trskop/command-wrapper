@@ -17,18 +17,18 @@ let ColourOutput
 
 let ExecCommand
     : Type
-    =   ./ExecCommand sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ./ExecCommand
+    =   ../ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+      ? ../ExecCommand/Type
 
 let Shell
     : Type
-    =   ./Shell sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
-      ? ./Shell
+    =   ../Shell/Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
+      ? ../Shell/Type
 
 let NotifyWhen
     : Type
-    =   ./NotifyWhen sha256:93f60a5cc48fb4249657620ea70b25553a89ec0190ed89795dd75890e6e0b2d6
-      ? ./NotifyWhen
+    =   ../NotifyWhen/Type sha256:93f60a5cc48fb4249657620ea70b25553a89ec0190ed89795dd75890e6e0b2d6
+      ? ../NotifyWhen/Type
 
 in  { name : Text
     , description : Optional Text

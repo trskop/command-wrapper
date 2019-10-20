@@ -1,0 +1,35 @@
+-- vim: filetype=dhall
+
+let ToolsetConfig =
+        ./Type sha256:d1221f8c7593ed4a475f470a35b91af8463dfd29548bbf90f0ff097fef8c4ef7
+      ? ./Type
+
+let Verbosity =
+        ../Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
+      ? ../Verbosity/Type
+
+let ColourOutput =
+        ../ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../ColourOutput/Type
+
+let emptyAliases =
+        ./emptyAliases sha256:4e616d6b19f38731af31ca3fe11cb48332b6c81c339a506cbd2c576759ea12b9
+      ? ./emptyAliases
+
+let emptySearchPath =
+        ./emptySearchPath sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
+      ? ./emptySearchPath
+
+let emptyManPath =
+        ./emptyManPath sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
+      ? ./emptyManPath
+
+in    { aliases = emptyAliases
+      , searchPath = emptySearchPath
+      , manPath = emptyManPath
+      , description = None Text
+      , extraHelpMessage = None Text
+      , verbosity = None Verbosity
+      , colourOutput = None ColourOutput
+      }
+    : ToolsetConfig
