@@ -1,9 +1,13 @@
 -- vim: filetype=dhall
 
-  { interactive = False
-  , allocateTty = False
-  , detach = False
-  , user = None Text
-  , workingDirectory = None Text
-  }
-: ./DockerExecOptions
+let DockerExecOptions =
+        ./DockerExecOptions sha256:2db64f6364ae0f19c6950ce41c5407f1172ec2d2c9a011522d575aae2a5986b5
+      ? ./DockerExecOptions
+
+in    { interactive = False
+      , allocateTty = False
+      , detach = False
+      , user = None Text
+      , workingDirectory = None Text
+      }
+    : DockerExecOptions

@@ -1,39 +1,64 @@
 -- vim: filetype=dhall
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
+let ExecCommand =
+        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+      ? ../../CommandWrapper/ExecCommand/Type
 
-let commandWrapper = ../../CommandWrapper/package.dhall
+let ColourOutput =
+        ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../../CommandWrapper/ColourOutput/Type
 
-let emptyArguments = commandWrapper.command.emptyArguments
+let Verbosity =
+        ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
+      ? ../../CommandWrapper/Verbosity/Type
 
-let downOptions = ./downOptions
+let EnvironmentVariable =
+        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
+      ? ../../CommandWrapper/EnvironmentVariable/Type
 
-let upOptions = ./upOptions
+let emptyArguments = [] : List Text
 
-let Action = ./Action
+let emptyEnvironment = [] : List EnvironmentVariable
 
-let GlobalOptions = ./GlobalOptions
+let downOptions =
+        ./downOptions sha256:ac37ec4830115499ddc4a795149307b0b9c52c8832edcc968a6f64c1256ffea7
+      ? ./downOptions
 
-let globalOptions = ./globalOptions
+let upOptions =
+        ./upOptions sha256:4163e8da6cb213b0a1f557e8a43bc9958a8a10ddcd8ce3cee0a3c989ec62d2ac
+      ? ./upOptions
+
+let Action =
+        ./Action sha256:4a10c31e43e6ea8f8f22fa117c2b7ad1473b55eae02fd4b8782f1eb4a302e092
+      ? ./Action
+
+let GlobalOptions =
+        ./GlobalOptions sha256:53cba1247c3b9afd5a2a200a7ee7b819b7b7180a109fa8d46258dbc1ee496853
+      ? ./GlobalOptions
+
+let globalOptions =
+        ./globalOptions sha256:11704b75be6ea8b64350c345a8dab20ba40f2a2ba260f563d152a10d95073654
+      ? ./globalOptions
 
 in    λ(options : GlobalOptions)
     → λ(action : Optional Action)
-    → λ(_ : CommandWrapper.Verbosity)
-    → λ(colourOutput : CommandWrapper.ColourOutput)
+    → λ(_ : Verbosity)
+    → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
-    → { command = "docker-compose"
-      , arguments =
-            globalOptions options
-          # Optional/fold
-              Action
-              action
-              (List Text)
-              (   λ(_ : Action)
-                → merge { Down = downOptions, Up = upOptions colourOutput } _
-              )
-              emptyArguments
-          # arguments
-      , environment = commandWrapper.command.emptyEnvironment
-      , searchPath = True
-      , workingDirectory = None Text
-      }
+    →   { command = "docker-compose"
+        , arguments =
+              globalOptions options
+            # Optional/fold
+                Action
+                action
+                (List Text)
+                (   λ(_ : Action)
+                  → merge { Down = downOptions, Up = upOptions colourOutput } _
+                )
+                emptyArguments
+            # arguments
+        , environment = emptyEnvironment
+        , searchPath = True
+        , workingDirectory = None Text
+        }
+      : ExecCommand

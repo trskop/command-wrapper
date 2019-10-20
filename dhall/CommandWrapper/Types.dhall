@@ -3,14 +3,14 @@ let Skel = ./Type/Skel
 in  { ColourOutput = ./ColourOutput/Type
     , Command = ./Command/Type
     , CommandWithEnvironment = ./CommandWithEnvironment/Type
-    , ConnectToDatabase = ./Type/ConnectToDatabase
+    , ConnectToDatabase = ./ConnectToDatabase/Type
     , Editor = ./Editor/Type
     , EnvironmentVariable = ./EnvironmentVariable/Type
-    , ExitCode = ./Type/ExitCode
-    , NotifyWhen = ./Type/NotifyWhen
+    , ExitCode = ./ExitCode/Type
+    , NotifyWhen = ./NotifyWhen/Type
     , Schema = ./Schema/Type
-    , Shell = ./Type/Shell
-    , SubcommandAlias = ./Type/SubcommandAlias
+    , Shell = ./Shell/Type
+    , SubcommandAlias = ./SubcommandAlias/Type
     , TerminalEmulator = ./TerminalEmulator/Type
     , Verbosity = ./Verbosity/Type
 
@@ -26,8 +26,8 @@ in  { ColourOutput = ./ColourOutput/Type
     , CdConfig = ./Type/CdConfig
 
     -- Configuration for `exec` subcommand
-    , ExecCommand = ./Type/ExecCommand
-    , ExecNamedCommand = ./Type/ExecNamedCommand
+    , ExecCommand = ./ExecCommand/Type
+    , ExecNamedCommand = ./ExecNamedCommand/Type
 
     -- Help message
     , HelpMessage = ./Type/HelpMessage

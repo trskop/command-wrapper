@@ -1,0 +1,11 @@
+-- vim: filetype=dhall
+
+let ExecConfig =
+        ./Type sha256:507ef9d2750911a675aacb6cdcf516bb267610858326f61b7bbb44e9171cb182
+      ? ./Type
+
+let emptyCommands =
+        ../ExecNamedCommand/emptyCommands sha256:b38d39ff754e8410d19adba6aa9f6e1f55c0ab8830f5e71886876ef7aeb7a9a6
+      ? ../ExecNamedCommand/emptyCommands
+
+in  { commands = emptyCommands } : ExecConfig

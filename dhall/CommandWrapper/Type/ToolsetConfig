@@ -1,8 +1,16 @@
-let Verbosity = ../Verbosity/Type
+-- vim: filetype=dhall
 
-let ColourOutput = ../ColourOutput/Type
+let Verbosity =
+        ../Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
+      ? ../Verbosity/Type
 
-let SubcommandAlias = ./SubcommandAlias
+let ColourOutput =
+        ../ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../ColourOutput/Type
+
+let SubcommandAlias =
+        ../SubcommandAlias/Type sha256:da075695e700d78e164ef85d7f28d87b7a2e4c624b5bf62cd1e35c0191280d40
+      ? ../SubcommandAlias/Type
 
 let ToolsetConfig =
       { aliases : List SubcommandAlias
@@ -15,5 +23,3 @@ let ToolsetConfig =
       }
 
 in  ToolsetConfig
-
--- vim: filetype=dhall

@@ -1,0 +1,21 @@
+-- vim: filetype=dhall
+
+let ExecNamedCommand =
+        ./Type sha256:5a8ecb546232bfbe14f28a0987ccee220496c1790ee0a3ad3ed108bcc424ea11
+      ? ./Type
+
+let SubcommandAlias =
+        ../SubcommandAlias/Type sha256:da075695e700d78e164ef85d7f28d87b7a2e4c624b5bf62cd1e35c0191280d40
+      ? ../SubcommandAlias/Type
+
+in    λ(x : ExecNamedCommand)
+    →   { alias =
+            x.name
+        , description =
+            x.description
+        , command =
+            "exec"
+        , arguments =
+            [ x.name ]
+        }
+      : SubcommandAlias

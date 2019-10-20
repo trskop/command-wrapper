@@ -5,56 +5,61 @@
 --     --shell=SHELL -- [WORD ...]
 -- ```
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
+let ExecCommand =
+        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+      ? ../../CommandWrapper/ExecCommand/Type
 
-let commandWrapper = ../../CommandWrapper/package.dhall
+let Shell =
+        ../../CommandWrapper/Shell/Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
+      ? ../../CommandWrapper/Shell/Type
 
-let noExtraEnvironment = commandWrapper.command.emptyEnvironment
+let EnvironmentVariable =
+        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
+      ? ../../CommandWrapper/EnvironmentVariable/Type
+
+let noExtraEnvironment = [] : List EnvironmentVariable
 
 let Shell/toText =
-        λ(shell : CommandWrapper.Shell)
+        λ(shell : Shell)
       → merge { Bash = "bash", Fish = "fish", Zsh = "zsh" } shell
 
 let mkArguments =
-        λ(shell : CommandWrapper.Shell)
+        λ(shell : Shell)
       → λ(index : Natural)
       → λ(words : List Text)
       →   [ "--index=${Natural/show index}"
           , "--shell=${merge
-                       { Bash = "bash", Fish = "fish", Zsh = "zsh" }
-                       shell}"
+                         { Bash = "bash", Fish = "fish", Zsh = "zsh" }
+                         shell}"
           , "--"
           ]
         # words
 
-in    λ(options : {toolset : Text, expression : Text, command : Text})
+in    λ(options : { toolset : Text, expression : Text, command : Text })
     → λ(workingDirectory : Optional Text)
     → λ(prefixArguments : List Text)
-    → λ(shell : CommandWrapper.Shell)
+    → λ(shell : Shell)
     → λ(index : Natural)
     → λ(words : List Text)
-    → { command =
-          options.toolset
-      , arguments =
-          let adjusted-index = index + List/length Text prefixArguments
-
-          let arguments =
-                mkArguments
-                shell
-                adjusted-index
-                ([options.command] # prefixArguments # words)
-
-          in    [ "completion"
-                , "--wrapper"
-                , "--expression=${options.expression}"
-                , "--exec"
-                , "--"
-                ]
-              # arguments
-      , environment =
-          noExtraEnvironment
-      , searchPath =
-          True
-      , workingDirectory =
-          workingDirectory
-      }
+    →   { command = options.toolset
+        , arguments =
+            let adjusted-index = index + List/length Text prefixArguments
+            
+            let arguments =
+                  mkArguments
+                    shell
+                    adjusted-index
+                    ([ options.command ] # prefixArguments # words)
+            
+            in    [ "completion"
+                  , "--wrapper"
+                  , "--expression=${options.expression}"
+                  , "--exec"
+                  , "--"
+                  ]
+                # arguments
+        , environment = noExtraEnvironment
+        , searchPath = True
+        , workingDirectory = workingDirectory
+        }
+      : ExecCommand

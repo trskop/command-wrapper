@@ -6,35 +6,69 @@
 -- docker GLOBAL_OPTIONS exec EXEC_OPTIONS CONTAINER COMMAND
 -- ```
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
+let ExecCommand =
+        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+      ? ../../CommandWrapper/ExecCommand/Type
+
+let ColourOutput =
+        ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../../CommandWrapper/ColourOutput/Type
+
+let Verbosity =
+        ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
+      ? ../../CommandWrapper/Verbosity/Type
+
+let EnvironmentVariable =
+        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
+      ? ../../CommandWrapper/EnvironmentVariable/Type
+
+let DockerGlobalOptions =
+        ./DockerGlobalOptions sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
+      ? ./DockerGlobalOptions
+
+let DockerExecOptions =
+        ./DockerExecOptions sha256:2db64f6364ae0f19c6950ce41c5407f1172ec2d2c9a011522d575aae2a5986b5
+      ? ./DockerExecOptions
+
+let mkGlobalOptions =
+        ./globalOptions sha256:150c73831857ece522d3f066554ad2883e36ceb2f98bf85947c8eacf0e09cb0b
+      ? ./globalOptions
+
+let mkExecOptions =
+        ./execOptions sha256:cdea112398e5a0ecd70ab2aad318031d9bad79fab0c7fecb884b4ca90bb2d908
+      ? ./execOptions
+
+let mkEnvOptions =
+        ./envOptions sha256:d0426badaef8cd6535378bbd9b5caf073e2b7d794eae541a454ebcba4cb52531
+      ? ./envOptions
 
 in    λ(container : Text)
-    → λ(globalOptions : ./DockerGlobalOptions)
-    → λ(execOptions : ./DockerExecOptions)
+    → λ(globalOptions : DockerGlobalOptions)
+    → λ(execOptions : DockerExecOptions)
     → λ ( mkCommand
-        :   ∀(environment : List CommandWrapper.EnvironmentVariable)
-          → ∀(verbosity : CommandWrapper.Verbosity)
-          → ∀(colourOutput : CommandWrapper.ColourOutput)
+        :   ∀(environment : List EnvironmentVariable)
+          → ∀(verbosity : Verbosity)
+          → ∀(colourOutput : ColourOutput)
           → ∀(arguments : List Text)
-          → CommandWrapper.ExecCommand
+          → ExecCommand
         )
-    → λ(environment : List CommandWrapper.EnvironmentVariable)
-    → λ(verbosity : CommandWrapper.Verbosity)
-    → λ(colourOutput : CommandWrapper.ColourOutput)
+    → λ(environment : List EnvironmentVariable)
+    → λ(verbosity : Verbosity)
+    → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
     → let command = mkCommand environment verbosity colourOutput arguments
       
       in    { command = "docker"
             , arguments =
-                  ./globalOptions globalOptions
+                  mkGlobalOptions globalOptions
                 # [ "exec" ]
-                # ./execOptions execOptions
+                # mkExecOptions execOptions
                 # [ container ]
-                # ./envOptions command.environment
+                # mkEnvOptions command.environment
                 # [ command.command ]
                 # command.arguments
-            , environment = [] : List CommandWrapper.EnvironmentVariable
+            , environment = [] : List EnvironmentVariable
             , searchPath = True
             , workingDirectory = None Text
             }
-          : CommandWrapper.ExecCommand
+          : ExecCommand

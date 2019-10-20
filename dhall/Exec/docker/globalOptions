@@ -1,8 +1,9 @@
 -- vim: filetype=dhall
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
-
-let DockerGlobalOptions : Type = ./DockerGlobalOptions
+let DockerGlobalOptions
+    : Type
+    =   ./DockerGlobalOptions sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
+      ? ./DockerGlobalOptions
 
 in    λ(globalOptions : DockerGlobalOptions)
     →   List/fold

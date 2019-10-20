@@ -1,14 +1,16 @@
 -- vim: filetype=dhall
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
+let ColourOutput =
+        ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../../CommandWrapper/ColourOutput/Type
 
-let commandWrapper = ../../CommandWrapper/package.dhall
+let emptyArguments = [] : List Text
 
-let emptyArguments = commandWrapper.command.emptyArguments
+let UpOptions =
+        ./UpOptions sha256:099f8f6f629b9bdb1861f8552debb0343900d053faab9a63d0c6bce8a919293b
+      ? ./UpOptions
 
-let UpOptions = ./UpOptions
-
-in    λ(colourOutput : CommandWrapper.ColourOutput)
+in    λ(colourOutput : ColourOutput)
     → λ(mkOptions : UpOptions)
     → let options = mkOptions colourOutput
       

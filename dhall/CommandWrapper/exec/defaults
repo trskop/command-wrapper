@@ -1,4 +1,0 @@
-{ commands = ./emptyCommands
-}
-
--- vim: filetype=dhall

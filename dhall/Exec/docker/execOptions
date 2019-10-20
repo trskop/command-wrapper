@@ -1,13 +1,16 @@
 -- vim: filetype=dhall
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
-
-let DockerExecOptions : Type = ./DockerExecOptions
+let DockerExecOptions
+    : Type
+    =   ./DockerExecOptions sha256:2db64f6364ae0f19c6950ce41c5407f1172ec2d2c9a011522d575aae2a5986b5
+      ? ./DockerExecOptions
 
 in    λ(execOptions : DockerExecOptions)
-    →   ( if execOptions.interactive
-            then  [ "--interactive" ]
-            else  [] : List Text
+    →   (       if execOptions.interactive
+          
+          then  [ "--interactive" ]
+          
+          else  [] : List Text
         )
       # (if execOptions.allocateTty then [ "--tty" ] else [] : List Text)
       # (if execOptions.detach then [ "--detach" ] else [] : List Text)

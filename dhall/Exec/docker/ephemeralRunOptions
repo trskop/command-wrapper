@@ -1,6 +1,9 @@
 -- vim: filetype=dhall
 
-let DockerRunOptions : Type = ./DockerRunOptions
+let DockerRunOptions
+    : Type
+    =   ./DockerRunOptions sha256:df4fdf5b50b4b3bdcd0e021533de4d6333432518d41bbea6146d9b73847a7892
+      ? ./DockerRunOptions
 
 in    λ(runOptions : DockerRunOptions)
     →     runOptions.{ interactive

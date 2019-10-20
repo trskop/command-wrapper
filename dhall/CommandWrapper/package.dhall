@@ -3,73 +3,146 @@
 -- Defaults and library of useful tools for toolset and external subcommands
 -- bundled with Command Wrapper.
 
-{ colourOutput =
+{ ColourOutput =
       ./ColourOutput/package.dhall sha256:ab063b4e29e5237c1bbb2c4ed07ed3cc80096c9cd2f9978d727d81ac1f1c8c68
     ? ./ColourOutput/package.dhall
-, command =
+, Command =
       ./Command/package.dhall sha256:41261a285c80fdfbef49adb3ced0be160dd9dc37bc89e8a0561da4917561eccd
     ? ./Command/package.dhall
-, config =
-    { cd =
-        { defaults = ./cd/defaults
-        , emptyDirectories = ./cd/emptyDirectories
-        , systemShell = ./cd/systemShell
-        , menuTools = { fzf = ./cd/menu-tools/fzf, fzy = ./cd/menu-tools/fzy }
-        }
-    , exec =
-        { defaults = ./exec/defaults
-        , emptyCommands = ./exec/emptyCommands
-        , namedCommand = ./exec/namedCommand
-        , namedCommandToAlias = ./exec/namedCommandToAlias
-        , namedCommandsToAliases = ./exec/namedCommandsToAliases
-        }
-    , skel =
-        { defaults = ./skel/defaults
-        , default-bash-skel = ./skel/default-bash-skel
-        , default-dhall-skel = ./skel/default-dhall-skel
-        , default-haskell-skel = ./skel/default-haskell-skel
-        }
-    , toolset =
-        { defaults = ./toolset/defaults
-        , emptyAliases = ./toolset/emptyAliases
-        , emptySearchPath = ./toolset/emptySearchPath
-        , emptyManPath = ./toolset/emptyManPath
-        , addSubcommandAliases = ./toolset/addSubcommandAliases
-        , defaultSearchPath = ./toolset/defaultSearchPath
-        }
-    }
-, editor =
+, CommandWithEnvironment =
+      ./CommandWithEnvironment/package.dhall sha256:892341c4474751d9b38f7891c4876a49ec15ebca98b3f36d8a053e5b64be15b6
+    ? ./CommandWithEnvironment/package.dhall
+, ConnectToDatabase =
+      ./ConnectToDatabase/package.dhall sha256:75de702e5d74d70d6f5e08473d25d5ba2c3040febdc86b2226f55ec0423ebf71
+    ? ./ConnectToDatabase/package.dhall
+, Editor =
       ./Editor/package.dhall sha256:ea947ca2fa9dec681385344190f8373da2d4ced8556cce9096c354f9265992f5
     ? ./Editor/package.dhall
-, help =
-    { command = ./help/command
-    , metavar = ./help/metavar
-    , option = ./help/option
-    , plain = ./help/plain
-    , value = ./help/value
-    }
-, schema =
+, EnvironmentVariable =
+      ./EnvironmentVariable/package.dhall sha256:a2ed60e366c315c84a20787193d11752f8678dfcd597fb740eb04ce609ed1088
+    ? ./EnvironmentVariable/package.dhall
+, ExecConfig =
+      ./ExecConfig/package.dhall sha256:54303713892c8eed71abdcc4437728476ae67e78f73ff539cd52115bc083b28b
+    ? ./ExecConfig/package.dhall
+, ExecNamedCommand =
+      ./ExecNamedCommand/package.dhall sha256:18552a3a1578677bc8ac0d6848ae783fb99daa2e338179ae1b8e5ac6e24ffaff
+    ? ./ExecNamedCommand/package.dhall
+, ExitCode =
+      ./ExitCode/package.dhall sha256:53545bbc3d4e2e6a6c2272259c3d34d8a91fdbc5b4cdda626a886adbde9e902e
+    ? ./ExitCode/package.dhall
+, List =
+      ./List/package.dhall sha256:1b97cbd979abcff98f78223e6320a6ba81c378392c9bc1476208832834c8aa68
+    ? ./List/package.dhall
+, NotifyWhen =
+      ./NotifyWhen/package.dhall sha256:9b0aa668c037d6c7f33eff10551dd07275d6f6d802b8fd686ab630ae36b4fec1
+    ? ./NotifyWhen/package.dhall
+, Optional =
+      ./Optional/package.dhall sha256:33857949625599d84fb64d5b77946655d38fa1e3120ed397f2166a106b09e5f7
+    ? ./Optional/package.dhall
+, Schema =
       ./Schema/package.dhall sha256:6d9bebdef83104bcecba867f13da86a5b4d064cda1b3e2938a6979f806d5cb1d
     ? ./Schema/package.dhall
-, terminalEmulator =
+, Shell =
+      ./Shell/package.dhall sha256:a6ef0d2ad631ea9c9a2edc8d93290dc02b5d7bad7c51b79cb3c6db5baa439511
+    ? ./Shell/package.dhall
+, SubcommandAlias =
+      ./SubcommandAlias/package.dhall sha256:edaaf5b2bcdb52389af07101a7cda57000e2acba33b49cac94ea11b5e572b1ab
+    ? ./SubcommandAlias/package.dhall
+, TerminalEmulator =
       ./TerminalEmulator/package.dhall sha256:7af1af071f36f10b12d8f076016fad8f9d070e5da793f20e42a0f4ec074bd519
     ? ./TerminalEmulator/package.dhall
-, verbosity =
+, Verbosity =
       ./Verbosity/package.dhall sha256:488f95a5a27b82653c5a759b592b08e16940d1698dcf956fcbd9c153cb2547f2
     ? ./Verbosity/package.dhall
+, config =
+    { cd =
+        { defaults =
+              ./cd/defaults sha256:56aa1a9952e189ceb0a3371ffa5c58ac97191f7a183f7f1535e3c0f5ae710868
+            ? ./cd/defaults
+        , emptyDirectories =
+              ./cd/emptyDirectories sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
+            ? ./cd/emptyDirectories
+        , systemShell =
+              ./cd/systemShell sha256:12acd324db4f2ef5f9a79ae53f8e325eea080ded9befc5f73fe2235a725e7c92
+            ? ./cd/systemShell
+        , menuTools =
+            { fzf =
+                  ./cd/menu-tools/fzf sha256:f6f1587c1adf9736b8653a2c7e575452c217e1470fc5bac85b4136fb8138949d
+                ? ./cd/menu-tools/fzf
+            , fzy =
+                  ./cd/menu-tools/fzy sha256:20c4bb5892965553bb7cabe3de4e305552ebe8b397597fc863f1dd1ccf6b95e7
+                ? ./cd/menu-tools/fzy
+            }
+        }
+    , skel =
+        { defaults =
+              ./skel/defaults sha256:f7bbe6987589d64f01d727392db83726e64c67e263eb45adf2b5655ad1a442f6
+            ? ./skel/defaults
+        , default-bash-skel =
+              ./skel/default-bash-skel sha256:00b5d1f752d64aed9f2347df3f7b38c296ec237744b1999fa301efb68ebfe478
+            ? ./skel/default-bash-skel
+        , default-dhall-skel =
+              ./skel/default-dhall-skel sha256:340030d5c2186d2292f10e6d3dc26e4027aee6b2d8eb70a5915f2854dfd94180
+            ? ./skel/default-dhall-skel
+        , default-haskell-skel =
+              ./skel/default-haskell-skel sha256:99efef7061c9b8c0fc5c3e73ba79be4fb9f23ce82e3accb4b913a3e4c6edf5dd
+            ? ./skel/default-haskell-skel
+        }
+    , toolset =
+        { defaults =
+              ./toolset/defaults sha256:ab194fe375a7d7f20d62090cd2395b30c6eb3d4667bffe0ea383e9dd441e6248
+            ? ./toolset/defaults
+        , emptyAliases =
+              ./toolset/emptyAliases sha256:4e616d6b19f38731af31ca3fe11cb48332b6c81c339a506cbd2c576759ea12b9
+            ? ./toolset/emptyAliases
+        , emptySearchPath =
+              ./toolset/emptySearchPath sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
+            ? ./toolset/emptySearchPath
+        , emptyManPath =
+              ./toolset/emptyManPath sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
+            ? ./toolset/emptyManPath
+        , addSubcommandAliases =
+              ./toolset/addSubcommandAliases sha256:e69c4452bb4f2e77d057ab37e5d960a2e58f33b016f8b216cca9821052ae9868
+            ? ./toolset/addSubcommandAliases
+        , defaultSearchPath =
+              ./toolset/defaultSearchPath sha256:0fe3c22eafaf5048e919fc081a11af9629e8a730de1aca16a9dde3ab02461432
+            ? ./toolset/defaultSearchPath
+        }
+    }
+, help =
+    { command =
+          ./help/command sha256:a4e9d3b8603dfe58f03c38651c10b094ac98c960c1a92dd0687159bbde7e268b
+        ? ./help/command
+    , metavar =
+          ./help/metavar sha256:eeaf3da99e1d7890594c740170f85efcfb6d9f4437cbb5bfca1288bff47f292f
+        ? ./help/metavar
+    , option =
+          ./help/option sha256:12cd9405555ed6b02370c5861d125983f73c81c575e306859b39bf35fb9bba7b
+        ? ./help/option
+    , plain =
+          ./help/plain sha256:f6f89359a06818d8c2840715c32f9f88f8336e999a2871f3aa93337d03d30f10
+        ? ./help/plain
+    , value =
+          ./help/value sha256:5f1f3fcc9e13c5576bd0b75e8619aa8b02269a01c9d148c6a520602adba87527
+        ? ./help/value
+    }
 , utils =
-    { List =
-          ./List/package.dhall sha256:1b97cbd979abcff98f78223e6320a6ba81c378392c9bc1476208832834c8aa68
-        ? ./List/package.dhall sha256:1b97cbd979abcff98f78223e6320a6ba81c378392c9bc1476208832834c8aa68
-    , Optional =
-          ./Optional/package.dhall sha256:33857949625599d84fb64d5b77946655d38fa1e3120ed397f2166a106b09e5f7
-        ? ./Optional/package.dhall
-    , url =
-        { defaultPort = ./url/defaultPort
-        , emptyPath = ./url/emptyPath
-        , mk = ./url/mk
-        , port = ./url/port
-        , portToText = ./url/portToText
+    { url =
+        { defaultPort =
+              ./url/defaultPort sha256:bfdc295856e05e3610d202d9c12f56f7c423de81cd6069f590786ca176b94df3
+            ? ./url/defaultPort
+        , emptyPath =
+              ./url/emptyPath sha256:f08ed5225480d827ff3ce74b756afa6330f66d974d6f0d6160d767b5c45642aa
+            ? ./url/emptyPath
+        , mk =
+              ./url/mk sha256:e9438a6467c75130cd3eb6dbfdfabc13a35b78f7cf5009de2564dd6799d429d0
+            ? ./url/mk
+        , port =
+              ./url/port sha256:d7e20173b3139c6c37b7b71a94a6ada30efe37db9e60ff9f25aa8292cc1d4502
+            ? ./url/port
+        , portToText =
+              ./url/portToText sha256:a1d2133ee6b8cd5a5f2bdbc439a80f4c0ceff48194617cd28c98a1a30ad917e3
+            ? ./url/portToText
         }
     }
 }

@@ -1,13 +1,33 @@
 -- vim: filetype=dhall
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
+let ExecCommand =
+        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+      ? ../../CommandWrapper/ExecCommand/Type
 
-let Verbosity/fold = (../../CommandWrapper/package.dhall).verbosity.fold
+let ColourOutput =
+        ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../../CommandWrapper/ColourOutput/Type
 
-in    λ(connect : CommandWrapper.ConnectToDatabase)
-    → λ(environment : List CommandWrapper.EnvironmentVariable)
-    → λ(verbosity : CommandWrapper.Verbosity)
-    → λ(_ : CommandWrapper.ColourOutput)
+let Verbosity =
+        ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
+      ? ../../CommandWrapper/Verbosity/Type
+
+let EnvironmentVariable =
+        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
+      ? ../../CommandWrapper/EnvironmentVariable/Type
+
+let Verbosity/fold =
+        ../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
+      ? ../../CommandWrapper/Verbosity/fold
+
+let ConnectToDatabase =
+        ../../CommandWrapper/ConnectToDatabase/Type sha256:49946ad4b88108992adba47d0b212add49946772d8d8dca8b48ddb2b92635b46
+      ? ../../CommandWrapper/ConnectToDatabase/Type
+
+in    λ(connect : ConnectToDatabase)
+    → λ(environment : List EnvironmentVariable)
+    → λ(verbosity : Verbosity)
+    → λ(_ : ColourOutput)
     → λ(arguments : List Text)
     →   { command = "pg_dump"
         , arguments =
@@ -28,4 +48,4 @@ in    λ(connect : CommandWrapper.ConnectToDatabase)
         , searchPath = True
         , workingDirectory = None Text
         }
-      : CommandWrapper.ExecCommand
+      : ExecCommand

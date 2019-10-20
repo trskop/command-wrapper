@@ -1,6 +1,8 @@
 -- vim: filetype=dhall
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
+let ColourOutput =
+        ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../../CommandWrapper/ColourOutput/Type
 
-in    CommandWrapper.ColourOutput
+in    ColourOutput
     → { noColour : Bool, buildImages : Optional Bool, detach : Bool }

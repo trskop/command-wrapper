@@ -30,6 +30,9 @@
 , runOptions =
       ./runOptions sha256:5fdea1f964ab7b935cf9a80e0f375fe0d0e75c3459a0bb3200d4492ee12d2895
     ? ./runOptions
+, defaultRunOptions =
+      ./defaultRunOptions sha256:5d7849f9a3ffd1b47acc6744bd2fb8917cc1f4403084f5e746fea4ddffa1fe0d
+    ? ./defaultRunOptions
 , interactiveRunOptions =
       ./interactiveRunOptions sha256:99a56630de324a7e1a853892fbc380527839c8341d5f49d0fff4ee907e346163
     ? ./interactiveRunOptions

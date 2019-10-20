@@ -1,11 +1,16 @@
 -- vim: filetype=dhall
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
+let DockerRunOptions
+    : Type
+    =   ./DockerRunOptions sha256:df4fdf5b50b4b3bdcd0e021533de4d6333432518d41bbea6146d9b73847a7892
+      ? ./DockerRunOptions
 
-let DockerRunOptions : Type = ./DockerRunOptions
+let mkExecOptions =
+        ./execOptions sha256:cdea112398e5a0ecd70ab2aad318031d9bad79fab0c7fecb884b4ca90bb2d908
+      ? ./execOptions
 
 in    λ(runOptions : DockerRunOptions)
-    →   ./execOptions
+    →   mkExecOptions
           runOptions.{ interactive
                      , allocateTty
                      , detach

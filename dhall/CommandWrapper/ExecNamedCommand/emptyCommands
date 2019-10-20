@@ -1,0 +1,7 @@
+-- vim: filetype=dhall
+
+let ExecNamedCommand =
+        ./Type sha256:5a8ecb546232bfbe14f28a0987ccee220496c1790ee0a3ad3ed108bcc424ea11
+      ? ./Type
+
+in  [] : List ExecNamedCommand
