@@ -44,6 +44,7 @@ import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
 import Data.Semigroup ((<>))
 import Data.String (fromString)
+import Data.Void (Void)
 import GHC.Exts (IsList(fromList))
 import System.IO (Handle)
 
@@ -98,7 +99,6 @@ import qualified Dhall.Pretty as Dhall
     , prettyCharacterSet
     )
 import qualified Dhall.Src as Dhall (Src)
-import qualified Dhall.TypeCheck as Dhall (X)
 import qualified System.Console.Terminal.Size as Terminal
     ( Window(Window, width)
     , hSize
@@ -172,13 +172,13 @@ union (UnionType constructors) = Dhall.Type
             <$> constructors
 
     unexpectedConstructor
-        :: Dhall.Expr Dhall.Src Dhall.X
-        -> Dhall.Extractor Dhall.Src Dhall.X a
+        :: Dhall.Expr Dhall.Src Void
+        -> Dhall.Extractor Dhall.Src Void a
     unexpectedConstructor = Dhall.typeError (Dhall.Union expect)
 
     extractF
-        :: Dhall.Expr Dhall.Src Dhall.X
-        -> Dhall.Extractor Dhall.Src Dhall.X a
+        :: Dhall.Expr Dhall.Src Void
+        -> Dhall.Extractor Dhall.Src Void a
     extractF e0 = fromMaybe (unexpectedConstructor e0) do
         (field, e1, rest) <- extractUnionConstructor e0
 

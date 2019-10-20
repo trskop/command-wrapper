@@ -106,6 +106,7 @@ import Data.List as List (dropWhile, span)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Monoid ((<>))
 import Data.Typeable (Typeable)
+import Data.Void (Void)
 import GHC.Generics (Generic)
 import qualified GHC.IO.Encoding as IO (setLocaleEncoding)
 import System.Exit (exitFailure)
@@ -155,10 +156,10 @@ import Dhall.Import (Chained(chainedImport), Imported(..), MissingImports)
 import qualified Dhall.Lint as Dhall (lint)
 import Dhall.Parser (ParseError, SourcedException, Src)
 import qualified Dhall.Pretty as Dhall (Ann, CharacterSet(..))
-import Dhall.TypeCheck (DetailedTypeError(..), TypeError, X)
+import Dhall.TypeCheck (DetailedTypeError(..), TypeError)
 import qualified Dhall.Util as Dhall
   ( Censor(NoCensor)
-  , Input(File, StandardInput)
+  , Input(InputFile, StandardInput)
   )
 import System.Directory
     ( XdgDirectory(XdgCache)
@@ -299,7 +300,7 @@ interpreter
   where
     resolveImports
         :: (Expr Src Import, Dhall.Import.Status)
-        -> IO (Expr Src X)
+        -> IO (Expr Src Void)
     resolveImports (expr, status)
       | allowImports = State.evalStateT (Dhall.Import.loadWith expr) status
       | otherwise    = Dhall.Import.assertNoImports expr
@@ -493,7 +494,7 @@ format appNames config Format{..} =
                 Dhall.StandardInput
 
             InputFile file ->
-                Dhall.File file
+                Dhall.InputFile file
 
             InputExpression _ ->
                 -- TODO: Is there a way how we can handle this gracefully?
@@ -947,7 +948,7 @@ filter appNames config Filter{..} = handleExceptions appNames config do
     resolveImports
         :: Bool
         -> (Expr Src Import, Dhall.Import.Status)
-        -> IO (Expr Src X)
+        -> IO (Expr Src Void)
     resolveImports allowImports' (expr, status)
       | allowImports' = State.evalStateT (Dhall.Import.loadWith expr) status
       | otherwise     = Dhall.Import.assertNoImports expr
@@ -1072,7 +1073,7 @@ renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
 renderDoc Config{colourOutput} h doc =
     Dhall.hPutDoc colourOutput h (doc <> Pretty.line)
 
-hPutExpr :: Config -> Handle -> Expr Src X -> IO ()
+hPutExpr :: Config -> Handle -> Expr Src Void -> IO ()
 hPutExpr Config{colourOutput} = Dhall.hPutExpr colourOutput characterSet
   where
     characterSet = Dhall.Unicode -- TODO: This should be configurable.
@@ -1142,12 +1143,12 @@ handleExceptions appNames config@Config{verbosity} =
   where
     explain = verbosity > Verbosity.Normal
 
-    handler0 :: TypeError Src X -> IO ()
+    handler0 :: TypeError Src Void -> IO ()
     handler0 e = if explain
         then throwDhallException' "" (DetailedTypeError e)
         else throwDhallException' getDetailedErrorsMsg e
 
-    handler1 :: Imported (TypeError Src X) -> IO ()
+    handler1 :: Imported (TypeError Src Void) -> IO ()
     handler1 (Imported ps e) = if explain
         then throwDhallException' "" (Imported ps (DetailedTypeError e))
         else throwDhallException' getDetailedErrorsMsg (Imported ps e)
@@ -1195,10 +1196,10 @@ addVariable
 addVariable var a =
     set (field' @"variables") (view (field' @"variables") a <> [var]) a
 
-doTheLetThing :: Bool -> [Variable] -> Expr Src X -> IO (Expr Src X)
+doTheLetThing :: Bool -> [Variable] -> Expr Src Void -> IO (Expr Src Void)
 doTheLetThing allowImports = flip (foldrM let_)
   where
-    let_ :: Variable -> Expr Src X -> IO (Expr Src X)
+    let_ :: Variable -> Expr Src Void -> IO (Expr Src Void)
     let_ Variable{variable, value = valueText} body = do
         -- We are parsing and resolving imports for each variable separately.
         -- It may be more efficient to do so once for the whole expression.
@@ -1223,7 +1224,7 @@ doTheLetThing allowImports = flip (foldrM let_)
 
     resolveImports
         :: Expr Src Import
-        -> IO (Expr Src X)
+        -> IO (Expr Src Void)
     resolveImports expr
       | allowImports = State.evalStateT (Dhall.Import.loadWith expr) status
       | otherwise    = Dhall.Import.assertNoImports expr

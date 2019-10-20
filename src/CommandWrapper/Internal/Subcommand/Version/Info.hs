@@ -30,6 +30,7 @@ import Numeric.Natural (Natural)
 import Text.ParserCombinators.ReadP (readP_to_S)
 
 import Data.Text.Prettyprint.Doc (Pretty(pretty))
+import Dhall (ToDhall)
 import qualified Dhall
 import Language.Haskell.TH.Quote (QuasiQuoter(..))
 import Language.Haskell.TH.Syntax (liftData)
@@ -42,7 +43,7 @@ data VersionInfo = VersionInfo
     , dhallStandard :: PrettyVersion
     }
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Inject)
+  deriving anyclass (ToDhall)
 
 newtype PrettyVersion = PrettyVersion {rawVersion :: Version}
   deriving stock (Generic, Show)
@@ -52,7 +53,7 @@ instance Pretty PrettyVersion where
       | v == makeVersion [] = "N/A"
       | otherwise           = pretty (showVersion v)
 
-instance Dhall.Inject PrettyVersion where
+instance ToDhall PrettyVersion where
     injectWith opts = Dhall.InputType
         { embed = embedList . toNaturals . versionBranch . rawVersion
         , declared

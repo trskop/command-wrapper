@@ -72,6 +72,7 @@ import Data.Int (Int)
 import Data.Maybe (Maybe)
 import Data.Monoid ((<>))
 import Data.Ord ((<=), (>))
+import Data.Void (Void)
 import System.IO (Handle, IO, stderr, stdout)
 import System.Environment (getProgName)
 import System.Exit (ExitCode(ExitFailure), exitWith)
@@ -85,7 +86,6 @@ import qualified Dhall.Core as Dhall (Expr)
 import qualified Dhall.Parser as Dhall (Src)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Dhall.TH (staticDhallExpression)
-import qualified Dhall.TypeCheck as Dhall (X)
 import qualified Options.Applicative as Options
     ( HasName
     , Mod
@@ -212,7 +212,7 @@ printOptparseCompletionInfoExpression
     -- ^ Output handle.
     -> IO ()
 printOptparseCompletionInfoExpression outHandle =
-    let completionInfo :: Dhall.Expr Dhall.Src Dhall.X =
+    let completionInfo :: Dhall.Expr Dhall.Src Void =
             $(Dhall.TH.staticDhallExpression
                 "./dhall/optparse-completion-info.dhall"
             )
@@ -228,7 +228,7 @@ printCommandWrapperStyleCompletionInfoExpression
     -- ^ Output handle.
     -> IO ()
 printCommandWrapperStyleCompletionInfoExpression outHandle =
-    let completionInfo :: Dhall.Expr Dhall.Src Dhall.X =
+    let completionInfo :: Dhall.Expr Dhall.Src Void =
             $(Dhall.TH.staticDhallExpression
                 "./dhall/command-wrapper-style-completion-info.dhall"
             )

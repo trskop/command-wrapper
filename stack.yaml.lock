@@ -26,26 +26,33 @@ packages:
   original:
     hackage: verbosity-0.3.0.0
 - completed:
-    hackage: dhall-1.26.1@sha256:e291354ce0191b51b1c65c4f857f59c4bc2ed1983ea69a6e11a2f814dcd74709,30033
+    hackage: dhall-1.27.0@sha256:b522d6b534949e65771ed0179afc1488e4de2b185af5ed38e4806a6720db51bf,30519
     pantry-tree:
-      size: 225515
-      sha256: 28615732061471cb0ff479cbdf048523dbb4530c9712c5da2ba2c5b3d026b487
+      size: 232998
+      sha256: 3f79ba6a3eeb0f59c1cf41663d65eebe71f5780f5765169e3d52406789a6f286
   original:
-    hackage: dhall-1.26.1
+    hackage: dhall-1.27.0
 - completed:
-    hackage: dhall-bash-1.0.23@sha256:42275dfe76773677e3f746be8a44b2b88c514601e6a79b78b97179b23e8e96d9,1740
+    hackage: dhall-bash-1.0.24@sha256:edf3b3dceee56c24dc4bd440d1e0dac889eb8a019bee76bdc04efc59af35851d,1784
     pantry-tree:
       size: 266
-      sha256: 6932e218dd59723a79b14e5e2553328b77e9b419b984cf79d54e29a76cccba46
+      sha256: e938e068c802c63a4bc95933caf17e612014c3ee41fa5589c3ee0982de24ede2
   original:
-    hackage: dhall-bash-1.0.23
+    hackage: dhall-bash-1.0.24
 - completed:
-    hackage: dhall-json-1.4.1@sha256:5b0dac356e84d03e855aa4e8aa455532c4c4a274154e26756ae77ebbc82c89a4,5398
+    hackage: dhall-json-1.5.0@sha256:cf5ba9c349539715ba3a9642fbd56e905b1a7675ac82ea48ee4a67bc34446872,5644
     pantry-tree:
-      size: 3387
-      sha256: 77290c47daa5960e967ff219ce9c44ffd3035e64acd6a1d42268eb366b2c4264
+      size: 3601
+      sha256: 109a2d85c440e3e0371da886ab1ddf004d51b0c20a1e61a8195e74bc0459802f
   original:
-    hackage: dhall-json-1.4.1
+    hackage: dhall-json-1.5.0
+- completed:
+    hackage: aeson-yaml-1.0.2.0@sha256:c578472845478a35756131f4f4a6a929a9021aa2e494e6efe610c033e09868d0,1975
+    pantry-tree:
+      size: 450
+      sha256: 84ccad9d7ede4bb692da57845428b5e49d80736d04375f0543461f343fac4627
+  original:
+    hackage: aeson-yaml-1.0.2.0
 - completed:
     hackage: lock-file-0.7.0.0@sha256:3ad84b5e454145e1d928063b56abb96db24a99a21b493989520e58fa0ab37b00,4484
     pantry-tree:
@@ -97,7 +104,7 @@ packages:
     commit: eec72c9c99fd8bd89866bdd85a23343a4a6fbae8
 snapshots:
 - completed:
-    size: 523700
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/7.yaml
-    sha256: 8e3f3c894be74d71fa4bf085e0a8baae7e4d7622d07ea31a52736b80f8b9bb1a
-  original: lts-14.7
+    size: 524130
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/10.yaml
+    sha256: 04841e0397d7ce6364f19359fce89aa45ca8684609d665845db80d398002baa9
+  original: lts-14.10

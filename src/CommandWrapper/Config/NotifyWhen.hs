@@ -19,8 +19,9 @@ import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 
 import Data.Text (Text)
+import Dhall (FromDhall)
 import qualified Dhall
-    ( Interpret(autoWith)
+    ( FromDhall(autoWith)
     , InterpretOptions(InterpretOptions, constructorModifier)
     , Type
     , natural
@@ -51,7 +52,7 @@ interpretNotifyWhen f = Dhall.union $ mconcat
     , Dhall.constructor  (f "After")     (After <$> Dhall.natural)
     ]
 
-instance Dhall.Interpret NotifyWhen where
+instance FromDhall NotifyWhen where
     autoWith :: Dhall.InterpretOptions -> Dhall.Type NotifyWhen
     autoWith Dhall.InterpretOptions{constructorModifier} =
         interpretNotifyWhen constructorModifier

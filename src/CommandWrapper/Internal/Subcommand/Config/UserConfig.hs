@@ -22,6 +22,7 @@ import Data.Functor ((<&>))
 import Data.String (fromString)
 import Data.Maybe (fromMaybe)
 import Data.Traversable (for)
+import Data.Void (Void)
 import Numeric.Natural (Natural)
 import System.IO (stdout)
 
@@ -97,10 +98,10 @@ printDhall
     :: ColourOutput
     -> Dhall.CharacterSet
     -> Paths
-    -> Dhall.Expr Dhall.Src Dhall.X
-    -> Maybe (Dhall.Expr Dhall.Src Dhall.X)
-    ->  ( (Dhall.Expr Dhall.Src Dhall.X, Dhall.Expr Dhall.Src Dhall.X)
-        -> Dhall.Expr Dhall.Src Dhall.X
+    -> Dhall.Expr Dhall.Src Void
+    -> Maybe (Dhall.Expr Dhall.Src Void)
+    ->  ( (Dhall.Expr Dhall.Src Void, Dhall.Expr Dhall.Src Void)
+        -> Dhall.Expr Dhall.Src Void
         )
     -> IO ()
 printDhall colour charset paths expression possiblyConfigExpression selector =
@@ -114,13 +115,13 @@ printDhall colour charset paths expression possiblyConfigExpression selector =
 
 printPlain
     :: Paths
-    -> Dhall.Expr Dhall.Src Dhall.X
-    -> Maybe (Dhall.Expr Dhall.Src Dhall.X)
+    -> Dhall.Expr Dhall.Src Void
+    -> Maybe (Dhall.Expr Dhall.Src Void)
     -> IO ()
 printPlain paths expression possiblyConfigExpression =
     either dieWithNotPlainType id result
   where
-    result :: Either [Dhall.TypeError Dhall.Src Dhall.X] (IO ())
+    result :: Either [Dhall.TypeError Dhall.Src Void] (IO ())
     result = runExcept $ asum
         [ printText <$> mkExpression Dhall.Text
         , printOptionalText <$> mkExpression (optional Dhall.Text)
@@ -164,7 +165,7 @@ printPlain paths expression possiblyConfigExpression =
         validationToEither . Dhall.extract (Dhall.auto @[Integer])
 
     printText, printOptionalText, printNatural, printInteger
-        :: Dhall.Expr Dhall.Src Dhall.X
+        :: Dhall.Expr Dhall.Src Void
         -> IO ()
 
     printText =
@@ -203,7 +204,7 @@ printPlain paths expression possiblyConfigExpression =
 parseDhallExpression
     :: Maybe FilePath
     -> Text
-    -> IO (Dhall.Expr Dhall.Src Dhall.X)
+    -> IO (Dhall.Expr Dhall.Src Void)
 parseDhallExpression possiblySourcePath =
     either throwIO resolveImports . Dhall.exprFromText sourcePath
   where
@@ -212,7 +213,7 @@ parseDhallExpression possiblySourcePath =
 
     resolveImports
         :: Dhall.Expr Dhall.Src Dhall.Import
-        -> IO (Dhall.Expr Dhall.Src Dhall.X)
+        -> IO (Dhall.Expr Dhall.Src Void)
     resolveImports expr =
         evalStateT (Dhall.loadWith expr) (Dhall.emptyStatus sourceDir)
 
@@ -234,16 +235,16 @@ parseDhallExpression possiblySourcePath =
 --     ) data
 -- @
 mkExpressionAndTypeCheck
-    :: Maybe (Dhall.Expr Dhall.Src Dhall.X)
+    :: Maybe (Dhall.Expr Dhall.Src Void)
     -- ^ Expected type of the result.
-    -> Dhall.Expr Dhall.Src Dhall.X
+    -> Dhall.Expr Dhall.Src Void
     -- ^ Expression from command line.
-    -> Dhall.Expr Dhall.Src Dhall.X
+    -> Dhall.Expr Dhall.Src Void
     -- ^ Parsed configuration file.
     -> Paths
     -> Either
-        (Dhall.TypeError Dhall.Src Dhall.X)
-        (Dhall.Expr Dhall.Src Dhall.X, Dhall.Expr Dhall.Src Dhall.X)
+        (Dhall.TypeError Dhall.Src Void)
+        (Dhall.Expr Dhall.Src Void, Dhall.Expr Dhall.Src Void)
 mkExpressionAndTypeCheck possiblyResultType bodyExpression configExpression paths = do
     expression <- mkExpression <$> Dhall.typeOf configExpression
     Dhall.typeOf expression <&> (Dhall.normalize expression, )

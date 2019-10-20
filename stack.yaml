@@ -1,7 +1,7 @@
 # For advanced use and comprehensive documentation of the format, please see:
 # https://docs.haskellstack.org/en/stable/yaml_configuration/
 
-resolver: lts-14.7
+resolver: lts-14.10
 
 packages:
   - '.'
@@ -11,9 +11,10 @@ extra-deps:
   - fuzzy-0.1.0.0
   - verbosity-0.3.0.0
 
-  - dhall-1.26.1
-  - dhall-bash-1.0.23
-  - dhall-json-1.4.1
+  - dhall-1.27.0
+  - dhall-bash-1.0.24
+  - dhall-json-1.5.0
+  - aeson-yaml-1.0.2.0
 
 # Keeping the following in case of new Dhall release:
   # Dhall dependencies:
@@ -33,7 +34,6 @@ extra-deps:
 
   - git: https://github.com/trskop/open-in-editor.git
     commit: eec72c9c99fd8bd89866bdd85a23343a4a6fbae8
-
 
 flags:
   verbosity:

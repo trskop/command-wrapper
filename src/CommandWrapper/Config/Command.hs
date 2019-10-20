@@ -21,10 +21,10 @@ import GHC.Generics (Generic)
 
 import Data.Text (Text)
 import Dhall ((>$<), (>*<))
+import Dhall (FromDhall, ToDhall)
 import qualified Dhall
-    ( Inject(injectWith)
+    ( ToDhall(injectWith)
     , InputType
-    , Interpret
     , InterpretOptions(InterpretOptions, fieldModifier)
     , RecordInputType
     , inputRecord
@@ -48,7 +48,7 @@ data NamedCommand = NamedCommand
     , notifyWhen :: Maybe NotifyWhen
     }
   deriving stock (Generic)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (FromDhall)
 
 isNamed :: Text -> NamedCommand -> Bool
 isNamed expectedName NamedCommand{name} = name == expectedName
@@ -64,9 +64,9 @@ data Command = Command
     , workingDirectory :: Maybe FilePath
     }
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (FromDhall)
 
-instance Dhall.Inject Command where
+instance ToDhall Command where
     injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.inputRecord
         ( adapt
             >$< field "command" Dhall.inputString
@@ -88,9 +88,9 @@ data SimpleCommand = SimpleCommand
     , environment :: [EnvironmentVariable]
     }
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (FromDhall)
 
-instance Dhall.Inject SimpleCommand where
+instance ToDhall SimpleCommand where
     injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.inputRecord
         ( adapt
             >$< field "command" Dhall.inputString
