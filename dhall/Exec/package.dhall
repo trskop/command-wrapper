@@ -13,7 +13,7 @@
       ./direnv/package.dhall sha256:3f2befdc67cb37b9538f445baac73cfd7dfa5c18d2b350adcf13ab3f8047ce61
     ? ./direnv/package.dhall
 , docker =
-      ./docker/package.dhall sha256:b45a336cdda1a1c293273e607199982214b02c53d1f8f6a6895ad0b02d4721e7
+      ./docker/package.dhall sha256:bd928e08c02d378dd396bf12b07fbbd56e24ff5339697b9d3176b7bb3b106fe1
     ? ./docker/package.dhall
 , docker-compose =
       ./docker-compose/package.dhall sha256:42f113616b271e40fc6fcb3716616b1d697d9126071794291bd0b4a471c56cbc

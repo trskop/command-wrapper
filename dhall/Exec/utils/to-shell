@@ -12,9 +12,13 @@
 -- ${TOOLSET_COMMAND} config --dhall-text <<< './exec-command-to-shell.dhall env:EXEC_COMMAND'
 -- ```
 
-let ExecCommand = ../../CommandWrapper/Type/ExecCommand
+let ExecCommand =
+        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+      ? ../../CommandWrapper/ExecCommand/Type
 
-let EnvironmentVariable = ../../CommandWrapper/Type/EnvironmentVariable
+let EnvironmentVariable =
+        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
+      ? ../../CommandWrapper/EnvironmentVariable/Type
 
 let List/map =
       https://prelude.dhall-lang.org/List/map sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680

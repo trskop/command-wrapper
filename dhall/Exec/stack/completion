@@ -1,6 +1,8 @@
 -- vim: filetype=dhall
 
-let CommandWrapper = ../../CommandWrapper/Types.dhall
+let Shell =
+        ../../CommandWrapper/Shell/Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
+      ? ../../CommandWrapper/Shell/Type
 
 let stackYamlOption =
         ./stackYamlOption sha256:7579242492aacd52e17f76c0a07f2440f1ca690550746bbaba88bb970e2ddd30
@@ -14,7 +16,7 @@ in    λ ( options
         : { workingDirectory : Optional Text, stackYaml : Optional Text }
         )
     → λ(arguments : List Text)
-    → λ(shell : CommandWrapper.Shell)
+    → λ(shell : Shell)
     → λ(index : Natural)
     → λ(words : List Text)
     → let completionCommand =
