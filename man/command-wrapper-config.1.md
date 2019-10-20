@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 19th October 2019
+% 20th October 2019
 
 
 # NAME
@@ -12,12 +12,13 @@ toolset configuration.
 # USAGE
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
-\[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type]
+\[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type|\--\[no-]cache]
 \[\--let=*NAME*=*EXPRESSION* ...]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-filter
+\[\--\[no-]cache]
 \[\--\[no-]allow-imports]
 \[\--let=*NAME*=*EXPRESSION* ...]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
@@ -31,6 +32,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-lint
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-resolve
+\[\--\[no-]cache]
 \[\--list-imports=*KIND*]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
@@ -46,16 +48,19 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-diff *EXPRESSION* *EXPRESSIO
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-repl
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-hash
+\[\--\[no-]cache]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-bash
-\[\--\[no-]allow-imports] \[\--declare=*NAME*]
+\[\--\[no-]allow-imports|\--\[no-]cache]
+\[\--declare=*NAME*]
 \[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-text
-\[\--\[no-]allow-imports] \[\--list]
+\[\--\[no-]allow-imports|\--\[no-]cache]
+\[\--list]
 \[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
@@ -226,6 +231,10 @@ We can organise `config` subcommand abilities into following categories:
 \--output=*FILE*, **\--output** *FILE*, **-o** *FILE*
 :   Write optput into *FILE* instead of standard output.  Can be specified only
     once.
+
+\--\[no-]cache
+:   Specifies if caching should be used when resolving imports protected by
+    hash.  By default cache is used.
 
 \--let=*NAME*=*EXPRESSION*
 :   Declare variable *NAME* with it's value set to *EXPRESSION*, as if it was part

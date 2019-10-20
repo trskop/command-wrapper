@@ -61,7 +61,7 @@ import qualified Dhall.Import as Dhall (emptyStatus, loadWith)
 import qualified Dhall.Map (fromList)
 import qualified Dhall.Parser as Dhall (Src, exprFromText)
 import qualified Dhall.Pretty as Dhall (CharacterSet)
-import qualified Dhall.TypeCheck as Dhall (TypeError, X, typeOf)
+import qualified Dhall.TypeCheck as Dhall (TypeError, typeOf)
 import System.FilePath (takeDirectory)
 import System.Exit (die)
 

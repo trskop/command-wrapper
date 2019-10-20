@@ -27,6 +27,7 @@ import Data.Maybe (Maybe, fromMaybe)
 import Data.Monoid (Last(Last, getLast))
 import Data.Semigroup (Semigroup((<>)))
 import Data.String (String)
+import Data.Void (Void)
 import GHC.Generics (Generic)
 import System.IO (FilePath, IO)
 import Text.Show (Show, show)
@@ -35,7 +36,7 @@ import Data.Monoid.Endo (E)
 import Data.Verbosity (Verbosity)
 import qualified Dhall (Interpret, InvalidType, auto, inputFile)
 import qualified Dhall.Parser as Dhall (ParseError, Src)
-import qualified Dhall.TypeCheck as Dhall (TypeError, X)
+import qualified Dhall.TypeCheck as Dhall (TypeError)
 
 import CommandWrapper.Options.Alias (Alias)
 import CommandWrapper.Options.ColourOutput (ColourOutput)
@@ -86,9 +87,9 @@ read = catchDhallExceptions . Dhall.inputFile Dhall.auto
   where
     catchDhallExceptions parse =
         (Right <$> parse)
-            `catch` handleException @(Dhall.InvalidType Dhall.Src Dhall.X)
+            `catch` handleException @(Dhall.InvalidType Dhall.Src Void)
             `catch` handleException @Dhall.ParseError
-            `catch` handleException @(Dhall.TypeError Dhall.Src Dhall.X)
+            `catch` handleException @(Dhall.TypeError Dhall.Src Void)
 
     handleException :: Exception e => e -> IO (Either String Config)
     handleException = pure . Left . show

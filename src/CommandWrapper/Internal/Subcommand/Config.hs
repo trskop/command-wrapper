@@ -134,6 +134,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Repl(..)
     , Resolve(..)
     , ResolveMode(..)
+    , SemanticCacheMode(..)
     , ToText(..)
     , ToTextMode(..)
     , Variable(..)
@@ -162,6 +163,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , repl
     , resolve
     , setAllowImports
+    , setSemanticCacheMode
     , toText
     )
 import CommandWrapper.Internal.Subcommand.Config.Init
@@ -256,6 +258,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (annotateFlag <|> noAnnotateFlag)
                 <*> many (typeFlag <|> noTypeFlag)
                 <*> many letOption
+                <*> many (cacheFlag <|> noCacheFlag)
                 <*> optional outputOption
                 <*> optional (expressionOption <|> inputOption)
             )
@@ -298,7 +301,8 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , dhallResolveFlag
         <*> ( dualFoldEndo
-                <$> optional outputOption
+                <$> many (cacheFlag <|> noCacheFlag)
+                <*> optional outputOption
                 <*> optional (expressionOption <|> inputOption)
                 <*> optional listDependenciesOption
             )
@@ -306,6 +310,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallBashFlag
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many (cacheFlag <|> noCacheFlag)
                 <*> optional declareOption
                 <*> optional (expressionOption <|> inputOption)
                 <*> optional outputOption
@@ -325,6 +330,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallTextFlag
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many (cacheFlag <|> noCacheFlag)
                 <*> many listFlag
                 <*> optional (expressionOption <|> inputOption)
                 <*> optional outputOption
@@ -334,6 +340,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> Options.strArgument mempty
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many (cacheFlag <|> noCacheFlag)
                 <*> many letOption
                 <*> optional outputOption
                 <*> optional (expressionOption <|> inputOption)
@@ -514,6 +521,20 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 , value = Text.drop 1 expr  -- "=EXPRESSION" --> "EXPRESSION"
                 }
 
+    cacheFlag
+        :: HasField' "semanticCache" a Dhall.SemanticCacheMode
+        => Options.Parser (a -> a)
+    cacheFlag =
+        Options.flag' (Dhall.setSemanticCacheMode Dhall.UseSemanticCache)
+            (Options.long "cache")
+
+    noCacheFlag
+        :: HasField' "semanticCache" a Dhall.SemanticCacheMode
+        => Options.Parser (a -> a)
+    noCacheFlag =
+        Options.flag' (Dhall.setSemanticCacheMode Dhall.IgnoreSemanticCache)
+            (Options.long "no-cache")
+
     dhallDiffFlag
         :: Options.Parser
             (Text -> Text -> Endo Dhall.Diff -> Endo (ConfigMode Global.Config))
@@ -685,6 +706,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                     <> "|" <> longOption "[no-]allow-imports"
                     <> "|" <> longOption "[no-]annotate"
                     <> "|" <> longOption "[no-]type"
+                    <> "|" <> longOption "[no-]cache"
                     )
             <+> Pretty.brackets
                 ( longOptionWithArgument "let" "NAME=EXPRESSION"
@@ -697,7 +719,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-filter"
-            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets
+                    ( longOption "[no-]allow-imports"
+                    <> "|" <> longOption "[no-]cache"
+                    )
             <+> Pretty.brackets
                 ( longOptionWithArgument "let" "NAME=EXPRESSION"
                 )
@@ -727,6 +752,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-resolve"
+            <+> Pretty.brackets (longOption "[no-]cache")
             <+> Pretty.brackets (longOptionWithArgument "list-imports" "KIND")
             <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
@@ -745,6 +771,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-hash"
+            <+> Pretty.brackets (longOption "[no-]cache")
             <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
                 <> "|" <> longOptionWithArgument "input" "FILE"
@@ -774,7 +801,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-bash"
-            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets
+                ( longOption "[no-]allow-imports"
+                <> "|" <> longOption "[no-]cache"
+                )
             <+> Pretty.brackets (longOptionWithArgument "declare" "NAME")
             <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
@@ -784,7 +814,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-text"
-            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets
+                ( longOption "[no-]allow-imports"
+                <> "|" <> longOption "[no-]cache"
+                )
             <+> Pretty.brackets (longOption "list")
             <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
@@ -850,8 +883,14 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             ]
 
         , optionDescription ["--output=FILE", "--output FILE", "-o FILE"]
-            [ Pretty.reflow "Write optput into", metavar "FILE"
+            [ Pretty.reflow "Write output into", metavar "FILE"
             , Pretty.reflow "instead of standard output."
+            ]
+
+        , optionDescription ["--[no-]cache"]
+            [ Pretty.reflow
+                "Specifies if caching should be used when resolving imports\
+                \ protected by hash.  By default cache is used."
             ]
 
         , optionDescription ["--let=NAME=EXPRESSION"]
@@ -1421,6 +1460,28 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 ]
             )
             ["--let="]
+        <> munless
+            ( List.or
+                [ hadDhallDiff
+                , hadDhallExec
+                , hadDhallFormat
+                , hadDhallFreeze
+                , hadDhallLint
+                , hadDhallRepl
+                , hadHelp
+                , hadInit
+
+                , not $ List.or
+                    [ hadDhall
+                    , hadDhallBash
+                    , hadDhallFilter
+                    , hadDhallHash
+                    , hadDhallResolve
+                    , hadDhallText
+                    ]
+                ]
+            )
+            ["--cache", "--no-cache"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 

@@ -86,6 +86,10 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
 
     , Output(..)
 
+    -- * Cache
+    , SemanticCacheMode(..)
+    , setSemanticCacheMode
+
     -- * Variable
     , Variable(..)
     , addVariable
@@ -223,6 +227,7 @@ data Interpreter = Interpreter
     , alpha :: Bool
     , annotate :: Bool
     , showType :: Bool
+    , semanticCache :: SemanticCacheMode
 
     , variables :: [Variable]
 
@@ -245,6 +250,7 @@ defInterpreter = Interpreter
     , alpha = False
     , allowImports = True
     , showType = False
+    , semanticCache = UseSemanticCache
     , variables = []
 
 --  , inputEncoding   =
@@ -266,14 +272,23 @@ interpreter :: AppNames -> Config -> Interpreter -> IO ()
 interpreter
   appNames
   config
-  Interpreter{allowImports, alpha, annotate, input, output, showType, variables}
+  Interpreter
+    { allowImports
+    , alpha
+    , annotate
+    , input
+    , output
+    , semanticCache
+    , showType
+    , variables
+    }
   = handleExceptions appNames config do
 
     IO.setLocaleEncoding IO.utf8
     (resolvedExpression, inferredType) <- do
-        expression <- readExpression input
+        expression <- readExpression semanticCache input
             >>= resolveImports
-            >>= doTheLetThing allowImports variables
+            >>= doTheLetThing allowImports semanticCache variables
 
         expressionType <- Dhall.Core.throws (Dhall.TypeCheck.typeOf expression)
 
@@ -313,6 +328,7 @@ data Resolve = Resolve
     { mode :: ResolveMode
     , input :: Input
     , output :: Output
+    , semanticCache :: SemanticCacheMode
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
@@ -333,13 +349,14 @@ defResolve = Resolve
     { mode = ResolveDependencies
     , input = InputStdin
     , output = OutputStdout
+    , semanticCache = UseSemanticCache
     }
 
 resolve :: AppNames -> Config -> Resolve -> IO ()
-resolve appNames config Resolve{mode, input, output} =
+resolve appNames config Resolve{mode, input, output, semanticCache} =
     handleExceptions appNames config do
         IO.setLocaleEncoding IO.utf8
-        (expression, status) <- readExpression input
+        (expression, status) <- readExpression semanticCache input
 
         case mode of
             ResolveDependencies -> do
@@ -568,6 +585,7 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
 data Hash = Hash
     { input :: Input
     , output :: Output
+    , semanticCache :: SemanticCacheMode
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
@@ -580,13 +598,14 @@ defHash :: Hash
 defHash = Hash
     { input = InputStdin
     , output = OutputStdout
+    , semanticCache = UseSemanticCache
     }
 
 hash :: AppNames -> Config -> Hash -> IO ()
 hash appNames config Hash{..} = handleExceptions appNames config do
 
     IO.setLocaleEncoding IO.utf8
-    (expression, status) <- readExpression input
+    (expression, status) <- readExpression semanticCache input
 
     resolvedExpression <- State.evalStateT
         (Dhall.Import.loadWith expression) status
@@ -774,6 +793,7 @@ data BashMode = BashExpressionMode | BashStatementMode ByteString
 data Bash = Bash
     { input :: Input
     , allowImports :: Bool
+    , semanticCache :: SemanticCacheMode
     , mode :: BashMode
     , output :: Output
     }
@@ -788,6 +808,7 @@ defBash :: Bash
 defBash = Bash
     { input = InputStdin
     , allowImports = True
+    , semanticCache = UseSemanticCache
     , mode = BashExpressionMode
     , output = OutputStdout
     }
@@ -796,7 +817,7 @@ bash :: AppNames -> Config -> Bash -> IO ()
 bash appNames config Bash{..} = handleExceptions appNames config do
 
     IO.setLocaleEncoding IO.utf8
-    (expression, status) <- readExpression input
+    (expression, status) <- readExpression semanticCache input
 
     resolvedExpression <- do
         expr <- if allowImports
@@ -829,6 +850,7 @@ data ToText = ToText
     { input :: Input
     , output :: Output
     , allowImports :: Bool
+    , semanticCache :: SemanticCacheMode
     , mode :: ToTextMode
     }
   deriving stock (Generic, Show)
@@ -843,6 +865,7 @@ defToText = ToText
     { input = InputStdin
     , output = OutputStdout
     , allowImports = True
+    , semanticCache = UseSemanticCache
     , mode = PlainTextMode
     }
 
@@ -850,7 +873,7 @@ toText :: AppNames -> Config -> ToText -> IO ()
 toText appNames config ToText{..} = handleExceptions appNames config do
 
     IO.setLocaleEncoding IO.utf8
-    (expression, status) <- readExpression input
+    (expression, status) <- readExpression semanticCache input
 
     let dhallInput :: Dhall.Type a -> IO a
         dhallInput Dhall.Type{..} = do
@@ -887,6 +910,7 @@ data Filter = Filter
     , output :: Output
     , expression :: Text
     , allowImports :: Bool
+    , semanticCache :: SemanticCacheMode
     , variables :: [Variable]
     }
   deriving stock (Generic, Show)
@@ -902,6 +926,7 @@ defFilter expression = Filter
     , output = OutputStdout
     , expression
     , allowImports = True
+    , semanticCache = UseSemanticCache
     , variables = []
     }
 
@@ -910,7 +935,8 @@ filter appNames config Filter{..} = handleExceptions appNames config do
 
     IO.setLocaleEncoding IO.utf8
 
-    (inVar, inVarType) <- readExpression input >>= resolveImports allowImports
+    (inVar, inVarType) <- readExpression semanticCache input
+        >>= resolveImports allowImports
         >>= \value -> do
             annotation <- typeOf value
             pure
@@ -935,8 +961,8 @@ filter appNames config Filter{..} = handleExceptions appNames config do
 
     parseExpression expression >>= \expr -> do
         expr' <- Dhall.Core.Let inVar . Dhall.Core.Let inVarType
-            <$> resolveImports True (expr, Dhall.Import.emptyStatus ".")
-        expr'' <- doTheLetThing allowImports variables expr'
+            <$> resolveImports True (expr, emptyStatus)
+        expr'' <- doTheLetThing allowImports semanticCache variables expr'
         _ <- typeOf expr''
         withOutputHandle' (hPutExpr config) (Dhall.Core.normalize expr'')
   where
@@ -955,6 +981,12 @@ filter appNames config Filter{..} = handleExceptions appNames config do
 
     parseExpression =
         Dhall.Core.throws . Dhall.Parser.exprFromText "(expression)"
+
+    emptyStatus =
+        (Dhall.Import.emptyStatus ".")
+            { Dhall.Import._semanticCacheMode =
+                toDhallSemanticCacheMode semanticCache
+            }
 
 -- }}} Filter -----------------------------------------------------------------
 
@@ -1027,8 +1059,11 @@ data OutputEncoding
     | OutputYaml
   deriving stock (Show)
 
-readExpression :: Input -> IO (Expr Src Import, Dhall.Import.Status)
-readExpression = \case
+readExpression
+    :: SemanticCacheMode
+    -> Input
+    -> IO (Expr Src Import, Dhall.Import.Status)
+readExpression semanticCache = \case
     InputStdin ->
         Text.getContents >>= parseExpr "(stdin)" "."
 
@@ -1040,7 +1075,13 @@ readExpression = \case
   where
     parseExpr f c txt =
         (,) <$> Dhall.Core.throws (Dhall.Parser.exprFromText f txt)
-            <*> pure (Dhall.Import.emptyStatus c)
+            <*> pure (emptyStatus c)
+
+    emptyStatus c =
+        (Dhall.Import.emptyStatus c)
+            { Dhall.Import._semanticCacheMode =
+                toDhallSemanticCacheMode semanticCache
+            }
 
 withOutputHandle :: Input -> Output -> (Handle -> b -> IO a) -> b -> IO a
 withOutputHandle input = \case
@@ -1063,6 +1104,28 @@ withOutputHandle input = \case
         \m a -> withFile filePath WriteMode \h -> m h a
 
 -- }}} Input/Output -----------------------------------------------------------
+
+-- {{{ Semantic Cache ---------------------------------------------------------
+
+-- | Same data type as 'Dhall.Import.SemanticCacheMode'.
+data SemanticCacheMode
+    = IgnoreSemanticCache
+    | UseSemanticCache
+  deriving stock (Generic, Show)
+
+toDhallSemanticCacheMode :: SemanticCacheMode -> Dhall.Import.SemanticCacheMode
+toDhallSemanticCacheMode = \case
+    IgnoreSemanticCache -> Dhall.Import.IgnoreSemanticCache
+    UseSemanticCache    -> Dhall.Import.UseSemanticCache
+
+setSemanticCacheMode
+    :: HasField' "semanticCache" a SemanticCacheMode
+    => SemanticCacheMode
+    -> a
+    -> a
+setSemanticCacheMode = set (field' @"semanticCache")
+
+-- }}} Semantic Cache ---------------------------------------------------------
 
 -- {{{ Helper Functions -------------------------------------------------------
 
@@ -1196,8 +1259,13 @@ addVariable
 addVariable var a =
     set (field' @"variables") (view (field' @"variables") a <> [var]) a
 
-doTheLetThing :: Bool -> [Variable] -> Expr Src Void -> IO (Expr Src Void)
-doTheLetThing allowImports = flip (foldrM let_)
+doTheLetThing
+    :: Bool
+    -> SemanticCacheMode
+    -> [Variable]
+    -> Expr Src Void
+    -> IO (Expr Src Void)
+doTheLetThing allowImports semanticCache = flip (foldrM let_)
   where
     let_ :: Variable -> Expr Src Void -> IO (Expr Src Void)
     let_ Variable{variable, value = valueText} body = do
@@ -1229,7 +1297,11 @@ doTheLetThing allowImports = flip (foldrM let_)
       | allowImports = State.evalStateT (Dhall.Import.loadWith expr) status
       | otherwise    = Dhall.Import.assertNoImports expr
       where
-        status = Dhall.Import.emptyStatus "."
+        status =
+            (Dhall.Import.emptyStatus ".")
+                { Dhall.Import._semanticCacheMode =
+                    toDhallSemanticCacheMode semanticCache
+                }
 
     typeOf = Dhall.Core.throws . Dhall.TypeCheck.typeOf
 
