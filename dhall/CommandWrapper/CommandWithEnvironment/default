@@ -1,0 +1,11 @@
+-- vim: filetype=dhall
+
+let defaultCommand =
+        ../Command/default sha256:45177da2a98a4e2d6b2e879caef7c2d7b6ea804feb18ed69577293ee8c7b283c
+      ? ../Command/default
+
+let emptyEnvironment =
+        ../Command/emptyEnvironment sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
+      ? ../Command/emptyEnvironment
+
+in  defaultCommand ∧ { environment = emptyEnvironment }

@@ -10,10 +10,10 @@
       ./ColourOutput/package.dhall sha256:ab063b4e29e5237c1bbb2c4ed07ed3cc80096c9cd2f9978d727d81ac1f1c8c68
     ? ./ColourOutput/package.dhall
 , Command =
-      ./Command/package.dhall sha256:41261a285c80fdfbef49adb3ced0be160dd9dc37bc89e8a0561da4917561eccd
+      ./Command/package.dhall sha256:3de0160a4821c2d746a2a0c859857c7dce16fdcb75e1aa18a3e5ff48b310c462
     ? ./Command/package.dhall
 , CommandWithEnvironment =
-      ./CommandWithEnvironment/package.dhall sha256:892341c4474751d9b38f7891c4876a49ec15ebca98b3f36d8a053e5b64be15b6
+      ./CommandWithEnvironment/package.dhall sha256:fb3dbcfcc02c02cf75b535b6633f1cfb032502aed71e148693c950d902772e01
     ? ./CommandWithEnvironment/package.dhall
 , ConnectToDatabase =
       ./ConnectToDatabase/package.dhall sha256:75de702e5d74d70d6f5e08473d25d5ba2c3040febdc86b2226f55ec0423ebf71
@@ -46,7 +46,7 @@
       ./Optional/package.dhall sha256:33857949625599d84fb64d5b77946655d38fa1e3120ed397f2166a106b09e5f7
     ? ./Optional/package.dhall
 , Schema =
-      ./Schema/package.dhall sha256:6d9bebdef83104bcecba867f13da86a5b4d064cda1b3e2938a6979f806d5cb1d
+      ./Schema/package.dhall sha256:f3e148dc04e97452d1e5fb8ff0b819c8bc0193a29733f4c1939901fe8ffe1c3a
     ? ./Schema/package.dhall
 , Shell =
       ./Shell/package.dhall sha256:a6ef0d2ad631ea9c9a2edc8d93290dc02b5d7bad7c51b79cb3c6db5baa439511

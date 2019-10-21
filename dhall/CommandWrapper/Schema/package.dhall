@@ -1,6 +1,6 @@
 -- vim: filetype=dhall
 
-{ Schema =
+{ Type =
       ./Type sha256:9c43cff6b1099f18d662f6a9cf8dc7c9794ee3feb0a04f6c775d64ac2d3ace11
     ? ./Type
 , fold =
