@@ -24,6 +24,9 @@
 , EnvironmentVariable =
       ./EnvironmentVariable/package.dhall sha256:a2ed60e366c315c84a20787193d11752f8678dfcd597fb740eb04ce609ed1088
     ? ./EnvironmentVariable/package.dhall
+, ExecCommand =
+      ./ExecCommand/package.dhall sha256:dc4bc6ac7b09f9d64ab848b55133c48908e848192d236446061ac284d88b62b1
+    ? ./ExecCommand/package.dhall
 , ExecConfig =
       ./ExecConfig/package.dhall sha256:54303713892c8eed71abdcc4437728476ae67e78f73ff539cd52115bc083b28b
     ? ./ExecConfig/package.dhall
