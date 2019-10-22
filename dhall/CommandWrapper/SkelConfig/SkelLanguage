@@ -1,0 +1,6 @@
+-- vim: filetype=dhall
+--
+-- At some point we are hoping to get rid of this type, but that requires
+-- redesign of `skel` subcommand.
+
+< Bash | Dhall | Haskell >

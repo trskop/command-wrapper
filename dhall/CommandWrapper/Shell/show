@@ -1,0 +1,7 @@
+-- vim: filetype=dhall
+
+let Shell/fold =
+        ./fold sha256:f2f0a83c99d4418a8691a0bf95ac75fc6c2ab38158a1288dc66eaa46ee74cacb
+      ? ./fold
+
+in  Shell/fold Text { Bash = "Bash", Fish = "Fish", Zsh = "Zsh" }

@@ -1,3 +1,5 @@
+-- vim: filetype=dhall
+
 ''
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -50,6 +52,5 @@ parseOptions = pure DefaultMode
 realMain :: Params -> Config -> Mode -> IO ()
 realMain params _config = \case
     DefaultMode -> dieWith params stderr 125 "Not yet implemented!"
-    CompletionInfo -> printOptparseCompletionInfoExpression stdout''
-
--- vim: filetype=dhall
+    CompletionInfo -> printOptparseCompletionInfoExpression stdout
+''

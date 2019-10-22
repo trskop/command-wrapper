@@ -36,6 +36,9 @@
 , ExitCode =
       ./ExitCode/package.dhall sha256:53545bbc3d4e2e6a6c2272259c3d34d8a91fdbc5b4cdda626a886adbde9e902e
     ? ./ExitCode/package.dhall
+, FileTemplate =
+      ./FileTemplate/package.dhall sha256:f1d9b72bbd054c205b654a7c8ff955d1b654c87cbc58fc37307f7363d68bf755
+    ? ./FileTemplate/package.dhall
 , List =
       ./List/package.dhall sha256:1b97cbd979abcff98f78223e6320a6ba81c378392c9bc1476208832834c8aa68
     ? ./List/package.dhall
@@ -49,8 +52,11 @@
       ./Schema/package.dhall sha256:f3e148dc04e97452d1e5fb8ff0b819c8bc0193a29733f4c1939901fe8ffe1c3a
     ? ./Schema/package.dhall
 , Shell =
-      ./Shell/package.dhall sha256:a6ef0d2ad631ea9c9a2edc8d93290dc02b5d7bad7c51b79cb3c6db5baa439511
+      ./Shell/package.dhall sha256:ec32d80f4962cf4f2a5be99dfbc2534c15431a40bad5142448fb6ec2bd8ef0a4
     ? ./Shell/package.dhall
+, SkelConfig =
+      ./SkelConfig/package.dhall sha256:16430112e2189f41c1d3d2b1c9d9e78df4998e6642a702d0a3344fa3070a3a4e
+    ? ./SkelConfig/package.dhall
 , SubcommandAlias =
       ./SubcommandAlias/package.dhall sha256:edaaf5b2bcdb52389af07101a7cda57000e2acba33b49cac94ea11b5e572b1ab
     ? ./SubcommandAlias/package.dhall
@@ -63,22 +69,6 @@
 , Verbosity =
       ./Verbosity/package.dhall sha256:488f95a5a27b82653c5a759b592b08e16940d1698dcf956fcbd9c153cb2547f2
     ? ./Verbosity/package.dhall
-, config =
-    { skel =
-        { defaults =
-              ./skel/defaults sha256:f7bbe6987589d64f01d727392db83726e64c67e263eb45adf2b5655ad1a442f6
-            ? ./skel/defaults
-        , default-bash-skel =
-              ./skel/default-bash-skel sha256:00b5d1f752d64aed9f2347df3f7b38c296ec237744b1999fa301efb68ebfe478
-            ? ./skel/default-bash-skel
-        , default-dhall-skel =
-              ./skel/default-dhall-skel sha256:340030d5c2186d2292f10e6d3dc26e4027aee6b2d8eb70a5915f2854dfd94180
-            ? ./skel/default-dhall-skel
-        , default-haskell-skel =
-              ./skel/default-haskell-skel sha256:99efef7061c9b8c0fc5c3e73ba79be4fb9f23ce82e3accb4b913a3e4c6edf5dd
-            ? ./skel/default-haskell-skel
-        }
-    }
 , help =
     { command =
           ./help/command sha256:a4e9d3b8603dfe58f03c38651c10b094ac98c960c1a92dd0687159bbde7e268b

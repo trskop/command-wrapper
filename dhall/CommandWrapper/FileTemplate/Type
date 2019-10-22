@@ -1,0 +1,14 @@
+-- vim: filetype=dhall
+--
+-- Description of individual fields:
+--
+-- * `targetFile` -- File path of the file that is being created by this
+--   template.
+-- * `executable` -- Should created file be an executable, i.e. executable bit
+--   set.
+-- * `template` -- File content.
+
+{ targetFile : Text
+, executable : Bool
+, template : Text
+}

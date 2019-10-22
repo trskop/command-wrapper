@@ -20,17 +20,15 @@ let EnvironmentVariable =
 let noExtraEnvironment = [] : List EnvironmentVariable
 
 let Shell/toText =
-        λ(shell : Shell)
-      → merge { Bash = "bash", Fish = "fish", Zsh = "zsh" } shell
+        ../../CommandWrapper/Shell/toText sha256:ac2b3762009ee945aac998034d4b44cb47fff0593df4547c9423dd62e54e92d4
+      ? ../../CommandWrapper/Shell/toText
 
 let mkArguments =
         λ(shell : Shell)
       → λ(index : Natural)
       → λ(words : List Text)
       →   [ "--index=${Natural/show index}"
-          , "--shell=${merge
-                         { Bash = "bash", Fish = "fish", Zsh = "zsh" }
-                         shell}"
+          , "--shell=${Shell/toText shell}"
           , "--"
           ]
         # words
