@@ -106,7 +106,7 @@ TOOLSET_COMMAND help --man [SUBCOMMAND|TOPIC]
 ### What is a Toolset
 
 Toolset is just a name-space for commands.  Easiest way to initialise a toolset
-named `yx` is:
+named `yx` (arbitrarily choosen name) is:
 
 ```
 ~/.local/lib/command-wrapper/command-wrapper config --init --toolset=yx
