@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 20th October 2019
+% 25th October 2019
 
 
 # NAME
@@ -166,14 +166,14 @@ We can organise `config` subcommand abilities into following categories:
     ├── command-wrapper-cd.dhall
     │
     ├── exec/
-    │   └── commands-common.dhall
+    │   ├── commands-common.dhall
+    │   └── library.dhall
     ├── command-wrapper-exec.dhall
     │
     ├── skel/
     ├── command-wrapper-skel.dhall
     │
     ├── README.md
-    ├── Types.dhall
     └── library.dhall
     ```
 
@@ -188,6 +188,17 @@ We can organise `config` subcommand abilities into following categories:
     │   ├── aliases-common.dhall
     │   └── help-common.txt
     ├── default.dhall
+    │
+    ├── cd/
+    │   └── directories-common.dhall
+    ├── command-wrapper-cd.dhall
+    │
+    ├── exec/
+    │   └──  commands-common.dhall
+    ├── command-wrapper-exec.dhall
+    │
+    ├── skel/
+    ├── command-wrapper-skel.dhall
     │
     └── README.md
 

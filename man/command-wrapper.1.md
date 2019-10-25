@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 13th October 2019
+% 25th October 2019
 
 
 # NAME
@@ -551,11 +551,6 @@ Toolset configuration file has following type:
 
 ```
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/Types.dhall
-      -- Note that adding a hash will allow Dhall to cache the import.
-      -- See also `dhall hash --help`.
-
-let commandWrapper =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
@@ -618,16 +613,16 @@ in  -- Subcommand aliases.  These can be used to invoke subcommand in
     -- it comes colourised output.  By default Command Wrapper uses
     -- the value:
     --
-    --     CommandWrapper.ColourOutput.Auto
+    --     CommandWrapper.ColourOutput.Type.Auto
     --
     -- Unless `NO_COLOR` environment variable is set, in which case
     -- following is used:
     --
-    --     CommandWrapper.ColourOutput.Never
+    --     CommandWrapper.ColourOutput.Type.Never
     --
     -- See also `--colour` option and `NO_COLOR` environment variable
     -- descriptions.
-    , colourOutput : Optional CommandWrapper.ColourOutput
+    , colourOutput : Optional CommandWrapper.ColourOutput.Type
 
     -- Extra text to be displayed when `TOOLSET help` or `TOOLSET --help`
     -- is invoked.  It is useful for providing important examples, and
@@ -636,9 +631,8 @@ in  -- Subcommand aliases.  These can be used to invoke subcommand in
 
     -- Default verbosity to be used when command is invoked.  See
     -- `--verbosity` option for more details.
-    , verbosity : Optional CommandWrapper.Verbosity
-
-    } : CommandWrapper.DefaultConfig
+    , verbosity : Optional CommandWrapper.Verbosity.Type
+    }
 ```
 
 Imports in the above description aren't necessary.  To get fully

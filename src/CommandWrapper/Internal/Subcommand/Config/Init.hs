@@ -546,7 +546,6 @@ configFileContent = Text.unlines . \case
         , "    -- ```"
         , "--  , terminalEmulator = CommandWrapper.CdConfig.defaul.terminalEmulator"
         , "    }"
-        , "    : CommandWrapper.CdConfig"
         ]
 
     CdConfig _ ->
