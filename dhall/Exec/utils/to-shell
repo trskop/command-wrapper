@@ -1,5 +1,8 @@
 -- vim: filetype=dhall
 --
+-- Convert output of `TOOLSET exec --print COMMAND` into command that can be
+-- executed on command line.
+--
 -- This script can be used in multiple ways, here are some of them:
 --
 -- ```
@@ -19,8 +22,13 @@
 -- ```
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let EnvironmentVariable =
         ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
@@ -51,21 +59,49 @@ let -- Alternative would be to use `env --chdir=${dir}` instead, but how
           (λ(_ : Text) → "( cd ${Text/show _} && ${cmd} )")
           cmd
 
-in    λ(cmd : ExecCommand)
-    →     withWorkingDirectory
-            cmd.workingDirectory
-            (     "env "
-              ++  Text/concatMapSep
-                    " "
-                    Text
-                    Text/show
-                    (   List/map
-                          EnvironmentVariable
-                          Text
-                          EnvironmentVariable/toText
-                          cmd.environment
-                      # [ cmd.command ]
-                      # cmd.arguments
-                    )
-            )
-      ++  "\n"
+let toShell =
+        λ(cmd : ExecCommand.Type)
+      →     withWorkingDirectory
+              cmd.workingDirectory
+              (     "env "
+                ++  Text/concatMapSep
+                      " "
+                      Text
+                      Text/show
+                      (   List/map
+                            EnvironmentVariable
+                            Text
+                            EnvironmentVariable/toText
+                            cmd.environment
+                        # [ cmd.command ]
+                        # cmd.arguments
+                      )
+              )
+        ++  "\n"
+
+let example0 =
+        assert
+      :   toShell
+            ExecCommand::{
+            , command = "echo"
+            , arguments = [ "Hello", "World" ]
+            , environment = [ { name = "FOO", value = "BAR" } ]
+            }
+        ≡ ''
+          env "FOO=BAR" "echo" "Hello" "World"
+          ''
+
+let example1 =
+        assert
+      :   toShell
+            ExecCommand::{
+            , command = "echo"
+            , arguments = [ "Hello", "World" ]
+            , environment = [ { name = "FOO", value = "BAR" } ]
+            , workingDirectory = Some "/a/directory"
+            }
+        ≡ ''
+          ( cd "/a/directory" && env "FOO=BAR" "echo" "Hello" "World" )
+          ''
+
+in  toShell

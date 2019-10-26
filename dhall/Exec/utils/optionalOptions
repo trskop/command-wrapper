@@ -1,0 +1,21 @@
+-- vim: filetype=dhall
+--
+-- Convert an `Optional` value into command line options, or empty list if it's
+-- `None`.
+
+let optionalOptions
+    : ∀(r : Type) → (r → List Text) → Optional r → List Text
+    =   λ(r : Type)
+      → λ(just : r → List Text)
+      → λ(optional : Optional r)
+      → Optional/fold r optional (List Text) just ([] : List Text)
+
+let example =
+        assert
+      :   optionalOptions
+            Text
+            (λ(dir : Text) → [ "--directory=${dir}" ])
+            (Some "/a/directory")
+        ≡ [ "--directory=/a/directory" ]
+
+in  optionalOptions

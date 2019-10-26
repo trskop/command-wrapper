@@ -1,0 +1,26 @@
+-- vim: filetype=dhall
+--
+-- Convert `ColourOutput` value into command line options.
+
+let ColourOutput =
+        ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../../CommandWrapper/ColourOutput/Type
+
+let ColourOutput/fold =
+        ../../CommandWrapper/ColourOutput/fold sha256:a020d0af0e820105754b9ebb4d891d6fbed4aef8511a2a148cc1303261ca5388
+      ? ../../CommandWrapper/ColourOutput/fold
+
+let colourOutputOptions
+    :   { Always : List Text, Auto : List Text, Never : List Text }
+      → ColourOutput
+      → List Text
+    = ColourOutput/fold (List Text)
+
+let example =
+        assert
+      :   colourOutputOptions
+            { Always = [ "-C" ], Auto = [] : List Text, Never = [ "-M" ] }
+            ColourOutput.Always
+        ≡ [ "-C" ]
+
+in  colourOutputOptions

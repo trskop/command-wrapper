@@ -13,9 +13,12 @@
       ./go-jira.bash sha256:a2bed0ae3a53770a6d69132921baf9610199303beeefe7c84db0d45666d4ea2b as Text
     ? ./go-jira.bash as Text
 , nix =
-      ./nix.bash.dhall sha256:ee3faf5bb825d273b8bc87d7028fb8a489bf12de57af2df864780ffcb027c7b0
+      ./nix.bash.dhall sha256:4a79f8b86f6ace664d44b60d10e6b1494a64dd339e071979fd3bcbf4d73d9e1c
     ? ./nix.bash.dhall
 , yarn =
-      ./yarn.bash.dhall sha256:db0138e0317322afb5e9a9e71b29754cd1bb05641440cce1a33c987b2d679fee
+      ./yarn.bash.dhall sha256:65bc18ba5131cb50564c7fe48231b28d0c1fd4680548248cd078ab1530e64ab3
     ? ./yarn.bash.dhall
+, jq =
+      ./jq.dhall sha256:0308f23f3bf4dbc8c92a2340710357f790312dc8034f2e6b73f7a9d43b81f91e
+    ? ./jq.dhall
 }

@@ -66,6 +66,7 @@ Smart constructor for following commands/tools is provided:
 *   [`firefox`](./firefox)
 *   [`go-jira`](./go-jira) -- Simple Jira command line client
     <https://github.com/go-jira/jira>
+*   [`jq`](./jq) <https://stedolan.github.io/jq/>
 *   [`pg_dump`](./pg_dump)
 *   [`psql`](./psql)
 *   [`run-mailcap`](./run-mailcap)
@@ -80,6 +81,44 @@ Smart constructor for following commands/tools is provided:
 
 *   [`completion`](./completion) -- Helper functions and scripts for command
     line completion of Exec commands.
-*   [`utils/to-shell`](./utils/to-shell)  -- Convert output of
-    `TOOLSET exec --print COMMAND` into command that can be executed on command
-    line.  See [`utils/to-shell`](./utils/to-shell) for examples.
+
+*   [`utils`](./utils):
+
+    *   [`utils/colourOutputOptions`](./utils/colourOutputOptions) -- Convert
+        `ColourOutput` value into command line options.  Usage example:
+
+         ```Dhall
+           colourOutputOptions
+             { Always = [ "-C" ], Auto = [] : List Text, Never = [ "-M" ] }
+        : ColourOutput → List Text
+         ```
+
+    *   [`utils/optionalOptions`](./utils/optionalOptions) -- Convert an
+        `Optional` value into command line options, or empty list if it's
+        `None`.
+
+        ```Dhall
+          optionalOptions
+            Text
+            (λ(dir : Text) → [ "--directory=${dir}" ])
+            (Some "/a/directory")
+        : Optional Text → List Text
+        ```
+
+    *   [`utils/to-shell`](./utils/to-shell)  -- Convert output of
+        `TOOLSET exec --print COMMAND` into command that can be executed on
+        command line.  See [`utils/to-shell`](./utils/to-shell) for examples.
+
+    *   [`utils/verbosityOptions`](./utils/verbosityOptions) -- Convert
+        `Verbosity` value into command line options.  Usage example:
+
+        ```Dhall
+          verbosityOptions
+            { Silent = [ "--quiet" ]
+            , Normal = [] : List Text
+            , Verbose = [ "--verbose" ]
+            , Annoying = [ "--debug" ]
+            }
+        : Verbosity → List Text
+        ```
+

@@ -1,9 +1,19 @@
 -- vim: filetype=dhall
 
-let nix-completion =
+let completionFor = "Nix"
+
+let completion =
       https://raw.githubusercontent.com/hedning/nix-bash-completions/43dfe677f58a0443dde2493fdee36395f3b64865/_nix
       sha256:749f88ded2f8a66ce3d5dc4f60d77e8e9de5ad4c05152d51ab66f333cf7f9d7d
       as Text
+
+let entryPoint = "_nix_completion"
+
+let specificSettings =
+      ''
+      # Required by nix-completion, fails to parse otherwise.
+      shopt -s extglob
+      ''
 
 in  ''
     #!/usr/bin/env bash
@@ -42,12 +52,11 @@ in  ''
     # Cannot be used due to sourced 'bash_completion'.
     #set -euo pipefail
 
-    # Required by nix-completion, fails to parse otherwise.
-    shopt -s extglob
+    ${specificSettings}
 
     function usage() {
         cat <<EOF
-    Completion for Nix commands with Command Wrapper style UI.
+    Completion for ${completionFor} commands with Command Wrapper style UI.
 
     Usage:
 
@@ -123,11 +132,13 @@ in  ''
         source /usr/share/bash-completion/bash_completion
 
         # Note to self, send a PR that fixes these when bored. Ha!
-        # shellcheck disable=SC1083,SC2027,SC2034,SC2046,SC2059,SC2071,SC2086,SC2100,SC2128,SC2140,SC2155,SC2178,SC2179,SC2190,SC2206,SC2207,SC2209,SC2221,SC2222
+        # shellcheck disable=SC1083,SC2027,SC2034,SC2046,SC2059,SC2071,SC2086,SC2100
+        # shellcheck disable=SC2128,SC2140,SC2155,SC2178,SC2179,SC2190,SC2206,SC2207
+        # shellcheck disable=SC2209,SC2221,SC2222
         {
-            ${nix-completion}
+            ${completion}
 
-            _nix_completion
+            ${entryPoint}
         }
 
         for reply in "''${COMPREPLY[@]}"; do
