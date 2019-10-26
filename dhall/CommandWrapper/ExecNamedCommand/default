@@ -1,0 +1,59 @@
+-- vim: filetype=dhall
+
+let Verbosity =
+        ../Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
+      ? ../Verbosity/Type
+
+let ColourOutput =
+        ../ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../ColourOutput/Type
+
+let NotifyWhen =
+        ../NotifyWhen/Type sha256:93f60a5cc48fb4249657620ea70b25553a89ec0190ed89795dd75890e6e0b2d6
+      ? ../NotifyWhen/Type
+
+let Shell =
+        ../Shell/Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
+      ? ../Shell/Type
+
+let ExecCommand =
+        ../ExecCommand/package.dhall sha256:5e72316f3386371404b71cb105caed6f6bab740f3f1478b7e00e620bedeedd4d
+      ? ../ExecCommand/package.dhall
+
+let ExecNamedCommand =
+        ./Type sha256:5a8ecb546232bfbe14f28a0987ccee220496c1790ee0a3ad3ed108bcc424ea11
+      ? ./Type
+
+let default =
+      { description = None Text
+      , completion =
+          None
+            (   ∀(shell : Shell)
+              → ∀(index : Natural)
+              → ∀(arguments : List Text)
+              → ExecCommand.Type
+            )
+      , notifyWhen = None NotifyWhen
+      }
+
+let consistency =
+        assert
+      :   { Type = ExecNamedCommand, default = default }::{
+          , name = "echo"
+          , command =
+                λ(_ : Verbosity)
+              → λ(_ : ColourOutput)
+              → λ(_ : List Text)
+              → ExecCommand::{ command = "echo", arguments = _ }
+          }
+        ≡ (   default
+            ⫽ { name = "echo"
+              , command =
+                    λ(_ : Verbosity)
+                  → λ(_ : ColourOutput)
+                  → λ(_ : List Text)
+                  → ExecCommand::{ command = "echo", arguments = _ }
+              }
+          )
+
+in  default

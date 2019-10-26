@@ -1,6 +1,9 @@
 { Type =
       ./Type sha256:5a8ecb546232bfbe14f28a0987ccee220496c1790ee0a3ad3ed108bcc424ea11
     ? ./Type
+, default =
+      ./default sha256:cacd7f2632ea058c2bf03ad47346ccbd0f130d29ee7f569a3fe5ee65248c49bc
+    ? ./default
 , emptyCommands =
       ./emptyCommands sha256:b38d39ff754e8410d19adba6aa9f6e1f55c0ab8830f5e71886876ef7aeb7a9a6
     ? ./emptyCommands

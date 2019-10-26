@@ -1,0 +1,27 @@
+-- vim: filetype=dhall
+
+let emptyArguments =
+        ../Command/emptyArguments sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
+      ? ../Command/emptyArguments
+
+let emptyEnvironment =
+        ../Command/emptyEnvironment sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
+      ? ../Command/emptyEnvironment
+
+let ExecCommand =
+        ./Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+      ? ./Type
+
+let default =
+      { arguments = emptyArguments
+      , searchPath = False
+      , workingDirectory = None Text
+      , environment = emptyEnvironment
+      }
+
+let consistency =
+        assert
+      :   { Type = ExecCommand, default = default }::{ command = "echo" }
+        ≡ (default ⫽ { command = "echo" })
+
+in  default

@@ -16,7 +16,7 @@
       ./CommandWithEnvironment/package.dhall sha256:fb3dbcfcc02c02cf75b535b6633f1cfb032502aed71e148693c950d902772e01
     ? ./CommandWithEnvironment/package.dhall
 , ConnectToDatabase =
-      ./ConnectToDatabase/package.dhall sha256:75de702e5d74d70d6f5e08473d25d5ba2c3040febdc86b2226f55ec0423ebf71
+      ./ConnectToDatabase/package.dhall sha256:a392e73ac310bdab2775458e638b656cf1a0acd38e1371ff8d6deb03acb52a94
     ? ./ConnectToDatabase/package.dhall
 , Editor =
       ./Editor/package.dhall sha256:ea947ca2fa9dec681385344190f8373da2d4ced8556cce9096c354f9265992f5
@@ -25,13 +25,13 @@
       ./EnvironmentVariable/package.dhall sha256:a2ed60e366c315c84a20787193d11752f8678dfcd597fb740eb04ce609ed1088
     ? ./EnvironmentVariable/package.dhall
 , ExecCommand =
-      ./ExecCommand/package.dhall sha256:dc4bc6ac7b09f9d64ab848b55133c48908e848192d236446061ac284d88b62b1
+      ./ExecCommand/package.dhall sha256:5e72316f3386371404b71cb105caed6f6bab740f3f1478b7e00e620bedeedd4d
     ? ./ExecCommand/package.dhall
 , ExecConfig =
       ./ExecConfig/package.dhall sha256:54303713892c8eed71abdcc4437728476ae67e78f73ff539cd52115bc083b28b
     ? ./ExecConfig/package.dhall
 , ExecNamedCommand =
-      ./ExecNamedCommand/package.dhall sha256:18552a3a1578677bc8ac0d6848ae783fb99daa2e338179ae1b8e5ac6e24ffaff
+      ./ExecNamedCommand/package.dhall sha256:e6f087dc4b21931cb331f553ee0eb4bc9ab88c42fb043fcbbf40809620c243b0
     ? ./ExecNamedCommand/package.dhall
 , ExitCode =
       ./ExitCode/package.dhall sha256:53545bbc3d4e2e6a6c2272259c3d34d8a91fdbc5b4cdda626a886adbde9e902e
@@ -58,7 +58,7 @@
       ./SkelConfig/package.dhall sha256:16430112e2189f41c1d3d2b1c9d9e78df4998e6642a702d0a3344fa3070a3a4e
     ? ./SkelConfig/package.dhall
 , SubcommandAlias =
-      ./SubcommandAlias/package.dhall sha256:edaaf5b2bcdb52389af07101a7cda57000e2acba33b49cac94ea11b5e572b1ab
+      ./SubcommandAlias/package.dhall sha256:3c0eb761e752cf7f43a794586af41951faf744d5d6c8b7c00e0fb31f4e6a9ff2
     ? ./SubcommandAlias/package.dhall
 , TerminalEmulator =
       ./TerminalEmulator/package.dhall sha256:7af1af071f36f10b12d8f076016fad8f9d070e5da793f20e42a0f4ec074bd519
