@@ -1,6 +1,3 @@
 -- vim: filetype=dhall
 
-{ Type =
-      ./Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-    ? ./Type
-}
+https://raw.githubusercontent.com/trskop/mainplate/365ac6cfbc3cc5be4a8cdfe96c12c36f588bb38b/dhall/EnvironmentVariable/package.dhall sha256:1250426124fe1a06fce13386a45e803655f7fe419fb372bd4a5157993350b199

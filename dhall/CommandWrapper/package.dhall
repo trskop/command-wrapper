@@ -7,7 +7,7 @@
       ./CdConfig/package.dhall sha256:2b1f0e05455adf874da059af0ec469968501de7d2f333d29346e14d122ee41b9
     ? ./CdConfig/package.dhall
 , ColourOutput =
-      ./ColourOutput/package.dhall sha256:ab063b4e29e5237c1bbb2c4ed07ed3cc80096c9cd2f9978d727d81ac1f1c8c68
+      ./ColourOutput/package.dhall sha256:8fd5555f273cd4424f8fe2003154c4e36ea657bb5a2642d3677c4756b14c32e8
     ? ./ColourOutput/package.dhall
 , Command =
       ./Command/package.dhall sha256:3de0160a4821c2d746a2a0c859857c7dce16fdcb75e1aa18a3e5ff48b310c462
@@ -22,7 +22,7 @@
       ./Editor/package.dhall sha256:ea947ca2fa9dec681385344190f8373da2d4ced8556cce9096c354f9265992f5
     ? ./Editor/package.dhall
 , EnvironmentVariable =
-      ./EnvironmentVariable/package.dhall sha256:a2ed60e366c315c84a20787193d11752f8678dfcd597fb740eb04ce609ed1088
+      ./EnvironmentVariable/package.dhall sha256:1250426124fe1a06fce13386a45e803655f7fe419fb372bd4a5157993350b199
     ? ./EnvironmentVariable/package.dhall
 , ExecCommand =
       ./ExecCommand/package.dhall sha256:5e72316f3386371404b71cb105caed6f6bab740f3f1478b7e00e620bedeedd4d
