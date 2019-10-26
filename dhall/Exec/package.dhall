@@ -1,4 +1,6 @@
 -- vim: filetype=dhall
+--
+-- Library of utilities for Command Wrapper's `exec` subcommand.
 
 { bazel =
       ./bazel/package.dhall sha256:f7500f8d2730acd5a16cbbab756276cbac4799fd35b6639fb0860dba97ac3da7

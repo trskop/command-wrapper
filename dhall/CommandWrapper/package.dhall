@@ -1,7 +1,7 @@
 -- vim: filetype=dhall
 --
--- Defaults and library of useful tools for toolset and external subcommands
--- bundled with Command Wrapper.
+-- Types, defaults and utilities for configuring Command Wrapper toolset and
+-- external subcommands installed with it by default.
 
 { CdConfig =
       ./CdConfig/package.dhall sha256:2b1f0e05455adf874da059af0ec469968501de7d2f333d29346e14d122ee41b9
