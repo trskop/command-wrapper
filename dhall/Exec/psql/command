@@ -1,8 +1,13 @@
 -- vim: filetype=dhall
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let ColourOutput =
         ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
@@ -24,6 +29,8 @@ let Verbosity/fold =
         ../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
       ? ../../CommandWrapper/Verbosity/fold
 
+let emptyEnvironment = [] : List EnvironmentVariable
+
 in    λ(pgpassFile : Optional Text)
     → λ(psqlrcFile : Optional Text)
     → λ(connect : ConnectToDatabase)
@@ -31,7 +38,7 @@ in    λ(pgpassFile : Optional Text)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
-    →   { command = "psql"
+    →   ExecCommand::{ command = "psql"
         , arguments =
               Verbosity/fold
                 (List Text)
@@ -59,22 +66,19 @@ in    λ(pgpassFile : Optional Text)
                 pgpassFile
                 (List EnvironmentVariable)
                 (λ(file : Text) → [ { name = "PGPASSFILE", value = file } ])
-                ([] : List EnvironmentVariable)
+                emptyEnvironment
             # Optional/fold
                 Text
                 psqlrcFile
                 (List EnvironmentVariable)
                 (λ(file : Text) → [ { name = "PSQLRC", value = file } ])
-                ([] : List EnvironmentVariable)
+                emptyEnvironment
             # Verbosity/fold
                 (List EnvironmentVariable)
-                { Silent = [] : List EnvironmentVariable
+                { Silent = emptyEnvironment
                 , Normal = [ { name = "VERBOSITY", value = "default" } ]
                 , Verbose = [ { name = "VERBOSITY", value = "verbose" } ]
                 , Annoying = [ { name = "VERBOSITY", value = "verbose" } ]
                 }
                 verbosity
-        , searchPath = True
-        , workingDirectory = None Text
         }
-      : ExecCommand

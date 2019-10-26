@@ -1,8 +1,17 @@
 -- vim: filetype=dhall
+--
+-- ```
+-- run-mailcap --action={view|cat|compose|composetyped|edit|print} [ARGUMENTS]
+-- ```
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let ColourOutput =
         ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
@@ -17,36 +26,30 @@ let EnvironmentVariable =
       ? ../../CommandWrapper/EnvironmentVariable/Type
 
 let Action =
-      < View : {}
-      | Cat : {}
-      | Compose : {}
-      | Composetyped : {}
-      | Edit : {}
-      | Print : {}
-      >
+        ./Action sha256:ebe44424cf93ffc0e67bbc651e5fea563e1f88a5b9a2bac59589adb0228b193d
+      ? ./Action
 
 let actionToOption
     : ∀(action : Action) → Text
     =   λ(action : Action)
-      → merge
-          { View = λ(_ : {}) → "--action=view"
-          , Cat = λ(_ : {}) → "--action=cat"
-          , Compose = λ(_ : {}) → "--action=compose"
-          , Composetyped = λ(_ : {}) → "--action=composetyped"
-          , Edit = λ(_ : {}) → "--action=edit"
-          , Print = λ(_ : {}) → "--action=print"
-          }
-          action
+      →     "--action="
+        ++  merge
+              { View = "view"
+              , Cat = "cat"
+              , Compose = "compose"
+              , Composetyped = "composetyped"
+              , Edit = "edit"
+              , Print = "print"
+              }
+              action
 
 in    λ(action : Action)
     → λ(environment : List EnvironmentVariable)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
-    →   { command = "run-mailcap"
-        , arguments = [ actionToOption action ] # arguments
-        , environment = environment
-        , searchPath = True
-        , workingDirectory = None Text
-        }
-      : ExecCommand
+    → ExecCommand::{
+      , command = "run-mailcap"
+      , arguments = [ actionToOption action ] # arguments
+      , environment = environment
+      }

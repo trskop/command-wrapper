@@ -34,7 +34,7 @@
       ./psql/package.dhall sha256:be18fe8eec49904ca79689ecbda31ec29b7fd26e12fc562a25ab9f5550b4fa76
     ? ./psql/package.dhall
 , run-mailcap =
-      ./run-mailcap/package.dhall sha256:7922c36cd92606a72b5ac90addc6b81ade313942b8142c5f57e5fcc79a640829
+      ./run-mailcap/package.dhall sha256:2edbd021d84677de13607ea6b0371ce0f852ef01ef8928891a64e5d39ca1d8a6
     ? ./run-mailcap/package.dhall
 , ssh =
       ./ssh/package.dhall sha256:cd6938eef068ea19df133d5ce4ea2890c59f448dfc274744767aaff08d384f6c

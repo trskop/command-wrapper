@@ -1,8 +1,17 @@
 -- vim: filetype=dhall
+--
+-- ```
+-- docker-compose GLOBAL_OPTIONS [ACTION] [ARGUMENTS]
+-- ```
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let ColourOutput =
         ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
@@ -17,8 +26,6 @@ let EnvironmentVariable =
       ? ../../CommandWrapper/EnvironmentVariable/Type
 
 let emptyArguments = [] : List Text
-
-let emptyEnvironment = [] : List EnvironmentVariable
 
 let downOptions =
         ./downOptions sha256:ac37ec4830115499ddc4a795149307b0b9c52c8832edcc968a6f64c1256ffea7
@@ -45,20 +52,17 @@ in    λ(options : GlobalOptions)
     → λ(_ : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
-    →   { command = "docker-compose"
-        , arguments =
-              globalOptions options
-            # Optional/fold
-                Action
-                action
-                (List Text)
-                (   λ(_ : Action)
-                  → merge { Down = downOptions, Up = upOptions colourOutput } _
-                )
-                emptyArguments
-            # arguments
-        , environment = emptyEnvironment
-        , searchPath = True
-        , workingDirectory = None Text
-        }
-      : ExecCommand
+    → ExecCommand::{
+      , command = "docker-compose"
+      , arguments =
+            globalOptions options
+          # Optional/fold
+              Action
+              action
+              (List Text)
+              (   λ(_ : Action)
+                → merge { Down = downOptions, Up = upOptions colourOutput } _
+              )
+              emptyArguments
+          # arguments
+      }

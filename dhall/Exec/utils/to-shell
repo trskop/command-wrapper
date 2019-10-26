@@ -1,15 +1,21 @@
 -- vim: filetype=dhall
 --
--- This script can be used in multiple ways, here are two of them:
+-- This script can be used in multiple ways, here are some of them:
 --
 -- ```
--- ${TOOLSET_COMMAND} exec --print ${COMMAND} > command.dhall
--- ${TOOLSET_COMMAND} config --dhall-text <<< './exec-command-to-shell.dhall ./command.dhall'
+-- "${TOOLSET_COMMAND}" exec --print "${COMMAND}" > command.dhall
+-- "${TOOLSET_COMMAND}" config --dhall-text <<< './to-shell ./command.dhall'
 -- ```
 --
 -- ```
--- export EXEC_COMMAND="$(${TOOLSET_COMMAND} exec --print ${COMMAND})"
--- ${TOOLSET_COMMAND} config --dhall-text <<< './exec-command-to-shell.dhall env:EXEC_COMMAND'
+-- export EXEC_COMMAND="$("${TOOLSET_COMMAND}" exec --print "${COMMAND}")"
+-- "${TOOLSET_COMMAND}" config --dhall-text <<< './to-shell env:EXEC_COMMAND'
+-- ```
+--
+-- ```
+-- "${TOOLSET_COMMAND}" exec --print "${COMMAND}" \
+-- | "${TOOLSET_COMMAND}" config --dhall-filter './to-shell input' \
+-- | "${TOOLSET_COMMAND}" config --dhall-text
 -- ```
 
 let ExecCommand =
@@ -20,6 +26,10 @@ let EnvironmentVariable =
         ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
       ? ../../CommandWrapper/EnvironmentVariable/Type
 
+let EnvironmentVariable/toText =
+        ../../CommandWrapper/EnvironmentVariable/toText sha256:14b6ceff46e7ec8cd1846d2f50ba366efb3e623f6d92e7543aabaab1ac265f34
+      ? ../../CommandWrapper/EnvironmentVariable/toText
+
 let List/map =
       https://prelude.dhall-lang.org/List/map sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680
 
@@ -28,8 +38,6 @@ let Text/concatMapSep =
 
 let Text/concatSep =
       https://prelude.dhall-lang.org/Text/concatSep sha256:e4401d69918c61b92a4c0288f7d60a6560ca99726138ed8ebc58dca2cd205e58
-
-let envVarToText = λ(var : EnvironmentVariable) → "${var.name}=${var.value}"
 
 let -- Alternative would be to use `env --chdir=${dir}` instead, but how
     -- portable is it?
@@ -54,7 +62,7 @@ in    λ(cmd : ExecCommand)
                     (   List/map
                           EnvironmentVariable
                           Text
-                          envVarToText
+                          EnvironmentVariable/toText
                           cmd.environment
                       # [ cmd.command ]
                       # cmd.arguments

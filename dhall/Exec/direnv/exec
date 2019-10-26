@@ -16,13 +16,17 @@ let EnvironmentVariable =
         ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
       ? ../../CommandWrapper/EnvironmentVariable/Type
 
+let command =
+        ./command sha256:337315e737384fccddbed939a7fe71fbe01563407fffcfc67a182c81fd2707ed
+      ? ./command
+
 in    λ(directory : Optional Text)
     → λ(mkCommand : Verbosity → ColourOutput → List Text → ExecCommand)
     → λ(environment : List EnvironmentVariable)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(extraArguments : List Text)
-    →   ./command
+    →   command
           directory
           ( let dir =
                   Optional/fold
@@ -31,9 +35,9 @@ in    λ(directory : Optional Text)
                     (List Text)
                     (λ(d : Text) → [ d ])
                     ([] : List Text)
-            
+
             let cmd = mkCommand verbosity colourOutput extraArguments
-            
+
             in  [ "exec" ] # dir # [ cmd.command ] # cmd.arguments
           )
           environment

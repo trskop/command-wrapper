@@ -1,8 +1,13 @@
 -- vim: filetype=dhall
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let ColourOutput =
         ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
@@ -12,14 +17,12 @@ let Verbosity =
         ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
       ? ../../CommandWrapper/Verbosity/Type
 
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
-
 let ColourOutput/toText =
         ( ../../CommandWrapper/ColourOutput/package.dhall sha256:ab063b4e29e5237c1bbb2c4ed07ed3cc80096c9cd2f9978d727d81ac1f1c8c68
         ).toText
-      ? ( ../../CommandWrapper/ColourOutput/package.dhall).toText
+      ? (   ../../CommandWrapper/ColourOutput/package.dhall sha256:8fd5555f273cd4424f8fe2003154c4e36ea657bb5a2642d3677c4756b14c32e8
+          ? ../../CommandWrapper/ColourOutput/package.dhall
+        ).toText
 
 let Verbosity/fold =
         ../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
@@ -52,20 +55,18 @@ in    λ(workingDirectory : Optional Text)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(extraArgs : List Text)
-    →   { command = "bazel"
-        , arguments =
-            let arguments = List/head-and-tail Text (args # extraArgs)
-            
-            in    verbosityOptions verbosity
-                # Optional/fold
-                    Text
-                    arguments.head
-                    (List Text)
-                    (λ(cmd : Text) → [ cmd, colorOption colourOutput ])
-                    ([] : List Text)
-                # arguments.tail
-        , environment = [] : List EnvironmentVariable
-        , searchPath = True
-        , workingDirectory = workingDirectory
-        }
-      : ExecCommand
+    → ExecCommand::{
+      , command = "bazel"
+      , arguments =
+          let arguments = List/head-and-tail Text (args # extraArgs)
+
+          in    verbosityOptions verbosity
+              # Optional/fold
+                  Text
+                  arguments.head
+                  (List Text)
+                  (λ(cmd : Text) → [ cmd, colorOption colourOutput ])
+                  ([] : List Text)
+              # arguments.tail
+      , workingDirectory = workingDirectory
+      }

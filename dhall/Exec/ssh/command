@@ -1,8 +1,13 @@
 -- vim: filetype=dhall
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let ColourOutput =
         ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
@@ -16,7 +21,15 @@ let EnvironmentVariable =
         ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
       ? ../../CommandWrapper/EnvironmentVariable/Type
 
-in    λ(options : ./Options)
+let Options =
+        ./Options sha256:47f3b65966d3c1b11183ae79b2d435931af9d26f334ebe04fa303233423f708f
+      ? ./Options
+
+let mkOptions =
+        ./options sha256:2b31c73c5377c9715f99fa310d4ea70c5a2c838692a221f5302aadd8c0c64724
+      ? ./options
+
+in    λ(options : Options)
     → λ ( connectTo
         : { user : Optional Text, host : Text, port : Optional Natural }
         )
@@ -25,27 +38,25 @@ in    λ(options : ./Options)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
-    →   { command = "ssh"
-        , arguments =
-              (./options options : List Text)
-            # Optional/fold
-                Natural
-                connectTo.port
-                (List Text)
-                (λ(_ : Natural) → [ "-p", Natural/show _ ])
-                ([] : List Text)
-            # extraOptions
-            # [ Optional/fold
-                  Text
-                  connectTo.user
-                  Text
-                  (λ(_ : Text) → "${_}@${connectTo.host}")
-                  connectTo.host
-              ]
-            # [ "--" ]
-            # arguments
-        , environment = environment
-        , searchPath = True
-        , workingDirectory = None Text
-        }
-      : ExecCommand
+    → ExecCommand::{
+      , command = "ssh"
+      , arguments =
+            mkOptions options
+          # Optional/fold
+              Natural
+              connectTo.port
+              (List Text)
+              (λ(_ : Natural) → [ "-p", Natural/show _ ])
+              ([] : List Text)
+          # extraOptions
+          # [ Optional/fold
+                Text
+                connectTo.user
+                Text
+                (λ(_ : Text) → "${_}@${connectTo.host}")
+                connectTo.host
+            ]
+          # [ "--" ]
+          # arguments
+      , environment = environment
+      }

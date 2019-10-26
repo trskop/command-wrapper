@@ -4,8 +4,13 @@
 -- for more details on Firefox command line options.
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let ColourOutput =
         ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
@@ -19,7 +24,7 @@ let EnvironmentVariable =
         ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
       ? ../../CommandWrapper/EnvironmentVariable/Type
 
-let Options = 
+let Options =
         ./Options/Type sha256:4218eca485cf5468c78dd8b7e1efdc27f2e8520c8fa1ac421063d28fa0d97f3d
       ? ./Options/Type
 
@@ -32,10 +37,8 @@ in    λ(options : Options)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
-    →   { command = "firefox"
-        , arguments = mkOptions options # arguments
-        , environment = environment
-        , searchPath = True
-        , workingDirectory = None Text
-        }
-      : ExecCommand
+    → ExecCommand::{
+      , command = "firefox"
+      , arguments = mkOptions options # arguments
+      , environment = environment
+      }

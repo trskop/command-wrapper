@@ -1,8 +1,17 @@
 -- vim: filetype=dhall
+--
+-- ```
+-- xdg-open [FILE_OR_URL] [ARGUMENTS]
+-- ```
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let ColourOutput =
         ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
@@ -16,22 +25,16 @@ let EnvironmentVariable =
         ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
       ? ../../CommandWrapper/EnvironmentVariable/Type
 
+let Optional/toList =
+      https://prelude.dhall-lang.org/Optional/toList sha256:390fe99619e9a25e71a253a2b33011f9e5fa26a7d990795205543d1edd72ce5b
+
 in    λ(fileOrUrl : Optional Text)
     → λ(environment : List EnvironmentVariable)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
-    →   { command = "xdg-open"
-        , arguments =
-              Optional/fold
-                Text
-                fileOrUrl
-                (List Text)
-                (λ(value : Text) → [ value ] : List Text)
-                ([] : List Text)
-            # arguments
-        , environment = environment
-        , searchPath = True
-        , workingDirectory = None Text
-        }
-      : ExecCommand
+    → ExecCommand::{
+      , command = "xdg-open"
+      , arguments = Optional/toList Text fileOrUrl # arguments
+      , environment = environment
+      }

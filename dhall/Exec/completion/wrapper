@@ -6,18 +6,17 @@
 -- ```
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let Shell =
         ../../CommandWrapper/Shell/Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
       ? ../../CommandWrapper/Shell/Type
-
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
-
-let noExtraEnvironment = [] : List EnvironmentVariable
 
 let Shell/toText =
         ../../CommandWrapper/Shell/toText sha256:ac2b3762009ee945aac998034d4b44cb47fff0593df4547c9423dd62e54e92d4
@@ -39,25 +38,23 @@ in    λ(options : { toolset : Text, expression : Text, command : Text })
     → λ(shell : Shell)
     → λ(index : Natural)
     → λ(words : List Text)
-    →   { command = options.toolset
-        , arguments =
-            let adjusted-index = index + List/length Text prefixArguments
-            
-            let arguments =
-                  mkArguments
-                    shell
-                    adjusted-index
-                    ([ options.command ] # prefixArguments # words)
-            
-            in    [ "completion"
-                  , "--wrapper"
-                  , "--expression=${options.expression}"
-                  , "--exec"
-                  , "--"
-                  ]
-                # arguments
-        , environment = noExtraEnvironment
-        , searchPath = True
-        , workingDirectory = workingDirectory
-        }
-      : ExecCommand
+    → ExecCommand::{
+      , command = options.toolset
+      , arguments =
+          let adjusted-index = index + List/length Text prefixArguments
+
+          let arguments =
+                mkArguments
+                  shell
+                  adjusted-index
+                  ([ options.command ] # prefixArguments # words)
+
+          in    [ "completion"
+                , "--wrapper"
+                , "--expression=${options.expression}"
+                , "--exec"
+                , "--"
+                ]
+              # arguments
+      , workingDirectory = workingDirectory
+      }

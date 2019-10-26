@@ -1,4 +1,9 @@
 -- vim: filetype=dhall
+--
+-- ```
+-- kitty [--directory DIRECTORY] [-- COMMAND [ARGUMENTS]]
+-- ```
+
 
 let Command =
         ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219

@@ -5,16 +5,17 @@
 -- ```
 
 let ExecCommand =
-        ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
-      ? ../../CommandWrapper/ExecCommand/Type
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
 
 let Shell =
         ../../CommandWrapper/Shell/Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
       ? ../../CommandWrapper/Shell/Type
-
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
 
 let List/index =
         ../../CommandWrapper/List/index sha256:275705f96ae6d2a2e2194489a9a3c9798fa9e7d6f7ff6847077d46efa3519e15
@@ -28,21 +29,18 @@ in    λ(wordlist : List Text)
     → λ(_ : Shell)
     → λ(index : Natural)
     → λ(words : List Text)
-    →   { command = "bash"
-        , arguments =
-            let completions =
-                  List/fold
-                    Text
-                    wordlist
-                    Text
-                    (λ(word : Text) → λ(acc : Text) → "${acc} ${word}")
-                    ""
-            
-            let pattern = Optional/from Text "" (List/index index Text words)
-            
-            in  [ "-c", "compgen -W \"${completions}\" -- '${pattern}'" ]
-        , environment = [] : List EnvironmentVariable
-        , searchPath = True
-        , workingDirectory = None Text
-        }
-      : ExecCommand
+    → ExecCommand::{
+      , command = "bash"
+      , arguments =
+          let completions =
+                List/fold
+                  Text
+                  wordlist
+                  Text
+                  (λ(word : Text) → λ(acc : Text) → "${acc} ${word}")
+                  ""
+
+          let pattern = Optional/from Text "" (List/index index Text words)
+
+          in  [ "-c", "compgen -W \"${completions}\" -- '${pattern}'" ]
+      }

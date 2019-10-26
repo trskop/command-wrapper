@@ -14,7 +14,7 @@ let ExecCommand =
 
 let default =
       { arguments = emptyArguments
-      , searchPath = False
+      , searchPath = True
       , workingDirectory = None Text
       , environment = emptyEnvironment
       }
