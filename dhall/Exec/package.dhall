@@ -3,31 +3,34 @@
 -- Library of utilities for Command Wrapper's `exec` subcommand.
 
 { bazel =
-      ./bazel/package.dhall sha256:f7500f8d2730acd5a16cbbab756276cbac4799fd35b6639fb0860dba97ac3da7
+      ./bazel/package.dhall sha256:ffc84b57c7927af361d65b9b49566550a0a2ef3b93115f7c3d16d7edfa50aedb
     ? ./bazel/package.dhall
 , buildifier =
       ./buildifier/package.dhall sha256:2db5e3723ff4a17092c826b9d9200eab106d720dd940c7b4024d5a847e68f404
     ? ./buildifier/package.dhall
 , completion =
-      ./completion/package.dhall sha256:7f320680b49adfdc8a3e0406675dc92e9aea796a37558fe720b218a9ccf815a7
+      ./completion/package.dhall sha256:dbd3efc2a586967030431589f81024b4c478a0094e0765d62370badb2b3628e5
     ? ./completion/package.dhall
 , direnv =
-      ./direnv/package.dhall sha256:3f2befdc67cb37b9538f445baac73cfd7dfa5c18d2b350adcf13ab3f8047ce61
+      ./direnv/package.dhall sha256:1ba186cf3aed6b91df6b68f2188a4603a1e981fcb144bd5b4155c28ee872ff6b
     ? ./direnv/package.dhall
 , docker =
       ./docker/package.dhall sha256:bd928e08c02d378dd396bf12b07fbbd56e24ff5339697b9d3176b7bb3b106fe1
     ? ./docker/package.dhall
 , docker-compose =
-      ./docker-compose/package.dhall sha256:42f113616b271e40fc6fcb3716616b1d697d9126071794291bd0b4a471c56cbc
+      ./docker-compose/package.dhall sha256:8dd20e7da68b09a1782ca9ec35ee7e99847d8ff5e77e1ba01efaa1f9bc04bcd6
     ? ./docker-compose/package.dhall
 , firefox =
       ./firefox/package.dhall sha256:7296badbac888c2c8a78bf5590b44231fbca7cf88d368574bace43134d0d5b81
     ? ./firefox/package.dhall
 , go-jira =
-      ./go-jira/package.dhall sha256:36854ec988f6ed9021d5c863e1373004cc108f17177978ca4918c0d846924734
+      ./go-jira/package.dhall sha256:0d806fda968ea4a93aa8168a337bafd657e9190c20dbbfc31ee87155a939bf87
     ? ./go-jira/package.dhall
+, jq =
+      ./jq/package.dhall sha256:bb1084d4f76ffa6194f85d44e8849d79e5af355072ec8b2852c2ffac5fef1ac1
+    ? ./jq/package.dhall
 , nix =
-      ./nix/package.dhall sha256:89d94de59db98b217e06a77956750dfd2fe0767f3123e17245b1fbae8a1b8879
+      ./nix/package.dhall sha256:9467f2618cde29196c6df3b79f564617fd2a3c0d2584fa8189d0efff6f94e1d4
     ? ./nix/package.dhall
 , pg_dump =
       ./pg_dump/package.dhall sha256:0c0e9c664275c44fe289adf4972a0c8e16afc8d72238ab3c7eb449fa4a479628
@@ -48,12 +51,12 @@
       ./tmux/package.dhall sha256:6853ffde06afb909d864a52ffc1b425c81ce2c99d28aa4fb3913a01e102ce3a5
     ? ./tmux/package.dhall
 , utils =
-      ./utils/package.dhall sha256:d4361d09d9de8319f72de3fb072ad3d2e375a0f4f40ccbc6615ca843d5a4c08b
+      ./utils/package.dhall sha256:0f757ca69c42fd83e6f7b2fcad78e0813212a89c89d3b0622a1d49a6ac681e42
     ? ./utils/package.dhall
 , xdg-open =
       ./xdg-open/package.dhall sha256:141cea3791cf64099e76ae3245f60c248c386fce353c68d410d297af2d4191b8
     ? ./xdg-open/package.dhall
 , yarn =
-      ./yarn/package.dhall sha256:d4e35b5a7574d2c33125d94bbf4af50bbdccf100eba34992c067662ddf3c2341
+      ./yarn/package.dhall sha256:9a12479b096de216da11a699e26774a7546e09e8ec7bed343f6fc4bd06b3c019
     ? ./yarn/package.dhall
 }

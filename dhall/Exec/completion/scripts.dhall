@@ -10,10 +10,10 @@
 -- dhall hash <<< './scripts/package.dhall'
 -- ```
 
-let commit = "8fb552362ec2587f330875c6647b5da518e291e7"
+let commit = "8be016da48e7b089c4445b1b06d4e9a4a9fa84a5"
 
 in  { url =
         "https://raw.githubusercontent.com/trskop/command-wrapper/${commit}/dhall/Exec/completion/scripts/package.dhall"
     , hash =
-        "sha256:290571f2ceee834bee6dd6d3fbb24eb9fe9b323578e13ea3141f1dcccef3a297"
+        "sha256:7217882ec202f023042b88e65349216111697ebecacde87dc2a910cf3634eb29"
     }
