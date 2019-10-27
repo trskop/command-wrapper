@@ -19,6 +19,6 @@
       ./yarn.bash.dhall sha256:65bc18ba5131cb50564c7fe48231b28d0c1fd4680548248cd078ab1530e64ab3
     ? ./yarn.bash.dhall
 , jq =
-      ./jq.dhall sha256:0308f23f3bf4dbc8c92a2340710357f790312dc8034f2e6b73f7a9d43b81f91e
-    ? ./jq.dhall
+      ./jq.bash.dhall sha256:0308f23f3bf4dbc8c92a2340710357f790312dc8034f2e6b73f7a9d43b81f91e
+    ? ./jq.bash.dhall
 }

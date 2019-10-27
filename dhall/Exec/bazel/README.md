@@ -12,7 +12,7 @@ let CommandWrapper =
 let Exec =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall
 
-let toolset = "yx"
+let toolset = env:COMMAND_WRAPPER_EXE as Text ? "yx"
 
 let bazel-build-work =
       let workingDirectory = Some "/my/work/repo"

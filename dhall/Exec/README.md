@@ -147,6 +147,7 @@ in [`completion`](./completion) directory:
 *   [`completion/scripts`](./completion/scripts) -- Bunch of completion scripts
     ready to be used via [`completion/wrapper`](./completion/wrapper).
 
+    See [`completion/scripts`](./completion/scripts) for more information.
 
 ## Other Utilities
 

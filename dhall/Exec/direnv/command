@@ -27,8 +27,9 @@ in    λ(directory : Optional Text)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(extraArguments : List Text)
-    →  ExecCommand::{ command = "direnv"
-        , arguments = arguments # extraArguments
-        , environment = environment
-        , workingDirectory = directory
-        }
+    → ExecCommand::{
+      , command = "direnv"
+      , arguments = arguments # extraArguments
+      , environment = environment
+      , workingDirectory = directory
+      }
