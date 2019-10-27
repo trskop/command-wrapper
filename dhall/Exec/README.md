@@ -14,6 +14,8 @@ constructors for building `ExecCommand` builders of type:
 
 *   [Importing](#importing)
 *   [Provided Smart Constructors](#provided-smart-constructors)
+*   [Command Line Completion Helpers](#command-line-completion-helpers)
+*   [Other Utilities](#other-utilities)
 
 
 ## Importing
@@ -77,122 +79,122 @@ Smart constructor for following commands/tools is provided:
 *   [`yarn`](./yarn) -- <https://yarnpkg.com/>
 
 
+## Command Line Completion Helpers
+
+Helper functions and scripts for command line completion of Exec commands are
+in [`completion`](./completion) directory:
+
+*   [`completion/optparse-applicative`](./completion/optparse-applicative)
+    -- Command line interfaces built with [optparse-applicative
+    ](https://hackage.haskell.org/package/optparse-applicative) library have
+    command line completion baked in.  This function understands its calling
+    convention and has the following type:
+
+    ```Dhall
+      ∀(command : Text)
+    → ∀(prefixArguments : List Text)
+    → ∀(shell : Shell)
+    → ∀(index : Natural)
+    → ∀(words : List Text)
+    → ExecCommand
+    ```
+
+    And it generates following command:
+
+    ```
+    COMMAND --bash-completion-index=INDEX [--bash-completion-enriched]
+        [--bash-completion-word=WORD ...]
+    ```
+
+*   [`completion/wordlist`](./completion/wordlist) -- Simple command line
+    completion that uses Bash's `compgen` to complete one of the specified
+    words.  Provided function has following type:
+
+    ```Dhall
+      ∀(wordlist : List Text)
+    → ∀(shell : Shell)
+    → ∀(index : Natural)
+    → ∀(words : List Text)
+    → ExecCommand
+    ```
+
+    And it generates following command (in Bash syntax):
+
+    ```Bash
+    bash -c "compgen -W \"${wordlist}\" -- '${words[${index}]}'"
+    ```
+
+*   [`completion/wrapper`](./completion/wrapper) -- Allows implementing command
+    line completion via:
+
+    ```
+    TOOLSET completion --wrapper --expression=EXPRESSION --exec -- [ARGUMENT ...]
+    ```
+
+    It expects the `EXPRESSION` to evaluate into a script that takes following
+    arugments:
+
+    ```
+    SCRIPT --index=INDEX --shell=SHELL -- [WORD ...]
+    ```
+
+    For more information see:
+
+    ```
+    TOOLSET help [--man] completion
+    ```
+
+*   [`completion/scripts`](./completion/scripts) -- Bunch of completion scripts
+    ready to be used via [`completion/wrapper`](./completion/wrapper).
+
+
 ## Other Utilities
 
-*   [`completion`](./completion) -- Helper functions and scripts for command
-    line completion of Exec commands.
+Some useful utilities can be found in [`utils`](./utils):
 
-    *   [`completion/optparse-applicative`](./completion/optparse-applicative)
-        -- Command line interfaces built with [optparse-applicative
-        ](https://hackage.haskell.org/package/optparse-applicative) library
-        have command line completion baked in.  This function understands its
-        calling convention and has the following type:
+*   [`utils/colorOption`](./utils/colorOption) -- Convert `ColourOutput` value
+    into `--color={always|auto|never}` command line option.  A lot of command
+    line options support `--color=WHEN` option, especially GNU applications.
 
-        ```Dhall
-          ∀(command : Text)
-        → ∀(prefixArguments : List Text)
-        → ∀(shell : Shell)
-        → ∀(index : Natural)
-        → ∀(words : List Text)
-        → ExecCommand
-        ```
+    See [`utils/colorOption`](./utils/colorOption) for a usage example.
 
-        And it generates following command:
+    Function [`utils/colourOutputOptions`](./utils/colourOutputOptions) can be
+    used if command supports something other than `--color={always|auto|never}`
+    option.
 
-        ```
-        COMMAND --bash-completion-index=INDEX [--bash-completion-enriched]
-            [--bash-completion-word=WORD ...]
-        ```
+*   [`utils/colourOutputOptions`](./utils/colourOutputOptions) -- Convert
+    `ColourOutput` value into command line options.  Usage example:
 
-    *   [`completion/wordlist`](./completion/wordlist) -- Simple command line
-        completion that uses Bash's `compgen` to complete one of the specified
-        words.  Provided function has following type:
+     ```Dhall
+       colourOutputOptions
+         { Always = [ "-C" ], Auto = [] : List Text, Never = [ "-M" ] }
+    : ColourOutput → List Text
+     ```
 
-        ```Dhall
-          ∀(wordlist : List Text)
-        → ∀(shell : Shell)
-        → ∀(index : Natural)
-        → ∀(words : List Text)
-        → ExecCommand
-        ```
+*   [`utils/optionalOptions`](./utils/optionalOptions) -- Convert an `Optional`
+    value into command line options, or empty list if it's `None`.
 
-        And it generates following command (in Bash syntax):
+    ```Dhall
+      optionalOptions
+        Text
+        (λ(dir : Text) → [ "--directory=${dir}" ])
+        (Some "/a/directory")
+    : Optional Text → List Text
+    ```
 
-        ```Bash
-        bash -c "compgen -W \"${wordlist}\" -- '${words[${index}]}'"
-        ```
+*   [`utils/to-shell`](./utils/to-shell)  -- Convert output of
+    `TOOLSET exec --print COMMAND` into command that can be executed on command
+    line.  See [`utils/to-shell`](./utils/to-shell) for examples.
 
-    *   [`completion/wrapper`](./completion/wrapper) -- Allows implementing
-        command line completion via:
+*   [`utils/verbosityOptions`](./utils/verbosityOptions) -- Convert `Verbosity`
+    value into command line options.  Usage example:
 
-        ```
-        TOOLSET completion --wrapper --expression=EXPRESSION --exec -- [ARGUMENT ...]
-        ```
-
-        It expects the `EXPRESSION` to evaluate into a script that takes
-        following arugments:
-
-        ```
-        SCRIPT --index=INDEX --shell=SHELL -- [WORD ...]
-        ```
-
-        For more information see:
-
-        ```
-        TOOLSET help [--man] completion
-        ```
-
-    *   [`completion/scripts`](./completion/scripts) -- Bunch of completion
-        scripts ready to be used via
-        [`completion/wrapper`](./completion/wrapper).
-
-*   [`utils`](./utils):
-
-    *   [`utils/colorOption`](./utils/colorOption) -- Convert `ColourOutput`
-        value into `--color={always|auto|never}` command line option.  A lot of
-        command line options support `--color=WHEN` option, especially GNU
-        applications.
-
-        See [`utils/colorOption`](./utils/colorOption) for a usage example.
-
-        Function [`utils/colourOutputOptions`](./utils/colourOutputOptions) can
-        be used if command supports something other than
-        `--color={always|auto|never}` option.
-
-    *   [`utils/colourOutputOptions`](./utils/colourOutputOptions) -- Convert
-        `ColourOutput` value into command line options.  Usage example:
-
-         ```Dhall
-           colourOutputOptions
-             { Always = [ "-C" ], Auto = [] : List Text, Never = [ "-M" ] }
-        : ColourOutput → List Text
-         ```
-
-    *   [`utils/optionalOptions`](./utils/optionalOptions) -- Convert an
-        `Optional` value into command line options, or empty list if it's
-        `None`.
-
-        ```Dhall
-          optionalOptions
-            Text
-            (λ(dir : Text) → [ "--directory=${dir}" ])
-            (Some "/a/directory")
-        : Optional Text → List Text
-        ```
-
-    *   [`utils/to-shell`](./utils/to-shell)  -- Convert output of
-        `TOOLSET exec --print COMMAND` into command that can be executed on
-        command line.  See [`utils/to-shell`](./utils/to-shell) for examples.
-
-    *   [`utils/verbosityOptions`](./utils/verbosityOptions) -- Convert
-        `Verbosity` value into command line options.  Usage example:
-
-        ```Dhall
-          verbosityOptions
-            { Silent = [ "--quiet" ]
-            , Normal = [] : List Text
-            , Verbose = [ "--verbose" ]
-            , Annoying = [ "--debug" ]
-            }
-        : Verbosity → List Text
-        ```
+    ```Dhall
+      verbosityOptions
+        { Silent = [ "--quiet" ]
+        , Normal = [] : List Text
+        , Verbose = [ "--verbose" ]
+        , Annoying = [ "--debug" ]
+        }
+    : Verbosity → List Text
+    ```
