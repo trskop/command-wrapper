@@ -43,7 +43,7 @@ that option is not specified.
     ```
 
 *   [`direnv.bash`](./direnv.bash) is a command line completion for `direnv`
-    created from scratch with the Command Wrappery style options.
+    created from scratch with the Command Wrapper style options.
 
     ```
     direnv.bash [--hide-private-commands] [--index=NUM] [--shell=SHELL]

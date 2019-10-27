@@ -4,7 +4,7 @@
 -- completion API.
 --
 -- ```
--- SOME_COMMAND --compltion --index=INDEX --shell={bash|fish|zsh} -- [WORD ...]
+-- SOME_COMMAND --completion --index=INDEX --shell={bash|fish|zsh} -- [WORD ...]
 -- ```
 
   λ(shell : < Bash | Fish | Zsh >)
