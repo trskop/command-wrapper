@@ -108,7 +108,7 @@ TOOLSET_COMMAND help --man [SUBCOMMAND|TOPIC]
 Toolset is just a name-space for commands.  Easiest way to initialise a toolset
 named `yx` (arbitrarily choosen name) is:
 
-```
+```Bash
 ~/.local/lib/command-wrapper/command-wrapper config --init --toolset=yx
 ```
 
@@ -300,7 +300,7 @@ defined either in `~/config/${toolset}/default.dhall` (global aliases, shared
 by all toolsets) or in `~/config/${toolset}/default.dhall` (toolset specific
 aliases).  An alias looks like this:
 
-```
+```Dhall
 { alias = "man"
 , description = Some "Shorthand for \"help --man\"."
 , command = "help"
@@ -413,7 +413,7 @@ Doing this consists of two steps:
 
 1.  Define an alias for `config --dhall`:
 
-    ```
+    ```Dhall
     { alias = "dhall"
     , description = Some "Shorthand for \"config --dhall\"."
     , command = "config"
