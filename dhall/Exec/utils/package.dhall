@@ -12,4 +12,7 @@
 , colourOutputOptions =
       ./colourOutputOptions sha256:33260b6eaaf2a75fa0261a5e4b6dd3344406907f29fe2ff19838d55d1d18e80c
     ? ./colourOutputOptions
+, colorOption =
+      ./colorOption sha256:1974a5a3f18b441b9eae2f7cea20168ab26a97d450ad85a9e6160cea8538a170
+    ? ./colorOption
 }

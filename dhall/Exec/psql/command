@@ -38,47 +38,48 @@ in    λ(pgpassFile : Optional Text)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
-    →   ExecCommand::{ command = "psql"
-        , arguments =
-              Verbosity/fold
-                (List Text)
-                { Silent = [ "--quiet" ]
-                , Normal = [] : List Text
-                , Verbose = [] : List Text
-                , Annoying = [] : List Text
-                }
-                verbosity
-            # [ "--host=${connect.hostname}"
-              , "--username=${connect.username}"
-              , "--dbname=${connect.database}"
-              ]
-            # Optional/fold
-                Natural
-                connect.port
-                (List Text)
-                (λ(port : Natural) → [ "--port=${Natural/show port}" ])
-                ([] : List Text)
-            # arguments
-        , environment =
-              environment
-            # Optional/fold
-                Text
-                pgpassFile
-                (List EnvironmentVariable)
-                (λ(file : Text) → [ { name = "PGPASSFILE", value = file } ])
-                emptyEnvironment
-            # Optional/fold
-                Text
-                psqlrcFile
-                (List EnvironmentVariable)
-                (λ(file : Text) → [ { name = "PSQLRC", value = file } ])
-                emptyEnvironment
-            # Verbosity/fold
-                (List EnvironmentVariable)
-                { Silent = emptyEnvironment
-                , Normal = [ { name = "VERBOSITY", value = "default" } ]
-                , Verbose = [ { name = "VERBOSITY", value = "verbose" } ]
-                , Annoying = [ { name = "VERBOSITY", value = "verbose" } ]
-                }
-                verbosity
-        }
+    → ExecCommand::{
+      , command = "psql"
+      , arguments =
+            Verbosity/fold
+              (List Text)
+              { Silent = [ "--quiet" ]
+              , Normal = [] : List Text
+              , Verbose = [] : List Text
+              , Annoying = [] : List Text
+              }
+              verbosity
+          # [ "--host=${connect.hostname}"
+            , "--username=${connect.username}"
+            , "--dbname=${connect.database}"
+            ]
+          # Optional/fold
+              Natural
+              connect.port
+              (List Text)
+              (λ(port : Natural) → [ "--port=${Natural/show port}" ])
+              ([] : List Text)
+          # arguments
+      , environment =
+            environment
+          # Optional/fold
+              Text
+              pgpassFile
+              (List EnvironmentVariable)
+              (λ(file : Text) → [ { name = "PGPASSFILE", value = file } ])
+              emptyEnvironment
+          # Optional/fold
+              Text
+              psqlrcFile
+              (List EnvironmentVariable)
+              (λ(file : Text) → [ { name = "PSQLRC", value = file } ])
+              emptyEnvironment
+          # Verbosity/fold
+              (List EnvironmentVariable)
+              { Silent = emptyEnvironment
+              , Normal = [ { name = "VERBOSITY", value = "default" } ]
+              , Verbose = [ { name = "VERBOSITY", value = "verbose" } ]
+              , Annoying = [ { name = "VERBOSITY", value = "verbose" } ]
+              }
+              verbosity
+      }

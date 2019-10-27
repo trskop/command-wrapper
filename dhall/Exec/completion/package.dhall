@@ -9,4 +9,7 @@
 , scripts =
       ./scripts/package.dhall sha256:7217882ec202f023042b88e65349216111697ebecacde87dc2a910cf3634eb29
     ? ./scripts/package.dhall
+, wrapper =
+      ./wrapper sha256:6f4115a040ee81275a40a8785baefbe391cf67cb57e5d4e79a8e0fedf572c036
+    ? ./wrapper
 }

@@ -1,5 +1,10 @@
 -- vim: filetype=dhall
 --
+-- Command line interfaces built with
+-- <https://hackage.haskell.org/package/optparse-applicative> library have
+-- command line completion baked in.  This function understands its calling
+-- convention.  Generated command looks like:
+--
 -- ```
 -- COMMAND --bash-completion-index=INDEX [--bash-completion-enriched]
 --     [--bash-completion-word=WORD ...]

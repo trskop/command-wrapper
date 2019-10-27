@@ -55,26 +55,26 @@ TOOLSET help [--man] config
 
 Smart constructor for following commands/tools is provided:
 
-*   [`bazel`](./bazel) -- Build automation tool. <https://bazel.build/>
-*   [`buildifier`](./buildifier) -- Tool for formatting bazel BUILD and .bzl
+*   [`bazel`](./bazel) -- Build automation tool <https://bazel.build/>.
+*   [`buildifier`](./buildifier) -- Tool for formatting bazel BUILD and `.bzl`
     files with a standard convention.
     <https://github.com/bazelbuild/buildtools/tree/master/buildifier>
 *   [`direnv`](./direnv) is a shell extension that modifies shell environment
-    based on current directory. <https://direnv.net/>
+    based on current directory <https://direnv.net/>.
 *   [`docker`](./docker)
-*   [`docker-compose`](./docker-compose) <https://docs.docker.com/compose/>
+*   [`docker-compose`](./docker-compose) -- <https://docs.docker.com/compose/>
 *   [`firefox`](./firefox)
 *   [`go-jira`](./go-jira) -- Simple Jira command line client
-    <https://github.com/go-jira/jira>
-*   [`jq`](./jq) <https://stedolan.github.io/jq/>
+    <https://github.com/go-jira/jira>.
+*   [`jq`](./jq) Command-line JSON processor <https://stedolan.github.io/jq/>.
 *   [`pg_dump`](./pg_dump)
 *   [`psql`](./psql)
 *   [`run-mailcap`](./run-mailcap)
 *   [`ssh`](./ssh)
-*   [`stack`](./stack) <https://docs.haskellstack.org/>
-*   [`tmux`](./tmux) <https://tmux.github.io/>
+*   [`stack`](./stack) -- <https://docs.haskellstack.org/>
+*   [`tmux`](./tmux) -- <https://tmux.github.io/>
 *   [`xdg-open`](./xdg-open)
-*   [`yarn`](./yarn) <https://yarnpkg.com/>
+*   [`yarn`](./yarn) -- <https://yarnpkg.com/>
 
 
 ## Other Utilities
@@ -82,7 +82,82 @@ Smart constructor for following commands/tools is provided:
 *   [`completion`](./completion) -- Helper functions and scripts for command
     line completion of Exec commands.
 
+    *   [`completion/optparse-applicative`](./completion/optparse-applicative)
+        -- Command line interfaces built with [optparse-applicative
+        ](https://hackage.haskell.org/package/optparse-applicative) library
+        have command line completion baked in.  This function understands its
+        calling convention and has the following type:
+
+        ```Dhall
+          ∀(command : Text)
+        → ∀(prefixArguments : List Text)
+        → ∀(shell : Shell)
+        → ∀(index : Natural)
+        → ∀(words : List Text)
+        → ExecCommand
+        ```
+
+        And it generates following command:
+
+        ```
+        COMMAND --bash-completion-index=INDEX [--bash-completion-enriched]
+            [--bash-completion-word=WORD ...]
+        ```
+
+    *   [`completion/wordlist`](./completion/wordlist) -- Simple command line
+        completion that uses Bash's `compgen` to complete one of the specified
+        words.  Provided function has following type:
+
+        ```Dhall
+          ∀(wordlist : List Text)
+        → ∀(shell : Shell)
+        → ∀(index : Natural)
+        → ∀(words : List Text)
+        → ExecCommand
+        ```
+
+        And it generates following command (in Bash syntax):
+
+        ```Bash
+        bash -c "compgen -W \"${wordlist}\" -- '${words[${index}]}'"
+        ```
+
+    *   [`completion/wrapper`](./completion/wrapper) -- Allows implementing
+        command line completion via:
+
+        ```
+        TOOLSET completion --wrapper --expression=EXPRESSION --exec -- [ARGUMENT ...]
+        ```
+
+        It expects the `EXPRESSION` to evaluate into a script that takes
+        following arugments:
+
+        ```
+        SCRIPT --index=INDEX --shell=SHELL -- [WORD ...]
+        ```
+
+        For more information see:
+
+        ```
+        TOOLSET help [--man] completion
+        ```
+
+    *   [`completion/scripts`](./completion/scripts) -- Bunch of completion
+        scripts ready to be used via
+        [`completion/wrapper`](./completion/wrapper).
+
 *   [`utils`](./utils):
+
+    *   [`utils/colorOption`](./utils/colorOption) -- Convert `ColourOutput`
+        value into `--color={always|auto|never}` command line option.  A lot of
+        command line options support `--color=WHEN` option, especially GNU
+        applications.
+
+        See [`utils/colorOption`](./utils/colorOption) for a usage example.
+
+        Function [`utils/colourOutputOptions`](./utils/colourOutputOptions) can
+        be used if command supports something other than
+        `--color={always|auto|never}` option.
 
     *   [`utils/colourOutputOptions`](./utils/colourOutputOptions) -- Convert
         `ColourOutput` value into command line options.  Usage example:
@@ -121,4 +196,3 @@ Smart constructor for following commands/tools is provided:
             }
         : Verbosity → List Text
         ```
-

@@ -1,5 +1,8 @@
 -- vim: filetype=dhall
 --
+-- Simple command line completion that uses Bash's `compgen` to complete one of
+-- the specified words.  Generated command looks like:
+--
 -- ```
 -- bash -c "compgen -W \"${wordlist}\" -- '${words[${index}]}'"
 -- ```

@@ -17,12 +17,9 @@ let Verbosity =
         ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
       ? ../../CommandWrapper/Verbosity/Type
 
-let ColourOutput/toText =
-        ( ../../CommandWrapper/ColourOutput/package.dhall sha256:ab063b4e29e5237c1bbb2c4ed07ed3cc80096c9cd2f9978d727d81ac1f1c8c68
-        ).toText
-      ? (   ../../CommandWrapper/ColourOutput/package.dhall sha256:8fd5555f273cd4424f8fe2003154c4e36ea657bb5a2642d3677c4756b14c32e8
-          ? ../../CommandWrapper/ColourOutput/package.dhall
-        ).toText
+let colorOption =
+        ../utils/colorOption sha256:1974a5a3f18b441b9eae2f7cea20168ab26a97d450ad85a9e6160cea8538a170
+      ? ../utils/colorOption
 
 let Verbosity/fold =
         ../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
@@ -45,10 +42,6 @@ let verbosityOptions =
             , "--verbose_failures"
             ]
         }
-
-let colorOption =
-        λ(colourOutput : ColourOutput)
-      → "--color=${ColourOutput/toText colourOutput}"
 
 in    λ(workingDirectory : Optional Text)
     → λ(args : List Text)

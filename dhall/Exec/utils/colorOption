@@ -1,0 +1,26 @@
+-- vim: filetype=dhall
+--
+-- Convert `ColourOutput` value into `--color={always|auto|never}` command line
+-- option.  A lot of command line options support `--color=WHEN` option,
+-- especially GNU applications.
+
+let ColourOutput =
+        ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../../CommandWrapper/ColourOutput/Type
+
+let ColourOutput/toText =
+        ../../CommandWrapper/ColourOutput/toText sha256:51d22acdc9b32f757e9170ae7c2cf244ce0488aa839dada9ee38bb3f1ee4d7bf
+      ? ../../CommandWrapper/ColourOutput/toText
+
+let colorOption
+    : ColourOutput → Text
+    =   λ(colourOutput : ColourOutput)
+      → "--color=${ColourOutput/toText colourOutput}"
+
+let example0 = assert : colorOption ColourOutput.Always ≡ "--color=always"
+
+let example1 = assert : colorOption ColourOutput.Auto ≡ "--color=auto"
+
+let example2 = assert : colorOption ColourOutput.Never ≡ "--color=never"
+
+in  colorOption
