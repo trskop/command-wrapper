@@ -84,6 +84,25 @@ Smart constructor for following commands/tools is provided:
 Helper functions and scripts for command line completion of Exec commands are
 in [`completion`](./completion) directory:
 
+*   [`completion/command-wrapper`](./completion/command-wrapper) – Call command
+    line completion with Command Wrapper style API. The Dhall function has the
+    following type:
+
+    ```Dhall
+      ∀(command : Text)
+    → ∀(prefixArguments : List Text)
+    → ∀(shell : Shell)
+    → ∀(index : Natural)
+    → ∀(words : List Text)
+    → ExecCommand
+    ```
+
+    And it generates following command:
+
+    ```
+    COMMAND --index=INDEX --shell=SHELL -- [PREFIX_ARGUMENT ...] [WORD ...]
+    ```
+
 *   [`completion/optparse-applicative`](./completion/optparse-applicative) –
     Command line interfaces built with [optparse-applicative
     ](https://hackage.haskell.org/package/optparse-applicative) library have
@@ -148,6 +167,7 @@ in [`completion`](./completion) directory:
     ready to be used via [`completion/wrapper`](./completion/wrapper).
 
     See [`completion/scripts`](./completion/scripts) for more information.
+
 
 ## Other Utilities
 

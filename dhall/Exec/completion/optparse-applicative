@@ -23,10 +23,6 @@ let Shell =
         ../../CommandWrapper/Shell/Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
       ? ../../CommandWrapper/Shell/Type
 
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
-
 let List/map =
       https://prelude.dhall-lang.org/List/map sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680
 

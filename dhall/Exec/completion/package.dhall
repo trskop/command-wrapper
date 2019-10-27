@@ -1,6 +1,9 @@
 -- vim: filetype=dhall
 
-{ optparse-applicative =
+{ command-wrapper =
+      ./command-wrapper sha256:a0c07c4c13f59188a2fc22670b49e528c844a36486d94c6fb8de66949ae9b695
+    ? ./command-wrapper
+, optparse-applicative =
       ./optparse-applicative sha256:00d877d341515117d8f20b93d7119bd0342ece43d2202e01f470db73f162cb44
     ? ./optparse-applicative
 , wordlist =

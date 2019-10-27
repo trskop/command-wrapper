@@ -1,8 +1,10 @@
 -- vim: filetype=dhall
 --
+-- Call command line completion with Command Wrapper style API.  Generated
+-- command looks like:
+--
 -- ```
--- TOOLSET completion --wrapper --expression=EXPRESSION --exec -- --index=INDEX
---     --shell=SHELL -- COMMAND [PREFIX_ARGUMENT ...] [WORD ...]
+-- COMMAND --index=INDEX --shell=SHELL -- [PREFIX_ARGUMENT ...] [WORD ...]
 -- ```
 
 let ExecCommand =
@@ -22,39 +24,20 @@ let Shell/toText =
         ../../CommandWrapper/Shell/toText sha256:ac2b3762009ee945aac998034d4b44cb47fff0593df4547c9423dd62e54e92d4
       ? ../../CommandWrapper/Shell/toText
 
-let mkArguments =
-        λ(shell : Shell)
-      → λ(index : Natural)
-      → λ(words : List Text)
-      →   [ "--index=${Natural/show index}"
-          , "--shell=${Shell/toText shell}"
-          , "--"
-          ]
-        # words
-
-in    λ(options : { toolset : Text, expression : Text, command : Text })
-    → λ(workingDirectory : Optional Text)
+in    λ(command : Text)
     → λ(prefixArguments : List Text)
     → λ(shell : Shell)
     → λ(index : Natural)
     → λ(words : List Text)
     → ExecCommand::{
-      , command = options.toolset
+      , command = command
       , arguments =
-          let adjusted-index = index + List/length Text prefixArguments
+          let adjustedIndex = index + List/length Text prefixArguments
 
-          let arguments =
-                mkArguments
-                  shell
-                  adjusted-index
-                  ([ options.command ] # prefixArguments # words)
-
-          in    [ "completion"
-                , "--wrapper"
-                , "--expression=${options.expression}"
-                , "--exec"
+          in    [ "--index=${Natural/show adjustedIndex}"
+                , "--shell=${Shell/toText shell}"
                 , "--"
                 ]
-              # arguments
-      , workingDirectory = workingDirectory
+              # prefixArguments
+              # words
       }
