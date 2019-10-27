@@ -57,26 +57,26 @@ TOOLSET help [--man] config
 
 Smart constructor for following commands/tools is provided:
 
-*   [`bazel`](./bazel) -- Build automation tool <https://bazel.build/>.
-*   [`buildifier`](./buildifier) -- Tool for formatting bazel BUILD and `.bzl`
+*   [`bazel`](./bazel) – Build automation tool <https://bazel.build/>.
+*   [`buildifier`](./buildifier) – Tool for formatting bazel BUILD and `.bzl`
     files with a standard convention.
     <https://github.com/bazelbuild/buildtools/tree/master/buildifier>
 *   [`direnv`](./direnv) is a shell extension that modifies shell environment
     based on current directory <https://direnv.net/>.
 *   [`docker`](./docker)
-*   [`docker-compose`](./docker-compose) -- <https://docs.docker.com/compose/>
+*   [`docker-compose`](./docker-compose) – <https://docs.docker.com/compose/>
 *   [`firefox`](./firefox)
-*   [`go-jira`](./go-jira) -- Simple Jira command line client
+*   [`go-jira`](./go-jira) – Simple Jira command line client
     <https://github.com/go-jira/jira>.
 *   [`jq`](./jq) Command-line JSON processor <https://stedolan.github.io/jq/>.
 *   [`pg_dump`](./pg_dump)
 *   [`psql`](./psql)
 *   [`run-mailcap`](./run-mailcap)
 *   [`ssh`](./ssh)
-*   [`stack`](./stack) -- <https://docs.haskellstack.org/>
-*   [`tmux`](./tmux) -- <https://tmux.github.io/>
+*   [`stack`](./stack) – <https://docs.haskellstack.org/>
+*   [`tmux`](./tmux) – <https://tmux.github.io/>
 *   [`xdg-open`](./xdg-open)
-*   [`yarn`](./yarn) -- <https://yarnpkg.com/>
+*   [`yarn`](./yarn) – <https://yarnpkg.com/>
 
 
 ## Command Line Completion Helpers
@@ -84,8 +84,8 @@ Smart constructor for following commands/tools is provided:
 Helper functions and scripts for command line completion of Exec commands are
 in [`completion`](./completion) directory:
 
-*   [`completion/optparse-applicative`](./completion/optparse-applicative)
-    -- Command line interfaces built with [optparse-applicative
+*   [`completion/optparse-applicative`](./completion/optparse-applicative) –
+    Command line interfaces built with [optparse-applicative
     ](https://hackage.haskell.org/package/optparse-applicative) library have
     command line completion baked in.  This function understands its calling
     convention and has the following type:
@@ -106,7 +106,7 @@ in [`completion`](./completion) directory:
         [--bash-completion-word=WORD ...]
     ```
 
-*   [`completion/wordlist`](./completion/wordlist) -- Simple command line
+*   [`completion/wordlist`](./completion/wordlist) – Simple command line
     completion that uses Bash's `compgen` to complete one of the specified
     words.  Provided function has following type:
 
@@ -124,7 +124,7 @@ in [`completion`](./completion) directory:
     bash -c "compgen -W \"${wordlist}\" -- '${words[${index}]}'"
     ```
 
-*   [`completion/wrapper`](./completion/wrapper) -- Allows implementing command
+*   [`completion/wrapper`](./completion/wrapper) – Allows implementing command
     line completion via:
 
     ```
@@ -144,7 +144,7 @@ in [`completion`](./completion) directory:
     TOOLSET help [--man] completion
     ```
 
-*   [`completion/scripts`](./completion/scripts) -- Bunch of completion scripts
+*   [`completion/scripts`](./completion/scripts) – Bunch of completion scripts
     ready to be used via [`completion/wrapper`](./completion/wrapper).
 
     See [`completion/scripts`](./completion/scripts) for more information.
@@ -153,7 +153,7 @@ in [`completion`](./completion) directory:
 
 Some useful utilities can be found in [`utils`](./utils):
 
-*   [`utils/colorOption`](./utils/colorOption) -- Convert `ColourOutput` value
+*   [`utils/colorOption`](./utils/colorOption) – Convert `ColourOutput` value
     into `--color={always|auto|never}` command line option.  A lot of command
     line options support `--color=WHEN` option, especially GNU applications.
 
@@ -163,7 +163,7 @@ Some useful utilities can be found in [`utils`](./utils):
     used if command supports something other than `--color={always|auto|never}`
     option.
 
-*   [`utils/colourOutputOptions`](./utils/colourOutputOptions) -- Convert
+*   [`utils/colourOutputOptions`](./utils/colourOutputOptions) – Convert
     `ColourOutput` value into command line options.  Usage example:
 
      ```Dhall
@@ -172,7 +172,7 @@ Some useful utilities can be found in [`utils`](./utils):
     : ColourOutput → List Text
      ```
 
-*   [`utils/optionalOptions`](./utils/optionalOptions) -- Convert an `Optional`
+*   [`utils/optionalOptions`](./utils/optionalOptions) – Convert an `Optional`
     value into command line options, or empty list if it's `None`.
 
     ```Dhall
@@ -183,11 +183,11 @@ Some useful utilities can be found in [`utils`](./utils):
     : Optional Text → List Text
     ```
 
-*   [`utils/to-shell`](./utils/to-shell)  -- Convert output of
+*   [`utils/to-shell`](./utils/to-shell) – Convert output of
     `TOOLSET exec --print COMMAND` into command that can be executed on command
     line.  See [`utils/to-shell`](./utils/to-shell) for examples.
 
-*   [`utils/verbosityOptions`](./utils/verbosityOptions) -- Convert `Verbosity`
+*   [`utils/verbosityOptions`](./utils/verbosityOptions) – Convert `Verbosity`
     value into command line options.  Usage example:
 
     ```Dhall

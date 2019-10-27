@@ -14,9 +14,9 @@ For more details see:
 TOOLSET help [--man] completion
 ```
 
-Scripts ending with `.bash` extensions are standard Bash scripts, those
-ending with `.dhall` are templates of Bash scripts, i.e. Dhall expressions
-of type `Text`.  All scripts have the following calling convention:
+Scripts ending with `.bash` extensions are standard Bash scripts, those ending
+with `.bash.dhall` are templates of Bash scripts, i.e. Dhall expressions of
+type `Text`.  All scripts have the following calling convention:
 
 ```
 SCRIPT --index=INDEX [--shell=SHELL] [-- [WORD ...]]
