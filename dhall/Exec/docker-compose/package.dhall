@@ -25,6 +25,6 @@
       ./globalOptions sha256:11704b75be6ea8b64350c345a8dab20ba40f2a2ba260f563d152a10d95073654
     ? ./globalOptions
 , completion =
-      ./completion sha256:225a11fe97e689481f341b2f024b3ecb067ca5020a74c179d0ad049b08f40e63
+      ./completion sha256:65064ebaf1f819b2abb975f8d66eb530daec1a981fc2c8a5fe6ad8886d162373
     ? ./completion
 }

@@ -7,7 +7,7 @@
       ./command sha256:2cbde157ed5b0a2f5f4c9dbdcccacda52e543e5ca50fd9642094a11894e22e11
     ? ./command
 , completion =
-      ./completion sha256:a09b5347cfde5c25335fc2580ee6c6946bcc6944f91389c2f4d5c3cc086f5595
+      ./completion sha256:b23e1d10079d028ce2dbf6c816ca7b9df21398b7e97fd72e64ab07d25bab3b81
     ? ./completion
 , Command/show =
       ./Command/show sha256:802eda931b470db5c62b8c19260b9da1c87f5ea05ef5317ee241d87d9bc05961
