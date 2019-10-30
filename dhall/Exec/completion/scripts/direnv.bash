@@ -168,37 +168,28 @@ function main() {
         local -r subcommand="${words[1]}"
 
         case "${subcommand}" in
-            allow)          # allow [PATH_TO_RC]
+            allow)
+                # Usage: direnv allow [PATH_TO_RC]
                 if (( index == 2 )); then
                     compgen -A file -- "${current}"
                 fi
                 ;;
-            deny)           # deny [PATH_TO_RC]
+            deny)
+                # Usage: direnv deny [PATH_TO_RC]
                 if (( index == 2 )); then
                     compgen -A file -- "${current}"
                 fi
                 ;;
-            edit)           # edit [PATH_TO_RC]
+            edit)
+                # Usage: direnv edit [PATH_TO_RC]
                 if (( index == 2 )); then
                     compgen -A file -- "${current}"
                 fi
                 ;;
-            exec)           # exec [DIR] COMMAND [...ARGS]
-                # The fact that DIR is optional does make the UI cumbersome.
+            exec)
+                # Usage: direnv exec DIR COMMAND [...ARGS]
                 if (( index == 2 )); then
-                    if  [[ "${words[2]:-}" = '.'
-                        || "${words[2]:-}" = '..'
-                        || "${words[2]:-}" = '~'
-                        || "${words[2]:-}" == ./*
-                        || "${words[2]:-}" == ~/*
-                        || "${words[2]:-}" == /*
-                        ]]
-                    then
-                        compgen -A 'directory' -- "${current}"
-                    else
-                        compgen -A 'directory' -- "${current}" \
-                        || compgen -A 'command' -- "${current}"
-                    fi
+                    compgen -A 'directory' -- "${current}"
                 elif (( index == 3 )); then
                     if  [[ "${words[3]:-}" = '.'
                         || "${words[3]:-}" = '..'
@@ -218,19 +209,22 @@ function main() {
                     compgen -A 'file' -- "${current}"
                 fi
                 ;;
-            help)           # help [SHOW_PRIVATE]
+            help)
+                # Usage: direnv help [SHOW_PRIVATE]
                 if (( index == 2 )); then
                     # The value of this argument is actually ignored, only its
                     # presence is detected by 'direnv'.
                     compgen -W 'show-private' -- "${current}"
                 fi
                 ;;
-            hook)           # hook SHELL
+            hook)
+                # Usage: direnv hook SHELL
                 if (( index == 2 )); then
                     compgenShell "${current}"
                 fi
                 ;;
-            watch)          # watch [SHELL] PATH
+            watch)
+                # Usage: direnv watch [SHELL] PATH
                 if (( index == 2 )); then
                     compgenShell "${current}"
                 else
@@ -239,39 +233,46 @@ function main() {
                 ;;
 
             # Private commands:
-            apply_dump)     # apply_dump FILE
+            apply_dump)
+                # Usage: direnv apply_dump FILE
                 compgen -A file -- "${current}"
                 ;;
-            show_dump)      # show_dump DUMP
+            show_dump)
+                # Usage: direnv show_dump DUMP
                 if (( index == 2 )); then
                     compgen -A file -- "${current}"
                 fi
                 ;;
-            dotenv)         # dotenv [SHELL] [PATH_TO_DOTENV]
+            dotenv)
+                # Usage: direnv dotenv [SHELL] [PATH_TO_DOTENV]
                 if (( index == 2 )); then
                     compgenShell "${current}"
                 else
                     compgen -A file -- "${current}"
                 fi
                 ;;
-            dump)           # dump [SHELL]
+            dump)
+                # Usage: direnv dump [SHELL]
                 if (( index == 2 )); then
                     compgenShell "${current}"
                 fi
                 ;;
-            expand_path)    # expand_path PATH [REL_TO]
+            expand_path)
+                # Usage: direnv expand_path PATH [REL_TO]
                 if (( index == 2 )); then
                     compgen -A file -- "${current}"
                 elif (( index == 3 )); then
                     compgen -A directory -- "${current}"
                 fi
                 ;;
-            export)         # export SHELL
+            export)
+                # Usage: direnv export SHELL
                 if (( index == 2 )); then
                     compgenShell "${current}"
                 fi
                 ;;
-            current)        # current PATH
+            current)
+                # Usage: direnv current PATH
                 if (( index == 2 )); then
                     compgen -A file -- "${current}"
                 fi

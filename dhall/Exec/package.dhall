@@ -9,7 +9,7 @@
       ./buildifier/package.dhall sha256:2db5e3723ff4a17092c826b9d9200eab106d720dd940c7b4024d5a847e68f404
     ? ./buildifier/package.dhall
 , completion =
-      ./completion/package.dhall sha256:7b49d8784384c64be5ea8bfac63a3653b656862759c5a63a0b6c6de83fb30c29
+      ./completion/package.dhall sha256:8f6de679496be3752f8fedafd1c2d656ada9a542903d267baeb9f832297e800c
     ? ./completion/package.dhall
 , direnv =
       ./direnv/package.dhall sha256:1ba186cf3aed6b91df6b68f2188a4603a1e981fcb144bd5b4155c28ee872ff6b

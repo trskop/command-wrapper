@@ -10,7 +10,7 @@
       ./wordlist sha256:19ba1f70e71d4b9bd9cd98b8fd43cfc74310c62d2916ddb65c37c4898044eb22
     ? ./wordlist
 , scripts =
-      ./scripts/package.dhall sha256:7217882ec202f023042b88e65349216111697ebecacde87dc2a910cf3634eb29
+      ./scripts/package.dhall sha256:0f5950d25be506fd962283b361840ecb3afc57a76271f183083a4e133f1362e7
     ? ./scripts/package.dhall
 , wrapper =
       ./wrapper sha256:6f4115a040ee81275a40a8785baefbe391cf67cb57e5d4e79a8e0fedf572c036

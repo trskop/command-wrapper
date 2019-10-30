@@ -4,7 +4,7 @@
       ./bazel.bash sha256:732b498c252fe00f55da10780ca9b31ae0b56237741c97e778313556ec26e027 as Text
     ? ./bazel.bash as Text
 , direnv =
-      ./direnv.bash sha256:a0b1bb86542e3a365eab2ed0aa074e2535cbd98472df962af0db40f034f16c0d as Text
+      ./direnv.bash sha256:806c6f8632ddddedfd3c93330f26f074078bc26c4ffd91a232e589385f198c51 as Text
     ? ./direnv.bash as Text
 , docker-compose =
       ./docker-compose.bash sha256:79a6f96409191b948959c757703b94c3ebbb7cf5c86a013c769e23fc84bc7fd7 as Text
