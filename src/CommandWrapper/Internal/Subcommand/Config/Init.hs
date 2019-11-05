@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TemplateHaskell #-}
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Config.Init
 -- Description: Initialisation capabilities of config subcommand.
@@ -24,7 +25,7 @@ module CommandWrapper.Internal.Subcommand.Config.Init
     )
   where
 
-import Control.Applicative (pure)
+import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=), unless, when)
 import Data.Bool (Bool(True))
 import Data.Either (Either(Left, Right))
@@ -42,12 +43,19 @@ import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (FilePath, IO, stderr, stdout)
 import Text.Show (Show, show)
 
+import Data.Either.Validation (validationToEither)
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines)
 import qualified Data.Text.IO as Text (writeFile)
 import Data.Text.Prettyprint.Doc (pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty (Doc, hsep, line)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import Dhall (ToDhall)
+import qualified Dhall
+    ( Type(extract)
+    , auto
+    )
+import Dhall.TH (staticDhallExpression)
 import System.Directory
     ( XdgDirectory(XdgConfig, XdgData)
     , createDirectoryIfMissing
@@ -58,7 +66,6 @@ import System.Directory
     , getHomeDirectory
     , getXdgDirectory
     )
---import qualified Dhall.TH (staticDhallExpression)
 import System.FilePath ((</>))
 import System.Posix.Files (createSymbolicLink)
 
@@ -145,6 +152,9 @@ init
     dirsExistence [configDir, defaultConfigDir, libDir]
         >>= createOrSkipDirectories
 
+    templates <- getConfigTemplates appNames config
+    let configFileContent' = configFileContent RuntimePaths{..} templates
+
     let readmeFile = configDir </> "README.md"
     haveReadmeFile <- doesFileExist readmeFile
     if haveReadmeFile
@@ -155,7 +165,10 @@ init
                     "File already exists, skipping its creation."
                 ]
         else do
-            Text.writeFile readmeFile (readmeFileContent toolsetName)
+
+            Text.writeFile readmeFile
+                (configFileContent' (ReadmeMd toolsetName))
+
             messageLn
                 [ command (fromString readmeFile) <> ":"
                 , Pretty.reflow "File created."
@@ -167,15 +180,15 @@ init
 
     checkFile defaultConfig
         >>= createOrSkipFile
-                (configFileContent (DefaultConfig toolsetName libDir manDir))
+                (configFileContent' (DefaultConfig toolsetName))
 
     checkFile commonAliasesConfig
         >>= createOrSkipFile
-                (configFileContent (CommonAliasesConfig toolsetName))
+                (configFileContent' (CommonAliasesConfig toolsetName))
 
     checkFile commonHelpTxt
         >>= createOrSkipFile
-                (configFileContent (CommonHelpTxt toolsetName))
+                (configFileContent' (CommonHelpTxt toolsetName))
 
     let cdConfigDir = configDir </> "cd"
         execConfigDir = configDir </> "exec"
@@ -192,21 +205,21 @@ init
         >>= createOrSkipDirectories
 
     checkFile cdConfig
-        >>= createOrSkipFile (configFileContent (CdConfig toolsetName))
+        >>= createOrSkipFile (configFileContent' (CdConfig toolsetName))
 
     checkFile commonDirsConfig
         >>= createOrSkipFile
-                (configFileContent (CommonDirectoriesConfig toolsetName))
+                (configFileContent' (CommonDirectoriesConfig toolsetName))
 
     checkFile execConfig
-        >>= createOrSkipFile (configFileContent (ExecConfig toolsetName))
+        >>= createOrSkipFile (configFileContent' (ExecConfig toolsetName))
 
     checkFile commonCommandsConfig
         >>= createOrSkipFile
-                (configFileContent (CommonCommandsConfig toolsetName))
+                (configFileContent' (CommonCommandsConfig toolsetName))
 
     checkFile skelConfig
-        >>= createOrSkipFile (configFileContent (SkelConfig toolsetName))
+        >>= createOrSkipFile (configFileContent' (SkelConfig toolsetName))
 
     when (toolsetName == "command-wrapper") do
 
@@ -214,7 +227,7 @@ init
             execLibraryDhall = configDir </> "exec" </> "library.dhall"
 
         checkFile libraryDhall
-            >>= createOrSkipFile (configFileContent Library)
+            >>= createOrSkipFile (configFileContent' Library)
 
         -- TODO: Freeze only when created.
         Dhall.freeze appNames config Dhall.defFreeze
@@ -223,7 +236,7 @@ init
             }
 
         checkFile execLibraryDhall
-            >>= createOrSkipFile (configFileContent ExecLibrary)
+            >>= createOrSkipFile (configFileContent' ExecLibrary)
 
         -- TODO: Freeze only when created.
         Dhall.freeze appNames config Dhall.defFreeze
@@ -300,34 +313,6 @@ dirsExistence = \case
 unlist :: [String] -> String
 unlist = List.intercalate ", "
 
-readmeFileContent :: String -> Text
-readmeFileContent = Text.unlines . \case
-    "command-wrapper" ->
-        [ "# Command Wrapper configuration"
-        , ""
-        , "Tool for creating customised command-line toolsets.  This directory\
-            \ contains"
-        , "its top-level configuration"
-        , ""
-        , ""
-        , "## Documentation"
-        , ""
-        , "Offline documentation is provided in the form of manual pages.\
-            \  Best starting"
-        , "point is `command-wrapper(1)`."
-        , ""
-        , "Online documentation is available on\
-            \ [github.com/trskop/command-wrapper"
-        , "](https://github.com/trskop/command-wrapper)."
-        ]
-
-    toolsetName ->
-        [ "# Configuration for Command Wrapper toolset "
-            <> fromString toolsetName
-        , ""
-        , "Custom toolset built using Command Wrapper."
-        ]
-
 checkFile :: FilePath -> IO (Either FilePath FilePath)
 checkFile file = do
     doesExist <- doesFileExist file
@@ -336,7 +321,7 @@ checkFile file = do
         else Left file
 
 data ConfigFile
-    = DefaultConfig String FilePath FilePath
+    = DefaultConfig String
     | CommonAliasesConfig String
     | CommonHelpTxt String
     | CdConfig String
@@ -346,414 +331,352 @@ data ConfigFile
     | CommonCommandsConfig String
     | SkelConfig String
     | Library
+    | ReadmeMd String
 
--- TODO: It would be best to embed these values using 'staticDhallExpression',
--- however, that would strip away comments.
-configFileContent :: ConfigFile -> Text
-configFileContent = Text.unlines . \case
-    DefaultConfig "command-wrapper" libDir manDir ->
-        [ "let CommandWrapper = ./library.dhall"
-        , ""
-        , "let emptyAliases = CommandWrapper.ToolsetConfig.emptyAliases"
-        , ""
-        , "let aliases"
-        , "      : List CommandWrapper.SubcommandAlias.Type"
-        , "      =   ./default/aliases-common.dhall"
-        , "        # (./default/aliases-local.dhall ? emptyAliases)"
-        , "        # (./default/aliases.dhall ? emptyAliases)"
-        , ""
-        , "let helpMessage"
-        , "      : Text"
-        , "      =     (./default/help-common.txt as Text)"
-        , "        ++  (./default/help-local.txt as Text ? \"\")"
-        , "        ++  (./default/help.txt as Text ? \"\")"
-        , ""
-        , "in  CommandWrapper.ToolsetConfig::{"
-        , "    , aliases = aliases"
-        , ""
-        , "    -- Extra help message is printed at the bottom of help message."
-        , "    , extraHelpMessage = Some helpMessage"
-        , ""
-        , "    -- Path where Command Wrapper will search for external\
-            \ subcommands.  If"
-        , "    -- specific toolset has set 'searchPath' as well then that will"
-        , "    -- be prepended to this one."
-        , "    , searchPath = [" <> fromString (show libDir) <> "]"
-        , ""
-        , "    -- Path where Command Wrapper will search for manual pages.  If"
-        , "    -- specific toolset has set 'manPath' as well then that will be"
-        , "    -- appended to this one."
-        , "    , manPath = [" <> fromString (show manDir) <> "]"
-        , "    }"
-        ]
+data DhallLibraries = DhallLibraries
+    { commandWrapper :: FilePath
+    , exec :: FilePath
+    }
+  deriving stock (Generic)
+  deriving anyclass (ToDhall)
 
-    DefaultConfig _ libDir manDir ->
-        [ "let CommandWrapper = ../command-wrapper/library.dhall"
-        , ""
-        , "let emptyAliases = CommandWrapper.ToolsetConfig.emptyAliases"
-        , ""
-        , "let aliases"
-        , "      : List CommandWrapper.SubcommandAlias.Type"
-        , "      =   ./default/aliases-common.dhall"
-        , "        # (./default/aliases-local.dhall ? emptyAliases)"
-        , "        # (./default/aliases.dhall ? emptyAliases)"
-        , ""
-        , "let helpMessage"
-        , "      : Text"
-        , "      =     (./default/help-common.txt as Text)"
-        , "        ++  (./default/help-local.txt as Text ? \"\")"
-        , "        ++  (./default/help.txt as Text ? \"\")"
-        , ""
-        , "in  CommandWrapper.ToolsetConfig::{"
-        , "    , aliases = aliases"
-        , ""
-        , "    -- Toolset description printed as a header of a help message."
-        , "    , description ="
-        , "        Some \"TODO: I promise to describe this toolset one day.\""
-        , ""
-        , "    -- Extra help message is printed at the bottom of help message."
-        , "    , extraHelpMessage = Some helpMessage"
-        , ""
-        , "    -- Path where this toolset will search for its external\
-            \ subcommands."
-        , "    , searchPath = [" <> fromString (show libDir) <> "]"
-        , ""
-        , "    -- Path where this toolset will search for its manual pages."
-        , "    , manPath = [" <> fromString (show manDir) <> "]"
-        , "    }"
-        ]
+data RuntimePaths = RuntimePaths
+    { libDir :: FilePath
+    , manDir :: FilePath
+    }
+  deriving stock (Generic)
+  deriving anyclass (ToDhall)
 
+data ConfigTemplates = ConfigTemplates
+    { readmeMd :: DhallLibraries -> RuntimePaths -> Text
+    , readmeMdToolset :: Text -> DhallLibraries -> RuntimePaths -> Text
+    , defaultConfig :: DhallLibraries -> RuntimePaths -> Text
+    , defaultToolsetConfig :: Text -> DhallLibraries -> RuntimePaths -> Text
+    , commonAliasesConfig :: DhallLibraries -> RuntimePaths -> Text
+    , commonAliasesToolsetConfig :: Text -> DhallLibraries -> RuntimePaths -> Text
+    , commonHelp :: DhallLibraries -> RuntimePaths -> Text
+    , commonHelpToolset :: Text -> DhallLibraries -> RuntimePaths -> Text
+    , cdConfig :: DhallLibraries -> RuntimePaths -> Text
+    , cdToolsetConfig :: Text -> DhallLibraries -> RuntimePaths -> Text
+    , commonDirectoriesConfig :: DhallLibraries -> RuntimePaths -> Text
+    , commonDirectoriesToolsetConfig :: Text -> DhallLibraries -> RuntimePaths -> Text
+    , execConfig :: DhallLibraries -> RuntimePaths -> Text
+    , execToolsetConfig :: Text -> DhallLibraries -> RuntimePaths -> Text
+    , commonCommandsConfig :: DhallLibraries -> RuntimePaths -> Text
+    , commonCommandsToolsetConfig :: Text -> DhallLibraries -> RuntimePaths -> Text
+    , skelConfig :: DhallLibraries -> RuntimePaths -> Text
+    , skelToolsetConfig :: Text -> DhallLibraries -> RuntimePaths -> Text
+    }
+
+getConfigTemplates :: AppNames -> Config -> IO ConfigTemplates
+getConfigTemplates AppNames{usedName} Config{colourOutput, verbosity} =
+    handleErrors
+        ( ConfigTemplates
+            <$> readmeMd
+            <*> readmeMdToolset
+            <*> defaultConfig
+            <*> defaultToolsetConfig
+            <*> commonAliasesConfig
+            <*> commonAliasesToolsetConfig
+            <*> commonHelp
+            <*> commonHelpToolset
+            <*> cdConfig
+            <*> cdToolsetConfig
+            <*> commonDirectoriesConfig
+            <*> commonDirectoriesToolsetConfig
+            <*> execConfig
+            <*> execToolsetConfig
+            <*> commonCommandsConfig
+            <*> commonCommandsToolsetConfig
+            <*> skelConfig
+            <*> skelToolsetConfig
+        )
+  where
+    handleErrors a = case validationToEither a of
+        Left e ->
+            dieWith 1 (fromString (show e))
+
+        Right r ->
+            pure r
+
+    readmeMd = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/command-wrapper/README.md.dhall"
+         )
+
+    readmeMdToolset = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/toolset/README.md.dhall"
+         )
+
+    defaultConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/command-wrapper/default.dhall"
+         )
+
+    defaultToolsetConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/toolset/default.dhall"
+         )
+
+    commonAliasesConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/command-wrapper/default/aliases-common.dhall"
+         )
+
+    commonAliasesToolsetConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/toolset/default/aliases-common.dhall"
+         )
+
+    commonHelp = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/command-wrapper/default/help-common.dhall"
+         )
+
+    commonHelpToolset = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/toolset/default/help-common.dhall"
+         )
+
+    cdConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/command-wrapper/command-wrapper-cd.dhall"
+         )
+
+    cdToolsetConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/toolset/command-wrapper-cd.dhall"
+         )
+
+    commonDirectoriesConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/command-wrapper/cd/directories-common.dhall"
+         )
+
+    commonDirectoriesToolsetConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/toolset/cd/directories-common.dhall"
+         )
+
+    execConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/command-wrapper/command-wrapper-exec.dhall"
+         )
+
+    execToolsetConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/toolset/command-wrapper-exec.dhall"
+         )
+
+    commonCommandsConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/command-wrapper/exec/commands-common.dhall"
+         )
+
+    commonCommandsToolsetConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/toolset/exec/commands-common.dhall"
+         )
+
+    skelConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/command-wrapper/command-wrapper-skel.dhall"
+         )
+
+    skelToolsetConfig = Dhall.extract Dhall.auto
+        $( staticDhallExpression
+            "./dhall/init/toolset/command-wrapper-skel.dhall"
+         )
+
+    dieWith :: Int -> (forall ann. Pretty.Doc ann) -> IO a
+    dieWith exitCode msg = do
+        let subcommand :: forall ann. Pretty.Doc ann
+            subcommand = pretty (usedName <> " config")
+
+        errorMsg subcommand verbosity colourOutput stderr msg
+        exitWith (ExitFailure exitCode)
+
+configFileContent :: RuntimePaths -> ConfigTemplates -> ConfigFile -> Text
+configFileContent runtimePaths ConfigTemplates{..} = \case
+    -- ${CONFIG_DIR}/command-wrapper/default.dhall
+    DefaultConfig "command-wrapper" ->
+        defaultConfig
+            DhallLibraries
+                { commandWrapper = "./library.dhall"
+                , exec = "./exec/library.dhall"
+                }
+            runtimePaths
+
+    -- ${CONFIG_DIR}/${toolsetName}/default.dhall
+    DefaultConfig toolsetName ->
+        defaultToolsetConfig
+            (fromString toolsetName)
+            DhallLibraries
+                { commandWrapper = "../command-wrapper/library.dhall"
+                , exec = "../command-wrapper/exec/library.dhall"
+                }
+            runtimePaths
+
+    -- ${CONFIG_DIR}/command-wrapper/default/aliases-common.dhall
     CommonAliasesConfig "command-wrapper" ->
-        [ "-- This file is intended to be under version control and shared\
-            \ among multiple"
-        , "-- systems. It defines aliases that should be available everywhere\
-            \ and via all"
-        , "-- toolsets."
-        , "--"
-        , "-- Aliases that are ment to be available only on this specific\
-            \ machine should"
-        , "-- go into `./aliases-local.dhall`.  If local configuration is\
-            \ under version"
-        , "-- control then `./aliases-local.dhall` should be a symbolic link\
-            \ to that"
-        , "-- version controlled file, or it should contain an import of such\
-            \ file.  There"
-        , "-- is also `./aliases.dhall` which is intended to be used as a kind\
-            \ of staging"
-        , "-- environment, and it should not be under version control."
-        , ""
-        , "  [ { alias = \"h\""
-        , "    , description = Some \"Short hand for \\\"help\\\".\""
-        , "    , command = \"help\""
-        , "    , arguments = [] : List Text"
-        , "    }"
-        , ""
-        , "  , { alias = \"man\""
-        , "    , description = Some \"Short hand for \\\"help --man\\\".\""
-        , "    , command = \"help\""
-        , "    , arguments = [\"--man\"]"
-        , "    }"
-        , ""
-        , "  -- The advantage of having `cfg` as an alias for `config` is that\
-            \ it shares"
-        , "  -- only one letter of its prefix with `completion`, which is\
-            \ useful when"
-        , "  -- using command line completion."
-        , "  , { alias = \"cfg\""
-        , "    , description = Some \"Short hand for \\\"config\\\".\""
-        , "    , command = \"config\""
-        , "    , arguments = [] : List Text"
-        , "    }"
-        , ""
-        , "  , { alias = \"dhall\""
-        , "    , description = Some \"Short hand for \\\"config --dhall\\\".\""
-        , "    , command = \"config\""
-        , "    , arguments = [\"--dhall\"]"
-        , "    }"
-        , ""
-        , "  , { alias = \"dhall-repl\""
-        , "    , description = Some\
-            \ \"Short hand for \\\"config --dhall-repl\\\".\""
-        , "    , command = \"config\""
-        , "    , arguments = [\"--dhall-repl\"]"
-        , "    }"
-        , "  ]"
-        , ": List"
-        , "    { alias : Text"
-        , "    , description : Optional Text"
-        , "    , command : Text"
-        , "    , arguments : List Text"
-        , "    }"
-        ]
+        commonAliasesConfig
+            DhallLibraries
+                { commandWrapper = "../library.dhall"
+                , exec = "../exec/library.dhall"
+                }
+            runtimePaths
 
-    CommonAliasesConfig _ ->
-        [ "-- This file is intended to be under version control and shared\
-            \ among multiple"
-        , "-- systems."
-        , "--"
-        , "-- Aliases that are ment to be available only on this specific\
-            \ machine should"
-        , "-- go into `./aliases-local.dhall`.  If local configuration is\
-            \ under version"
-        , "-- control then `./aliases-local.dhall` should be a symbolic link\
-            \ to that"
-        , "-- version controlled file, or it should contain an import of such\
-            \ file.  There"
-        , "-- is also `./aliases.dhall` which is intended to be used as a kind\
-            \ of staging"
-        , "-- environment, and it should not be under version control."
-        , ""
-        , "  [ -- { alias = \"something\""
-        , "    -- , description = None Text"
-        , "    -- , command = \"some-subcommand\""
-        , "    -- , arguments = [] : List Text"
-        , "    -- }"
-        , "  ]"
-        , ": List"
-        , "    { alias : Text"
-        , "    , description : Optional Text"
-        , "    , command : Text"
-        , "    , arguments : List Text"
-        , "    }"
-        ]
+    -- ${CONFIG_DIR}/${toolsetName}/default/aliases-common.dhall
+    CommonAliasesConfig toolsetName ->
+        commonAliasesToolsetConfig
+            (fromString toolsetName)
+            DhallLibraries
+                { commandWrapper = "../../command-wrapper/library.dhall"
+                , exec = "../../command-wrapper/exec/library.dhall"
+                }
+            runtimePaths
 
+    -- ${CONFIG_DIR}/command-wrapper/comman-wrapper-cd.dhall
     CdConfig "command-wrapper" ->
-        [ "let CommandWrapper = ./library.dhall"
-        , ""
-        , "let emptyDirectories = CommandWrapper.CdConfig.emptyDirectories"
-        , ""
-        , "let directories"
-        , "      : List Text"
-        , "      =   ./cd/directories-common.dhall"
-        , "        # (./cd/directories-local.dhall ? emptyDirectories)"
-        , "        # (./cd/directories.dhall ? emptyDirectories)"
-        , ""
-        , "in  CommandWrapper.CdConfig::{"
-        , "    , directories = directories"
-        , "    , menuTool ="
-        , "          λ(query : Optional Text)"
-        , "        → let fzf = CommandWrapper.CdConfig.menu-tool.fzf query"
-        , "          in  fzf //  { arguments = [\"--height=40%\"]\
-            \ # fzf.arguments }"
-        , ""
-        , "    -- Here we can set what terminal emulator should be executed.  Some"
-        , "    -- definitions are already available in Command Wrapper library list"
-        , "    -- them one can use Dhall interpreter `TOOLSET config --dhall` where"
-        , "    -- following expression can be evaluated:"
-        , "    --"
-        , "    -- ```"
-        , "    -- (~/.config/command-wrapper/library.dhall).TerminalEmulator"
-        , "    -- ```"
-        , "--  , terminalEmulator = CommandWrapper.CdConfig.defaul.terminalEmulator"
-        , "    }"
-        ]
+        cdConfig
+            DhallLibraries
+                { commandWrapper = "./library.dhall"
+                , exec = "./exec/library.dhall"
+                }
+            runtimePaths
 
-    CdConfig _ ->
-        [ "let global = ../command-wrapper/command-wrapper-cd.dhall"
-        , ""
-        , "let empty = [] : List Text"
-        , ""
-        , "in      global"
-        , "    //  { directories ="
-        , "              global.directories"
-        , "            # ./cd/directories-common.dhall"
-        , "            # (./cd/directories.dhall ? empty)"
-        , "            # (./cd/directories-local.dhall ? empty)"
-        , "        }"
-        ]
+    -- ${CONFIG_DIR}/${toolsetName}/comman-wrapper-cd.dhall
+    CdConfig toolsetName ->
+        cdToolsetConfig
+            (fromString toolsetName)
+            DhallLibraries
+                { commandWrapper = "../command-wrapper/library.dhall"
+                , exec = "../command-wrapper/exec/library.dhall"
+                }
+            runtimePaths
 
+    -- ${CONFIG_DIR}/comman-wrapper/cd/directories-common.dhall
     CommonDirectoriesConfig "command-wrapper" ->
-        [ "let home = env:HOME as Text"
-        , ""
-        , "let config = env:XDG_CONFIG_HOME as Text ? \"${home}/.config\""
-        , ""
-        , "let local = \"${home}/.local\""
-        , ""
-        , "in    [ \"${config}\""
-        , "      , \"${config}/command-wrapper\""
-        , "      , \"${local}/lib/command-wrapper\""
-        , "      , \"${home}/Downloads\""
-        , "      , \"${home}/.ssh\""
-        , "      ]"
-        , "    : List Text"
-        ]
+        commonDirectoriesConfig
+            DhallLibraries
+                { commandWrapper = "../library.dhall"
+                , exec = "../exec/library.dhall"
+                }
+            runtimePaths
 
+    -- ${CONFIG_DIR}/${toolsetName}/cd/directories-common.dhall
     CommonDirectoriesConfig toolsetName ->
-        [ "let home = env:HOME as Text"
-        , ""
-        , "let config = env:XDG_CONFIG_HOME as Text ? \"${home}/.config\""
-        , ""
-        , "let local = \"${home}/.local\""
-        , ""
-        , "in    [ \"${config}/" <> fromString toolsetName <> "\""
-        , "      , \"${local}/lib/" <> fromString toolsetName <> "\""
-        , "      ]"
-        , "    : List Text"
-        ]
+        commonDirectoriesToolsetConfig
+            (fromString toolsetName)
+            DhallLibraries
+                { commandWrapper = "../../command-wrapper/library.dhall"
+                , exec = "../../command-wrapper/exec/library.dhall"
+                }
+            runtimePaths
 
+    -- ${CONFIG_DIR}/comman-wrapper/default/help-common.dhall
     CommonHelpTxt "command-wrapper" ->
-        [ ""
-        , "Global Subcommands:"
-        , ""
-        , "  help       (internal, aliases: h, man)"
-        , "  config     (internal, aliases: cfg, dhall, dhall-repl)"
-        , "  version    (internal)"
-        , "  completion (internal)"
-        , "  cd         (external)"
-        , "  exec       (external)"
-        , "  skel       (external)"
-        ]
+        commonHelp
+            DhallLibraries
+                { commandWrapper = "../library.dhall"
+                , exec = "../exec/library.dhall"
+                }
+            runtimePaths
 
-    CommonHelpTxt _ ->
-        [ ""
-        , "TODO: Custom help message, please, edit `help-common.txt`."
-        ]
+    -- ${CONFIG_DIR}/${toolsetName}/default/help-common.dhall
+    CommonHelpTxt toolsetName ->
+        commonHelpToolset
+            (fromString toolsetName)
+            DhallLibraries
+                { commandWrapper = "../../command-wrapper/library.dhall"
+                , exec = "../../command-wrapper/exec/library.dhall"
+                }
+            runtimePaths
 
     -- ${CONFIG_DIR}/command-wrapper/exec/library.dhall
-    ExecLibrary ->
+    ExecLibrary -> Text.unlines
         [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall"
         ]
 
     -- ${CONFIG_DIR}/command-wrapper/command-wrapper-exec.dhall
     ExecConfig "command-wrapper" ->
-        [ "let CommandWrapper = ./library.dhall"
-        , ""
-        , "let empty = [] : List CommandWrapper.ExecNamedCommand"
-        , ""
-        , "in  { commands ="
-        , "          ./exec/commands-common.dhall"
-        , "        # (./exec/commands.dhall ? empty)"
-        , "        # (./exec/commands-local.dhall ? empty)"
-        , "    }"
-        ]
+        execConfig
+            DhallLibraries
+                { commandWrapper = "./library.dhall"
+                , exec = "./exec/library.dhall"
+                }
+            runtimePaths
 
-    -- ${CONFIG_DIR}/${toolset}/command-wrapper-exec.dhall
-    ExecConfig _ ->
-        [ "let CommandWrapper = ../command-wrapper/library.dhall"
-        , ""
-        , "let global = ../command-wrapper/command-wrapper-exec.dhall"
-        , ""
-        , "let empty = [] : List CommandWrapper.ExecNamedCommand.Type"
-        , ""
-        , "in    global"
-        , "    //  { commands ="
-        , "              global.commands"
-        , "            # ./exec/commands-common.dhall"
-        , "            # (./exec/commands.dhall ? empty)"
-        , "            # (./exec/commands-local.dhall ? empty)"
-        , "        }"
-        ]
+    -- ${CONFIG_DIR}/${toolsetName}/command-wrapper-exec.dhall
+    ExecConfig toolsetName ->
+        execToolsetConfig
+            (fromString toolsetName)
+            DhallLibraries
+                { commandWrapper = "../command-wrapper/library.dhall"
+                , exec = "../command-wrapper/exec/library.dhall"
+                }
+            runtimePaths
 
+    -- ${CONFIG_DIR}/command-wrapper/exec/commands-common.dhall
     CommonCommandsConfig "command-wrapper" ->
-        [ "let CommandWrapper = ../library.dhall"
-        , ""
-        , "let named = CommandWrapper.ExecNamedCommand.namedCommand"
-        , ""
-        , "let noExtraEnvironment = CommandWrapper.Command.emptyEnvironment"
-        , ""
-        , "in"
-        , "      [{- named \"echo\""
-        , "            ( λ(verbosity : CommandWrapper.Verbosity.Type)"
-        , "              → λ(colourOutput : CommandWrapper.ColourOutput.Type)"
-        , "              → λ(arguments : List Text)"
-        , "              → { command = \"echo\""
-        , "                , arguments = arguments"
-        , "                , environment = noExtraEnvironment"
-        , "                , searchPath = True"
-        , "                , workingDirectory = None Text"
-        , "                }"
-        , "              )"
-        , "        //  { description ="
-        , "                Some \"TODO: I hereby promise to describe this command.\""
-        , "            }"
-        , "      -}"
-        , "      ]"
-        , "    : List CommandWrapper.ExecNamedCommand.Type"
-        ]
+        commonCommandsConfig
+            DhallLibraries
+                { commandWrapper = "../library.dhall"
+                , exec = "./library.dhall"
+                }
+            runtimePaths
 
-    CommonCommandsConfig _ ->
-        [ "let CommandWrapper = ../../command-wrapper/library.dhall"
-        , ""
-        , "let named = CommandWrapper.ExecNamedCommand.namedCommand"
-        , ""
-        , "let noExtraEnvironment = CommandWrapper.Command.emptyEnvironment"
-        , ""
-        , "in"
-        , "      [{- named \"echo\""
-        , "            ( λ(verbosity : CommandWrapper.Verbosity.Type)"
-        , "              → λ(colourOutput : CommandWrapper.ColourOutput.Type)"
-        , "              → λ(arguments : List Text)"
-        , "              → { command = \"echo\""
-        , "                , arguments = arguments"
-        , "                , environment = noExtraEnvironment"
-        , "                , searchPath = True"
-        , "                , workingDirectory = None Text"
-        , "                }"
-        , "              )"
-        , "        //  { description ="
-        , "                Some \"TODO: I hereby promise to describe this command.\""
-        , "            }"
-        , "      -}"
-        , "      ]"
-        , "    : List CommandWrapper.ExecNamedCommand.Type"
-        ]
+    -- ${CONFIG_DIR}/${toolsetName}/exec/commands-common.dhall
+    CommonCommandsConfig toolsetName ->
+        commonCommandsToolsetConfig
+            (fromString toolsetName)
+            DhallLibraries
+                { commandWrapper = "../../command-wrapper/library.dhall"
+                , exec = "../../command-wrapper/exec/library.dhall"
+                }
+            runtimePaths
 
+    -- ${CONFIG_DIR}/command-wrapper/command-wrapper-skel.dhall
     SkelConfig "command-wrapper" ->
-        [ "let CommandWrapper = ./library.dhall"
-        , ""
-        , "let home = env:HOME as Text"
-        , ""
-        , "let config = env:XDG_CONFIG_HOME as Text ? \"${home}/.config\""
-        , ""
-        , "let lib = \"${home}/.local/lib\""
-        , ""
-        , "in    λ(toolset : Text)"
-        , "    → λ(subcommand : Text)"
-        , "    → λ(command : Text)"
-        , "    →   CommandWrapper.SkelConfig::{"
-        , "        , template ="
-        , "              λ(language : CommandWrapper.SkelConfig.SkelLanguage)"
-        , "            → merge"
-        , "              { Haskell ="
-        , "                  { targetFile ="
-        , "                      \"${config}/${toolset}/toolset/app-${command}/Main.hs\""
-        , "                  , executable = False"
-        , "                  , template ="
-        , "                        ./haskell-skel.dhall"
-        , "                      ? CommandWrapper.SkelConfig.template.haskell"
-        , "                  }"
-        , "              , Bash ="
-        , "                  { targetFile = \"${lib}/${toolset}/${command}\""
-        , "                  , executable = True"
-        , "                  , template ="
-        , "                        ./bash-skel.dhall"
-        , "                      ? CommandWrapper.SkelConfig.template.bash"
-        , "                  }"
-        , "              , Dhall ="
-        , "                  { targetFile = \"${config}/${toolset}/${command}.dhall\""
-        , "                  , executable = False"
-        , "                  , template ="
-        , "                      (   ./dhall-skel.dhall"
-        , "                        ? CommandWrapper.SkelConfig.template.dhall"
-        , "                      )"
-        , "                  }"
-        , "              }"
-        , "              language"
-        , "        }"
-        , "      : CommandWrapper.SkelConfig.Type"
-        ]
+        skelConfig
+            DhallLibraries
+                { commandWrapper = "./library.dhall"
+                , exec = "./exec/library.dhall"
+                }
+            runtimePaths
 
-    SkelConfig _ ->
-        [ "let mkGlobal = ../command-wrapper/command-wrapper-skel.dhall"
-        , ""
-        , "in    λ(toolset : Text)"
-        , "    → λ(subcommand : Text)"
-        , "    → λ(command : Text)"
-        , "    →   let global = mkGlobal toolset subcommand command"
-        , "        in      global"
-        , "            //  {=}"
-        ]
+    -- ${CONFIG_DIR}/${toolsetName}/command-wrapper-skel.dhall
+    SkelConfig toolsetName ->
+        skelToolsetConfig
+            (fromString toolsetName)
+            DhallLibraries
+                { commandWrapper = "../command-wrapper/library.dhall"
+                , exec = "../command-wrapper/exec/library.dhall"
+                }
+            runtimePaths
 
-    Library ->
+    -- ${CONFIG_DIR}/command-wrapper/library.dhall
+    Library -> Text.unlines
         [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall"
         ]
+
+    -- ${CONFIG_DIR}/command-wrapper/README.md
+    ReadmeMd "command-wrapper" ->
+        readmeMd
+            DhallLibraries
+                { commandWrapper = "./library.dhall"
+                , exec = "./exec/library.dhall"
+                }
+            runtimePaths
+
+    -- ${CONFIG_DIR}/${toolsetName}/README.md
+    ReadmeMd toolsetName ->
+        readmeMdToolset
+            (fromString toolsetName)
+            DhallLibraries
+                { commandWrapper = "./library.dhall"
+                , exec = "./exec/library.dhall"
+                }
+            runtimePaths
+

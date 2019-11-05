@@ -27,3 +27,10 @@ compilation.
 *   [`./completion.dhall`](./completion.dhall)
 *   [`./import-shell-library.dhall`](./import-shell-library.dhall)
 *   [`./optparse-completion-info.dhall`](./optparse-completion-info.dhall)
+
+Templates of Dhall configuration files for `TOOLSET config --init`:
+
+*   [`./init/command-wrapper/`](./init/command-wrapper/) – Templates of global
+    configuration files.
+*   [`./init/toolset/`](./init/toolset/) – Templates of toolset-specific
+    configuration files.

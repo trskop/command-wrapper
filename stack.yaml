@@ -11,6 +11,8 @@ extra-deps:
   - fuzzy-0.1.0.0
   - verbosity-0.3.0.0
 
+  # Don't forget to upgrade Dhall Standard version in
+  # ./src/CommandWrapper/Internal.hs when upgrading Dhall library.
   - dhall-1.27.0
   - dhall-bash-1.0.24
   - dhall-json-1.5.0
