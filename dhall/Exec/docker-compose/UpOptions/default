@@ -1,0 +1,12 @@
+-- vim: filetype=dhall
+
+let UpOptions =
+        ./Type sha256:ef326d47d9073f2c4b0ce34dfc14ea188551fac2170499087cbfacf2d5a73073
+      ? ./Type
+
+let default = { noColour = False, buildImages = None Bool, detach = False }
+
+let consistency =
+      assert : { Type = UpOptions, default = default }::{=} ≡ default
+
+in  default

@@ -1,6 +1,0 @@
--- vim: filetype=dhall
-
-None
-  (   ./Action sha256:4a10c31e43e6ea8f8f22fa117c2b7ad1473b55eae02fd4b8782f1eb4a302e092
-    ? ./Action
-  )

@@ -27,41 +27,45 @@ let EnvironmentVariable =
 
 let emptyArguments = [] : List Text
 
-let downOptions =
-        ./downOptions sha256:ac37ec4830115499ddc4a795149307b0b9c52c8832edcc968a6f64c1256ffea7
-      ? ./downOptions
+let DownOptions/toArguments =
+        ./DownOptions/toArguments sha256:ac37ec4830115499ddc4a795149307b0b9c52c8832edcc968a6f64c1256ffea7
+      ? ./DownOptions/toArguments
 
-let upOptions =
-        ./upOptions sha256:4163e8da6cb213b0a1f557e8a43bc9958a8a10ddcd8ce3cee0a3c989ec62d2ac
-      ? ./upOptions
+let UpOptions/toArguments =
+        ./UpOptions/toArguments sha256:55dde40f2c282b6b09b47d5c6861535c8f46849fdfaa5e6293310d556d0087b5
+      ? ./UpOptions/toArguments
 
 let Action =
-        ./Action sha256:4a10c31e43e6ea8f8f22fa117c2b7ad1473b55eae02fd4b8782f1eb4a302e092
-      ? ./Action
+        ./Action/Type sha256:e88f3cc3042912a2d9a24b75f93865227edbf368a70f5a8bb10f137abc8063c2
+      ? ./Action/Type
 
 let GlobalOptions =
-        ./GlobalOptions sha256:53cba1247c3b9afd5a2a200a7ee7b819b7b7180a109fa8d46258dbc1ee496853
-      ? ./GlobalOptions
+        ./GlobalOptions/Type sha256:53cba1247c3b9afd5a2a200a7ee7b819b7b7180a109fa8d46258dbc1ee496853
+      ? ./GlobalOptions/Type
 
-let globalOptions =
-        ./globalOptions sha256:11704b75be6ea8b64350c345a8dab20ba40f2a2ba260f563d152a10d95073654
-      ? ./globalOptions
+let GlobalOptions/toArguments =
+        ./GlobalOptions/toArguments sha256:11704b75be6ea8b64350c345a8dab20ba40f2a2ba260f563d152a10d95073654
+      ? ./GlobalOptions/toArguments
 
 in    λ(options : GlobalOptions)
-    → λ(action : Optional Action)
+    → λ(action : Optional (ColourOutput → Action))
     → λ(_ : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
     → ExecCommand::{
       , command = "docker-compose"
       , arguments =
-            globalOptions options
+            GlobalOptions/toArguments options
           # Optional/fold
-              Action
+              (ColourOutput → Action)
               action
               (List Text)
-              (   λ(_ : Action)
-                → merge { Down = downOptions, Up = upOptions colourOutput } _
+              (   λ(mkAction : ColourOutput → Action)
+                → merge
+                    { Down = DownOptions/toArguments
+                    , Up = UpOptions/toArguments
+                    }
+                    (mkAction colourOutput)
               )
               emptyArguments
           # arguments

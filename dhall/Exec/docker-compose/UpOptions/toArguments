@@ -1,0 +1,17 @@
+-- vim: filetype=dhall
+
+let emptyArguments = [] : List Text
+
+let UpOptions =
+        ./Type sha256:ef326d47d9073f2c4b0ce34dfc14ea188551fac2170499087cbfacf2d5a73073
+      ? ./Type
+
+in    λ(options : UpOptions)
+    →   Optional/fold
+          Bool
+          options.buildImages
+          (List Text)
+          (λ(_ : Bool) → if _ then [ "--build" ] else [ "--no-build" ])
+          emptyArguments
+      # (if options.noColour then [ "--no-colour" ] else emptyArguments)
+      # (if options.detach then [ "--detach" ] else emptyArguments)
