@@ -5,13 +5,13 @@ let Command
     =   ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
       ? ../Command/Type
 
-let EnvironmentVariable
+let Environment
     : Type
-    =   ../EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../EnvironmentVariable/Type
+    =   ../Environment/Type sha256:bfc2cb080bb0cac5a42a81beb707437389fa9c6f8e54ae8dd7ce09c6566140ee
+      ? ../Environment/Type
 
 let CommandWithEnvironment
     : Type
-    = Command ⩓ { environment : List EnvironmentVariable }
+    = Command ⩓ { environment : Environment }
 
 in  CommandWithEnvironment : Type
