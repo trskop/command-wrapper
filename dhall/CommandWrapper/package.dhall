@@ -10,7 +10,7 @@
       ./ColourOutput/package.dhall sha256:8fd5555f273cd4424f8fe2003154c4e36ea657bb5a2642d3677c4756b14c32e8
     ? ./ColourOutput/package.dhall
 , Command =
-      ./Command/package.dhall sha256:3de0160a4821c2d746a2a0c859857c7dce16fdcb75e1aa18a3e5ff48b310c462
+      ./Command/package.dhall sha256:9fe4745e50e55ee1670a26ae2476c655c3d52ea92e920911b093a567de2099fb
     ? ./Command/package.dhall
 , CommandWithEnvironment =
       ./CommandWithEnvironment/package.dhall sha256:fb3dbcfcc02c02cf75b535b6633f1cfb032502aed71e148693c950d902772e01
@@ -21,6 +21,9 @@
 , Editor =
       ./Editor/package.dhall sha256:ea947ca2fa9dec681385344190f8373da2d4ced8556cce9096c354f9265992f5
     ? ./Editor/package.dhall
+, Environment =
+      ./Environment/package.dhall sha256:a948211dc39cc648f650c7dcf67e4352ffae2ec5f4f0254bef596d88e87cd946
+    ? ./Environment/package.dhall
 , EnvironmentVariable =
       ./EnvironmentVariable/package.dhall sha256:1250426124fe1a06fce13386a45e803655f7fe419fb372bd4a5157993350b199
     ? ./EnvironmentVariable/package.dhall

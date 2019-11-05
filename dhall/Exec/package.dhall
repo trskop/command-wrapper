@@ -15,13 +15,13 @@
       ./direnv/package.dhall sha256:9c6faad905a6300956f7338050facb3021b6731e6ad294c4cff41fa59933a0cf
     ? ./direnv/package.dhall
 , docker =
-      ./docker/package.dhall sha256:bd928e08c02d378dd396bf12b07fbbd56e24ff5339697b9d3176b7bb3b106fe1
+      ./docker/package.dhall sha256:13ee98abc91fa54c5b43d77d1d855c6fb4776cff0daaca961fb3de451bb95740
     ? ./docker/package.dhall
 , docker-compose =
       ./docker-compose/package.dhall sha256:ef913a7ea0f222521e65ffb92671f4b771ae4e4f41471d95b50b8be1781fb6a7
     ? ./docker-compose/package.dhall
 , firefox =
-      ./firefox/package.dhall sha256:7296badbac888c2c8a78bf5590b44231fbca7cf88d368574bace43134d0d5b81
+      ./firefox/package.dhall sha256:7f6e5fe7087c2dbc297349b4640c9a5a1e04ebe378254fedb254e9a7b2c94140
     ? ./firefox/package.dhall
 , go-jira =
       ./go-jira/package.dhall sha256:3818ebbfb5b97f722a58dc64da6fa350f75707a7461141b495f468c423bece8a

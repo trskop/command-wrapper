@@ -1,0 +1,20 @@
+-- vim: filetype=dhall
+
+let RunOptions
+    : Type
+    =   ./Type sha256:df4fdf5b50b4b3bdcd0e021533de4d6333432518d41bbea6146d9b73847a7892
+      ? ./Type
+
+let ExecOptions/toArguments =
+        ../ExecOptions/toArguments sha256:cdea112398e5a0ecd70ab2aad318031d9bad79fab0c7fecb884b4ca90bb2d908
+      ? ../ExecOptions/toArguments
+
+in    λ(runOptions : RunOptions)
+    →   ExecOptions/toArguments
+          runOptions.{ interactive
+                     , allocateTty
+                     , detach
+                     , user
+                     , workingDirectory
+                     }
+      # (if runOptions.remove then [ "--rm" ] else [] : List Text)

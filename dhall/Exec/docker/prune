@@ -21,28 +21,28 @@ let Verbosity =
         ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
       ? ../../CommandWrapper/Verbosity/Type
 
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
+let Environment =
+        ./Environment/Type sha256:bfc2cb080bb0cac5a42a81beb707437389fa9c6f8e54ae8dd7ce09c6566140ee
+      ? ./Environment/Type
 
-let DockerGlobalOptions
+let GlobalOptions
     : Type
-    =   ./DockerGlobalOptions sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
-      ? ./DockerGlobalOptions
+    =   ./GlobalOptions/Type sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
+      ? ./GlobalOptions/Type
 
-let mkGlobalOptions =
-        ./globalOptions sha256:150c73831857ece522d3f066554ad2883e36ceb2f98bf85947c8eacf0e09cb0b
-      ? ./globalOptions
+let GlobalOptions/toArguments =
+        ./GlobalOptions/toArguments sha256:150c73831857ece522d3f066554ad2883e36ceb2f98bf85947c8eacf0e09cb0b
+      ? ./GlobalOptions/toArguments
 
-in    λ(globalOptions : DockerGlobalOptions)
-    → λ(environment : List EnvironmentVariable)
+in    λ(globalOptions : GlobalOptions)
+    → λ(environment : Environment)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
     → ExecCommand::{
       , command = "docker"
       , arguments =
-            mkGlobalOptions globalOptions
+            GlobalOptions/toArguments globalOptions
           # [ "system", "prune", "--volumes" ]
           # arguments
       , environment = environment

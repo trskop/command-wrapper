@@ -1,13 +1,15 @@
-let CommandWrapper = ../Types.dhall
+-- vim: filetype=dhall
+
+let Command =
+        ./Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
+      ? ./Type
 
 let withExtraArguments =
-        λ(command : CommandWrapper.Command)
+        λ(command : Command)
       → λ(arguments : List Text)
-      → { command = command.command
-        , arguments = command.arguments # arguments
-        }
-      : CommandWrapper.Command
+      →   { command = command.command
+          , arguments = command.arguments # arguments
+          }
+        : Command
 
 in  withExtraArguments
-
--- vim: filetype=dhall

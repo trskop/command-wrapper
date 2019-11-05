@@ -23,54 +23,54 @@ let Verbosity =
         ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
       ? ../../CommandWrapper/Verbosity/Type
 
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
+let Environment =
+        ./Environment/Type sha256:bfc2cb080bb0cac5a42a81beb707437389fa9c6f8e54ae8dd7ce09c6566140ee
+      ? ./Environment/Type
 
-let DockerGlobalOptions =
-        ./DockerGlobalOptions sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
-      ? ./DockerGlobalOptions
+let GlobalOptions =
+        ./GlobalOptions/Type sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
+      ? ./GlobalOptions/Type
 
-let DockerRunOptions =
-        ./DockerRunOptions sha256:df4fdf5b50b4b3bdcd0e021533de4d6333432518d41bbea6146d9b73847a7892
-      ? ./DockerRunOptions
+let RunOptions =
+        ./RunOptions/Type sha256:df4fdf5b50b4b3bdcd0e021533de4d6333432518d41bbea6146d9b73847a7892
+      ? ./RunOptions/Type
 
-let mkGlobalOptions =
-        ./globalOptions sha256:150c73831857ece522d3f066554ad2883e36ceb2f98bf85947c8eacf0e09cb0b
-      ? ./globalOptions
+let GlobalOptions/toArguments =
+        ./GlobalOptions/toArguments sha256:150c73831857ece522d3f066554ad2883e36ceb2f98bf85947c8eacf0e09cb0b
+      ? ./GlobalOptions/toArguments
 
-let mkRunOptions =
-        ./runOptions sha256:5fdea1f964ab7b935cf9a80e0f375fe0d0e75c3459a0bb3200d4492ee12d2895
-      ? ./runOptions
+let RunOptions/toArguments =
+        ./RunOptions/toArguments sha256:5fdea1f964ab7b935cf9a80e0f375fe0d0e75c3459a0bb3200d4492ee12d2895
+      ? ./RunOptions/toArguments
 
-let mkEnvOptions =
-        ./envOptions sha256:d0426badaef8cd6535378bbd9b5caf073e2b7d794eae541a454ebcba4cb52531
-      ? ./envOptions
+let Environment/toArguments =
+        ./Environment/toArguments sha256:d0426badaef8cd6535378bbd9b5caf073e2b7d794eae541a454ebcba4cb52531
+      ? ./Environment/toArguments
 
 in    λ(container : Text)
-    → λ(globalOptions : DockerGlobalOptions)
-    → λ(runOptions : DockerRunOptions)
+    → λ(globalOptions : GlobalOptions)
+    → λ(runOptions : RunOptions)
     → λ ( mkCommand
-        :   ∀(environment : List EnvironmentVariable)
+        :   ∀(environment : Environment)
           → ∀(verbosity : Verbosity)
           → ∀(colourOutput : ColourOutput)
           → ∀(arguments : List Text)
           → ExecCommand.Type
         )
-    → λ(environment : List EnvironmentVariable)
+    → λ(environment : Environment)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
     → let command = mkCommand environment verbosity colourOutput arguments
-
+      
       in  ExecCommand::{
           , command = "docker"
           , arguments =
-                mkGlobalOptions globalOptions
+                GlobalOptions/toArguments globalOptions
               # [ "run" ]
-              # mkRunOptions runOptions
+              # RunOptions/toArguments runOptions
               # [ container ]
-              # mkEnvOptions command.environment
+              # Environment/toArguments command.environment
               # [ command.command ]
               # command.arguments
           }

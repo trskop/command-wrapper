@@ -18,7 +18,7 @@ let toolset = env:COMMAND_WRAPPER_EXE as Text ? "yx"
 let bazel-in-direnv =
       let arguments = CommandWrapper.Command.emptyArguments
 
-      let environment = CommandWrapper.Command.emptyEnvironment
+      let environment = CommandWrapper.Environment.empty
 
       let direnvDirectory = Some "/my/work/repo"
 

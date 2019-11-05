@@ -1,11 +1,11 @@
 -- vim: filetype=dhall
 
-let DockerGlobalOptions
+let GlobalOptions
     : Type
-    =   ./DockerGlobalOptions sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
-      ? ./DockerGlobalOptions
+    =   ./Type sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
+      ? ./Type
 
-in    λ(globalOptions : DockerGlobalOptions)
+in    λ(globalOptions : GlobalOptions)
     →   List/fold
           Text
           globalOptions.host

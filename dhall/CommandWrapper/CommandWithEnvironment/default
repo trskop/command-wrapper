@@ -1,11 +1,24 @@
 -- vim: filetype=dhall
 
-let defaultCommand =
+let Command/default =
         ../Command/default sha256:45177da2a98a4e2d6b2e879caef7c2d7b6ea804feb18ed69577293ee8c7b283c
       ? ../Command/default
 
-let emptyEnvironment =
-        ../Command/emptyEnvironment sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
-      ? ../Command/emptyEnvironment
+let Environment/empty =
+        ../Environment/empty sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
+      ? ../Environment/empty
 
-in  defaultCommand ∧ { environment = emptyEnvironment }
+let CommandWithEnvironment =
+        ./Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
+      ? ./Type
+
+let default = Command/default ∧ { environment = Environment/empty }
+
+let consistency =
+        assert
+      :   { Type = CommandWithEnvironment, default = default }::{
+          , command = "foo"
+          }
+        ≡ (default ∧ { command = "foo" })
+
+in  default

@@ -15,7 +15,7 @@ let Exec =
 
 let toolset = env:COMMAND_WRAPPER_EXE as Text ? "yx"
 
-let emptyEnvironment = CommandWrapper.Command.emptyEnvironment
+let Environment/empty = CommandWrapper.Environment.empty
 
 let psql =
       let -- Custom PGPASSFILE:
@@ -38,7 +38,7 @@ let psql =
           , name = "psql.development"
           , description = Some "Connect to local development PostgreSQL DB."
           , command =
-              Exec.psql.command pgpassFile psqlrcFile connect emptyEnvironment
+              Exec.psql.command pgpassFile psqlrcFile connect Environment/empty
           }
 
 in  [ psql ] : List CommandWrapper.ExecNamedCommand.Type

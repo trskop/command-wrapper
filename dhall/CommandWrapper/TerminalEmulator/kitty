@@ -4,26 +4,25 @@
 -- kitty [--directory DIRECTORY] [-- COMMAND [ARGUMENTS]]
 -- ```
 
-
 let Command =
-        ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
-      ? ../Command/Type
+      { Type =
+            ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
+          ? ../Command/Type
+      , default =
+            ../Command/default sha256:45177da2a98a4e2d6b2e879caef7c2d7b6ea804feb18ed69577293ee8c7b283c
+          ? ../Command/default
+      , withExtraArguments =
+            ../Command/withExtraArguments sha256:df4bdfa77e9c3034e3a7749b5a7ef461f9b64e51d897d733f71a9cf7a889e971
+          ? ../Command/withExtraArguments
+      }
 
 let CommandWithEnvironment =
         ../CommandWithEnvironment/Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
       ? ../CommandWithEnvironment/Type
 
-let command/withExtraArguments =
-        ../Command/withExtraArguments sha256:df4bdfa77e9c3034e3a7749b5a7ef461f9b64e51d897d733f71a9cf7a889e971
-      ? ../Command/withExtraArguments
-
-let command/simple =
-        ../Command/simple sha256:3e92f6633519a6760c4f815914d68f706c4140ab3d5424619a34a39573de9c42
-      ? ../Command/simple
-
-let emptyEnvironment =
-        ../Command/emptyEnvironment sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
-      ? ../Command/emptyEnvironment
+let Environment/empty =
+        ../Environment/empty sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
+      ? ../Environment/empty
 
 let emptyArguments =
         ../Command/emptyArguments sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
@@ -40,25 +39,25 @@ let directoryOption =
           emptyArguments
 
 let executeCommandOptions =
-        λ(cmd : Optional Command)
-      → λ(mkCmdOptions : Command → List Text)
-      → Optional/fold Command cmd (List Text) mkCmdOptions emptyArguments
+        λ(cmd : Optional Command.Type)
+      → λ(mkCmdOptions : Command.Type → List Text)
+      → Optional/fold Command.Type cmd (List Text) mkCmdOptions emptyArguments
 
 let withOptions =
         λ(termCmd : Text)
       → λ(mkDirectoryOption : Text → List Text)
-      → λ(mkCmdOptions : Command → List Text)
+      → λ(mkCmdOptions : Command.Type → List Text)
       → λ(directory : Optional Text)
-      → λ(cmd : Optional Command)
-      →     command/withExtraArguments
-              (command/simple termCmd)
+      → λ(cmd : Optional Command.Type)
+      →     Command.withExtraArguments
+              Command::{ command = termCmd }
               (   directoryOption directory mkDirectoryOption
                 # executeCommandOptions cmd mkCmdOptions
               )
-          ∧ { environment = emptyEnvironment }
+          ∧ { environment = Environment/empty }
         : CommandWithEnvironment
 
 in  withOptions
       "kitty"
       (λ(directory : Text) → [ "--directory", directory ])
-      (λ(c : Command) → [ "--", c.command ] # c.arguments)
+      (λ(c : Command.Type) → [ "--", c.command ] # c.arguments)

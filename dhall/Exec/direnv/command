@@ -17,13 +17,13 @@ let Verbosity =
         ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
       ? ../../CommandWrapper/Verbosity/Type
 
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
+let Environment =
+        ../../CommandWrapper/Environment/Type sha256:bfc2cb080bb0cac5a42a81beb707437389fa9c6f8e54ae8dd7ce09c6566140ee
+      ? ../../CommandWrapper/Environment/Type
 
 in    λ(directory : Optional Text)
     → λ(arguments : List Text)
-    → λ(environment : List EnvironmentVariable)
+    → λ(environment : Environment)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(extraArguments : List Text)

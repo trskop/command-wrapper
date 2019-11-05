@@ -17,9 +17,13 @@ let Verbosity =
         ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
       ? ../../CommandWrapper/Verbosity/Type
 
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
+let Environment =
+        ../../CommandWrapper/Environment/Type sha256:bfc2cb080bb0cac5a42a81beb707437389fa9c6f8e54ae8dd7ce09c6566140ee
+      ? ../../CommandWrapper/Environment/Type
+
+let Environment/empty =
+        ../../CommandWrapper/Environment/empty sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
+      ? ../../CommandWrapper/Environment/empty
 
 let ConnectToDatabase =
         ../../CommandWrapper/ConnectToDatabase/Type sha256:49946ad4b88108992adba47d0b212add49946772d8d8dca8b48ddb2b92635b46
@@ -29,12 +33,10 @@ let Verbosity/fold =
         ../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
       ? ../../CommandWrapper/Verbosity/fold
 
-let emptyEnvironment = [] : List EnvironmentVariable
-
 in    λ(pgpassFile : Optional Text)
     → λ(psqlrcFile : Optional Text)
     → λ(connect : ConnectToDatabase)
-    → λ(environment : List EnvironmentVariable)
+    → λ(environment : Environment)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
     → λ(arguments : List Text)
@@ -65,18 +67,18 @@ in    λ(pgpassFile : Optional Text)
           # Optional/fold
               Text
               pgpassFile
-              (List EnvironmentVariable)
+              Environment
               (λ(file : Text) → [ { name = "PGPASSFILE", value = file } ])
-              emptyEnvironment
+              Environment/empty
           # Optional/fold
               Text
               psqlrcFile
-              (List EnvironmentVariable)
+              Environment
               (λ(file : Text) → [ { name = "PSQLRC", value = file } ])
-              emptyEnvironment
+              Environment/empty
           # Verbosity/fold
-              (List EnvironmentVariable)
-              { Silent = emptyEnvironment
+              Environment
+              { Silent = Environment/empty
               , Normal = [ { name = "VERBOSITY", value = "default" } ]
               , Verbose = [ { name = "VERBOSITY", value = "verbose" } ]
               , Annoying = [ { name = "VERBOSITY", value = "verbose" } ]

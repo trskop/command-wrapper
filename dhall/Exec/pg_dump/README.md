@@ -24,7 +24,7 @@ let Exec =
 
 let toolset = env:COMMAND_WRAPPER_EXE as Text ? "yx"
 
-let emptyEnvironment = CommandWrapper.Command.emptyEnvironment
+let Environment/empty = CommandWrapper.Environment.empty
 
 let pg_dump =
       let -- Database to connect to and under which user:
@@ -38,7 +38,7 @@ let pg_dump =
       in  CommandWrapper.ExecNamedCommand::{
           , name = "pg_dump.development"
           , description = Some "Dump local development PostgreSQL DB."
-          , command = Exec.pg_dump.command connect emptyEnvironment
+          , command = Exec.pg_dump.command connect Environment/empty
           }
 
 in  [ pg_dump ] : List CommandWrapper.ExecNamedCommand.Type

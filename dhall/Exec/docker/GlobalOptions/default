@@ -1,0 +1,13 @@
+-- vim: filetype=dhall
+
+let GlobalOptions =
+        ./Type sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
+      ? ./Type
+
+let default =
+      { host = [] : List Text, logLevel = None Text, config = None Text }
+
+let consistency =
+      assert : { Type = GlobalOptions, default = default }::{=} ≡ default
+
+in  default
