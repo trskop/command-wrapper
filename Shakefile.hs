@@ -1,6 +1,6 @@
 #!/usr/bin/env stack
 {- stack script
-    --resolver lts-13.27
+    --resolver lts-14.13
     --package directory
     --package executable-path
     --package shake
