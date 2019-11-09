@@ -1,6 +1,9 @@
 -- vim: filetype=dhall
 
-{ command =
+{ Options =
+      ./Options/package.dhall sha256:c1efa59447b38551133781d90107aa3bed9e1b48abc4657faf8e9cac9e9ae07e
+    ? ./Options/package.dhall
+, command =
       ./command sha256:738ef1fdb2c436927461c1e115e90ed0761f305e145c61e33e8beb2569fa851c
     ? ./command
 , completion =

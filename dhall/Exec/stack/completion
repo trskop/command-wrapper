@@ -4,17 +4,19 @@ let Shell =
         ../../CommandWrapper/Shell/Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
       ? ../../CommandWrapper/Shell/Type
 
-let stackYamlOption =
-        ./stackYamlOption sha256:7579242492aacd52e17f76c0a07f2440f1ca690550746bbaba88bb970e2ddd30
-      ? ./stackYamlOption
-
 let optparse-applicative =
         ../completion/optparse-applicative sha256:00d877d341515117d8f20b93d7119bd0342ece43d2202e01f470db73f162cb44
       ? ../completion/optparse-applicative
 
-in    λ ( options
-        : { workingDirectory : Optional Text, stackYaml : Optional Text }
-        )
+let Options =
+        ./Options/Type sha256:b2526c288d5a0419d362c1375b879214396f6d1f6cd88b0416545724fd661b26
+      ? ./Options/Type
+
+let Options/toArguments =
+        ./Options/toArguments sha256:2ec13c92b49f2238b0b0af9df65174c4bdc1bfba5baac87d568f08cb54bba1a5
+      ? ./Options/toArguments
+
+in    λ(options : Options)
     → λ(arguments : List Text)
     → λ(shell : Shell)
     → λ(index : Natural)
@@ -22,17 +24,17 @@ in    λ ( options
     → let completionCommand =
             optparse-applicative
               "stack"
-              (stackYamlOption options.stackYaml # arguments)
+              (Options/toArguments options # arguments)
               shell
               index
               words
       
-      in      completionCommand
-          //  { workingDirectory =
-                  Optional/fold
-                    Text
-                    options.workingDirectory
-                    (Optional Text)
-                    (λ(_ : Text) → Some _)
-                    completionCommand.workingDirectory
-              }
+      in    completionCommand
+          ⫽ { workingDirectory =
+                Optional/fold
+                  Text
+                  options.workingDirectory
+                  (Optional Text)
+                  (λ(_ : Text) → Some _)
+                  completionCommand.workingDirectory
+            }

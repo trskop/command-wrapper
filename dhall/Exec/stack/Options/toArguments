@@ -1,0 +1,13 @@
+-- vim: filetype=dhall
+
+let Options =
+        ./Type sha256:b2526c288d5a0419d362c1375b879214396f6d1f6cd88b0416545724fd661b26
+      ? ./Type
+
+in    λ(options : Options)
+    → Optional/fold
+        Text
+        options.stackYaml
+        (List Text)
+        (λ(file : Text) → [ "--stack-yaml=${file}" ])
+        ([] : List Text)

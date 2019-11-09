@@ -1,16 +1,16 @@
 -- vim: filetype=dhall
 
 let Verbosity =
-        ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
-      ? ../../CommandWrapper/Verbosity/Type
+        ../../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
+      ? ../../../CommandWrapper/Verbosity/Type
 
 let Verbosity/fold =
-        ../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
-      ? ../../CommandWrapper/Verbosity/fold
+        ../../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
+      ? ../../../CommandWrapper/Verbosity/fold
 
 let Options =
-        ./Options sha256:135e4bd85be7cebe6763f6f468474cf4a0ca24e225b872e30a253278af02bb65
-      ? ./Options
+        ./Type sha256:135e4bd85be7cebe6763f6f468474cf4a0ca24e225b872e30a253278af02bb65
+      ? ./Type
 
 in    λ(options : Options)
     → λ(verbosity : Verbosity)

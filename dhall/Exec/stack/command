@@ -41,17 +41,19 @@ let verbosityOption =
         , Annoying = [ "--verbosity=debug" ]
         }
 
-let mkStackYamlOption =
-        ./stackYamlOption sha256:7579242492aacd52e17f76c0a07f2440f1ca690550746bbaba88bb970e2ddd30
-      ? ./stackYamlOption
+let ColourOutput/toArgument =
+        ../utils/colorOption sha256:1974a5a3f18b441b9eae2f7cea20168ab26a97d450ad85a9e6160cea8538a170
+      ? ../utils/colorOption
 
-let colorOption =
-        λ(colourOutput : ColourOutput)
-      → [ "--color=${ColourOutput/toText colourOutput}" ]
+let Options =
+        ./Options/Type sha256:b2526c288d5a0419d362c1375b879214396f6d1f6cd88b0416545724fd661b26
+      ? ./Options/Type
 
-in    λ ( context
-        : { workingDirectory : Optional Text, stackYaml : Optional Text }
-        )
+let Options/toArguments =
+        ./Options/toArguments sha256:2ec13c92b49f2238b0b0af9df65174c4bdc1bfba5baac87d568f08cb54bba1a5
+      ? ./Options/toArguments
+
+in    λ(options : Options)
     → λ(args : List Text)
     → λ(verbosity : Verbosity)
     → λ(colourOutput : ColourOutput)
@@ -60,9 +62,9 @@ in    λ ( context
       , command = "stack"
       , arguments =
             verbosityOption verbosity
-          # colorOption colourOutput
-          # mkStackYamlOption context.stackYaml
+          # [ ColourOutput/toArgument colourOutput ]
+          # Options/toArguments options
           # args
           # arguments
-      , workingDirectory = context.workingDirectory
+      , workingDirectory = options.workingDirectory
       }

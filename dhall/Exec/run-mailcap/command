@@ -26,22 +26,12 @@ let Environment =
       ? ../../CommandWrapper/Environment/Type
 
 let Action =
-        ./Action sha256:ebe44424cf93ffc0e67bbc651e5fea563e1f88a5b9a2bac59589adb0228b193d
-      ? ./Action
+        ./Action/Type sha256:ebe44424cf93ffc0e67bbc651e5fea563e1f88a5b9a2bac59589adb0228b193d
+      ? ./Action/Type
 
-let actionToOption
-    : ∀(action : Action) → Text
-    =   λ(action : Action)
-      →     "--action="
-        ++  merge
-              { View = "view"
-              , Cat = "cat"
-              , Compose = "compose"
-              , Composetyped = "composetyped"
-              , Edit = "edit"
-              , Print = "print"
-              }
-              action
+let Action/toArguments =
+        ./Action/toArguments sha256:94a66162f51c2e7f7ab7143e5d130dd789a04e7cd31dbefbfddaab60db852666
+      ? ./Action/toArguments
 
 in    λ(action : Action)
     → λ(environment : Environment)
@@ -50,6 +40,6 @@ in    λ(action : Action)
     → λ(arguments : List Text)
     → ExecCommand::{
       , command = "run-mailcap"
-      , arguments = [ actionToOption action ] # arguments
+      , arguments = Action/toArguments action # arguments
       , environment = environment
       }
