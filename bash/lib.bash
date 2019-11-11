@@ -177,6 +177,8 @@ function msgf() {
     fi
 }
 
+# Print info-level message.  Printed only if verbosity is set to 'annoying'.
+#
 # Usage:
 #
 #   info FORMAT [ARGUMENTS]
@@ -186,6 +188,8 @@ function info() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'info' "$@"
 }
 
+# Print notice-level message.  Printed only if verbosity is 'verbose' or higher.
+#
 # Usage:
 #
 #   notice FORMAT [ARGUMENTS]
@@ -195,6 +199,8 @@ function notice() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'notice' "$@"
 }
 
+# Print normal output message.  Supressed when verbosity is set to 'silent'.
+#
 # Usage:
 #
 #   out FORMAT [ARGUMENTS]
@@ -204,6 +210,8 @@ function out() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'output' "$@"
 }
 
+# Print warning message.  Printed only if verbosity is 'normal' or higher.
+#
 # Usage:
 #
 #   warn FORMAT [ARGUMENTS]
@@ -213,6 +221,8 @@ function warn() {
     msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'warning' "$@" 1>&2
 }
 
+# Print error message.  Printed only if verbosity is 'normal' or higher.
+#
 # Usage:
 #
 #   error FORMAT [ARGUMENTS]
