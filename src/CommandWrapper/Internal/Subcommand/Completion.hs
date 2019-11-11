@@ -459,7 +459,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
           Global.Config{colourOutput, verbosity} -> do
 
             let lib :: ByteString
-                lib = $(embedFile "bash/lib.sh")
+                lib = $(embedFile "bash/lib.bash")
 
                 importScriptExpr =
                     $(Dhall.TH.staticDhallExpression

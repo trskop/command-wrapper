@@ -14,9 +14,10 @@ category: Tools
 
 extra-source-files:
   - README.md
-  - dhall/*.dhall
-  - dhall/CommandWrapper/*
-  - dhall/CommandWrapper/Type/*
+  - bash/*
+  - dhall/*
+  - dhall/**/*
+  - man/*.md
 
 default-extensions:
   - BlockArguments
