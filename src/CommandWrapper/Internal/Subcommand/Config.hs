@@ -919,7 +919,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , optionDescription ["--dhall-filter"]
             [ Pretty.reflow "Puts Dhall input expression into the scope of"
-            , metavar "EXPRESSION", "as", value "input : Input", "."
+            , metavar "EXPRESSION", "as", value "input : Input" <> "."
             ]
 
         , optionDescription ["--dhall-format"]
