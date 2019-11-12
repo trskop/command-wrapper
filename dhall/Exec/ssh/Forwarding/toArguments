@@ -1,0 +1,39 @@
+-- vim: filetype=dhall
+
+let Forwarding =
+        ./Type sha256:434b5e6be35d6dd97cd29665c8c8855be653a25396174de07ec3c158dd8e4cdb
+      ? ./Type
+
+let ForwardingOptions/toArguments =
+        ../ForwardingOptions/toArguments sha256:4ad4ff6aa06e29b32d9801204229437cde0621f1bb259aeae39d58227679e748
+      ? ../ForwardingOptions/toArguments
+
+let DynamicForwardingOptions =
+      { Type =
+            ../DynamicForwardingOptions/Type sha256:d4ebcc6427498a1408b5772b63cbace514cac027d0c6d9cddda6095529aa8a56
+          ? ../DynamicForwardingOptions/Type
+      , default =
+            ../DynamicForwardingOptions/default sha256:c80d7d2fddac6d33d118c485dde6ec80332bf59174b83cfb5b85318ad631ea01
+          ? ../DynamicForwardingOptions/default
+      }
+
+let DynamicForwardingOptions/toArguments =
+        ../DynamicForwardingOptions/toArguments sha256:76ccb64ee4ccfd114ce338a69504edea8a8ed21dda4df4eb0df9b73b6656d7d8
+      ? ../DynamicForwardingOptions/toArguments
+
+let toArguments =
+        λ(forwarding : Forwarding)
+      → merge
+          { Local = ForwardingOptions/toArguments "-L"
+          , Remote = ForwardingOptions/toArguments "-R"
+          , Dynamic = DynamicForwardingOptions/toArguments "-D"
+          }
+          forwarding
+
+let example0 =
+        assert
+      :   toArguments
+            (Forwarding.Dynamic DynamicForwardingOptions::{ listenOn = 8080 })
+        ≡ [ "-D", "8080" ]
+
+in  toArguments : Forwarding → List Text

@@ -1,0 +1,44 @@
+-- vim: filetype=dhall
+
+let DynamicForwardingOptions =
+        ./Type sha256:d4ebcc6427498a1408b5772b63cbace514cac027d0c6d9cddda6095529aa8a56
+      ? ./Type
+
+let default =
+        ./default sha256:c80d7d2fddac6d33d118c485dde6ec80332bf59174b83cfb5b85318ad631ea01
+      ? ./default
+
+let toArguments
+    : Text → DynamicForwardingOptions → List Text
+    =   λ(option : Text)
+      → λ(dynamicForwarding : DynamicForwardingOptions)
+      → [ option
+        ,     Optional/fold
+                Text
+                dynamicForwarding.bindTo
+                Text
+                (λ(_ : Text) → "${_}:")
+                ""
+          ++  Natural/show dynamicForwarding.listenOn
+        ]
+
+let example0 =
+        assert
+      :   toArguments
+            "-D"
+            { Type = DynamicForwardingOptions, default = default }::{
+            , listenOn = 8080
+            }
+        ≡ [ "-D", "8080" ]
+
+let example1 =
+        assert
+      :   toArguments
+            "-D"
+            { Type = DynamicForwardingOptions, default = default }::{
+            , bindTo = Some "localhost"
+            , listenOn = 8080
+            }
+        ≡ [ "-D", "localhost:8080" ]
+
+in  toArguments

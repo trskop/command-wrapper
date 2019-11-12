@@ -1,30 +1,24 @@
 -- vim: filetype=dhall
 
 { ConnectTo =
-      ./ConnectTo sha256:e8382f5875b4a311bd30919586963a291cd2827be369dbad7cc6247212f2f96d
-    ? ./ConnectTo
+      ./ConnectTo/package.dhall sha256:8334daae3b72ea29f477fbbb7cedca0908dd50f69cc873a527c276d2ca0217a8
+    ? ./ConnectTo/package.dhall
 , DynamicForwardingOptions =
-      ./DynamicForwardingOptions sha256:d4ebcc6427498a1408b5772b63cbace514cac027d0c6d9cddda6095529aa8a56
-    ? ./DynamicForwardingOptions
+      ./DynamicForwardingOptions/package.dhall sha256:b43c1f1de7a31374bd865d41f643dd7e6b121a900f39c7658e7aca08433736ce
+    ? ./DynamicForwardingOptions/package.dhall
 , Forwarding =
-      ./Forwarding sha256:434b5e6be35d6dd97cd29665c8c8855be653a25396174de07ec3c158dd8e4cdb
-    ? ./Forwarding
+      ./Forwarding/package.dhall sha256:e884ddb826819a204c57a8efb922e904bb88ed0b6196187a6e0d7622c7f64e6f
+    ? ./Forwarding/package.dhall
 , ForwardingOptions =
-      ./ForwardingOptions sha256:ef6300632529b203c5a24b33d92ed0c5c4d05cd0c72655ce768271a2e6950f9f
-    ? ./ForwardingOptions
+      ./ForwardingOptions/package.dhall sha256:2bca691b7978cc4223aa9ceaaa68bbeb9094b86f6f8cb8e01f2360b2521c92e8
+    ? ./ForwardingOptions/package.dhall
 , ListenOn =
-      ./ListenOn sha256:8f9d7c5e14dcc61cb0437a17ec268328d44a9b1aa1c130c1a9b48e55644c8d0e
-    ? ./ListenOn
+      ./ListenOn/package.dhall sha256:05ae45a0f648b05824c0071ab5aa88f0f399ada0174ce6562dfc6f05599a7a34
+    ? ./ListenOn/package.dhall
 , Options =
-      ./Options sha256:47f3b65966d3c1b11183ae79b2d435931af9d26f334ebe04fa303233423f708f
-    ? ./Options
+      ./Options/package.dhall sha256:e1a4d5858379a712dc9a20c6eaae1c02465ad1bb40c15aa1d74629e99aecdcaa
+    ? ./Options/package.dhall
 , command =
-      ./command sha256:c354bb96a55f747d56592f24f18975e7c9f4919ee4990cba35a837a17178bbe7
+      ./command sha256:5683e3567a3445a18c86100dc5f29cffdb1a212e1c1c04dbada97b94b92d75a0
     ? ./command
-, defaultOptions =
-      ./defaultOptions sha256:0f1fd740c4c18336a6e024f9d2868b6079b28da5d7d07f98a6cb57285e0ee9fb
-    ? ./defaultOptions
-, options =
-      ./options sha256:2b31c73c5377c9715f99fa310d4ea70c5a2c838692a221f5302aadd8c0c64724
-    ? ./options
 }

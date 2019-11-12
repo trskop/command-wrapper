@@ -22,12 +22,12 @@ let Environment =
       ? ../../CommandWrapper/Environment/Type
 
 let Options =
-        ./Options sha256:47f3b65966d3c1b11183ae79b2d435931af9d26f334ebe04fa303233423f708f
-      ? ./Options
+        ./Options/Type sha256:47f3b65966d3c1b11183ae79b2d435931af9d26f334ebe04fa303233423f708f
+      ? ./Options/Type
 
-let mkOptions =
-        ./options sha256:2b31c73c5377c9715f99fa310d4ea70c5a2c838692a221f5302aadd8c0c64724
-      ? ./options
+let Options/toArguments =
+        ./Options/toArguments sha256:bf62e9b045237cd1c083ca58b9d562ac7612e7f8437135a190ec5e18c8e73c18
+      ? ./Options/toArguments
 
 in    λ(options : Options)
     → λ ( connectTo
@@ -41,7 +41,7 @@ in    λ(options : Options)
     → ExecCommand::{
       , command = "ssh"
       , arguments =
-            mkOptions options
+            Options/toArguments options
           # Optional/fold
               Natural
               connectTo.port

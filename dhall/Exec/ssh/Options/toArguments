@@ -1,0 +1,37 @@
+-- vim: filetype=dhall
+
+let Options =
+        ./Type sha256:47f3b65966d3c1b11183ae79b2d435931af9d26f334ebe04fa303233423f708f
+      ? ./Type
+
+let Forwarding =
+        ../Forwarding/Type sha256:434b5e6be35d6dd97cd29665c8c8855be653a25396174de07ec3c158dd8e4cdb
+      ? ../Forwarding/Type
+
+let Forwarding/toArguments =
+        ../Forwarding/toArguments sha256:8212a864503905e0846d068eb7f08ecf7c205f3c85b4689eafad9db19fd4b898
+      ? ../Forwarding/toArguments
+
+let List/concatMap =
+      https://prelude.dhall-lang.org/List/concatMap sha256:3b2167061d11fda1e4f6de0522cbe83e0d5ac4ef5ddf6bb0b2064470c5d3fb64
+
+let optional =
+        λ(a : Type)
+      → λ(o : Optional a)
+      → λ(f : a → List Text)
+      → Optional/fold a o (List Text) f ([] : List Text)
+
+in    λ(options : Options)
+    →   optional Text options.identityFile (λ(_ : Text) → [ "-i", _ ])
+      # List/concatMap
+          Forwarding
+          Text
+          Forwarding/toArguments
+          options.forwardings
+      # optional Text options.configFile (λ(_ : Text) → [ "-F", _ ])
+      # optional
+          Bool
+          options.allocatePseudoTerminal
+          (λ(_ : Bool) → if _ then [ "-t" ] else [ "-T" ])
+      # (if options.doNotExecuteRemoteCommand then [ "-N" ] else [] : List Text)
+      # (if options.preventReadingOfStdin then [ "-n" ] else [] : List Text)

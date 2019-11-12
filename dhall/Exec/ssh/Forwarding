@@ -1,6 +1,0 @@
--- vim: filetype=dhall
-
-< Local : ./ForwardingOptions
-| Remote : ./ForwardingOptions
-| Dynamic : ./DynamicForwardingOptions
->
