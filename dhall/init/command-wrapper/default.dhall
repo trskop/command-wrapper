@@ -18,8 +18,8 @@
   let helpMessage
         : Text
         =     (./default/help-common.txt as Text)
-          ++  (./default/help-local.txt as Text ? \"\")
-          ++  (./default/help.txt as Text ? \"\")
+          ++  (./default/help-local.txt as Text ? "")
+          ++  (./default/help.txt as Text ? "")
 
   in  CommandWrapper.ToolsetConfig::{
       , aliases = aliases
