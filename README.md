@@ -25,6 +25,7 @@ theme, or a purpose.
     -   [Subcommand Aliases](#subcommand-aliases)
     -   [Command Line Completion](#command-line-completion)
         *   [Bash Command Line Completion](#bash-command-line-completion)
+        *   [Command Line Completion For Aliases](#command-line-completion-for-aliases)
 
 *   [Installation](#installation)
 
@@ -63,7 +64,7 @@ which is described in its own manual page
 
 ## Some Interesting Features
 
-*   Command Wrapper makes heavy use of [Dhall](https://dhall-lang.org/)
+*   Command Wrapper makes heavy use of [Dhall][Dhall homepage]
     configuration language.  It goes as far as having Dhall interpreter
     integrated into its `config` (internal) subcommand.  It also provides very
     useful Dhall library [`dhall/CommandWrapper`](dhall/CommandWrapper/).
@@ -102,6 +103,10 @@ When installed these can be viewed using:
 ```
 TOOLSET_COMMAND help --man [SUBCOMMAND|TOPIC]
 ```
+
+While not necessary, it is highly encouraged to read about [Dhall
+][Dhall homepage] configuration language too.  Knowledge of its syntax will
+help with understanding some of the examples that are provided in this section.
 
 
 ### What is a Toolset
@@ -266,7 +271,7 @@ page.  Individual internal subcommands are:
 
 *   [`command-wrapper-config(1)`](man/command-wrapper-config.1.md) -- Command
     Wrapper's configuration swiss army knife.  It includes
-    [Dhall](https://dhall-lang.org/) interpreter.
+    [Dhall][Dhall homepage] interpreter.
 
 *   [`command-wrapper-version(1)`](man/command-wrapper-version.1.md) -- Print
     version information either in human readable format, or in a machine
@@ -324,12 +329,20 @@ by all toolsets) or in `~/config/${toolset}/default.dhall` (toolset specific
 aliases).  An alias looks like this:
 
 ```Dhall
-{ alias = "man"
-, description = Some "Shorthand for \"help --man\"."
-, command = "help"
-, arguments = [ "--man" ]
-}
+let CommandWrapper =
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+
+in  CommandWrapper.SubcommandAlias::{
+    , alias = "man"
+    , description = Some "Shorthand for \"help --man\"."
+    , command = "help"
+    , arguments = [ "--man" ]
+    }
 ```
+
+To see definition of `SubcommandAlias` type and default values see
+[`dhall/CommandWrapper/SubcommandAlias`
+](./dhall/CommandWrapper/SubcommandAlias).
 
 Invoking such alias looks like any other subcommand invocation:
 
@@ -359,7 +372,12 @@ TOOLSET_COMMAND help help
 ```
 
 For more information see [`command-wrapper(1)`](man/command-wrapper.1.md) which
-provides more information on how aliases are defined.
+provides more information on how aliases are defined.  To see what aliases are
+defined by default when
+`~/.local/lib/command-wrapper/command-wrapper config --init` is invoked
+(described more in [Installation](#installation) section) see
+[`dhall/init/command-wrapper/default/aliases-common.dhall`
+](./dhall/init/command-wrapper/default/aliases-common.dhall).
 
 
 ### Command Line Completion
@@ -458,10 +476,16 @@ the one that fits your use case the best.
     If there is ever a change in how the generated script looks like you'll
     need to remove that code from your `~/.bashrc` and reinsert it.
 
+
+#### Command Line Completion For Aliases
+
 If we are invoking our toolset under multiple names (only one name can be
 tooset name, rest are shell aliases) then we can generate completion for all of
-them.  For example if our toolset is called `habit` and we use `hb` as an alias
-we can enable completion for both:
+them.  Examples in this section are for Bash, it should be easy to adapt them
+to other shells.
+
+For example if our toolset is called `habit` and we use `hb` as an alias we can
+enable completion for both:
 
 ```Bash
 alias hb=habit
@@ -476,11 +500,15 @@ Doing this consists of two steps:
 1.  Define an alias for `config --dhall`:
 
     ```Dhall
-    { alias = "dhall"
-    , description = Some "Shorthand for \"config --dhall\"."
-    , command = "config"
-    , arguments = [ "--dhall" ]
-    }
+    let CommandWrapper =
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+
+    in  CommandWrapper.SubcommandAlias::{
+        , alias = "dhall"
+        , description = Some "Shorthand for \"config --dhall\"."
+        , command = "config"
+        , arguments = [ "--dhall" ]
+        }
     ```
 
     See also [Subcommand Aliases](#subcommand-aliases) section.
@@ -557,7 +585,9 @@ be for `config` subcommand, and not for `config --dhall`.
         ```
 
 
-
+[Dhall homepage]:
+  https://dhall-lang.org/
+  "The Dhall configuration language homepage"
 [bat repo]:
   https://github.com/sharkdp/bat
   "bat GitHub repository"
