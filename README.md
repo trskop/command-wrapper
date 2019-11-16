@@ -521,9 +521,9 @@ Doing this consists of two steps:
     ```
 
 The reason why we can't use `alias dhall='habit config --dhall'` is that, at
-the moment, Command Wrapper has now way of knowing that we are passing
-`--dhall` option to `config` command.  Therefore, command line completion would
-be for `config` subcommand, and not for `config --dhall`.
+the moment, Command Wrapper has no way of knowing that we are passing `--dhall`
+option to `config` command.  Therefore, command line completion would be for
+`config` subcommand, and not for `config --dhall`.
 
 
 ## Installation
