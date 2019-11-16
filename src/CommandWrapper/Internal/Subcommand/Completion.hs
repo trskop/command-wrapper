@@ -58,12 +58,12 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
-import System.IO (IO, putStrLn, stderr, stdout, writeFile)
+import System.IO (IO, putStrLn, stderr, stdout)
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as ByteString (putStr, writeFile)
+import qualified Data.ByteString as ByteString (putStr)
 import Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI (foldedCase, mk)
 import Data.Either.Validation (validationToEither)
@@ -82,7 +82,7 @@ import Data.Output
 import qualified Data.Output as Output (HasOutput(output))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines, unpack)
-import qualified Data.Text.IO as Text (putStr, putStrLn, writeFile)
+import qualified Data.Text.IO as Text (putStr, putStrLn)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -110,6 +110,11 @@ import qualified Options.Applicative as Options
     )
 import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, headMay, lastMay)
+import qualified System.AtomicWrite.Writer.ByteString as ByteString
+    ( atomicWriteFile
+    )
+import System.AtomicWrite.Writer.String (atomicWriteFile)
+import qualified System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
 import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
@@ -499,9 +504,9 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                         OutputNotHandle (OutputFile fn) ->
                             case importOrContent of
                                 Import ->
-                                    getImportScript >>= Text.writeFile fn
+                                    getImportScript >>= Text.atomicWriteFile fn
                                 Content ->
-                                    ByteString.writeFile fn lib
+                                    ByteString.atomicWriteFile fn lib
 
                 _ -> do
                     errorMsg subcommand' verbosity colourOutput stderr
@@ -634,13 +639,19 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
     outputStringLines :: OutputStdoutOrFile -> [String] -> IO ()
     outputStringLines = \case
-        OutputHandle _ -> mapM_ putStrLn
-        OutputNotHandle (OutputFile fn) -> writeFile fn . List.unlines
+        OutputHandle _ ->
+            mapM_ putStrLn
+
+        OutputNotHandle (OutputFile fn) ->
+            atomicWriteFile fn . List.unlines
 
     outputTextLines :: OutputStdoutOrFile -> [Text] -> IO ()
     outputTextLines = \case
-        OutputHandle _ -> mapM_ Text.putStrLn
-        OutputNotHandle (OutputFile fn) -> Text.writeFile fn . Text.unlines
+        OutputHandle _ ->
+            mapM_ Text.putStrLn
+
+        OutputNotHandle (OutputFile fn) ->
+            Text.atomicWriteFile fn . Text.unlines
 
 -- TODO: Generate these values instead of hard-coding them.
 verbosityValues :: [String]

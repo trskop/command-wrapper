@@ -48,6 +48,7 @@ dependencies:
   - base
 
   - ansi-terminal
+  - atomic-write >=0.2.0.0
   - bytestring
   - case-insensitive
   - comonad

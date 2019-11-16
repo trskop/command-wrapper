@@ -46,7 +46,6 @@ import Text.Show (Show, show)
 import Data.Either.Validation (validationToEither)
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines)
-import qualified Data.Text.IO as Text (writeFile)
 import Data.Text.Prettyprint.Doc (pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty (Doc, hsep, line)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
@@ -56,6 +55,7 @@ import qualified Dhall
     , auto
     )
 import Dhall.TH (staticDhallExpression)
+import System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
 import System.Directory
     ( XdgDirectory(XdgConfig, XdgData)
     , createDirectoryIfMissing
@@ -166,7 +166,7 @@ init
                 ]
         else do
 
-            Text.writeFile readmeFile
+            Text.atomicWriteFile readmeFile
                 (configFileContent' (ReadmeMd toolsetName))
 
             messageLn
@@ -274,7 +274,7 @@ init
     createOrSkipFile :: Text -> Either FilePath FilePath -> IO ()
     createOrSkipFile content = \case
         Left file -> do
-            Text.writeFile file content
+            Text.atomicWriteFile file content
             messageLn
                 [ command (fromString file) <> ":"
                 , Pretty.reflow "File created successfully."

@@ -34,7 +34,6 @@ import Data.CaseInsensitive as CI (mk)
 import Data.Monoid.Endo (Endo(appEndo))
 import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
-import qualified Data.Text.IO as Text (writeFile)
 import qualified Dhall (Inject, Interpret, auto, inputFile)
 import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
@@ -59,6 +58,7 @@ import qualified Options.Applicative as Options
     , strArgument
     , switch
     )
+import qualified System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
 import System.Directory
     ( createDirectoryIfMissing
     , doesDirectoryExist
@@ -213,7 +213,7 @@ generateSkeleton params createParents Template{..} = do
                 $ fromString (show targetFile)
                 <> ": Target already exists, refusing to overwrite it."
         else
-            Text.writeFile targetFile template
+            Text.atomicWriteFile targetFile template
 
     when executable $ do
         perms <- getPermissions targetFile
