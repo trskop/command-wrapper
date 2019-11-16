@@ -195,13 +195,13 @@ configuration file, see [`command-wrapper-skel(1)`
 
 By default subcommands written in Bash are stored under following name:
 
-```
+```Bash
 ~/.local/lib/${toolset}/${toolset}-${subcommand}
 ```
 
 In contrast Haskell subcommands are stored as:
 
-```
+```Bash
 ~/.config/${toolset}/toolset/app-${toolset}-${subcommand}/Main.hs
 ```
 
@@ -214,6 +214,27 @@ shared among subcommands in the form of a library.
 Best approach is to create Bash script first, and later rewrite it using a
 proper programming language.  The later step may never come, it depends on how
 complex the functionality is.
+
+Subcommands written in Bash can use provided `bash/lib.bash` library.  Code
+snippet for importing it can be obtained by:
+
+```
+TOOLSET_COMMAND completion --library --shell=bash --import
+```
+
+Bash library is self documented, to view its content we can use following
+command:
+
+```
+TOOLSET_COMMAND completion --library --shell=bash --content
+```
+
+If e.g. [`bat`][bat repo] (a `cat` clone with syntax highlighting and pager
+support) we can browse the library quite comfortably with:
+
+```
+TOOLSET_COMMAND completion --library --shell=bash --content | bat -l bash
+```
 
 
 ### Internal Subcommands
@@ -269,7 +290,8 @@ becomes:
 yx cd [CD_ARGUMENTS]
 ```
 
-When Command Wrapper is looking for external commands it first tries
+When Command Wrapper is looking for external commands it searches through these
+directories in specified order:
 
 1.  Directories that are specified in its global configuration file
     `${XDG_CONFIG_HOME:-${HOME}/.config}/command-wrapper/default.dhall`.  By
@@ -491,6 +513,9 @@ be for `config` subcommand, and not for `config --dhall`.
 
 
 
+[bat repo]:
+  https://github.com/sharkdp/bat
+  "bat GitHub repository"
 [Haskell.org]:
   http://www.haskell.org
   "The Haskell Programming Language"
