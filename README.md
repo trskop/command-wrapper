@@ -16,14 +16,15 @@ theme, or a purpose.
 
 *   [Documentation](#documentation)
 
-    *   [What is a Toolset](#what-is-a-toolset)
-    *   [How To Choose a Toolset Name](#how-to-choose-a-toolset-name)
-    *   [List Available Subcommands](#list-available-subcommands)
-    *   [Introducing New Subcommand](#introducing-new-subcommand)
-    *   [Internal Subcommands](#internal-subcommands)
-    *   [External Subcommands](#external-subcommands)
-    *   [Subcommand Aliases](#subcommand-aliases)
-    *   [Command Line Completion](#command-line-completion)
+    -   [What is a Toolset](#what-is-a-toolset)
+    -   [How To Choose a Toolset Name](#how-to-choose-a-toolset-name)
+    -   [List Available Subcommands](#list-available-subcommands)
+    -   [Introducing New Subcommand](#introducing-new-subcommand)
+    -   [Internal Subcommands](#internal-subcommands)
+    -   [External Subcommands](#external-subcommands)
+    -   [Subcommand Aliases](#subcommand-aliases)
+    -   [Command Line Completion](#command-line-completion)
+        *   [Bash Command Line Completion](#bash-command-line-completion)
 
 *   [Installation](#installation)
 
@@ -376,20 +377,24 @@ in Bash, Fish or Zsh:
 TOOLSET_COMMAND completion --script [--shell=SHELL] [--output=FILE] [--alias=ALIAS ...]
 ```
 
-There are two basic ways of hooking toolset command line completion into your
-shell:
+There are multiple ways of hooking toolset command line completion into your
+shell.  Here we are listing few of them, please, go read them all and choose
+the one that fits your use case the best.
 
-*   **Sourcing.**  For example, enabling it for Bash means adding following line
-    into `~/.bashrc`:
+
+#### Bash Command Line Completion
+
+*   **Sourcing generated script every time.**  For example, enabling it for Bash means adding
+    following line into `~/.bashrc`:
 
     ```Bash
     source <("${toolset}" completion --script --shell=bash)
     ```
 
-*   **Standalone file.**  The above approach has the disadvantage that every time
-    we start a shell we need to run Command Wrapper to get the completion
-    script.  This can be avoided by writting it somewhere.  For example we can
-    do following in `~/.bashrc`:
+*   **Sourcing cached script.**  The above approach has the
+    disadvantage that every time we start a shell we need to run Command
+    Wrapper to get the completion script.  This can be avoided by writting it
+    somewhere.  For example we can do following in `~/.bashrc`:
 
     ```Bash
     declare toolset='toolset'  # TODO: Set toolset name.
@@ -398,25 +403,60 @@ shell:
     if [[ ! -e "${toolsetCompletionFile}" ]]; then
         mkdir -p "${toolsetCacheDir}"
 
-        # Using temporary file prevents us from having a conflict when two shells
-        # are started and there is no completion file.  We are relying on the fact
-        # that 'mv' operation is atomic, therefore, all shells will see consistent
-        # version of completion file.
-        #
-        # Since this is `~/.bashrc` we cannot rely on `set -e` to handle errors for
-        # us, hence the `&&` chain.
-
-        declare toolsetCompletionTempFile
-        toolsetCompletionTempFile="$(
-            mktemp --tmpdir="${toolsetCacheDir}" --suffix=.bash completion.XXXXXXXXXX
-        )" \
-            && "${toolset}" completion --script --shell=bash --output="${toolsetCompletionTempFile}" \
-            && mv --force "${toolsetCompletionTempFile}" "${toolsetCompletionFile}"
+        # This relies on the fact that Command Wrapper uses atomic write
+        # operation to create the output file.
+        "${toolset}" completion --script --shell=bash \
+            --output="${toolsetCompletionFile}"
     fi
 
     source "${toolsetCompletionFile}"
-    unset -v toolset toolsetCacheDir toolsetCompletionFile toolsetCompletionTempFile
+    unset -v toolset toolsetCacheDir toolsetCompletionFile
     ```
+
+    If there is ever a change in how the generated script looks like you'll
+    need to remove following file manually.  Following is an example of Bash
+    session where `user@machine:~$` indicates command line prompt (**Don't
+    forget to use your toolset name**):
+
+    ```Bash
+    user@machine:~$ toolset='toolset'  # TODO: Set toolset name.
+    user@machine:~$ rm "${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}/completion.bash"
+    ```
+
+*   **Storing generated script.**  We can store the generated script ourselves and
+    source it in `~/.bashrc`, this way our Bash rc-file stays simple.
+    Following is an example of Bash session where `user@machine:~$` indicates
+    command line prompt (**Don't forget to use your toolset name**):
+
+    ```Bash
+    user@machine:~$ toolset='toolset'  # TODO: Set toolset name.
+    user@machine:~$ mkdir -p "${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}/"
+    user@machine:~$ "${toolset}" completion --script --shell=bash --output="${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}/completion.bash"
+    ```
+
+    After that we can just source it in our `~/.bashrc`:
+
+    ```
+    # shellcheck source=/dev/null
+    source "${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}/completion.bash"
+    ```
+
+    If there is ever a change in how the generated script looks like you'll
+    need to manually recreate completion script
+    (`${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}/completion.bash`).
+
+*   **Inlining generated script.**  This can be doen by writting output of
+    `"${toolset}" completion --script --shell=bash` your `~/.bashrc`.
+    Following is an example of Bash session where `user@machine:~$` indicates
+    command line prompt (**Don't forget to use your toolset name, and use `>>`
+    operator to append, not overwrite!**):
+
+    ```Bash
+    user@machine:~$ "${toolset}" completion --script --shell=bash >> ~/.bashrc
+    ```
+
+    If there is ever a change in how the generated script looks like you'll
+    need to remove that code from your `~/.bashrc` and reinsert it.
 
 If we are invoking our toolset under multiple names (only one name can be
 tooset name, rest are shell aliases) then we can generate completion for all of
@@ -490,11 +530,16 @@ be for `config` subcommand, and not for `config --dhall`.
 
 3.  Enable command line completion for new toolset.
 
-    *   If you're using **Bash** then include following in your `~/.bashrc`:
+    *   If you're using **Bash** then fastest way is to include following in your
+        `~/.bashrc`:
 
         ```Bash
         source <(yx completion --script --shell=bash)
         ```
+
+        There are other methods to consider, please read
+        [Bash Command Line Completion](#bash-command-line-completion) section
+        for more information.
 
     *   If you're using **Fish** then include following in your
         `~/.config/fish/config.fish`, or add as

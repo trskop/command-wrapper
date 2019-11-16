@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SUBCOMMAND-PROTOCOL(7) Subcommand Protocol | v1.0.0
 % Peter Trsko
-% 9th May 2019
+% 16th November 2019
 
 
 # NAME
@@ -19,11 +19,25 @@ described in this manual page.
 
 Each subcommand must support following options:
 
-*   `--help` which prints subcommand specific help message. This is
-    invoked by Command Wrapper's `help` internal subcommand.
+`--help`, `-h`
+:   Prints subcommand specific help message.  Help message must be printed to
+    standard output, and command must terminate with exit code 0.  This option
+    is invoked by Command Wrapper's `help` internal subcommand.
 
-*   `--completion-info` which prints a Dhall expression describing how
-    subcommand should be called to provide command line completion.
+    While having short option `-h` is not strictly necessary, this protocol
+    mandates that it should be provided.  This way subcommands will have
+    consistent UI with Command Wrapper, and there are no surprises in the form
+    of `-h` being used for other purposes.
+
+`--completion-info`
+:   Prints a Dhall expression describing how subcommand should be called to
+    provide command line completion.  Command must terminate with exit code 0.
+    See **COMMAND LINE COMPLETION** section for more details.
+
+    This command should not be described in the help message printed when the
+    subcommand is invoked with `--help`.  It is considered internal option, and
+    hiding it allows us to evolve Subcommand Protocol without affecting
+    user-facing UI.
 
 
 # ENVIRONMENT VARIABLES
@@ -80,38 +94,41 @@ are available to it:
     individual subcommand to decide which of these scenarios it will use if the
     configuration doesn't exist:
 
-    1. Use hardcoded defaults.  Subcommand may generate the configuration file
-       with these defaults.  If it does so then the user must be notified by a
-       message that it was done so. Such message is subject to verbosity
-       setting (see `COMMAND_WRAPPER_VERBOSITY`), i.e. if verbosity is set to
-       `silent` then the message is not actually printed.
+    1.  Use hard-coded defaults.  Subcommand may generate the configuration
+        file with these defaults.  If it does so then the user must be notified
+        by a message that it was done so. Such message is subject to verbosity
+        setting (see `COMMAND_WRAPPER_VERBOSITY`), i.e. if verbosity is set to
+        `silent` then the message is not actually printed.
 
-    2. Fail with error message indicating that the configuration file is
-       missing.
+    2.  Fail with error message indicating that the configuration file is
+        missing.
+
+    See also **CONFIGURATION FILE** section.
 
 `COMMAND_WRAPPER_VERBOSITY`
 :   Contains one of:
 
-    * `silent` -- Don't print any messages, not even error messages.
-    * `normal` -- Print only important messages.
-    * `verbose` -- Print anything that comes into mind.
-    * `annoying` -- Print debugging/tracing information.
+    *   `silent` -- Don't print any messages, not even error messages.
+    *   `normal` -- Print only important messages.
+    *   `verbose` -- Print anything that comes into mind.
+    *   `annoying` -- Print debugging/tracing information.
 
     Subcommand must respect these values if it's producing any output that is
     not part of user interaction.  Note that error messages should be supressed
     in `silent` mode, and only *EXIT STATUS* should be an indication of error.
 
-    Value of *VERBOSITY* should not affect output that is part interactive
+    Value of *VERBOSITY* should not affect output that is a part of interactive
     session with the user.
 
 `COMMAND_WRAPPER_COLOUR`
 :   Contains one of:
 
-    * `always` -- Always use colourised output, even if output is not a
-      terminal. This can be useful when, for example, piping output to a pager.
-    * `auto` -- Use colourised output when the output is a terminal that
-      supports it.
-    * `no` -- Never use colourised output.
+    *   `always` -- Always use colourised output, even if output is not a
+        terminal.  This can be useful when, for example, piping output to a
+        pager.
+    *   `auto` -- Use colourised output when the output is a terminal that
+        supports it.
+    *   `no` -- Never use colourised output.
 
     Subcommands aren't requred to support colourised output, but if they do
     then they have to respect this environment variable.
@@ -131,10 +148,13 @@ When this is respected by the subcommand then Command Wrapper has full control
 over subcommand configuration and command line arguments that are passed to it.
 This way it can guarantee consistent UI.
 
-**TODO:** Command Wrapper should provide `dhall` subcommand so that e.g. Bash
-subcommands do not have to rely on Dhall tools to be installed separately. This
-would also allow tools that want to use JSON format to generate a temporary
-file created from the Dhall configuration file.
+For purpose of reading Dhall configuration files in Bash, Command Wrapper
+provides bunch of Dhall-related commands as part of its internal subcommand
+`config`.  For more information see `command-wrapper-config(1)` manual page or:
+
+```
+TOOLSET_COMMAND help [--man] config
+```
 
 
 # EXIT STATUS
@@ -146,6 +166,10 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 `0`
 :   If everything went OK.
 
+    Notably this exit status is returned if subcommand is invoked with `--help`
+    or `--completion-info` option and there was no command line options parsing
+    error.  See also **COMMAND LINE ARGUMENTS** section.
+
 `1`
 :   If subcommand has encounter one of the following issues:
 
@@ -156,7 +180,7 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 
 `2`
 :   Returned by a subcommand if the Command Wrapper environment wasn't set up
-    properly.  In other words *SUBCOMMAND PROTOCOL* was violated by the caller.
+    properly.  In other words Subcommand Protocol was violated by the caller.
 
     This can indicate a version mismatch between Command Wrapper installation,
     and subcommand/toolset installation.
@@ -173,13 +197,12 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 # COMMAND LINE COMPLETION
 
 Subcommand has to support `--completion-info` command line option which causes
-it to print to standard output a Dhall expression. That expression describes
+it to print to standard output a Dhall expression.  That expression describes
 how it has to be called to provide command line completion.  Type signature of
 mentioned Dhall expression is:
 
-```
-  < Bash : {} | Fish : {} | Zsh : {} >  -- Shell under which completion was
-                                        --   invoked.
+```Dhall
+  < Bash | Fish | Zsh  >  -- Shell under which completion was invoked.
 
 → Natural  -- Index of a word that is beeing completed.
 
@@ -199,23 +222,67 @@ Algorithm:
     the subcommand as:
 
     ```
-    "/some/path/${COMMAND_WRAPPER_SUBCOMMAND}" --completion-info
+    "/some/path/${COMMAND_WRAPPER_NAME}-${COMMAND_WRAPPER_SUBCOMMAND}" --completion-info
     ```
 
     Which will produce a Dhall functintion which is then evaluated into a new
     command line that should be called:
 
     ```
-    "/some/path/${COMMAND_WRAPPER_SUBCOMMAND}" "${RESULT_OF_APPLIED_DHALL_EXPRESSION[@]}"
+    "/some/path/${COMMAND_WRAPPER_NAME}-${COMMAND_WRAPPER_SUBCOMMAND}" "${RESULT_OF_APPLIED_DHALL_EXPRESSION[@]}"
     ```
 
 *   Subcommand provides list of possible completions which are returned to the
     shell.
 
+Standard Command Wrapper command line completion API uses following syntax:
+
+```
+SOME_COMMAND --completion --index=INDEX --shell={bash|fish|zsh} -- [WORD [...]]
+```
+
+This transcribes into following Dhall expression to be returned as a result of
+`--completion-info`:
+
+```Dhall
+  λ(shell : < Bash | Fish | Zsh >)
+→ λ(index : Natural)
+→ λ(words : List Text)
+→   [ "--completion"
+    , "--index=${Natural/show index}"
+    , "--shell=${merge {Bash = "bash", Fish = "fish", Zsh = "zsh"} shell}"
+    , "--"
+    ]
+  # words
+```
+
+It is advised to use it whenever there is no need to use something else.
+Example of a case when other style may be required is if command line option
+parsing library has completion support embedded.  In which case the embedded
+one is used.
+
+Command Wrapper's Bash library provides `stdCompletionInfo` that provides the
+above Dhall expression.  For more information see documentation embedded in the
+library itself:
+
+```
+TOOLSET_COMMAND completion --library --shell=bash --content | less
+```
+
+Command line completion API between shell and Command Wrapper is provided by
+`completion` subcommand.  It also provides some useful utilities that may be
+used from subcommands, especially when written in shell scripting language.
+
+For more information see also `command-wrapper-completion(1)` manual page or:
+
+```
+TOOLSET_COMMAND help [--man] completion
+```
+
 
 # SEE ALSO
 
-command-wrapper(1)
+command-wrapper(1), command-wrapper-completion(1), command-wrapper-config(1)
 
 * [Dhall configuration language](https://dhall-lang.org)
 * [Advanced Bash-Scripting Guide: Appendix E. Exit Codes With Special Meanings
