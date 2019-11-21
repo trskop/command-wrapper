@@ -22,6 +22,6 @@
       ./yarn.bash.dhall sha256:65bc18ba5131cb50564c7fe48231b28d0c1fd4680548248cd078ab1530e64ab3
     ? ./yarn.bash.dhall
 , youtube-dl =
-      ./youtube-dl.bash.dhall sha256:83b4b38f1dd6fcf44f77d4780b7ae3333b45ed0dfc2f96f919fcea700804bf28 as Text
-    ? ./youtube-dl.bash.dhall as Text
+      ./youtube-dl.bash.dhall sha256:4944c2e5cf852aa4969dae360495e92a53a5530def414b0090d0a691dc3351e6
+    ? ./youtube-dl.bash.dhall
 }
