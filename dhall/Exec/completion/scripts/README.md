@@ -110,3 +110,17 @@ that option is not specified.
     TOOLSET completion --wrapper --expression='./yarn.bash.dhall' --exec --
         {--help|-h}
     ```
+
+*   [`youtube-dl.bash.dhall`](./youtube-dl.bash.dhall) is a Dhall template of a
+    Bash script that provides command line completion for y tool.  Its Homepage
+    is [ytdl-org.github.io/youtube-dl](https://ytdl-org.github.io/youtube-dl/).
+    As part of the template it imports script from
+    <https://salsa.debian.org/debian/youtube-dl> repository.
+
+    ```
+    TOOLSET completion --wrapper --expression='./youtube-dl.bash.dhall' --exec
+        -- [--index=NUM] [--shell=SHELL] [-- [WORD ...]]
+
+    TOOLSET completion --wrapper --expression='./youtube-dl.bash.dhall' --exec
+        -- {--help|-h}
+    ```

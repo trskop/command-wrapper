@@ -12,13 +12,16 @@
 , go-jira =
       ./go-jira.bash sha256:a2bed0ae3a53770a6d69132921baf9610199303beeefe7c84db0d45666d4ea2b as Text
     ? ./go-jira.bash as Text
+, jq =
+      ./jq.bash.dhall sha256:0308f23f3bf4dbc8c92a2340710357f790312dc8034f2e6b73f7a9d43b81f91e
+    ? ./jq.bash.dhall
 , nix =
       ./nix.bash.dhall sha256:4a79f8b86f6ace664d44b60d10e6b1494a64dd339e071979fd3bcbf4d73d9e1c
     ? ./nix.bash.dhall
 , yarn =
       ./yarn.bash.dhall sha256:65bc18ba5131cb50564c7fe48231b28d0c1fd4680548248cd078ab1530e64ab3
     ? ./yarn.bash.dhall
-, jq =
-      ./jq.bash.dhall sha256:0308f23f3bf4dbc8c92a2340710357f790312dc8034f2e6b73f7a9d43b81f91e
-    ? ./jq.bash.dhall
+, youtube-dl =
+      ./youtube-dl.bash.dhall sha256:83b4b38f1dd6fcf44f77d4780b7ae3333b45ed0dfc2f96f919fcea700804bf28 as Text
+    ? ./youtube-dl.bash.dhall as Text
 }

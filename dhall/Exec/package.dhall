@@ -9,7 +9,7 @@
       ./buildifier/package.dhall sha256:2db5e3723ff4a17092c826b9d9200eab106d720dd940c7b4024d5a847e68f404
     ? ./buildifier/package.dhall
 , completion =
-      ./completion/package.dhall sha256:8f6de679496be3752f8fedafd1c2d656ada9a542903d267baeb9f832297e800c
+      ./completion/package.dhall sha256:aeb633bf3ba8bdf289c5a678dd0370d8c226f1a88b8d466d77363befe59a42e3
     ? ./completion/package.dhall
 , direnv =
       ./direnv/package.dhall sha256:9c6faad905a6300956f7338050facb3021b6731e6ad294c4cff41fa59933a0cf
@@ -59,4 +59,7 @@
 , yarn =
       ./yarn/package.dhall sha256:cd6498365be7b846c018437685aac34a1f34fe4898627c5b84e6ceea5ee8fbe2
     ? ./yarn/package.dhall
+, youtube-dl =
+      ./youtube-dl/package.dhall sha256:312c5507e65cca76441eefcaa7334aac750a87634166701911edf456b6a2122e
+    ? ./youtube-dl/package.dhall
 }
