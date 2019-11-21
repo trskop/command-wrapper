@@ -1,7 +1,7 @@
 -- vim: filetype=dhall
 
 let script =
-        ../completion/scripts.dhall sha256:501944afd38c5bc8bfed78c6195f80a7c804eb5ee2e97489b6b109f267c5ed91
+        ../completion/scripts.dhall sha256:5c0666159348b5216c012c72d7ee0a0a61c7f6f30b6c3a18c43e34f521d561c0
       ? ../completion/scripts.dhall
 
 let Command =
