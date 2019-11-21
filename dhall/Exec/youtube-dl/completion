@@ -11,6 +11,6 @@ let wrapper =
 in    λ(toolset : Text)
     → wrapper
         { toolset = toolset
-        , expression = "(${script.url} ${script.hash}).jq"
-        , command = "jq"
+        , expression = "(${script.url} ${script.hash}).youtube-dl"
+        , command = "youtube-dl"
         }
