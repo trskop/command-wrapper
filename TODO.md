@@ -103,6 +103,26 @@
     [ "foo", "bar" ]
     ```
 
+    ```
+    TOOLSET config --dhall-list
+      [--nul[l]|-0|--new-line|--spaces|--delimiter=DELIMITER]
+      [--as=FORMAT]
+    ```
+
+    Where:
+
+    -   `--nul[l]|-0` uses `\0` (NUL character) as a delimiter.
+    -   `--spaces` uses sequence of on or more spaces as a delimiter.
+    -   `--new-line` uses end-of-line delimiter.  This can be LF, CRLF, or CR.
+    -   `DELIMITER` is a single character deriliter.
+    -   `FORMAT` is `Text`, in the future it will make sense to have something
+        as `JSON t` where `t` is a Dhall type.
+
+    We should be able to do dual as well, i.e. convert Dhall value of type
+    `List Text` into delimiter separated text.  This may be interesting when
+    used with `xargs`.  However, there's an overlap with `--dhall-text` as well
+    as `--dhall-filter`.
+
 
 ### Help
 
@@ -191,7 +211,10 @@
     }
     ```
 
-*   Option `--time` to print how long the application took to execute.
+*   Option `--time` to print how long the application took to execute.  The
+    information should be printed directly to the terminal, and if there is no
+    controlling terminal it should be ignored.  We should consider adding
+    `--time-output=FILE` option as well.
 
 *   Command line completion should have access to `Verbosity` and
    `ColourOutput`.  These can affect how `ExecCommand` value is constructed.
@@ -206,6 +229,19 @@
     ```
     TOOLSET exec --expression=DHALL_EXPRESSION [--print] [--] [ARGUMENTS]
     ```
+
+*   Introduce `--tee=FILE [--tee-append]` to store stdout in `FILE` as well as
+    printing it on command line.
+
+    ```
+    [--input=FILE] [--output=FILE|--tee=FILE [--tee-append]]
+    ```
+
+*   Introduce `--pager` to pipe output to a pager.  Should also:
+
+    -   Respect `--colour=always`, i.e. pass `-R` to less, etc.  Different pager
+        commands based on `--colour=always`?
+    -   Work with `--tee=FILE [--tee-append]`.
 
 
 ### Skel
