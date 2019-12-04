@@ -3,30 +3,91 @@
 ''
 #!/usr/bin/env bash
 
+# shellcheck shell=bash
+
+# If you're using Nix then `nix-shell` can be used to call pinned version of
+# Bash, and also provide necessary dependencies:
+#
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash
+#!nix-shell [--packages PACKAGES|-p PACKAGES|PATH]
+#...
+#
+# Somewhat useful documentation can be found in `nix-shell(1)` documentation
+# (https://nixos.org/nix/manual/#sec-nix-shell).
+
+# So called Bash strict mode.  See `bash(1)` documentation  for more details.
 set -eo pipefail
 
 if (( BASH_VERSINFO[0] > 4 || ( BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4 ) )); then
     # Treat unset variables and parameters as an error when expanding.  This
     # wasn't very reliable in older Bash versions, hence the version check.
     set -u
+
+    # Enable the behaviour of 'set -e' inside command substitution.  This
+    # option is available since Bash 4.4.
+    shopt -s inherit_errexit
 fi
 
-if [[ "''${COMMAND_WRAPPER_VERBOSITY:-}" == 'annoying' ]]; then
+if [[ "''${COMMAND_WRAPPER_VERBOSITY:-}" = 'annoying' ]]; then
     # This will cause Bash to print commands before executing them.
     set -x
 fi
 
+# Import Command Wrapper Bash library
+#
+# Environment variables `COMMAND_WRAPPER_NAME` and `COMMAND_WRAPPER_EXE` are
+# provided when by Command Wrapper when subcommand is executed.  For more
+# information see `command-wrapper-subcommand-protocol(7)` manual page.
+#
 # shellcheck source=/dev/null
 source <(
     COMMAND_WRAPPER_INVOKE_AS="''${COMMAND_WRAPPER_NAME}" "''${COMMAND_WRAPPER_EXE}" \
-        completion --library --shell=bash
+        completion --library --shell=bash --content
 )
 
 # Print help message to standard output.
+#
+# Usage:
+#
+#   printHelp
+#   printHelp 1>&2
+#
+# When subcommand is invoked with `-h|--help` option then help information
+# needs to be printed to standard output.  If help message is printed as part
+# of error message, then it needs to be printed to standard error output.  This
+# means that redirection will work the way user expects.  For example:
+#
+# *   Redirecting help message, e.g. `TOOLSET_COMMAND help SUBCOMMAND | less`
+#     will work as expected.
+#
+# *   Using subcommand in a pipeline.  E.g.
+#     `TOOLSET_COMMAND SUBCOMMAND [ARGUMENT [...]] | SOME_COMMAND` will not
+#     pass help message as an input to `SOME_COMMAND` if there was an error.
 function printHelp() {
     local -r command="''${COMMAND_WRAPPER_NAME} ''${COMMAND_WRAPPER_SUBCOMMAND}"
-    local -r commandHelp="''${COMMAND_WRAPPER_NAME} help ''${COMMAND_WRAPPER_SUBCOMMAND}"
 
+    # Compose a help command.  If manual page is available then pass '--man'
+    # option.
+    #
+    # Usage:
+    #
+    #   helpCommand [--man]
+    function helpCommand() {
+        local -r prefix="''${COMMAND_WRAPPER_NAME} help"
+
+        local opts='''
+        if (( $# )); then
+            opts="$1"; shift
+        fi
+
+        echo "''${prefix} ''${opts:+''${opts} }''${COMMAND_WRAPPER_SUBCOMMAND}"
+    }
+
+    # Some command line options that are part of Command Wrapper Subcommand
+    # Protocol (`command-wrapper-subcommand-proticol(7)`), like
+    # `--completion-info` and `--completion` are considered internal, and
+    # should not be presented to the user.
     cat <<EOF
 TODO: Hereby I promise to describe this subcommand one day.
 
@@ -34,12 +95,12 @@ Usage:
 
   ''${command}
   ''${command} {--help|-h}
-  ''${commandHelp}
+  $(helpCommand --man)
 
 Options:
 
   --help, -h
-      Print short help message and exit.  Same as: ''${commandHelp}
+      Print short help message and exit.  Same as: $(helpCommand)
 EOF
 }
 
@@ -132,6 +193,17 @@ function completion() {
 # Note that Subcommands aren't required to use configuration files.  If you
 # don't need to use it then delete this function and relevant code in the
 # 'main' function.
+#
+# This function is very simple example of how configuration can be read.  It
+# expects configuration file to be a record where individual fields are
+# primitive values in Bash sense.  See documentation of Command Wrapper's
+# `config` command, specifically `--dhall-bash` functionality.
+#
+# Usage:
+#
+#   declareCfg CONFIG_FILE ATTRIBUTE_NAME
+#
+# Most commonly `CONFIG_FILE` will be `"''${COMMAND_WRAPPER_CONFIG}"`.
 function declareCfg() {
     local -r configFile="$1"; shift
     local -r name="$1"; shift
@@ -141,6 +213,13 @@ function declareCfg() {
         --expression="(''${configFile}).''${name}"
 }
 
+# Main entry point.
+#
+# Usage:
+#   main {-h|--help}
+#   main --completion-info
+#   main --completion [--index=INDEX] [--shell=SHELL] [[--] WORD [...]]
+#   main [OPTION [...]] [ARGUMENT [...]]
 function main() {
     # This function makes sure that this subcommand was executed using
     # expected calling convention.  If it wasn't it will terminate this
@@ -167,6 +246,8 @@ function main() {
         case "''${arg}" in
             # Supporting '--help' is required by the Subcommand Protocol.
             -h|--help)
+                # Printing help to standard output and using exit code 0 is
+                # required by Subcommand Protocol.
                 printHelp
                 exit 0
                 ;;
@@ -178,10 +259,10 @@ function main() {
                 exit 0
                 ;;
 
-            # Implementation of command line completion.  It is upto individual
-            # subcommands to decide how this should be implemented, however
-            # the implementation of '--completion-info' has to print Dhall
-            # expression that is consistent with the choosen approach.
+            # Implementation of command line completion.  It is up to
+            # individual subcommands to decide how this should be implemented,
+            # however the implementation of '--completion-info' has to print
+            # Dhall expression that is consistent with the chosen approach.
             --completion)
                 completion "$@"
                 exit 0
@@ -189,11 +270,13 @@ function main() {
 
             # TODO: Define additional options here.
             -*)
+                # Using exit code 1 here is required by Subcommand Protocol.
                 die 1 "'%s': Unknown option." "''${arg}"
                 ;;
 
             # TODO: Define arguments here.
             *)
+                # Using exit code 1 here is required by Subcommand Protocol.
                 die 1 "'%s': Too many arguments." "''${arg}"
                 ;;
         esac

@@ -1,7 +1,7 @@
 -- vim: filetype=dhall
 
 { bash =
-      ./bash sha256:00b5d1f752d64aed9f2347df3f7b38c296ec237744b1999fa301efb68ebfe478
+      ./bash sha256:7a4f2e3127297d04ff6c187fbb650ca2857e1e3b012f36de371089a165eddca7
     ? ./bash
 , dhall =
       ./dhall sha256:8a78d4a15f202a63d130b48c141c1c4e9898faba19a1a1e8495bafbd0d43133a

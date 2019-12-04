@@ -50,6 +50,14 @@
 
 *   Support fuzzy search when doing `--query`.
 
+*   Support for custom libraries:
+
+    ```
+    TOOLSET completion --library [--shell=SHELL|--custom] [--import|--content] [--output=FILE]
+    ```
+
+    Maybe this will require a little more thought.
+
 
 ### Config
 
