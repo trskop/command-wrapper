@@ -13,7 +13,7 @@
       ./Command/package.dhall sha256:9fe4745e50e55ee1670a26ae2476c655c3d52ea92e920911b093a567de2099fb
     ? ./Command/package.dhall
 , CommandWithEnvironment =
-      ./CommandWithEnvironment/package.dhall sha256:fb3dbcfcc02c02cf75b535b6633f1cfb032502aed71e148693c950d902772e01
+      ./CommandWithEnvironment/package.dhall sha256:97ad640e7ac252d569805cbe324aa42d5ff46c7b8d323b216fbf8d9715ce12d6
     ? ./CommandWithEnvironment/package.dhall
 , ConnectToDatabase =
       ./ConnectToDatabase/package.dhall sha256:a392e73ac310bdab2775458e638b656cf1a0acd38e1371ff8d6deb03acb52a94
@@ -28,7 +28,7 @@
       ./EnvironmentVariable/package.dhall sha256:1250426124fe1a06fce13386a45e803655f7fe419fb372bd4a5157993350b199
     ? ./EnvironmentVariable/package.dhall
 , ExecCommand =
-      ./ExecCommand/package.dhall sha256:a84335af1d0215504df13bc026e7d900792bb0c787ab30da111b9ad66da39e70
+      ./ExecCommand/package.dhall sha256:3d1f1db23e794116bfc80efad94a291087792b0a96d8f5be5b1c9276657d0663
     ? ./ExecCommand/package.dhall
 , ExecConfig =
       ./ExecConfig/package.dhall sha256:54303713892c8eed71abdcc4437728476ae67e78f73ff539cd52115bc083b28b

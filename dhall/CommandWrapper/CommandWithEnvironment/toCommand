@@ -1,0 +1,17 @@
+-- vim: filetype=dhall
+--
+-- Forget extra information that is part of `CommandWithEnvironment` and
+-- produce `Command` value.
+
+let CommandWithEnvironment
+    : Type
+    =   ./Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
+      ? ./Type
+
+let Command
+    : Type
+    =   ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
+      ? ../Command/Type
+
+in    λ(commandWithEnvironment : CommandWithEnvironment)
+    → commandWithEnvironment.{ command, arguments } : Command

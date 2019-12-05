@@ -1,0 +1,16 @@
+-- vim: filetype=dhall
+--
+-- Forget extra information that is part of `ExecCommand` and produce
+-- `CommandWithEnvironment` value.
+
+let CommandWithEnvironment
+    : Type
+    =   ../CommandWithEnvironment/Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
+      ? ../CommandWithEnvironment/Type
+
+let ExecCommand =
+        ./Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+      ? ./Type
+
+in    λ(execCommand : ExecCommand)
+    → execCommand.{ command, arguments, environment } : CommandWithEnvironment

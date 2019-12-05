@@ -6,4 +6,7 @@
 , default =
       ./default sha256:18347f969a288f1651da7c421d6786167369adc1f9b93aa0421cde32666d47d4
     ? ./default
+, toCommand =
+      ./toCommand sha256:ff662c1dfbf89934bf3caf69fab96d15f291b6e0dc65a467a465fe968159f723
+    ? ./toCommand
 }
