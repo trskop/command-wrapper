@@ -23,6 +23,9 @@
 , firefox =
       ./firefox/package.dhall sha256:7f6e5fe7087c2dbc297349b4640c9a5a1e04ebe378254fedb254e9a7b2c94140
     ? ./firefox/package.dhall
+, fzf =
+      ./fzf/package.dhall sha256:e86a0b487344a4070397fb0a6bcdff4a57b74451f8673836f73981c33124f976
+    ? ./fzf/package.dhall
 , fzy =
       ./fzy/package.dhall sha256:41e967ece673a9681c2ace686f8ff2579c532c9c11fb595294ee0e70ce2b77b2
     ? ./fzy/package.dhall

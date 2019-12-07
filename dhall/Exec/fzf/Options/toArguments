@@ -1,0 +1,257 @@
+-- vim: filetype=dhall
+
+let Options =
+        ./Type sha256:a552dba7eb61eef696b9138a6990d983c5e7c1e6e2081a3771e320854ebd4b05
+      ? ./Type
+
+let Options/default =
+        ./default sha256:d39a3bdc3f453f2e08c47dea644506e613042bf26588b7052e9ba2514d5c8ba2
+      ? ./default
+
+let optionalOptions =
+        ../../utils/optionalOptions sha256:f9626a1ef8209d45703cc7ac05aee40c9e96f5ccc2c406cdbd68eafd6d3234f0
+      ? ../../utils/optionalOptions
+
+let Text/concatMapSep =
+      https://prelude.dhall-lang.org/v11.1.0/Text/concatMapSep sha256:c272aca80a607bc5963d1fcb38819e7e0d3e72ac4d02b1183b1afb6a91340840
+
+let Text/concatSep =
+      https://prelude.dhall-lang.org/v11.1.0/Text/concatSep sha256:e4401d69918c61b92a4c0288f7d60a6560ca99726138ed8ebc58dca2cd205e58
+
+let List/null =
+      https://prelude.dhall-lang.org/v11.1.0/List/null sha256:2338e39637e9a50d66ae1482c0ed559bbcc11e9442bfca8f8c176bbcd9c4fc80
+
+let Bool/not =
+      https://prelude.dhall-lang.org/v11.1.0/Bool/not sha256:723df402df24377d8a853afed08d9d69a0a6d86e2e5b2bac8960b0d4756c7dc4
+
+let Optional/null =
+      https://prelude.dhall-lang.org/v11.1.0/Optional/null sha256:efc43103e49b56c5bf089db8e0365bbfc455b8a2f0dc6ee5727a3586f85969fd
+
+let noArguments = [] : List Text
+
+let PreviewWindowPosition = < Up | Down | Left | Right >
+
+let Size = < Lines : Natural | Percentage : Natural >
+
+let PreviewWindowOptions =
+      { position : Optional PreviewWindowPosition
+      , size : Optional Size
+      , wrapLines : Bool
+      , startHidden : Bool
+      }
+
+let PreviewWindowOptions/toArguments =
+        λ ( options
+          : PreviewWindowOptions
+          )
+      → let position =
+              Optional/fold
+                PreviewWindowPosition
+                options.position
+                Text
+                (   λ(_ : PreviewWindowPosition)
+                  → merge
+                      { Up = "up"
+                      , Down = "down"
+                      , Left = "left"
+                      , Right = "right"
+                      }
+                      _
+                )
+                ""
+
+        let havePosition =
+              Bool/not (Optional/null PreviewWindowPosition options.position)
+
+        let haveSize = Bool/not (Optional/null Size options.size)
+
+        let size =
+              Optional/fold
+                Size
+                options.size
+                Text
+                (   λ(_ : Size)
+                  →     (if havePosition then "" else ":")
+                    ++  merge
+                          { Lines = λ(n : Natural) → Natural/show n
+                          , Percentage = λ(n : Natural) → Natural/show n ++ "%"
+                          }
+                          _
+                )
+                ""
+
+        let wrapLines =
+                    if options.wrapLines
+
+              then  (if havePosition || haveSize then ":" else "") ++ "wrap"
+
+              else  ""
+
+        let startHidden =
+                    if options.startHidden
+
+              then      (       if havePosition || haveSize || options.wrapLines
+
+                          then  ":"
+
+                          else  ""
+                        )
+                    ++  "hidden"
+
+              else  ""
+
+        in        if     havePosition
+                     ||  haveSize
+                     ||  options.wrapLines
+                     ||  options.startHidden
+
+            then  [ "--preview-window=${position}${size}${wrapLines}${startHidden}"
+                  ]
+
+            else  noArguments
+
+let optionalFlag =
+        λ(flagName : Text)
+      → λ(flag : Optional Bool)
+      → Optional/fold
+          Bool
+          flag
+          (List Text)
+          (   λ(p : Bool)
+            → if p then [ "--${flagName}" ] else [ "--no-${flagName}" ]
+          )
+          noArguments
+
+let Options/toArguments =
+        λ(_ : Options)
+      →   optionalFlag "extended" _.extended
+        # optionalFlag "exact" _.exactMatch
+        # Optional/fold
+            < v1 | v2 >
+            _.algorithm
+            (List Text)
+            (   λ(v : < v1 | v2 >)
+              → merge { v1 = [ "--algo=v1" ], v2 = [ "--algo=v2" ] } v
+            )
+            noArguments
+        # merge
+            { SmartCase = noArguments
+            , CaseInsensitive = [ "-i" ]
+            , CaseSensitive = [ "+i" ]
+            }
+            _.caseSensitive
+        # optionalOptions
+            Text
+            (λ(t : Text) → [ "--delimiter=${t}" ])
+            _.delimiter
+        # optionalFlag "sort" _.sortResult
+        # optionalFlag "tac" _.reverseInputOrder
+        # (       if List/null
+                       < Length | Begin | End | Index >
+                       _.tiebreakSortCriteria
+
+            then  noArguments
+
+            else  [     "--tiebreak="
+                    ++  Text/concatMapSep
+                          ","
+                          < Length | Begin | End | Index >
+                          (   λ(c : < Length | Begin | End | Index >)
+                            → merge
+                                { Length = "length"
+                                , Begin = "begin"
+                                , End = "end"
+                                , Index = "index"
+                                }
+                                c
+                          )
+                          _.tiebreakSortCriteria
+                  ]
+          )
+        # optionalFlag "multi" _.multiSelect
+        # (if _.noMouse then [ "--no-mouse" ] else noArguments)
+        # optionalFlag "cycle" _.cycleScroll
+        # optionalFlag "filepath-word" _.respectFilepathSeparator
+        # optionalOptions
+            Size
+            (   λ(height : Size)
+              → let value =
+                      merge
+                        { Lines = λ(n : Natural) → Natural/show n
+                        , Percentage = λ(n : Natural) → Natural/show n ++ "%"
+                        }
+                        height
+
+                in  [ "--height=${value}" ]
+            )
+            _.height
+        # optionalOptions
+            Natural
+            (λ(height : Natural) → [ "--min-height=${Natural/show height}" ])
+            _.minHeight
+        # optionalOptions
+            < BottomOfTheScreen
+            | TopOfTheScreen
+            | TopOfTheScreenPromptAtTheBottom
+            >
+            (   λ ( layout
+                  : < BottomOfTheScreen
+                    | TopOfTheScreen
+                    | TopOfTheScreenPromptAtTheBottom
+                    >
+                  )
+              → let value =
+                      merge
+                        { BottomOfTheScreen = "default"
+                        , TopOfTheScreen = "reverse"
+                        , TopOfTheScreenPromptAtTheBottom = "reverse-list"
+                        }
+                        layout
+
+                in  [ "--layout=${value}" ]
+            )
+            _.layout
+        # optionalFlag "border" _.drawBorder
+        # optionalFlag "unicode" _.useUnicodeCharacters
+        # optionalFlag "inline-info" _.inlineFinderInfo
+        # optionalOptions Text (λ(str : Text) → [ "--prompt=${str}" ]) _.prompt
+        # optionalOptions Text (λ(str : Text) → [ "--header=${str}" ]) _.header
+        # optionalOptions
+            Natural
+            (λ(n : Natural) → [ "--header-lines=${Natural/show n}" ])
+            _.headerLines
+        # optionalFlag "ansi" _.interpretAnsiCodes
+        # optionalFlag "bold" _.useBoldText
+        # optionalFlag "black" _.blackBackground
+        # optionalOptions
+            Text
+            (λ(file : Text) → [ "--history=${file}" ])
+            _.historyFile
+        # optionalOptions
+            Natural
+            (λ(n : Natural) → [ "--history-size=${Natural/show n}" ])
+            _.historySize
+        # optionalOptions
+            Text
+            (λ(command : Text) → [ "--preview=${command}" ])
+            _.previewCommand
+        # PreviewWindowOptions/toArguments _.previewWindowOptions
+        # optionalOptions Text (λ(str : Text) → [ "--query=${str}" ]) _.query
+        # optionalFlag "select-1" _.select1
+        # optionalFlag "exit-0" _.exit0
+        # optionalFlag "print-query" _.printQuery
+        # (       if List/null Text _.expectKeys
+
+            then  noArguments
+
+            else  [ "--expect=${Text/concatSep "," _.expectKeys}" ]
+          )
+        # optionalFlag "read0" _.read0
+        # optionalFlag "print0" _.print0
+        # optionalFlag "sync" _.synchronous
+
+let -- Default value should not pass any options to `fzf`.
+    noArgumentsByDefault =
+      assert : Options/toArguments Options/default ≡ noArguments
+
+in  Options/toArguments

@@ -1,0 +1,145 @@
+-- vim: filetype=dhall
+--
+-- Options that aren't represented at the moment:
+--
+-- *   `--literal`
+-- *   `-n`, `--nth=N[,..]`
+-- *   `--with-nth=N[,..]`
+-- *   `--bind=KEYBINDS`
+-- *   `--no-hscroll`
+-- *   `--hscroll-off=COL`
+-- *   `--jump-labels=CHARS`
+-- *   `--margin=MARGIN`
+-- *   `--tabstop=SPACES`
+-- *   `--color=[BASE_SCHEME][,COLOR:ANSI]`
+
+-- Use extended-search mode?  There is `--extended` and `--no-extended`.
+-- `None Bool` value means that neither is passed and default value is used.
+-- `Some True` means "Yes", use extended-search mode.
+{ extended : Optional Bool
+
+-- Enable Exact-match?  `True` means "Yes", enable extact-match.
+, exactMatch : Optional Bool
+
+-- Fuzzy matching algorithm to use.  `None < v1 | v2 >` means that default
+-- algorithm is used, i.e. no `--algo=TYPE` option is passed.
+, algorithm : Optional < v1 | v2 >
+
+-- How case sensitive should matching be?
+, caseSensitive : < SmartCase | CaseInsensitive | CaseSensitive >
+
+-- `None Text` means that default delimiter is used, i.e. no `--delimiter=REGEX`
+-- is passed.
+, delimiter : Optional Text
+
+-- Sort the result?  `None Bool` mans that neither `--sort` nor `--no-sort`
+-- will be passed to `fzr`.  `Some True` means "Yes", sort the result.
+, sortResult : Optional Bool
+
+-- Reverse order of the input?  `True` means "Yes", reverse order of the input.
+, reverseInputOrder : Optional Bool
+
+-- Empty list means that default value is used, i.e. no command line option is
+-- passed.
+, tiebreakSortCriteria : List < Length | Begin | End | Index >
+
+-- Enable multi-select?
+, multiSelect : Optional Bool
+
+-- Disable mouse?
+--
+-- *   `True`, yes, disable mouse.
+-- *   `False`, leave mouse enabled.  There is no `--mouse` option, therefore,
+--     we just don't pass any option to `fzf`.
+, noMouse : Bool
+
+-- Enable cyclic scroll?
+, cycleScroll : Optional Bool
+
+-- Make word-wise movements and actions respect path separators?
+, respectFilepathSeparator : Optional Bool 
+
+-- Specify height of `fzf` window height instead of using the full screen.
+, height : Optional < Lines : Natural | Percentage : Natural >
+
+-- Minimum height when `--height` is given in percent.
+, minHeight : Optional Natural
+
+-- Layout of `fzf` window:
+--
+-- *  `BottomOfTheScreen` -- display from the bottom of the screen.
+-- *  `TopOfTheScreen` -- display from the top of the screen.
+-- *  `TopOfTheScreenPromptAtTheBottom` -- display from the top of the screen,
+--    prompt at the bottom.
+, layout :
+      Optional
+        < BottomOfTheScreen | TopOfTheScreen | TopOfTheScreenPromptAtTheBottom >
+
+-- Draw border above and below the finder
+, drawBorder : Optional Bool
+
+-- Use Unicode box drawing characters?  `Some True` means use Unicode, and
+-- `Some False` means use ASCII.
+, useUnicodeCharacters : Optional Bool
+
+-- Display finder info inline with the query.
+, inlineFinderInfo : Optional Bool
+
+-- Use custom input prompt.
+, prompt : Optional Text
+
+-- Print given string as the sticky header.
+, header : Optional Text
+
+-- Treat first N lines of the input as the sticky header.
+, headerLines : Optional Natural
+
+-- Interpret ANSI color codes?
+, interpretAnsiCodes : Optional Bool
+
+-- Use bold text?
+, useBoldText : Optional Bool
+
+-- Use black background?
+, blackBackground : Optional Bool
+
+-- Use given file as search history.
+, historyFile : Optional Text
+
+-- Specify maximum size of history file.
+, historySize : Optional Natural
+
+-- Execute the given command to provide preview in a separate window.
+, previewCommand : Optional Text
+
+-- Layout of the preview window.
+, previewWindowOptions :
+    { position : Optional < Up | Down | Left | Right >
+    , size : Optional < Lines : Natural | Percentage : Natural >
+    , wrapLines : Bool
+    , startHidden : Bool
+    }
+
+-- Start the finder with the given query
+, query : Optional Text
+
+-- Automatically select the only match
+, select1 : Optional Bool
+
+-- Exit immediately when there's no match
+, exit0 : Optional Bool
+
+-- Print query as the first line.
+, printQuery : Optional Bool
+
+, expectKeys : List Text
+
+-- Read NUL ('\0') separated input.
+, read0 : Optional Bool
+
+-- Use NUL ('\0') as delimiter when printing output.
+, print0 : Optional Bool
+
+-- Show finder window only after the whole input is complete.
+, synchronous : Optional Bool
+}
