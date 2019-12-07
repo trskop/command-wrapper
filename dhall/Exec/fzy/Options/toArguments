@@ -1,0 +1,54 @@
+-- vim: filetype=dhall
+
+let Options =
+        ./Type sha256:4a7d732379f15fd2e7ae7d588b4cd3e6728fca6ea212bd86843f1a33618cac8d
+      ? ./Type
+
+let Options/default =
+        ./default sha256:4ace7e1e9740339c1856cbd5814ff0597169637dfc0eb6215a21c0e605a6a551
+      ? ./default
+
+let optionalOptions =
+        ../../utils/optionalOptions sha256:f9626a1ef8209d45703cc7ac05aee40c9e96f5ccc2c406cdbd68eafd6d3234f0
+      ? ../../utils/optionalOptions
+
+let List/null =
+      https://prelude.dhall-lang.org/v11.1.0/List/null sha256:2338e39637e9a50d66ae1482c0ed559bbcc11e9442bfca8f8c176bbcd9c4fc80
+
+let Natural/greaterThanEqual =
+      https://prelude.dhall-lang.org/v11.1.0/Natural/greaterThanEqual sha256:30ebfab0febd7aa0ccccfdf3dc36ee6d50f0117f35dd4a9b034750b7e885a1a4
+
+let noArguments = [] : List Text
+
+let Options/toArguments =
+        λ(_ : Options)
+      →   (       if Natural/isZero _.lines
+
+            then  noArguments
+
+            else  if Natural/greaterThanEqual _.lines 3
+
+            then  [ "--lines=${Natural/show _.lines}" ]
+
+            else  [ "--lines=3" ]
+          )
+        # optionalOptions Text (λ(t : Text) → [ "--prompt=${t}" ]) _.prompt
+        # (if _.showScores then [ "--show-scores" ] else noArguments)
+        # optionalOptions Text (λ(path : Text) → [ "--tty=${path}" ]) _.tty
+        # optionalOptions Text (λ(s : Text) → [ "--query=${s}" ]) _.query
+        # optionalOptions
+            Text
+            (λ(s : Text) → [ "--show-matches=${s}" ])
+            _.showMatches
+        # (       if Natural/isZero _.workers
+
+            then  noArguments
+
+            else  [ "--workers=${Natural/show _.workers}" ]
+          )
+
+let -- Default value should not pass any options to `fzf`.
+    noArgumentsByDefault =
+      assert : Options/toArguments Options/default ≡ noArguments
+
+in  Options/toArguments
