@@ -202,6 +202,17 @@ Some useful utilities can be found in [`utils`](./utils):
     : ColourOutput → List Text
      ```
 
+*   [`utils/optionalEnvironmentVariables`](./utils/optionalEnvironmentVariables)
+    – Convert an `Optional` value into environment variables, or empty list if
+    it's `None`.
+
+    ```Dhall
+      optionalEnvironmentVariables
+        Text
+        (λ(_ : Text) → [ { name = "SOME_ENV_VARIABLE", value = _ } ])
+    : Optional Text → Environment
+    ```
+
 *   [`utils/optionalFlags`](./utils/optionalFlags) – Convert an `Optional`
     value into command line options, or empty list if it's `None`.
 

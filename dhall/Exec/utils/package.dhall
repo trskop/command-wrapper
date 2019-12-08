@@ -12,6 +12,9 @@
 , optionalFlags =
       ./optionalFlags sha256:dbb96b960dad5036585e8d0de1d15204a281d519ac9f59b33697100d62b5798c
     ? ./optionalFlags
+, optionalEnvironmentVariables =
+      ./optionalEnvironmentVariables sha256:97689a41f6b15c075cf0cfef3adc169b77f5afea52c5dadf8666a553b8ef2022
+    ? ./optionalEnvironmentVariables
 , colourOutputOptions =
       ./colourOutputOptions sha256:33260b6eaaf2a75fa0261a5e4b6dd3344406907f29fe2ff19838d55d1d18e80c
     ? ./colourOutputOptions

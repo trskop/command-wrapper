@@ -12,30 +12,27 @@ let Environment =
         ../../../CommandWrapper/Environment/package.dhall sha256:a948211dc39cc648f650c7dcf67e4352ffae2ec5f4f0254bef596d88e87cd946
       ? ../../../CommandWrapper/Environment/package.dhall
 
-let optionalEnvironmentVariable
-    : ∀(r : Type) → (r → Environment.Type) → Optional r → Environment.Type
-    =   λ(r : Type)
-      → λ(just : r → Environment.Type)
-      → λ(optional : Optional r)
-      → Optional/fold r optional Environment.Type just Environment.empty
+let optionalEnvironmentVariables =
+        ../../utils/optionalEnvironmentVariables sha256:97689a41f6b15c075cf0cfef3adc169b77f5afea52c5dadf8666a553b8ef2022
+      ? ../../utils/optionalEnvironmentVariables
 
 let GlobalOptions/toEnvironment =
         λ(options : GlobalOptions)
-      →   optionalEnvironmentVariable
+      →   optionalEnvironmentVariables
             Text
             (   λ(_ : Text)
               → [ { name = "COMMAND_WRAPPER_INVOKE_AS", value = _ } ]
             )
             options.invokeAs
-        # optionalEnvironmentVariable
+        # optionalEnvironmentVariables
             Text
             (λ(_ : Text) → [ { name = "COMMAND_WRAPPER_PATH", value = _ } ])
             options.path
-        # optionalEnvironmentVariable
+        # optionalEnvironmentVariables
             Text
             (λ(_ : Text) → [ { name = "COMMAND_WRAPPER_MANPATH", value = _ } ])
             options.manPath
-        # optionalEnvironmentVariable
+        # optionalEnvironmentVariables
             Text
             (λ(_ : Text) → [ { name = "XDG_CONFIG_HOME", value = _ } ])
             options.configHome
