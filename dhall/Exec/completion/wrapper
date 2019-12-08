@@ -49,7 +49,9 @@ in    λ(options : { toolset : Text, expression : Text, command : Text })
                   adjusted-index
                   ([ options.command ] # prefixArguments # words)
 
-          in    [ "completion"
+          in    [ "--no-aliases"
+                , "--silent"
+                , "completion"
                 , "--wrapper"
                 , "--expression=${options.expression}"
                 , "--exec"

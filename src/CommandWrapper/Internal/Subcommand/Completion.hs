@@ -190,6 +190,9 @@ data Query = Query
     -- * @False@: don't be case sensitive when pattern matching.
     -- * @True@: be case sensitive when pattern matching.
 
+--  , addPrefix :: String
+--  , addSuffix :: String
+
     , output :: OutputStdoutOrFile
     }
   deriving stock (Generic, Show)
@@ -213,6 +216,7 @@ data WhatToQuery
     | QueryVerbosityValues
     | QueryColourValues
     | QuerySupportedShells
+    | QueryWords [String]
   deriving stock (Generic, Show)
 
 defQueryOptions :: Query
@@ -590,9 +594,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                             prefixEquivalence query verbosityValues
 
                         FuzzyMatch ->
-                            Fuzzy.original
-                                <$> Fuzzy.filter patternToMatch verbosityValues
-                                        "" "" id caseSensitive
+                            Fuzzy.original <$> fuzzyMatch query verbosityValues
 
                         Equality ->
                             List.filter (== patternToMatch) verbosityValues
@@ -607,9 +609,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                             prefixEquivalence query colourValues
 
                         FuzzyMatch ->
-                            Fuzzy.original
-                                <$> Fuzzy.filter patternToMatch colourValues ""
-                                        "" id caseSensitive
+                            Fuzzy.original <$> fuzzyMatch query colourValues
 
                         Equality ->
                             List.filter (== patternToMatch) colourValues
@@ -624,12 +624,25 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                             prefixEquivalence query supportedShells
 
                         FuzzyMatch ->
-                            Fuzzy.original
-                                <$> Fuzzy.filter patternToMatch supportedShells
-                                        "" "" id caseSensitive
+                            Fuzzy.original <$> fuzzyMatch query supportedShells
 
                         Equality ->
                             List.filter (== patternToMatch) supportedShells
+
+            QueryWords words
+              | null patternToMatch ->
+                    outputStringLines output words
+
+              | otherwise ->
+                    outputStringLines output case matchingAlgorithm of
+                        PrefixEquivalence ->
+                            prefixEquivalence query words
+
+                        FuzzyMatch ->
+                            Fuzzy.original <$> fuzzyMatch query words
+
+                        Equality ->
+                            List.filter (== patternToMatch) words
 
         WrapperMode WrapperOptions{arguments, expression} config' -> do
             Dhall.exec appNames config'
@@ -682,8 +695,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
         :: Global.Config
         -> Query
         -> [Fuzzy String String]
-    findSubcommandAliasesFuzzy cfg Query{patternToMatch, caseSensitive} =
-        Fuzzy.filter patternToMatch (getAliases cfg) "" "" id caseSensitive
+    findSubcommandAliasesFuzzy cfg query = fuzzyMatch query (getAliases cfg)
 
     findSubcommandAliasesPrefix :: Global.Config -> Query -> [String]
     findSubcommandAliasesPrefix cfg query =
@@ -963,7 +975,7 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
     queryOptions =
         ["--subcommands", "--subcommand-aliases", "--supported-shells"
         , "--verbosity-values", "--colour-values", "--color-values"
-        , "--pattern=", "--internal-subcommands"
+        , "--pattern=", "--internal-subcommands", "--words"
         ] <> outputOptions <> algorithmOptions
 
     -- At the moment we have library only for Bash.
@@ -1054,6 +1066,7 @@ parseOptions appNames config arguments = do
                     <|> supportedShellsFlag
                     <|> verbosityValuesFlag
                     <|> colourValuesFlag
+                    <|> wordsFlag words
                     )
                 )
             <*> optional (updateQueryOptions patternOption)
@@ -1275,6 +1288,11 @@ parseOptions appNames config arguments = do
             _ ->
                 Left "Unknown matching algorithm"
 
+    wordsFlag :: [String] -> Options.Parser (Endo Query)
+    wordsFlag ws = Options.flag mempty f (Options.long "words")
+      where
+        f = Endo \q -> q{what = QueryWords ws}
+
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
         , Options.long "help"
@@ -1461,6 +1479,10 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.reflow "option, or are passed down to subcommands via"
             , metavar "COMMAND_WRAPPER_COLOUR"
             , Pretty.reflow "environment variable."
+            ]
+
+        , optionDescription ["--words [--] [WORD [...]]"]
+            [ "Query matching words from", metavar "WORD", "list."
             ]
 
         , optionDescription ["--algorithm=ALGORITHM"]

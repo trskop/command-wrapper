@@ -20,6 +20,13 @@
 
 *   Pipe help message to pager if on terminal and the message is too long.
 
+*   Configuration for colours:
+
+    -   Messages: warning, error, info, etc.
+    -   Help message colours: option, metavariable, command, etc.
+
+    This will require Subcommand Protocol to be extended.
+
 
 ## Internal Subcommands
 
@@ -29,8 +36,8 @@
     get rid of Bash dependency.
 
     ```
-    TOOLSET completion --query --directories [--regex=REGEX|--glob=GLOB] [PATTERN]
-    TOOLSET completion --query --files [--regex=REGEX|--glob=GLOB] [PATTERN]
+    TOOLSET completion --query --directories [--regex=REGEX|--glob=GLOB] [--pattern=PATTERN]
+    TOOLSET completion --query --files [--regex=REGEX|--glob=GLOB] [--pattern=PATTERN]
     ```
 
 *   Hosts completion:
@@ -57,6 +64,9 @@
     ```
 
     Maybe this will require a little more thought.
+
+*   Introduce `--prefix=STRING` and `--suffix=STRING` options that are added to
+    results.
 
 
 ### Config

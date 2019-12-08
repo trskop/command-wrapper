@@ -4,7 +4,8 @@
 -- the specified words.  Generated command looks like:
 --
 -- ```
--- bash -c "compgen -W \"${wordlist}\" -- '${words[${index}]}'"
+-- TOOLSET --no-aliases --silent completion --query --words
+--     --pattern="${words[${index}]}'" -- "${words[@]}"
 -- ```
 
 let ExecCommand =
@@ -28,22 +29,23 @@ let Optional/from =
         ../../CommandWrapper/Optional/from sha256:8f802473931b605422b545d7b81de20dbecb38f2ae63950c13f5381865a7f012
       ? ../../CommandWrapper/Optional/from
 
-in    λ(wordlist : List Text)
+in    λ(toolset : Text)
+    → λ(wordlist : List Text)
     → λ(_ : Shell)
     → λ(index : Natural)
     → λ(words : List Text)
     → ExecCommand::{
-      , command = "bash"
+      , command = "toolset"
       , arguments =
-          let completions =
-                List/fold
-                  Text
-                  wordlist
-                  Text
-                  (λ(word : Text) → λ(acc : Text) → "${acc} ${word}")
-                  ""
-
           let pattern = Optional/from Text "" (List/index index Text words)
 
-          in  [ "-c", "compgen -W \"${completions}\" -- '${pattern}'" ]
+          in    [ "--no-aliases"
+                , "--silent"
+                , "completion"
+                , "--query"
+                , "--words"
+                , "--pattern=${pattern}"
+                , "--"
+                ]
+              # words
       }

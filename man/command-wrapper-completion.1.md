@@ -178,6 +178,9 @@ interface for querying Command Wrapper's command line interface (CLI).
     `--colo[u]r=WHEN` option, and `command-wrapper-subcommand-protocol(7)`
     regarding `COMMAND_WRAPPER_COLOUR` environment variable.
 
+\--words \[\--] \[*WORD* \[...]]
+:   Query matching words from *WORD* list.
+
 \--algorithm=*ALGORITHM*
 :   Specify which pattern matching *ALGORITHM* to use when `--pattern=`*PATTERN* is
     provided. Possible values are:

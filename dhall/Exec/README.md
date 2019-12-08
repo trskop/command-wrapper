@@ -131,28 +131,31 @@ in [`completion`](./completion) directory:
     ```
 
 *   [`completion/wordlist`](./completion/wordlist) – Simple command line
-    completion that uses Bash's `compgen` to complete one of the specified
-    words.  Provided function has following type:
+    completion that uses specified wordlist for completion.  Provided function
+    has following type:
 
     ```Dhall
-      ∀(wordlist : List Text)
+      ∀(toolset : Text)
+    → ∀(wordlist : List Text)
     → ∀(shell : Shell)
     → ∀(index : Natural)
     → ∀(words : List Text)
     → ExecCommand
     ```
 
-    And it generates following command (in Bash syntax):
+    And it generates following command:
 
     ```Bash
-    bash -c "compgen -W \"${wordlist}\" -- '${words[${index}]}'"
+    TOOLSET --no-aliases --silent completion --query --words --pattern=PATTERN
+        -- [WORD ...]
     ```
 
 *   [`completion/wrapper`](./completion/wrapper) – Allows implementing command
     line completion via:
 
     ```
-    TOOLSET completion --wrapper --expression=EXPRESSION --exec -- [ARGUMENT ...]
+    TOOLSET --no-aliases --silent completion --wrapper --expression=EXPRESSION
+        --exec -- [ARGUMENT ...]
     ```
 
     It expects the `EXPRESSION` to evaluate into a script that takes following

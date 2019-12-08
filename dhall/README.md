@@ -34,3 +34,7 @@ Templates of Dhall configuration files for `TOOLSET config --init`:
     configuration files.
 *   [`./init/toolset/`](./init/toolset/) – Templates of toolset-specific
     configuration files.
+
+Other Dhall scripts:
+
+*   [`./cached-bash-completion.dhall`](./cached-bash-completion.dhall)

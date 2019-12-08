@@ -5,7 +5,7 @@ let script =
       ? ../completion/scripts.dhall
 
 let wrapper =
-        ../completion/wrapper sha256:6f4115a040ee81275a40a8785baefbe391cf67cb57e5d4e79a8e0fedf572c036
+        ../completion/wrapper sha256:2581cfe8c184898fe6b04aedad5ad9c1be34154b3a795ecab17ee19c899e5c8b
       ? ../completion/wrapper
 
 in    λ(toolset : Text)
