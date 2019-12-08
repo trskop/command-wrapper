@@ -110,17 +110,14 @@ let PreviewWindowOptions/toArguments =
 
             else  noArguments
 
+let optionalFlags =
+        ../../utils/optionalFlags sha256:dbb96b960dad5036585e8d0de1d15204a281d519ac9f59b33697100d62b5798c
+      ? ../../utils/optionalFlags
+
 let optionalFlag =
         λ(flagName : Text)
       → λ(flag : Optional Bool)
-      → Optional/fold
-          Bool
-          flag
-          (List Text)
-          (   λ(p : Bool)
-            → if p then [ "--${flagName}" ] else [ "--no-${flagName}" ]
-          )
-          noArguments
+      → optionalFlags [ "--${flagName}" ] [ "--no-${flagName}" ] flag
 
 let Options/toArguments =
         λ(_ : Options)
