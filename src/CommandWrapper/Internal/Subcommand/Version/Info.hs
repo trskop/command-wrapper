@@ -54,12 +54,12 @@ instance Pretty PrettyVersion where
       | otherwise           = pretty (showVersion v)
 
 instance ToDhall PrettyVersion where
-    injectWith opts = Dhall.InputType
+    injectWith opts = Dhall.Encoder
         { embed = embedList . toNaturals . versionBranch . rawVersion
         , declared
         }
       where
-        Dhall.InputType{embed = embedList, declared} = Dhall.injectWith opts
+        Dhall.Encoder{embed = embedList, declared} = Dhall.injectWith opts
 
         toNaturals :: [Int] -> [Natural] = fmap fromIntegral
 

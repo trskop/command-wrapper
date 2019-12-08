@@ -23,12 +23,12 @@ import Data.Text (Text)
 import Dhall ((>$<), (>*<))
 import Dhall (FromDhall, ToDhall)
 import qualified Dhall
-    ( ToDhall(injectWith)
-    , InputType
+    ( Encoder
     , InterpretOptions(InterpretOptions, fieldModifier)
-    , RecordInputType
-    , inputRecord
-    , inputFieldWith
+    , RecordEncoder
+    , ToDhall(injectWith)
+    , encodeFieldWith
+    , recordEncoder
     )
 import Data.Verbosity (Verbosity)
 import Numeric.Natural (Natural)
@@ -67,20 +67,21 @@ data Command = Command
   deriving anyclass (FromDhall)
 
 instance ToDhall Command where
-    injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.inputRecord
+    injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.recordEncoder
         ( adapt
             >$< field "command" Dhall.inputString
             >*< field "arguments" (Dhall.inputList Dhall.inputString)
             >*< field "environment" (Dhall.injectWith opts)
             >*< field "searchPath" (Dhall.injectWith opts)
-            >*< field "workingDirectory" (Dhall.inputMaybe Dhall.inputString)
+            >*< field "workingDirectory"
+                (Dhall.inputMaybe Dhall.inputString)
         )
       where
         adapt Command{..} =
             (command, (arguments, (environment, (searchPath, workingDirectory))))
 
-        field :: Text -> Dhall.InputType a -> Dhall.RecordInputType a
-        field = Dhall.inputFieldWith . fieldModifier
+        field :: Text -> Dhall.Encoder a -> Dhall.RecordEncoder a
+        field = Dhall.encodeFieldWith . fieldModifier
 
 data SimpleCommand = SimpleCommand
     { command :: FilePath
@@ -91,7 +92,7 @@ data SimpleCommand = SimpleCommand
   deriving anyclass (FromDhall)
 
 instance ToDhall SimpleCommand where
-    injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.inputRecord
+    injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.recordEncoder
         ( adapt
             >$< field "command" Dhall.inputString
             >*< field "arguments" (Dhall.inputList Dhall.inputString)
@@ -100,5 +101,5 @@ instance ToDhall SimpleCommand where
       where
         adapt SimpleCommand{..} = (command, (arguments, environment))
 
-        field :: Text -> Dhall.InputType a -> Dhall.RecordInputType a
-        field = Dhall.inputFieldWith . fieldModifier
+        field :: Text -> Dhall.Encoder a -> Dhall.RecordEncoder a
+        field = Dhall.encodeFieldWith . fieldModifier

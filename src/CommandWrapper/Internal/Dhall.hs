@@ -64,9 +64,9 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (renderIO)
 import qualified Dhall
-    ( Extractor
-    , InputType(InputType, declared, embed)
-    , Type(Type, expected, extract)
+    ( Decoder(Decoder, expected, extract)
+    , Encoder(Encoder, declared, embed)
+    , Extractor
     , lazyText
     , natural
     , strictText
@@ -109,22 +109,22 @@ import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
 
 -- {{{ Inject Combinators -----------------------------------------------------
 
-inputString :: Dhall.InputType String
-inputString = Dhall.InputType
+inputString :: Dhall.Encoder String
+inputString = Dhall.Encoder
     { declared = Dhall.Text
     , embed = Dhall.TextLit . fromString
     }
 
-inputList :: Dhall.InputType a -> Dhall.InputType [a]
-inputList Dhall.InputType{..} = Dhall.InputType
+inputList :: Dhall.Encoder a -> Dhall.Encoder [a]
+inputList Dhall.Encoder{..} = Dhall.Encoder
     { declared = declared'
     , embed = Dhall.ListLit (Just declared') . fromList . fmap embed
     }
   where
     declared' = Dhall.List `Dhall.App` declared
 
-inputMaybe :: Dhall.InputType a -> Dhall.InputType (Maybe a)
-inputMaybe Dhall.InputType{..} = Dhall.InputType
+inputMaybe :: Dhall.Encoder a -> Dhall.Encoder (Maybe a)
+inputMaybe Dhall.Encoder{..} = Dhall.Encoder
     { declared = Dhall.Optional `Dhall.App` declared
     , embed = maybe (Dhall.None `Dhall.App` declared) (Dhall.Some . embed)
     }
@@ -133,26 +133,26 @@ inputMaybe Dhall.InputType{..} = Dhall.InputType
 -- {{{ Interpret Combinators --------------------------------------------------
 
 newtype UnionType a =
-    UnionType (Dhall.Map Text (Either a (Dhall.Type a)))
+    UnionType (Dhall.Map Text (Either a (Dhall.Decoder a)))
 
 instance Functor UnionType where
     fmap :: forall a b. (a -> b) -> UnionType a -> UnionType b
     fmap f =
         coerce
-            @( Dhall.Map Text (Either a (Dhall.Type a))
-            -> Dhall.Map Text (Either b (Dhall.Type b))
+            @( Dhall.Map Text (Either a (Dhall.Decoder a))
+            -> Dhall.Map Text (Either b (Dhall.Decoder b))
             )
             (fmap (bimap f (fmap f)))
 
 instance Semigroup (UnionType a) where
-    (<>) = coerce ((<>) @(Dhall.Map Text (Either a (Dhall.Type a))))
+    (<>) = coerce ((<>) @(Dhall.Map Text (Either a (Dhall.Decoder a))))
 
 instance Monoid (UnionType a) where
-    mempty = coerce (mempty :: Dhall.Map Text (Either a (Dhall.Type a)))
+    mempty = coerce (mempty :: Dhall.Map Text (Either a (Dhall.Decoder a)))
     mappend = (<>)
 
 -- | Parse a single constructor of a union.
-constructor :: Text -> Dhall.Type a -> UnionType a
+constructor :: Text -> Dhall.Decoder a -> UnionType a
 constructor key valueType =
     UnionType (Dhall.Map.singleton key (Right valueType))
 
@@ -161,8 +161,8 @@ constructor0 :: Text -> a -> UnionType a
 constructor0 key value = UnionType (Dhall.Map.singleton key (Left value))
 
 -- | Run a 'UnionType' parser to build a 'Dhall.Type' parser.
-union :: forall a. UnionType a -> Dhall.Type a
-union (UnionType constructors) = Dhall.Type
+union :: forall a. UnionType a -> Dhall.Decoder a
+union (UnionType constructors) = Dhall.Decoder
     { extract  = extractF
     , expected = Dhall.Union expect
     }
@@ -208,13 +208,13 @@ notEmptyRecord = \case
     Dhall.Record m | null m -> empty
     e                       -> pure e
 
-interpretWord :: Dhall.Type Word
+interpretWord :: Dhall.Decoder Word
 interpretWord = fromIntegral <$> Dhall.natural
 
-interpretLazyByteString :: Dhall.Type Lazy.ByteString
+interpretLazyByteString :: Dhall.Decoder Lazy.ByteString
 interpretLazyByteString = Lazy.Text.encodeUtf8 <$> Dhall.lazyText
 
-interpretStrictByteString :: Dhall.Type Strict.ByteString
+interpretStrictByteString :: Dhall.Decoder Strict.ByteString
 interpretStrictByteString = Strict.Text.encodeUtf8 <$> Dhall.strictText
 
 -- }}} Interpret Combinators --------------------------------------------------
@@ -225,10 +225,10 @@ hPut
     :: ColourOutput
     -> Dhall.CharacterSet
     -> Handle
-    -> Dhall.InputType a
+    -> Dhall.Encoder a
     -> a
     -> IO ()
-hPut colour charset handle Dhall.InputType{embed = toExpr} =
+hPut colour charset handle Dhall.Encoder{embed = toExpr} =
     hPutExpr colour charset handle . toExpr
 
 -- | Print dhall expression.

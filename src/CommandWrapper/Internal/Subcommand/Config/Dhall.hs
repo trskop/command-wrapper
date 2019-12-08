@@ -149,7 +149,7 @@ import qualified Data.Text.IO as Text
     , readFile
     )
 import Data.Text.Prettyprint.Doc (Doc)
-import qualified Data.Map as Map (keys)
+import qualified Dhall.Map (keys)
 import qualified Dhall.Bash as Bash
     ( ExpressionError
     , StatementError
@@ -379,7 +379,7 @@ resolve appNames config Resolve{mode, input, output, semanticCache} =
                     <$> State.execStateT (Dhall.Import.loadWith expression)
                         status
 
-                for_ (Map.keys cache)
+                for_ (Dhall.Map.keys cache)
                     -- TODO: Handle I/O correctly.
                     ( print
                     . Pretty.pretty
@@ -417,7 +417,7 @@ defLint = Lint
 lint :: AppNames -> Config -> Lint -> IO ()
 lint appNames config Lint{input, output, characterSet} =
     handleExceptions appNames config do
-        (header, expression) <- case input of
+        (Dhall.Parser.Header header, expression) <- case input of
             InputStdin ->
                 Text.getContents >>= parseExpr "(stdin)"
 
@@ -566,7 +566,7 @@ freeze
     -> Freeze
     -> IO ()
 freeze appNames config Freeze{..} = handleExceptions appNames config do
-    (header, expression, directory) <- case input of
+    (Dhall.Parser.Header header, expression, directory) <- case input of
         InputStdin -> do
             (header, expression) <- Text.getContents
                 >>= parseExpr "(stdin)"
@@ -735,8 +735,6 @@ data Repl = Repl
     -- @repline@ which is used by @dhall@ to implement REPL functionality.
     }
   deriving stock (Show)
-
-deriving stock instance Show Dhall.CharacterSet -- TODO Get rid of orphan
 
 defRepl :: Repl
 defRepl = Repl
@@ -950,8 +948,8 @@ toText appNames config ToText{..} = handleExceptions appNames config do
     IO.setLocaleEncoding IO.utf8
     (expression, status) <- readExpression semanticCache input
 
-    let dhallInput :: Dhall.Type a -> IO a
-        dhallInput Dhall.Type{..} = do
+    let dhallInput :: Dhall.Decoder a -> IO a
+        dhallInput Dhall.Decoder{..} = do
             expr <- if allowImports
                 then
                     State.evalStateT (Dhall.Import.loadWith expression) status

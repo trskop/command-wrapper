@@ -23,7 +23,7 @@ import Dhall (FromDhall)
 import qualified Dhall
     ( FromDhall(autoWith)
     , InterpretOptions(InterpretOptions, constructorModifier)
-    , Type
+    , Decoder
     , natural
     )
 import qualified CommandWrapper.Internal.Dhall as Dhall
@@ -44,7 +44,7 @@ data NotifyWhen
     -- ^ Notify only if action took more than the specified number of seconds.
   deriving stock (Eq, Generic, Show)
 
-interpretNotifyWhen :: (Text -> Text) -> Dhall.Type NotifyWhen
+interpretNotifyWhen :: (Text -> Text) -> Dhall.Decoder NotifyWhen
 interpretNotifyWhen f = Dhall.union $ mconcat
     [ Dhall.constructor0 (f "Never")      Never
     , Dhall.constructor0 (f "Always")     Always
@@ -53,8 +53,8 @@ interpretNotifyWhen f = Dhall.union $ mconcat
     ]
 
 instance FromDhall NotifyWhen where
-    autoWith :: Dhall.InterpretOptions -> Dhall.Type NotifyWhen
+    autoWith :: Dhall.InterpretOptions -> Dhall.Decoder NotifyWhen
     autoWith Dhall.InterpretOptions{constructorModifier} =
         interpretNotifyWhen constructorModifier
 
---inputNotifyWhen :: Dhall.InputType NotifyWhen
+--inputNotifyWhen :: Dhall.Encoder NotifyWhen

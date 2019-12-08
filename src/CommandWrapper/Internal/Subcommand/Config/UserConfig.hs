@@ -249,7 +249,7 @@ mkExpressionAndTypeCheck possiblyResultType bodyExpression configExpression path
     expression <- mkExpression <$> Dhall.typeOf configExpression
     Dhall.typeOf expression <&> (Dhall.normalize expression, )
   where
-    Dhall.InputType{..} = Dhall.inject @Paths
+    Dhall.Encoder{..} = Dhall.inject @Paths
 
     bodyExpression' =
         maybe bodyExpression (Dhall.Annot bodyExpression) possiblyResultType

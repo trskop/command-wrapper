@@ -34,7 +34,7 @@ import Text.Show (Show, show)
 
 import Data.Monoid.Endo (E)
 import Data.Verbosity (Verbosity)
-import qualified Dhall (Interpret, InvalidType, auto, inputFile)
+import qualified Dhall (Interpret, InvalidDecoder, auto, inputFile)
 import qualified Dhall.Parser as Dhall (ParseError, Src)
 import qualified Dhall.TypeCheck as Dhall (TypeError)
 
@@ -87,7 +87,7 @@ read = catchDhallExceptions . Dhall.inputFile Dhall.auto
   where
     catchDhallExceptions parse =
         (Right <$> parse)
-            `catch` handleException @(Dhall.InvalidType Dhall.Src Void)
+            `catch` handleException @(Dhall.InvalidDecoder Dhall.Src Void)
             `catch` handleException @Dhall.ParseError
             `catch` handleException @(Dhall.TypeError Dhall.Src Void)
 

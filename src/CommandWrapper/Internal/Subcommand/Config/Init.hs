@@ -51,7 +51,7 @@ import qualified Data.Text.Prettyprint.Doc as Pretty (Doc, hsep, line)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Dhall (ToDhall)
 import qualified Dhall
-    ( Type(extract)
+    ( Decoder(extract)
     , auto
     )
 import Dhall.TH (staticDhallExpression)
