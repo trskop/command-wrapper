@@ -743,6 +743,7 @@ matchGlobalOptions pat =
         longOptions =
             [ ("--color=", Just (matchKeywords colourValues))
             , ("--colour=", Just (matchKeywords colourValues))
+            , ("--aliases", Nothing)
             , ("--no-aliases", Nothing)
             , ("--no-color", Nothing)
             , ("--no-colour", Nothing)
