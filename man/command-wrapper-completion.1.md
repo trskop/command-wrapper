@@ -24,7 +24,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library \[\--shell=*SHELL*]
 \[\--import|\--content] \[\--output=*FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[\--output=*FILE*]
-\[*QUERY\_OPTIONS*] \[PATTERN]
+\[*QUERY\_OPTIONS*] \[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--wrapper
 \--expression=*EXPRESSION* \--exec
@@ -178,7 +178,15 @@ interface for querying Command Wrapper's command line interface (CLI).
     `--colo[u]r=WHEN` option, and `command-wrapper-subcommand-protocol(7)`
     regarding `COMMAND_WRAPPER_COLOUR` environment variable.
 
-*PATTERN*
+\--algorithm=*ALGORITHM*
+:   Specify which pattern matching *ALGORITHM* to use when `--pattern=`*PATTERN* is
+    provided. Possible values are:
+
+    *   *prefix* -- matches when *PATTERN* is a prefix of matched string.
+    *   *fuzzy* -- matches when *PATTERN* is a fuzzily matched string.
+    *   *equality* -- matches when *PATTERN* exactly matches a string.
+
+\--pattern=*PATTERN*
 :   Print only values that are matching *PATTERN*.
 
 

@@ -171,6 +171,7 @@ type Completer =
 data MatchingAlgorithm
     = PrefixEquivalence
     | FuzzyMatch
+    | Equality
   deriving stock (Generic, Show)
 
 data Query = Query
@@ -188,6 +189,7 @@ data Query = Query
     --
     -- * @False@: don't be case sensitive when pattern matching.
     -- * @True@: be case sensitive when pattern matching.
+
     , output :: OutputStdoutOrFile
     }
   deriving stock (Generic, Show)
@@ -205,7 +207,9 @@ instance HasOutput Query where
 
 data WhatToQuery
     = QuerySubcommands
+    | QueryInternalSubcommands
     | QuerySubcommandAliases
+--  | QueryExternalSubcommand
     | QueryVerbosityValues
     | QueryColourValues
     | QuerySupportedShells
@@ -350,6 +354,17 @@ instance HasSubcommand (CompletionMode cfg) where
 
         mode ->
             mode
+
+class HasPattern a where
+    updatePattern :: Endo String -> Endo a
+
+instance HasPattern Query where
+    updatePattern :: Endo String -> Endo Query
+    updatePattern (Endo f) = Endo \q@Query{patternToMatch} ->
+        (q  :: Query){patternToMatch = f patternToMatch}
+
+setPattern :: HasPattern a => String -> Endo a
+setPattern pat = updatePattern (Endo \_ -> pat)
 
 defScriptOptions :: ScriptOptions
 defScriptOptions = ScriptOptions
@@ -528,6 +543,27 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                             fmap Fuzzy.original
                                 <$> findSubcommandsFuzzy config' query
 
+                        Equality ->
+                            List.filter (== patternToMatch)
+                                <$> getSubcommands appNames config'
+                                        internalSubcommands
+
+            QueryInternalSubcommands
+              | null patternToMatch ->
+                    outputStringLines output internalSubcommands
+
+              | otherwise ->
+                    outputStringLines output case matchingAlgorithm of
+                        PrefixEquivalence ->
+                            prefixEquivalence query internalSubcommands
+
+                        FuzzyMatch ->
+                            Fuzzy.original
+                                <$> fuzzyMatch query internalSubcommands
+
+                        Equality ->
+                            List.filter (== patternToMatch) internalSubcommands
+
             QuerySubcommandAliases
               | null patternToMatch ->
                     outputStringLines output (getAliases config')
@@ -540,6 +576,9 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                         FuzzyMatch ->
                             Fuzzy.original
                                 <$> findSubcommandAliasesFuzzy config' query
+
+                        Equality ->
+                            List.filter (== patternToMatch) (getAliases config')
 
             QueryVerbosityValues
               | null patternToMatch ->
@@ -555,6 +594,9 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                                 <$> Fuzzy.filter patternToMatch verbosityValues
                                         "" "" id caseSensitive
 
+                        Equality ->
+                            List.filter (== patternToMatch) verbosityValues
+
             QueryColourValues
               | null patternToMatch ->
                     outputStringLines output colourValues
@@ -569,6 +611,9 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                                 <$> Fuzzy.filter patternToMatch colourValues ""
                                         "" id caseSensitive
 
+                        Equality ->
+                            List.filter (== patternToMatch) colourValues
+
             QuerySupportedShells
               | null patternToMatch ->
                     outputStringLines output supportedShells
@@ -582,6 +627,9 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                             Fuzzy.original
                                 <$> Fuzzy.filter patternToMatch supportedShells
                                         "" "" id caseSensitive
+
+                        Equality ->
+                            List.filter (== patternToMatch) supportedShells
 
         WrapperMode WrapperOptions{arguments, expression} config' -> do
             Dhall.exec appNames config'
@@ -609,9 +657,13 @@ completion completionConfig@CompletionConfig{..} appNames options config =
     getAliases = List.nub . fmap alias . Global.getAliases
 
     findSubcommandsFuzzy :: Global.Config -> Query -> IO [Fuzzy String String]
-    findSubcommandsFuzzy cfg Query{patternToMatch, caseSensitive} = do
+    findSubcommandsFuzzy cfg query = do
         cmds <- getSubcommands appNames cfg internalSubcommands
-        pure (Fuzzy.filter patternToMatch cmds "" "" id caseSensitive)
+        pure (fuzzyMatch query cmds)
+
+    fuzzyMatch :: Query -> [String] -> [Fuzzy String String]
+    fuzzyMatch Query{patternToMatch, caseSensitive} possibilities =
+        Fuzzy.filter patternToMatch possibilities "" "" id caseSensitive
 
     findSubcommandsPrefix :: Global.Config -> Query -> IO [String]
     findSubcommandsPrefix cfg query =
@@ -911,7 +963,8 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
     queryOptions =
         ["--subcommands", "--subcommand-aliases", "--supported-shells"
         , "--verbosity-values", "--colour-values", "--color-values"
-        ] <> outputOptions
+        , "--pattern=", "--internal-subcommands"
+        ] <> outputOptions <> algorithmOptions
 
     -- At the moment we have library only for Bash.
     libraryOptions = ["--shell=bash", "--import", "--content"]
@@ -932,6 +985,8 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         , "--wrapper"
         , "--help", "-h"
         ]
+
+    algorithmOptions = ("--algorithm=" <>) <$> ["fuzzy", "prefix", "equality"]
 
 -- | Lookup external and internal subcommands matching pattern (prefix).
 findSubcommands
@@ -994,19 +1049,22 @@ parseOptions appNames config arguments = do
             <*> optional
                 ( updateQueryOptions
                     (   subcommandsFlag
+                    <|> internalSubcommandsFlag
                     <|> subcommandAliasesFlag
                     <|> supportedShellsFlag
                     <|> verbosityValuesFlag
                     <|> colourValuesFlag
                     )
                 )
-            <*> updateQueryOptions
-                ( pure $ Endo \q ->
-                    -- TODO: This is not very intuitive if user passes more
-                    -- than one pattern on the command line.  What we should do
-                    -- is fail with a reasonable error message.
-                    q{patternToMatch = fromMaybe "" (headMay words)}
-                )
+            <*> optional (updateQueryOptions patternOption)
+            <*> optional (updateQueryOptions algorithmOption)
+--          <*> updateQueryOptions
+--              ( pure $ Endo \q ->
+--                  -- TODO: This is not very intuitive if user passes more
+--                  -- than one pattern on the command line.  What we should do
+--                  -- is fail with a reasonable error message.
+--                  q{patternToMatch = fromMaybe "" (headMay words)}
+--              )
 
         , dualFoldEndo
             <$> ( wrapperFlag
@@ -1024,6 +1082,7 @@ parseOptions appNames config arguments = do
             <*> optional subcommandOption
         ]
   where
+    switchTo :: (a -> CompletionMode a) -> Endo (CompletionMode a)
     switchTo f = Endo \case
         CompletionMode _ a -> f a
         ScriptMode _ a -> f a
@@ -1032,16 +1091,32 @@ parseOptions appNames config arguments = do
         WrapperMode _ a -> f a
         HelpMode a -> f a
 
+    switchToScriptMode :: Endo (CompletionMode Global.Config)
     switchToScriptMode = switchTo (ScriptMode defScriptOptions)
+
+    switchToQueryMode :: Endo (CompletionMode Global.Config)
     switchToQueryMode = switchTo (QueryMode defQueryOptions)
+
+    switchToHelpMode :: Endo (CompletionMode Global.Config)
     switchToHelpMode = switchTo HelpMode
 
+    switchToLibraryMode
+        :: Endo LibraryOptions
+        -> Endo (CompletionMode Global.Config)
     switchToLibraryMode (Endo f) =
         switchTo (LibraryMode $ f defLibraryOptions)
 
+    switchToWrapperMode
+        :: [String]
+        -> Text
+        -> Endo (CompletionMode Global.Config)
     switchToWrapperMode args expression =
         switchTo (WrapperMode WrapperOptions{arguments = args, expression})
 
+    updateCompletionOptions
+        :: [String]
+        -> Options.Parser (Endo CompletionOptions)
+        -> Options.Parser (Endo (CompletionMode a))
     updateCompletionOptions words =
         fmap . mapEndo $ \f ->
             let defOpts = CompletionOptions
@@ -1090,6 +1165,12 @@ parseOptions appNames config arguments = do
     subcommandsFlag = Options.flag mempty f (Options.long "subcommands")
       where
         f = Endo \q -> q{what = QuerySubcommands}
+
+    internalSubcommandsFlag :: Options.Parser (Endo Query)
+    internalSubcommandsFlag =
+        Options.flag mempty f (Options.long "internal-subcommands")
+      where
+        f = Endo \q -> q{what = QueryInternalSubcommands}
 
     subcommandAliasesFlag :: Options.Parser (Endo Query)
     subcommandAliasesFlag =
@@ -1170,6 +1251,30 @@ parseOptions appNames config arguments = do
         -- TODO: At the moment '--exec' does nothing, but it will become
         -- relevant when we introduce '--interpreter=COMMAND'.
 
+    patternOption :: HasPattern a => Options.Parser (Endo a)
+    patternOption = setPattern <$> Options.strOption (Options.long "pattern")
+
+    algorithmOption :: Options.Parser (Endo Query)
+    algorithmOption =
+        Options.option parse
+            (Options.long "algorithm" <> Options.metavar "ALGORITHM")
+      where
+        parse = Options.eitherReader \s -> case CI.mk s of
+            "fuzzy" ->
+                Right $ Endo \q ->
+                    q{matchingAlgorithm = FuzzyMatch}
+
+            "prefix" ->
+                Right $ Endo \q ->
+                    q{matchingAlgorithm = PrefixEquivalence}
+
+            "equality" ->
+                Right $ Endo \q ->
+                    q{matchingAlgorithm = Equality}
+
+            _ ->
+                Left "Unknown matching algorithm"
+
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
         , Options.long "help"
@@ -1227,7 +1332,7 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 <> "|" <> longOption "verbosity-values"
                 <> "|" <> longOption "colo[u]r-values"
                 )
-            <+> Pretty.brackets (metavar "PATTERN")
+            <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
 
         , "completion"
             <+> longOption "library"
@@ -1322,21 +1427,13 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 --          [ Pretty.reflow "Terminate with exit code 3 if no match was found."
 --          ]
 
---      , optionDescription ["--algorithm=ALGORITHM"]
---          [ Pretty.reflow "Specify which pattern matching algorithm to use"
---          , "when", metavar "PATTERN"
---          , Pretty.reflow "is provided. Possible values are:"
---          , value "prefix" <> ",", value "fuzzy" <> ",", "and"
---          , value "equality."
---          ]
-
 --      , optionDescription ["--external-subcommands"]
 --          [ Pretty.reflow "Query available external subcommands."
 --          ]
 
---      , optionDescription ["--internal-subcommands"]
---          [ Pretty.reflow "Query available internal subcommands."
---          ]
+        , optionDescription ["--internal-subcommands"]
+            [ Pretty.reflow "Query available internal subcommands."
+            ]
 
         , optionDescription ["--subcommand-aliases"]
             [ Pretty.reflow "Query available subcommand aliases."
@@ -1366,7 +1463,15 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.reflow "environment variable."
             ]
 
-        , optionDescription ["PATTERN"]
+        , optionDescription ["--algorithm=ALGORITHM"]
+            [ Pretty.reflow "Specify which pattern matching algorithm to use"
+            , "when", longOptionWithArgument "pattern" "PATTERN"
+            , Pretty.reflow "is provided. Possible values are:"
+            , value "prefix" <> ",", value "fuzzy" <> ",", "and"
+            , value "equality."
+            ]
+
+        , optionDescription ["--pattern=PATTERN"]
             [ Pretty.reflow "Print only values that are matching"
             , metavar "PATTERN" <> "."
             ]
