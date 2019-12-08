@@ -57,7 +57,7 @@
       ./tmux/package.dhall sha256:6853ffde06afb909d864a52ffc1b425c81ce2c99d28aa4fb3913a01e102ce3a5
     ? ./tmux/package.dhall
 , utils =
-      ./utils/package.dhall sha256:2affcf5babeb967db23faac5c513fc29453fa8ec8c486704950da3d7461dd640
+      ./utils/package.dhall sha256:6829062ffbbb32dd9382a5a79b6f184656d95a0ff6e75c0dcfb8ccf090109269
     ? ./utils/package.dhall
 , xdg-open =
       ./xdg-open/package.dhall sha256:141cea3791cf64099e76ae3245f60c248c386fce353c68d410d297af2d4191b8

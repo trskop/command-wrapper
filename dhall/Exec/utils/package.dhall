@@ -9,6 +9,9 @@
 , optionalOptions =
       ./optionalOptions sha256:f9626a1ef8209d45703cc7ac05aee40c9e96f5ccc2c406cdbd68eafd6d3234f0
     ? ./optionalOptions
+, optionalFlags =
+      ./optionalFlags sha256:dbb96b960dad5036585e8d0de1d15204a281d519ac9f59b33697100d62b5798c
+    ? ./optionalFlags
 , colourOutputOptions =
       ./colourOutputOptions sha256:33260b6eaaf2a75fa0261a5e4b6dd3344406907f29fe2ff19838d55d1d18e80c
     ? ./colourOutputOptions

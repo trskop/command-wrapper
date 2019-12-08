@@ -197,6 +197,14 @@ Some useful utilities can be found in [`utils`](./utils):
     : ColourOutput → List Text
      ```
 
+*   [`utils/optionalFlags`](./utils/optionalFlags) – Convert an `Optional`
+    value into command line options, or empty list if it's `None`.
+
+    ```Dhall
+      optionalFlags [ "--thing" ] [ "--no-thing" ]
+    : Optional Bool → List Text
+    ```
+
 *   [`utils/optionalOptions`](./utils/optionalOptions) – Convert an `Optional`
     value into command line options, or empty list if it's `None`.
 
