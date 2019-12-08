@@ -8,6 +8,9 @@
 , buildifier =
       ./buildifier/package.dhall sha256:2db5e3723ff4a17092c826b9d9200eab106d720dd940c7b4024d5a847e68f404
     ? ./buildifier/package.dhall
+, command-wrapper =
+      ./command-wrapper/package.dhall sha256:f85431b3daefde0b22797237b4c6d3d54024961f985b460f150c8914de1a636f
+    ? ./command-wrapper/package.dhall
 , completion =
       ./completion/package.dhall sha256:9df2a7d9aa206619ad3fc72bedd1f790f3944ceb7ec16d2611c163eaf02753b5
     ? ./completion/package.dhall

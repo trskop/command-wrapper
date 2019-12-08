@@ -61,6 +61,8 @@ Smart constructor for following commands/tools is provided:
 *   [`buildifier`](./buildifier) – Tool for formatting bazel BUILD and `.bzl`
     files with a standard convention.
     <https://github.com/bazelbuild/buildtools/tree/master/buildifier>
+*   [`command-wrapper`](./command-wrapper) – Smart constructor for calling
+    Command Wrapper itself.
 *   [`direnv`](./direnv) is a shell extension that modifies shell environment
     based on current directory <https://direnv.net/>.
 *   [`docker`](./docker)

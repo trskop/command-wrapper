@@ -1,0 +1,70 @@
+-- vim: filetype=dhall
+
+let GlobalOptions =
+        ./Type sha256:110b1bf3b9c43b890e9dc596b229568d8226e649d4ddfde616e31291e8ebebfc
+      ? ./Type
+
+let GlobalOptions/default =
+        ./default sha256:d566c8fcb67d9a809fe15d91be9b8a85b16e356e756d733bd4478ba6d205dc01
+      ? ./default
+
+let Verbosity =
+        ../../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
+      ? ../../../CommandWrapper/Verbosity/Type
+
+let Verbosity/fold =
+        ../../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
+      ? ../../../CommandWrapper/Verbosity/fold
+
+let ColourOutput =
+        ../../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
+      ? ../../../CommandWrapper/ColourOutput/Type
+
+let ColourOutput/toText =
+        ../../../CommandWrapper/ColourOutput/toText sha256:51d22acdc9b32f757e9170ae7c2cf244ce0488aa839dada9ee38bb3f1ee4d7bf
+      ? ../../../CommandWrapper/ColourOutput/toText
+
+let optionalOptions =
+        ../../utils/optionalOptions sha256:f9626a1ef8209d45703cc7ac05aee40c9e96f5ccc2c406cdbd68eafd6d3234f0
+      ? ../../utils/optionalOptions
+
+let optionalFlags =
+        ../../utils/optionalFlags sha256:dbb96b960dad5036585e8d0de1d15204a281d519ac9f59b33697100d62b5798c
+      ? ../../utils/optionalFlags
+
+let noArguments = [] : List Text
+
+let GlobalOptions/toArguments =
+        λ(options : GlobalOptions)
+      →   optionalOptions
+            Verbosity
+            (   λ(verbosity : Verbosity)
+              → [     "--verbosity="
+                  ++  Verbosity/fold
+                        Text
+                        { Silent = "silent"
+                        , Normal = "normal"
+                        , Verbose = "verbose"
+                        , Annoying = "annoying"
+                        }
+                        verbosity
+                ]
+            )
+            options.verbosity
+        # optionalOptions
+            ColourOutput
+            (   λ(colour : ColourOutput)
+              → [ "--colour=${ColourOutput/toText colour}" ]
+            )
+            options.colour
+        # optionalFlags [ "--aliases" ] [ "--no-aliases" ] options.allowAliases
+        # optionalOptions
+            Text
+            (λ(directory : Text) → [ "--change-directory=${directory}" ])
+            options.changeDirectory
+
+let -- Default value should not pass any options to `fzf`.
+    noArgumentsByDefault =
+      assert : GlobalOptions/toArguments GlobalOptions/default ≡ noArguments
+
+in  GlobalOptions/toArguments
