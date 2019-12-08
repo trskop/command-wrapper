@@ -1,4 +1,4 @@
-# Fzy
+# Fzf
 
 Fzf (`fzf`) is a general-purpose command-line fuzzy finder.
 <https://github.com/junegunn/fzf>

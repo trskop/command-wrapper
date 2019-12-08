@@ -66,9 +66,12 @@ Smart constructor for following commands/tools is provided:
 *   [`docker`](./docker)
 *   [`docker-compose`](./docker-compose) – <https://docs.docker.com/compose/>
 *   [`firefox`](./firefox)
+*   [`fzf`](./fzf)
+*   [`fzy`](./fzy)
 *   [`go-jira`](./go-jira) – Simple Jira command line client
     <https://github.com/go-jira/jira>.
 *   [`jq`](./jq) Command-line JSON processor <https://stedolan.github.io/jq/>.
+*   [`nix`](./nix)
 *   [`pg_dump`](./pg_dump)
 *   [`psql`](./psql)
 *   [`run-mailcap`](./run-mailcap)
@@ -77,6 +80,8 @@ Smart constructor for following commands/tools is provided:
 *   [`tmux`](./tmux) – <https://tmux.github.io/>
 *   [`xdg-open`](./xdg-open)
 *   [`yarn`](./yarn) – <https://yarnpkg.com/>
+*   [`youtube-dl`](./youtube-dl) – <https://ytdl-org.github.io/youtube-dl/>
+    <https://github.com/ytdl-org/youtube-dl/>
 
 
 ## Command Line Completion Helpers

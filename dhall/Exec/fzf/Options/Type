@@ -12,6 +12,10 @@
 -- *   `--margin=MARGIN`
 -- *   `--tabstop=SPACES`
 -- *   `--color=[BASE_SCHEME][,COLOR:ANSI]`
+--
+-- Following environment variables should be represented as well:
+--
+-- *   `FZF_DEFAULT_COMMAND`
 
 -- Use extended-search mode?  There is `--extended` and `--no-extended`.
 -- `None Bool` value means that neither is passed and default value is used.
