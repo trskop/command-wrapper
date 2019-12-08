@@ -1,0 +1,49 @@
+-- vim: filetype=dhall
+
+let GlobalOptions =
+        ./Type sha256:7cbb3d15d2d57539fe0274c8c1223148bb7b34d0310e0c58d4ab7f49e7e0ca5f
+      ? ./Type
+
+let GlobalOptions/default =
+        ./default sha256:fcc7c0bfd22e1c1cc54cfe6249340f56410e296a90da6720156af78b7b7365ca
+      ? ./default
+
+let Environment =
+        ../../../CommandWrapper/Environment/package.dhall sha256:a948211dc39cc648f650c7dcf67e4352ffae2ec5f4f0254bef596d88e87cd946
+      ? ../../../CommandWrapper/Environment/package.dhall
+
+let optionalEnvironmentVariable
+    : ∀(r : Type) → (r → Environment.Type) → Optional r → Environment.Type
+    =   λ(r : Type)
+      → λ(just : r → Environment.Type)
+      → λ(optional : Optional r)
+      → Optional/fold r optional Environment.Type just Environment.empty
+
+let GlobalOptions/toEnvironment =
+        λ(options : GlobalOptions)
+      →   optionalEnvironmentVariable
+            Text
+            (   λ(_ : Text)
+              → [ { name = "COMMAND_WRAPPER_INVOKE_AS", value = _ } ]
+            )
+            options.invokeAs
+        # optionalEnvironmentVariable
+            Text
+            (λ(_ : Text) → [ { name = "COMMAND_WRAPPER_PATH", value = _ } ])
+            options.path
+        # optionalEnvironmentVariable
+            Text
+            (λ(_ : Text) → [ { name = "COMMAND_WRAPPER_MANPATH", value = _ } ])
+            options.manPath
+        # optionalEnvironmentVariable
+            Text
+            (λ(_ : Text) → [ { name = "XDG_CONFIG_HOME", value = _ } ])
+            options.configHome
+
+let -- Default value should not pass any environment variables to underlying
+    -- command.
+    noArgumentsByDefault =
+        assert
+      : GlobalOptions/toEnvironment GlobalOptions/default ≡ Environment.empty
+
+in  GlobalOptions/toEnvironment

@@ -1,7 +1,7 @@
 -- vim: filetype=dhall
 
 let GlobalOptions =
-        ./Type sha256:110b1bf3b9c43b890e9dc596b229568d8226e649d4ddfde616e31291e8ebebfc
+        ./Type sha256:7cbb3d15d2d57539fe0274c8c1223148bb7b34d0310e0c58d4ab7f49e7e0ca5f
       ? ./Type
 
 let Verbosity =
@@ -17,6 +17,10 @@ let GlobalOptions/default =
       , colour = None ColourOutput
       , allowAliases = None Bool
       , changeDirectory = None Text
+      , invokeAs = None Text
+      , path = None Text
+      , manPath = None Text
+      , configHome = None Text
       }
 
 let consistency =

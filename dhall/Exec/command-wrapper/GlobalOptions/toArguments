@@ -1,11 +1,11 @@
 -- vim: filetype=dhall
 
 let GlobalOptions =
-        ./Type sha256:110b1bf3b9c43b890e9dc596b229568d8226e649d4ddfde616e31291e8ebebfc
+        ./Type sha256:7cbb3d15d2d57539fe0274c8c1223148bb7b34d0310e0c58d4ab7f49e7e0ca5f
       ? ./Type
 
 let GlobalOptions/default =
-        ./default sha256:d566c8fcb67d9a809fe15d91be9b8a85b16e356e756d733bd4478ba6d205dc01
+        ./default sha256:fcc7c0bfd22e1c1cc54cfe6249340f56410e296a90da6720156af78b7b7365ca
       ? ./default
 
 let Verbosity =
@@ -63,7 +63,7 @@ let GlobalOptions/toArguments =
             (λ(directory : Text) → [ "--change-directory=${directory}" ])
             options.changeDirectory
 
-let -- Default value should not pass any options to `fzf`.
+let -- Default value should not pass any options to underlying command.
     noArgumentsByDefault =
       assert : GlobalOptions/toArguments GlobalOptions/default ≡ noArguments
 

@@ -6,7 +6,7 @@
 -- ```
 
 let GlobalOptions =
-        ./GlobalOptions/package.dhall sha256:ed4f1162592b84a06fe2803b4c24acc759635c55c8b9b24dc93c4b28f0867aeb
+        ./GlobalOptions/package.dhall sha256:9fd9054401b8aa5fdd448fb454ddc08e1d2c8696dd4560f7e7933af395fe0501
       ? ./GlobalOptions/package.dhall
 
 let ExecCommand =
@@ -54,4 +54,6 @@ in    λ(toolset : Text)
               )
           # [ "--" ]
           # arguments
+      , environment =
+          ExecCommand.default.environment # GlobalOptions.toEnvironment options
       }
