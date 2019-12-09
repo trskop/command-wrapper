@@ -163,10 +163,6 @@ import qualified Dhall.Lint as Dhall (lint)
 import Dhall.Parser (ParseError, SourcedException, Src)
 import qualified Dhall.Pretty as Dhall (Ann, CharacterSet(..))
 import Dhall.TypeCheck (DetailedTypeError(..), TypeError)
-import qualified Dhall.Util as Dhall
-  ( Censor(NoCensor)
-  , Input(InputFile, StandardInput)
-  )
 import System.Directory
     ( XdgDirectory(XdgCache)
     , createDirectoryIfMissing
@@ -205,7 +201,6 @@ import qualified Dhall
 --import qualified Dhall.Binary
 import qualified Dhall.Core
 import qualified Dhall.Diff
-import qualified Dhall.Format
 import qualified Dhall.Import
 import qualified Dhall.Optics (transformMOf)
 --import qualified Dhall.Import.Types
@@ -417,23 +412,15 @@ defLint = Lint
 lint :: AppNames -> Config -> Lint -> IO ()
 lint appNames config Lint{input, output, characterSet} =
     handleExceptions appNames config do
-        (Dhall.Parser.Header header, expression) <- case input of
-            InputStdin ->
-                Text.getContents >>= parseExpr "(stdin)"
-
-            InputFile file ->
-                Text.readFile file >>= parseExpr file
-
-            InputExpression expr ->
-                parseExpr "(expression)" expr
+        IO.setLocaleEncoding IO.utf8
+        (Dhall.Parser.Header header, expression, _)
+            <- readExpressionAndHeader input
 
         withOutputHandle input output (renderDoc config)
             (   Pretty.pretty header
             <>  Dhall.Pretty.prettyCharacterSet characterSet
                     (Dhall.lint expression)
             )
-  where
-    parseExpr f = Dhall.Core.throws . Dhall.Parser.exprAndHeaderFromText f
 
 -- }}} Lint -------------------------------------------------------------------
 
@@ -495,31 +482,32 @@ command Options{..} = do
 
 data Format = Format
     { input :: Input
+    , output :: Output
+    , characterSet :: Dhall.CharacterSet
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
 
+instance HasOutput Format where
+    type Output Format = Output
+    output = field' @"output"
+
 defFormat :: Format
 defFormat = Format
     { input = InputStdin
+    , characterSet = Dhall.Unicode
+    , output = OutputStdout
     }
 
 format :: AppNames -> Config -> Format -> IO ()
-format appNames config Format{..} =
-    handleExceptions appNames config $ Dhall.Format.format Dhall.Format.Format
-        { characterSet = Dhall.Unicode
-        , censor = Dhall.NoCensor
-        , formatMode = Dhall.Format.Modify case input of
-            InputStdin ->
-                Dhall.StandardInput
+format appNames config Format{..} = handleExceptions appNames config do
+    IO.setLocaleEncoding IO.utf8
+    (Dhall.Parser.Header header, expression, _) <- readExpressionAndHeader input
 
-            InputFile file ->
-                Dhall.InputFile file
-
-            InputExpression _ ->
-                -- TODO: Is there a way how we can handle this gracefully?
-                undefined
-        }
+    withOutputHandle input output (renderDoc config)
+        (   Pretty.pretty header
+        <>  Dhall.Pretty.prettyCharacterSet characterSet expression
+        )
 
 -- }}} Format -----------------------------------------------------------------
 
@@ -566,20 +554,10 @@ freeze
     -> Freeze
     -> IO ()
 freeze appNames config Freeze{..} = handleExceptions appNames config do
-    (Dhall.Parser.Header header, expression, directory) <- case input of
-        InputStdin -> do
-            (header, expression) <- Text.getContents
-                >>= parseExpr "(stdin)"
-            pure (header, expression, ".")
+    IO.setLocaleEncoding IO.utf8
 
-        InputFile file -> do
-            (header, expression) <- Text.readFile file
-                >>= parseExpr file
-            pure (header, expression, takeDirectory file)
-
-        InputExpression expr -> do
-            (header, expression) <- parseExpr "(expression)" expr
-            pure (header, expression, ".")
+    (Dhall.Parser.Header header, expression, directory)
+        <- readExpressionAndHeader input
 
     frozenExpression <- case purpose of
         FreezeForSecurity ->
@@ -596,8 +574,6 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
         <> Dhall.Pretty.prettyCharacterSet characterSet frozenExpression
         )
   where
-    parseExpr f = Dhall.Core.throws . Dhall.Parser.exprAndHeaderFromText f
-
     freezeFunction =
         if remoteOnly
             then Dhall.freezeRemoteImport
@@ -1155,6 +1131,26 @@ readExpression semanticCache = \case
             { Dhall.Import._semanticCacheMode =
                 toDhallSemanticCacheMode semanticCache
             }
+
+readExpressionAndHeader
+    :: Input
+    -> IO (Dhall.Parser.Header, Expr Src Import, FilePath)
+readExpressionAndHeader = \case
+    InputStdin -> do
+        (header, expression) <- Text.getContents
+            >>= parseExpr "(stdin)"
+        pure (header, expression, ".")
+
+    InputFile file -> do
+        (header, expression) <- Text.readFile file
+            >>= parseExpr file
+        pure (header, expression, takeDirectory file)
+
+    InputExpression expr -> do
+        (header, expression) <- parseExpr "(expression)" expr
+        pure (header, expression, ".")
+  where
+    parseExpr f = Dhall.Core.throws . Dhall.Parser.exprAndHeaderFromText f
 
 withOutputHandle :: Input -> Output -> (Handle -> b -> IO a) -> b -> IO a
 withOutputHandle input = \case

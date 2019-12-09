@@ -289,12 +289,11 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
             )
 
     , dhallFormatFlag
-        <*> pure mempty
---      <*> ( dualFoldEndo
+        <*> ( dualFoldEndo
 --              <$> many (checkFlag <|> noCheckFlag)
---              <*> optional outputOption
---              <$> optional (expressionOption <|> inputOption)
---          )
+                <$> optional outputOption
+                <*> optional (expressionOption <|> inputOption)
+            )
 
     , dhallLintFlag
         <*> ( dualFoldEndo
@@ -749,11 +748,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "config"
             <+> longOption "dhall-format"
 --          <+> Pretty.brackets (longOption "[no-]check")
---          <+> Pretty.brackets
---              ( longOptionWithArgument "expression" "EXPRESSION"
---              <> "|" <> longOptionWithArgument "input" "FILE"
---              )
---          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "expression" "EXPRESSION"
+                <> "|" <> longOptionWithArgument "input" "FILE"
+                )
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "config"
             <+> longOption "dhall-lint"
@@ -1238,7 +1237,6 @@ configSubcommandCompleter _appNames _cfg _shell index words
         <> munless
             ( List.or
                 [ hadDhallExec
-                , hadDhallFormat
                 , hadDhallRepl
                 , hadHelp
                 , hadInit
@@ -1251,6 +1249,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallBash
                     , hadDhallDiff
                     , hadDhallFilter
+                    , hadDhallFormat
                     , hadDhallFreeze
                     , hadDhallHash
                     , hadDhallLint
@@ -1263,7 +1262,6 @@ configSubcommandCompleter _appNames _cfg _shell index words
         <> munless
             ( List.or
                 [ hadDhallDiff
-                , hadDhallFormat
                 , hadDhallRepl
                 , hadHelp
                 , hadInit
@@ -1280,6 +1278,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallDiff
                     , hadDhallExec
                     , hadDhallFilter
+                    , hadDhallFormat
                     , hadDhallFreeze
                     , hadDhallHash
                     , hadDhallLint
@@ -1292,7 +1291,6 @@ configSubcommandCompleter _appNames _cfg _shell index words
         <> munless
             ( List.or
                 [ hadDhallDiff
-                , hadDhallFormat
                 , hadDhallRepl
                 , hadHelp
                 , hadInit
@@ -1308,6 +1306,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                     , hadDhallBash
                     , hadDhallExec
                     , hadDhallFilter
+                    , hadDhallFormat
                     , hadDhallFreeze
                     , hadDhallHash
                     , hadDhallLint

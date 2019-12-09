@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 25th October 2019
+% 9th December 2019
 
 
 # NAME
@@ -26,6 +26,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-filter
 *EXPRESSION*
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-format
+\[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+\[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-lint
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
