@@ -26,7 +26,7 @@ let Environment =
       ? ../../CommandWrapper/Environment/Type
 
 let Optional/toList =
-      https://prelude.dhall-lang.org/Optional/toList sha256:390fe99619e9a25e71a253a2b33011f9e5fa26a7d990795205543d1edd72ce5b
+      https://prelude.dhall-lang.org/v12.0.0/Optional/toList sha256:390fe99619e9a25e71a253a2b33011f9e5fa26a7d990795205543d1edd72ce5b
 
 in    λ(fileOrUrl : Optional Text)
     → λ(environment : Environment)
