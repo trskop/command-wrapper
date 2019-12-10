@@ -1128,6 +1128,9 @@ configSubcommandCompleter _appNames _cfg _shell index words
   | Just "--edit" <- lastMay wordsBeforePattern =
         bashCompleter "file" ""
 
+  | Just "-e" <- lastMay wordsBeforePattern =
+        bashCompleter "file" ""
+
   | "--output=" `List.isPrefixOf` pat =
         bashCompleter "file" "--output="
 
