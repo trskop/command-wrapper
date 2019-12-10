@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 9th December 2019
+% 10th December 2019
 
 
 # NAME
@@ -75,6 +75,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-exec
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init
 \[\--toolset=*NAME*|\--toolset *NAME*]
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} *FILE*
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
@@ -82,8 +84,6 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
 **TODO: Following usages aren't currently implemented!**
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \[OPTIONS] \[\--] \[*EXPRESSION*]
-
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} \[\--global|-g|*SUBCOMMAND*]
 
 
 # DESCRIPTION
@@ -370,6 +370,9 @@ We can organise `config` subcommand abilities into following categories:
 \--interpreter-argument=*ARGUMENT*, **\--interpreter-argument** *ARGUMENT*
 :   Pass *ARGUMENT* to interpreter *COMMAND*.
 
+\--edit
+:   Start editor.
+
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
 
@@ -396,11 +399,6 @@ We can organise `config` subcommand abilities into following categories:
 
 \--fail-when-empty
 :   If result expression is a `List` value then it has to be non-empty.
-
-\--edit
-:   Edit configuration file.  If *SUBCOMMAND* is specified then configuration
-    file for that *SUBCOMMAND* is modified instead, and if `--global` then
-    toolset configuration file is opened.
 
 *EXPRESSION*
 :   Dhall expression that either queries or updates configuration, depending

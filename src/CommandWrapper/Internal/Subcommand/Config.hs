@@ -22,7 +22,7 @@ import Prelude (fromIntegral)
 
 import Control.Applicative ((<*>), (<|>), many, optional, pure)
 import Control.Monad (when)
-import Data.Bool (Bool(False, True), (||), not, otherwise)
+import Data.Bool (Bool(False, True), (&&), (||), not, otherwise)
 import qualified Data.Char as Char (isDigit)
 import Data.Either (Either(Left, Right))
 import Data.Eq ((==))
@@ -168,6 +168,12 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , setSemanticCacheMode
     , toText
     )
+import CommandWrapper.Internal.Subcommand.Config.Edit
+    ( EditOptions(..)
+    , WhatToEdit(..)
+    , defEditOptions
+    , edit
+    )
 import CommandWrapper.Internal.Subcommand.Config.Init
     ( InitOptions(..)
     , defInitOptions
@@ -178,6 +184,7 @@ import CommandWrapper.Internal.Subcommand.Config.Init
 data ConfigMode a
     = Init InitOptions a
     | ConfigLib a
+    | Edit EditOptions a
     | Dhall Dhall.Interpreter a
     | DhallDiff Dhall.Diff a
     | DhallFormat Dhall.Format a
@@ -201,9 +208,8 @@ config appNames options globalConfig =
 
         ConfigLib _ -> pure ()
 
-        Help config'@Global.Config{colourOutput, verbosity} ->
-            out verbosity colourOutput stdout
-                (configSubcommandHelp appNames config')
+        Edit opts cfg ->
+            edit appNames cfg opts
 
         Dhall opts cfg ->
             Dhall.interpreter appNames cfg opts
@@ -240,6 +246,10 @@ config appNames options globalConfig =
 
         DhallFilter opts cfg ->
             Dhall.filter appNames cfg opts
+
+        Help config'@Global.Config{colourOutput, verbosity} ->
+            out verbosity colourOutput stdout
+                (configSubcommandHelp appNames config')
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
 
@@ -339,13 +349,19 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
             )
 
     , dhallFilterFlag
-        <*> Options.strArgument mempty
+        <*> Options.strArgument (Options.metavar "EXPRESSION")
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> many letOption
                 <*> optional outputOption
                 <*> optional (expressionOption <|> inputOption)
+            )
+
+    , editFlag
+        <*> ( dualFoldEndo
+            <$> optional fileArgument
+--          <$> optional (fileArgument <|> subcommandOption)
             )
 
     , helpFlag
@@ -361,6 +377,9 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     switchToInitMode :: Endo (ConfigMode Global.Config)
     switchToInitMode = switchTo (Init (defInitOptions usedName) globalConfig)
+
+    switchToEditMode :: Endo EditOptions -> Endo (ConfigMode Global.Config)
+    switchToEditMode (Endo f) = switchTo (Edit (f defEditOptions) globalConfig)
 
     switchToDhallHashMode :: Endo Dhall.Hash -> Endo (ConfigMode Global.Config)
     switchToDhallHashMode f =
@@ -686,6 +705,20 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                     mode ->
                         mode
 
+    editFlag
+        :: Options.Parser (Endo EditOptions -> Endo (ConfigMode Global.Config))
+    editFlag = Options.flag mempty switchToEditMode $ mconcat
+        [ Options.long "edit"
+        , Options.short 'e'
+        ]
+
+    fileArgument :: Options.Parser (Endo EditOptions)
+    fileArgument =
+        Options.strArgument (Options.metavar "FILE") <&> \argument ->
+            Endo \opts@EditOptions{} -> opts
+                { what = Just (EditFile argument)
+                }
+
     helpFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
@@ -855,6 +888,13 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                     )
                 )
             <+> Pretty.brackets (metavar "ARGUMENT" <+> "...")
+
+        , "config"
+            <+> longOption "edit"
+            <+> Pretty.brackets
+                ( metavar "FILE"
+--              <> "|" <> longOptionWithArgument "subcommand" "NAME"
+                )
 
         , "config"
             <+> longOption "init"
@@ -1034,6 +1074,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.reflow "is initialised."
             ]
 
+        , optionDescription ["--edit", "-e"]
+            [ Pretty.reflow "Start editor."
+            ]
+
         , optionDescription ["--help", "-h"]
             [ Pretty.reflow "Print this help and exit. Same as"
             , Pretty.squotes (toolsetCommand usedName "help config") <> "."
@@ -1081,6 +1125,9 @@ configSubcommandCompleter _appNames _cfg _shell index words
   | Just w <- lastMay wordsBeforePattern, isBashRedirection w =
         bashCompleter "file" ""
 
+  | Just "--edit" <- lastMay wordsBeforePattern =
+        bashCompleter "file" ""
+
   | "--output=" `List.isPrefixOf` pat =
         bashCompleter "file" "--output="
 
@@ -1111,6 +1158,10 @@ configSubcommandCompleter _appNames _cfg _shell index words
         || ("-h" `List.elem` wordsBeforePattern)
 
     hadInit = "--init" `List.elem` wordsBeforePattern
+
+    hadEdit =
+        ("--edit" `List.elem` wordsBeforePattern)
+        || ("-e" `List.elem` wordsBeforePattern)
 
     hadDhall = "--dhall" `List.elem` wordsBeforePattern
     hadDhallBash = "--dhall-bash" `List.elem` wordsBeforePattern
@@ -1167,11 +1218,16 @@ configSubcommandCompleter _appNames _cfg _shell index words
         , List.any ("--declare=" `List.isPrefixOf`) wordsBeforePattern
         ]
 
+    hadToolset = List.or
+        [ "--toolset" `List.elem` wordsBeforePattern
+        , List.any ("--toolset=" `List.isPrefixOf`) wordsBeforePattern
+        ]
+
     mwhen p x = if p then x else mempty
     munless p = mwhen (not p)
 
     possibleOptions =
-        munless (hadHelp || hadInit || hadSomeDhall)
+        munless (List.or [hadEdit, hadHelp, hadInit, hadSomeDhall])
             [ "--dhall"
             , "--dhall-bash"
             , "--dhall-diff"
@@ -1184,10 +1240,11 @@ configSubcommandCompleter _appNames _cfg _shell index words
             , "--dhall-repl"
             , "--dhall-resolve"
             , "--dhall-text"
+            , "--edit", "-e"
             , "--help", "-h"
             , "--init"
             ]
-        <> munless (hadHelp || hadSomeDhall || not hadInit) ["--toolset="]
+        <> mwhen (hadInit && not hadToolset) ["--toolset="]
         <> munless
             ( List.or
                 [ hadDhallBash
@@ -1201,6 +1258,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , hadDhallRepl
                 , hadDhallResolve
                 , hadDhallText
+                , hadEdit
                 , hadHelp
                 , hadInit
 
@@ -1221,6 +1279,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 , hadDhallLint
                 , hadDhallRepl
                 , hadDhallResolve
+                , hadEdit
                 , hadHelp
                 , hadInit
 
