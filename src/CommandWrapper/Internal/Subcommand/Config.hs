@@ -23,12 +23,12 @@ import Prelude (fromIntegral)
 import Control.Applicative ((<*>), (<|>), many, optional, pure)
 import Control.Monad (when)
 import Data.Bool (Bool(False, True), (&&), (||), not, otherwise)
-import qualified Data.Char as Char (isDigit)
+import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq ((==))
 import Data.Foldable (asum, null)
 import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<$>), (<&>))
+import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List
     ( any
     , dropWhile
@@ -100,6 +100,7 @@ import CommandWrapper.Internal.Subcommand.Help
     , usageSection
     , value
     )
+import qualified CommandWrapper.External as External (findSubcommands)
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message
     ( Result
@@ -360,8 +361,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , editFlag
         <*> ( dualFoldEndo
-            <$> optional fileArgument
---          <$> optional (fileArgument <|> subcommandOption)
+            <$> optional
+                ( fileArgument
+                <|> (subcommandConfigFlag <*> subcommandArgument)
+                )
             )
 
     , helpFlag
@@ -719,6 +722,18 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 { what = Just (EditFile argument)
                 }
 
+    subcommandConfigFlag :: Options.Parser (String -> Endo EditOptions)
+    subcommandConfigFlag =
+        Options.flag' setSubcommand (Options.long "subcommand-config")
+      where
+        setSubcommand argument =
+            Endo \opts@EditOptions{} -> opts
+                { what = Just (EditSubcommandConfig argument)
+                }
+
+    subcommandArgument :: Options.Parser String
+    subcommandArgument = Options.strArgument (Options.metavar "SUBCOMMAND")
+
     helpFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
@@ -893,7 +908,8 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             <+> longOption "edit"
             <+> Pretty.brackets
                 ( metavar "FILE"
---              <> "|" <> longOptionWithArgument "subcommand" "NAME"
+                <> "|" <> longOption "subcommand-config"
+                    <+> metavar "SUBCOMMAND"
                 )
 
         , "config"
@@ -1075,7 +1091,14 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             ]
 
         , optionDescription ["--edit", "-e"]
-            [ Pretty.reflow "Start editor."
+            [ Pretty.reflow "Start editor to edit", metavar "FILE", "or"
+            , metavar "SUBCOMMAND", "when", longOption "subcommand-config"
+            , Pretty.reflow "is passed."
+            ]
+
+        , optionDescription ["--subcommand-config"]
+            [ Pretty.reflow "Open subcommand config when invoked with"
+            , longOption "edit" <> "."
             ]
 
         , optionDescription ["--help", "-h"]
@@ -1105,7 +1128,7 @@ configSubcommandCompleter
     -> Word
     -> [String]
     -> IO [String]
-configSubcommandCompleter _appNames _cfg _shell index words
+configSubcommandCompleter appNames cfg _shell index words
   | Just "-o" <- lastMay wordsBeforePattern =
         bashCompleter "file" ""
 
@@ -1130,6 +1153,10 @@ configSubcommandCompleter _appNames _cfg _shell index words
 
   | Just "-e" <- lastMay wordsBeforePattern =
         bashCompleter "file" ""
+
+  | Just "--subcommand-config" <- lastMay wordsBeforePattern =
+        List.filter (fmap Char.toLower pat `List.isPrefixOf`)
+            <$> External.findSubcommands appNames cfg
 
   | "--output=" `List.isPrefixOf` pat =
         bashCompleter "file" "--output="
@@ -1156,15 +1183,16 @@ configSubcommandCompleter _appNames _cfg _shell index words
     wordsBeforePattern = List.take (fromIntegral index) words
     pat = fromMaybe "" $ atMay words (fromIntegral index)
 
+    hadEdit =
+        ("--edit" `List.elem` wordsBeforePattern)
+        || ("-e" `List.elem` wordsBeforePattern)
+
     hadHelp =
         ("--help" `List.elem` wordsBeforePattern)
         || ("-h" `List.elem` wordsBeforePattern)
 
     hadInit = "--init" `List.elem` wordsBeforePattern
 
-    hadEdit =
-        ("--edit" `List.elem` wordsBeforePattern)
-        || ("-e" `List.elem` wordsBeforePattern)
 
     hadDhall = "--dhall" `List.elem` wordsBeforePattern
     hadDhallBash = "--dhall-bash" `List.elem` wordsBeforePattern
@@ -1225,6 +1253,9 @@ configSubcommandCompleter _appNames _cfg _shell index words
         [ "--toolset" `List.elem` wordsBeforePattern
         , List.any ("--toolset=" `List.isPrefixOf`) wordsBeforePattern
         ]
+
+    hadSubcommandConfig =
+        "--subcommand-config" `List.elem` wordsBeforePattern
 
     mwhen p x = if p then x else mempty
     munless p = mwhen (not p)
@@ -1588,6 +1619,7 @@ configSubcommandCompleter _appNames _cfg _shell index words
                 ]
             )
             ["--for-security", "--for-caching"]
+        <> mwhen (hadEdit && not hadSubcommandConfig) ["--subcommand-config"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 

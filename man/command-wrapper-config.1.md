@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 10th December 2019
+% 11th December 2019
 
 
 # NAME
@@ -75,7 +75,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-exec
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init
 \[\--toolset=*NAME*|\--toolset *NAME*]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e} *FILE*
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e}
+\[*FILE*|\--subcommand-config *SUBCOMMAND*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 
@@ -370,8 +371,12 @@ We can organise `config` subcommand abilities into following categories:
 \--interpreter-argument=*ARGUMENT*, **\--interpreter-argument** *ARGUMENT*
 :   Pass *ARGUMENT* to interpreter *COMMAND*.
 
-\--edit
-:   Start editor.
+\--edit, -e
+:   Start editor to edit *FILE* or *SUBCOMMAND* when `--subcommand-config` is
+    passed.
+
+\--subcommand-config
+:   Open subcommand config when invoked with `--edit`.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
