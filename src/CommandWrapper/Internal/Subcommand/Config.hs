@@ -180,12 +180,18 @@ import CommandWrapper.Internal.Subcommand.Config.Init
     , defInitOptions
     , init
     )
+import CommandWrapper.Internal.Subcommand.Config.Menu
+    ( MenuOptions(..)
+    , defMenuOptions
+    , menu
+    )
 
 
 data ConfigMode a
     = Init InitOptions a
     | ConfigLib a
     | Edit EditOptions a
+    | Menu MenuOptions a
     | Dhall Dhall.Interpreter a
     | DhallDiff Dhall.Diff a
     | DhallFormat Dhall.Format a
@@ -211,6 +217,9 @@ config appNames options globalConfig =
 
         Edit opts cfg ->
             edit appNames cfg opts
+
+        Menu opts cfg ->
+            menu appNames cfg opts
 
         Dhall opts cfg ->
             Dhall.interpreter appNames cfg opts
@@ -367,6 +376,9 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 )
             )
 
+    , menuFlag
+        <*> many (Options.strArgument (Options.metavar "STRING"))
+
     , helpFlag
 
     , pure mempty
@@ -383,6 +395,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     switchToEditMode :: Endo EditOptions -> Endo (ConfigMode Global.Config)
     switchToEditMode (Endo f) = switchTo (Edit (f defEditOptions) globalConfig)
+
+    -- switchToMenuMode :: Endo MenuOptions -> Endo (ConfigMode Global.Config)
+    -- switchToMenuMode (Endo f) = switchTo (Menu (f defMenuOptions) globalConfig)
+
+    switchToMenuMode :: [String] -> Endo (ConfigMode Global.Config)
+    switchToMenuMode items = switchTo (Menu (defMenuOptions items) globalConfig)
 
     switchToDhallHashMode :: Endo Dhall.Hash -> Endo (ConfigMode Global.Config)
     switchToDhallHashMode f =
@@ -715,6 +733,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         , Options.short 'e'
         ]
 
+    menuFlag
+        :: Options.Parser ([String] -> Endo (ConfigMode Global.Config))
+    menuFlag = Options.flag mempty switchToMenuMode (Options.long "menu")
+
     fileArgument :: Options.Parser (Endo EditOptions)
     fileArgument =
         Options.strArgument (Options.metavar "FILE") <&> \argument ->
@@ -913,6 +935,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 )
 
         , "config"
+            <+> longOption "menu"
+            <+> Pretty.brackets (metavar "STRING" <+> "...")
+
+        , "config"
             <+> longOption "init"
             <+> longOptionWithArgument "toolset" "NAME"
 
@@ -1101,6 +1127,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , longOption "edit" <> "."
             ]
 
+        , optionDescription ["--menu [STRING ...]"]
+            [ Pretty.reflow "Display selection menu. Selected value is printed\
+                \ to standard output."
+            ]
+
         , optionDescription ["--help", "-h"]
             [ Pretty.reflow "Print this help and exit. Same as"
             , Pretty.squotes (toolsetCommand usedName "help config") <> "."
@@ -1193,6 +1224,7 @@ configSubcommandCompleter appNames cfg _shell index words
 
     hadInit = "--init" `List.elem` wordsBeforePattern
 
+    hadMenu = "--menu" `List.elem` wordsBeforePattern
 
     hadDhall = "--dhall" `List.elem` wordsBeforePattern
     hadDhallBash = "--dhall-bash" `List.elem` wordsBeforePattern
@@ -1261,7 +1293,7 @@ configSubcommandCompleter appNames cfg _shell index words
     munless p = mwhen (not p)
 
     possibleOptions =
-        munless (List.or [hadEdit, hadHelp, hadInit, hadSomeDhall])
+        munless (List.or [hadEdit, hadHelp, hadInit, hadMenu, hadSomeDhall])
             [ "--dhall"
             , "--dhall-bash"
             , "--dhall-diff"
@@ -1277,6 +1309,7 @@ configSubcommandCompleter appNames cfg _shell index words
             , "--edit", "-e"
             , "--help", "-h"
             , "--init"
+            , "--menu"
             ]
         <> mwhen (hadInit && not hadToolset) ["--toolset="]
         <> munless
@@ -1295,6 +1328,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadEdit
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 , not hadDhall
                 ]
@@ -1316,6 +1350,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadEdit
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 , not $ List.or
                     [ hadDhall
@@ -1333,6 +1368,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallRepl
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 -- Output options can be specified only once.
                 , hadOutput
@@ -1358,6 +1394,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallRepl
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 -- Input options can be specified only once.
                 , hadInput
@@ -1387,6 +1424,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallRepl
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 -- Expression options can be specified only once.
                 , hadExpression
@@ -1424,6 +1462,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallText
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 , not hadDhallFreeze
                 ]
@@ -1444,6 +1483,7 @@ configSubcommandCompleter appNames cfg _shell index words
 --              , hadDhallText
 --              , hadHelp
 --              , hadInit
+--              , hadMenu
 --
 --              , not hadDhallFormat
 --              ]
@@ -1464,6 +1504,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallText
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 , not hadDhallResolve
                 ]
@@ -1484,6 +1525,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallText
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 -- This option can be specified only once.
                 , hadInterpreter
@@ -1507,6 +1549,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallText
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 , not hadDhallExec
                 ]
@@ -1527,6 +1570,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallText
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 -- This option can be specified only once.
                 , hadDeclare
@@ -1550,6 +1594,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallResolve
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 , not hadDhallText
                 ]
@@ -1569,6 +1614,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallText
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 , not $ List.or
                     [ hadDhall
@@ -1587,6 +1633,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallRepl
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 , not $ List.or
                     [ hadDhall
@@ -1614,6 +1661,7 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallText
                 , hadHelp
                 , hadInit
+                , hadMenu
 
                 , not hadDhallFreeze
                 ]

@@ -19,12 +19,26 @@ packages:
   original:
     hackage: fuzzy-0.1.0.0
 - completed:
+    hackage: lock-file-0.7.0.0@sha256:3ad84b5e454145e1d928063b56abb96db24a99a21b493989520e58fa0ab37b00,4484
+    pantry-tree:
+      size: 718
+      sha256: 3634593ce191e82793ea0e060598ab3cf67f2ef2fe1d65345dc9335ad529d25f
+  original:
+    hackage: lock-file-0.7.0.0
+- completed:
     hackage: verbosity-0.3.0.0@sha256:937c318d73f527a88610c7c036c888578731adac8a1891e65d955db4dd976b7c,5043
     pantry-tree:
       size: 795
       sha256: add03785cbb76e808de561b68539f2c303790eeb5884a713efa37d3b8a356e5d
   original:
     hackage: verbosity-0.3.0.0
+- completed:
+    hackage: vty-menu-0.0.4@sha256:9a80065901bc448c5559b4c951e3f334d3e29e3efe17851424da216ecd64a6b8,544
+    pantry-tree:
+      size: 265
+      sha256: bf5bc39e341a5202da23b40f01cd5a673aece7433373122ec90b6dfb4bc16fc1
+  original:
+    hackage: vty-menu-0.0.4
 - completed:
     hackage: dhall-1.28.0@sha256:a0b38be83ab76c59adf6d67868b9b183591edc68d2c3727d38598ddc12c36c95,31625
     pantry-tree:
@@ -53,13 +67,6 @@ packages:
       sha256: abc06de688cab0956ed76bfb88e8c845158d2f3debf9812cb002d9f4db5d3695
   original:
     hackage: aeson-yaml-1.0.5.0
-- completed:
-    hackage: lock-file-0.7.0.0@sha256:3ad84b5e454145e1d928063b56abb96db24a99a21b493989520e58fa0ab37b00,4484
-    pantry-tree:
-      size: 718
-      sha256: 3634593ce191e82793ea0e060598ab3cf67f2ef2fe1d65345dc9335ad529d25f
-  original:
-    hackage: lock-file-0.7.0.0
 - completed:
     cabal-file:
       size: 2334

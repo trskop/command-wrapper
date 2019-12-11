@@ -9,7 +9,10 @@ packages:
 extra-deps:
   - endo-0.3.0.1
   - fuzzy-0.1.0.0
+  - lock-file-0.7.0.0
   - verbosity-0.3.0.0
+
+  - vty-menu-0.0.4
 
   # Don't forget to upgrade Dhall Standard version in
   # ./src/CommandWrapper/Internal.hs when upgrading Dhall library.
@@ -25,8 +28,6 @@ extra-deps:
 # - megaparsec-7.0.4
 # - repline-0.2.0.0
 # - neat-interpolation-0.3.2.4  # dhall-bash
-
-  - lock-file-0.7.0.0
 
   - git: https://github.com/trskop/host-and-port.git
     commit: e934d338b8ba6b5ce6c0e16e1d1a46d2d5099808

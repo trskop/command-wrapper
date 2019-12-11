@@ -78,6 +78,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e}
 \[*FILE*|\--subcommand-config *SUBCOMMAND*]
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--manu \[*STRING* ...]
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help config
@@ -313,7 +315,7 @@ We can organise `config` subcommand abilities into following categories:
 :   Initialise configuration of a toolset.  This includes symlinking command
     wrapper under the toolset's name.  See also `--toolset=`*NAME* option.
 
- \--toolset=*NAME*
+\--toolset=*NAME*
 :   When specified allong with `--init` then configuration for toolset *NAME*
     is initialised.  Alternatively `COMMAND_WRAPPER_INVOKE_AS=`*NAME* can be
     used.  See `command-wrapper(1) section *ENVIRONMENT VARIABLES* for details.
@@ -377,6 +379,9 @@ We can organise `config` subcommand abilities into following categories:
 
 \--subcommand-config
 :   Open subcommand config when invoked with `--edit`.
+
+\--menu \[*STRING* ...]
+:   Display selection menu.  Selected value is printed to standard output.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.

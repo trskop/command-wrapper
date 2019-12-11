@@ -69,6 +69,7 @@ dependencies:
   - lock-file
   - mainplate
   - mtl
+  - open-in-editor
   - optparse-applicative
   - prettyprinter
   - prettyprinter-ansi-terminal
@@ -82,6 +83,7 @@ dependencies:
   - unix
   - unordered-containers
   - verbosity >=0.3
+  - vty
 
   # For `config`, may be redesigned:
   - projectroot
@@ -95,9 +97,6 @@ dependencies:
   - serialise
   - transformers
 
-  # Not on Stackage or Hackage
-  - open-in-editor
-
 ghc-options: -Wall -Wcompat
 
 library:
@@ -109,6 +108,7 @@ executables:
     main: Main.hs
     dependencies:
       - *this
+    ghc-options: -threaded
 
   command-wrapper-cd:
     source-dirs: app-cd
@@ -116,6 +116,7 @@ executables:
     dependencies:
       - *this
       - turtle
+    ghc-options: -threaded
 
   command-wrapper-skel:
     source-dirs: app-skel
@@ -123,6 +124,7 @@ executables:
     dependencies:
       - *this
       - turtle
+    ghc-options: -threaded
 
   command-wrapper-exec:
     source-dirs: app-exec
@@ -131,3 +133,4 @@ executables:
       - *this
       - clock
       - turtle
+    ghc-options: -threaded
