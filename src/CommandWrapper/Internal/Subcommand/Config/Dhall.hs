@@ -176,7 +176,6 @@ import System.Directory
     , setPermissions
     )
 import System.FilePath ((</>), takeDirectory)
-import System.FilePath.Parse (parseFilePath)
 import System.IO.LockFile.Internal
     ( LockingException(..)
     , LockingParameters(LockingParameters)
@@ -213,6 +212,7 @@ import qualified Dhall.TypeCheck
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPutDoc, hPutExpr)
+import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput(..))
 import CommandWrapper.Options.ColourOutput (shouldUseColours)
 import Data.Generics.Internal.VL.Lens ((^.))
 import qualified Data.Verbosity as Verbosity (Verbosity(Normal, Silent))
@@ -1046,14 +1046,6 @@ data Input
     | InputFile FilePath
     | InputExpression Text
   deriving stock (Show)
-
--- TODO: This is a generic pattern, like HasOutput, it should be moved to
--- mainplate?
-class IsInput a where
-    parseInput :: String -> Either String a
-
-instance IsInput FilePath where
-    parseInput = parseFilePath
 
 instance IsInput Input where
     parseInput s = InputFile <$> parseInput s

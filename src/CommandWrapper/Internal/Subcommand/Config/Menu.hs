@@ -13,15 +13,19 @@ module CommandWrapper.Internal.Subcommand.Config.Menu
     ( MenuOptions(..)
     , defMenuOptions
     , menu
+
+    -- * Input
+    , Input(..)
+    , setInput
     )
   where
 
 import Control.Exception (bracket)
-import Control.Monad ((>=>))
 import Data.Functor ((<&>))
 import Data.Word (Word8)
 import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (stdout)
+import GHC.Generics (Generic)
 
 import Graphics.Vty (Vty, mkVty)
 import qualified Graphics.Vty as Vty
@@ -46,38 +50,38 @@ import System.Posix (OpenMode(ReadWrite), closeFd, defaultFileFlags, openFd)
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput))
 import CommandWrapper.Environment (AppNames(AppNames))
+import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput(..))
 import CommandWrapper.Options.ColourOutput (shouldUseColours)
 
 
 data MenuOptions = MenuOptions
-    { items :: [String]
+    { input :: Input
+    , delimiter :: Char
     , selectedPrefix :: String
     , interruptedExitCode :: Word8
     , noSelectionExitCode :: Word8
     }
-  deriving (Show)
+  deriving stock (Generic, Show)
 
-defMenuOptions :: [String] -> MenuOptions
-defMenuOptions items = MenuOptions
-    { items
+defMenuOptions :: MenuOptions
+defMenuOptions = MenuOptions
+    { input = InputStdin
+    , delimiter = '\n'
     , selectedPrefix = "> "
     , interruptedExitCode = 130 -- Same value as `fzf` returns.
     , noSelectionExitCode = 1
     }
 
 menu :: AppNames -> Config -> MenuOptions -> IO ()
-menu AppNames{} Config{colourOutput} opts = do
+menu AppNames{} Config{colourOutput} opts@MenuOptions{delimiter, input} = do
     colours <- shouldUseColours stdout colourOutput
-    withVty
-        $ renderMenu opts colours >=> \case
-            Selection s ->
-                putStrLn s
-            NoSelection ->
-                exitFailure (noSelectionExitCode opts)
-            Interrupted ->
-                exitFailure (interruptedExitCode opts)
+    items <- readInput delimiter input
+    withVty (renderMenu items opts colours) >>= \case
+        Selection s -> putStrLn s
+        NoSelection -> exitFailure (noSelectionExitCode opts)
+        Interrupted -> exitFailure (interruptedExitCode opts)
   where
-    exitFailure :: Word8 -> IO ()
+    exitFailure :: Word8 -> IO a
     exitFailure = exitWith . ExitFailure . fromIntegral
 
 renderItem :: MenuOptions -> Bool -> Bool -> String -> Vty.Image
@@ -103,8 +107,8 @@ data Result
     | NoSelection
     | Interrupted
 
-renderMenu :: MenuOptions -> Bool -> Vty.Vty -> IO Result
-renderMenu opts@MenuOptions{items} colours vty = render 0 0 >>= loop
+renderMenu :: [String] -> MenuOptions -> Bool -> Vty.Vty -> IO Result
+renderMenu items opts colours vty = render 0 0 >>= loop
   where
     menuItems :: [(Int, String)]
     menuItems = zip [0..] items
@@ -226,3 +230,41 @@ withVty f = (acquire `bracket` release) \(vty, _) -> f vty
     release (vty, ttyFd) = do
         Vty.shutdown vty
         closeFd ttyFd
+
+-- {{{ Input ------------------------------------------------------------------
+
+data Input
+    = InputStdin
+    | InputFile FilePath
+    | InputItems [String]
+  deriving stock (Show)
+
+instance IsInput Input where
+    parseInput s = InputFile <$> parseInput s
+
+setInput :: Input -> MenuOptions -> MenuOptions
+setInput input opts = opts{input}
+
+readInput :: Char -> Input -> IO [String]
+readInput delimiter = \case
+    InputStdin ->
+        parse <$> getContents
+
+    InputFile file ->
+        parse <$> readFile file
+
+    InputItems items ->
+        pure items
+  where
+    parse :: String -> [String]
+    parse "" = []
+    parse s  =
+        uncurry (:) case break (== delimiter) s of
+            (x, s') ->
+                ( x
+                , case s' of
+                    [] -> []
+                    _ : s'' -> parse s''
+                )
+
+-- }}} Input ------------------------------------------------------------------

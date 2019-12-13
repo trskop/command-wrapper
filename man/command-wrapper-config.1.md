@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 11th December 2019
+% 12th December 2019
 
 
 # NAME
@@ -78,7 +78,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e}
 \[*FILE*|\--subcommand-config *SUBCOMMAND*]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--manu \[*STRING* ...]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--manu
+{\--input=*FILE*|\--input *FILE*|-i *FILE*|\--arguments \[*STRING* \[...]]}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
 
@@ -380,8 +381,11 @@ We can organise `config` subcommand abilities into following categories:
 \--subcommand-config
 :   Open subcommand config when invoked with `--edit`.
 
-\--menu \[*STRING* ...]
+\--menu
 :   Display selection menu.  Selected value is printed to standard output.
+
+\--arguments \[*STRING* \[...]]
+:   Use arguments (*STRING*s) as input.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.

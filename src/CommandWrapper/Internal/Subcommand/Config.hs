@@ -20,7 +20,7 @@ module CommandWrapper.Internal.Subcommand.Config
 
 import Prelude (fromIntegral)
 
-import Control.Applicative ((<*>), (<|>), many, optional, pure)
+import Control.Applicative ((*>), (<*>), (<|>), many, optional, pure)
 import Control.Monad (when)
 import Data.Bool (Bool(False, True), (&&), (||), not, otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
@@ -114,11 +114,7 @@ import qualified CommandWrapper.Options.Optparse as Options
 --  , splitArguments'
     )
 import qualified CommandWrapper.Options.Shell as Options (Shell)
-import CommandWrapper.Internal.Subcommand.Config.Dhall
-    ( HasInput
-    , parseInput
-    , setInput
-    )
+import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput, parseInput)
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Bash(..)
     , BashMode(..)
@@ -128,6 +124,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Format(..)
     , Freeze(..)
     , FreezePurpose(..)
+    , HasInput
     , Hash(..)
     , Input(..)
     , Interpreter(..)
@@ -141,6 +138,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , ToTextMode(..)
     , Variable(..)
     , addVariable
+    , bash
     , defBash
     , defDiff
     , defExec
@@ -153,7 +151,6 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defRepl
     , defResolve
     , defToText
-    , bash
     , diff
     , exec
     , filter
@@ -166,6 +163,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , resolve
     , setAllowImports
     , setFreezePurpose
+    , setInput
     , setSemanticCacheMode
     , toText
     )
@@ -184,6 +182,10 @@ import CommandWrapper.Internal.Subcommand.Config.Menu
     ( MenuOptions(..)
     , defMenuOptions
     , menu
+    )
+import qualified CommandWrapper.Internal.Subcommand.Config.Menu as Menu
+    ( Input(InputItems)
+    , setInput
     )
 
 
@@ -282,7 +284,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many letOption
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> optional outputOption
-                <*> optional (expressionOption <|> inputOption)
+                <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
     , dhallReplFlag
@@ -296,7 +298,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , dhallHashFlag
         <*> ( dualFoldEndo
-                <$> optional (expressionOption <|> inputOption)
+                <$> optional (expressionOption <|> inputOption Dhall.setInput)
                 <*> optional outputOption
             )
 
@@ -305,27 +307,27 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <$> many (remoteOnlyFlag <|> noRemoteOnlyFlag)
                 <*> many (forSecurityFlag <|> forCachingFlag)
                 <*> optional outputOption
-                <*> optional (expressionOption <|> inputOption)
+                <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
     , dhallFormatFlag
         <*> ( dualFoldEndo
 --              <$> many (checkFlag <|> noCheckFlag)
                 <$> optional outputOption
-                <*> optional (expressionOption <|> inputOption)
+                <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
     , dhallLintFlag
         <*> ( dualFoldEndo
                 <$> optional outputOption
-                <*> optional (expressionOption <|> inputOption)
+                <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
     , dhallResolveFlag
         <*> ( dualFoldEndo
                 <$> many (cacheFlag <|> noCacheFlag)
                 <*> optional outputOption
-                <*> optional (expressionOption <|> inputOption)
+                <*> optional (expressionOption <|> inputOption Dhall.setInput)
                 <*> optional listDependenciesOption
             )
 
@@ -334,12 +336,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> optional declareOption
-                <*> optional (expressionOption <|> inputOption)
+                <*> optional (expressionOption <|> inputOption Dhall.setInput)
                 <*> optional outputOption
             )
 
     , dhallExecFlag
-        <*> (expressionOption <|> inputOption)
+        <*> (expressionOption <|> inputOption Dhall.setInput)
         <*> ( dualFoldEndo
                 <$> optional
                     ( setInterpreter
@@ -354,7 +356,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> many listFlag
-                <*> optional (expressionOption <|> inputOption)
+                <*> optional (expressionOption <|> inputOption Dhall.setInput)
                 <*> optional outputOption
             )
 
@@ -365,7 +367,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> many letOption
                 <*> optional outputOption
-                <*> optional (expressionOption <|> inputOption)
+                <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
     , editFlag
@@ -377,7 +379,12 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
             )
 
     , menuFlag
-        <*> many (Options.strArgument (Options.metavar "STRING"))
+        <*> ( dualFoldEndo
+            <$> optional
+                ( inputOption Menu.setInput
+                <|> (argumentsFlag *> menuArguments)
+                )
+            )
 
     , helpFlag
 
@@ -396,11 +403,8 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchToEditMode :: Endo EditOptions -> Endo (ConfigMode Global.Config)
     switchToEditMode (Endo f) = switchTo (Edit (f defEditOptions) globalConfig)
 
-    -- switchToMenuMode :: Endo MenuOptions -> Endo (ConfigMode Global.Config)
-    -- switchToMenuMode (Endo f) = switchTo (Menu (f defMenuOptions) globalConfig)
-
-    switchToMenuMode :: [String] -> Endo (ConfigMode Global.Config)
-    switchToMenuMode items = switchTo (Menu (defMenuOptions items) globalConfig)
+    switchToMenuMode :: Endo MenuOptions -> Endo (ConfigMode Global.Config)
+    switchToMenuMode (Endo f) = switchTo (Menu (f defMenuOptions) globalConfig)
 
     switchToDhallHashMode :: Endo Dhall.Hash -> Endo (ConfigMode Global.Config)
     switchToDhallHashMode f =
@@ -522,18 +526,16 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     setType showType = Endo \opts -> opts{Dhall.showType}
 
     expressionOption
-        :: HasInput a
+        :: Dhall.HasInput a
         => Options.Parser (Endo a)
     expressionOption =
-        Endo . setInput . Dhall.InputExpression
+        Endo . Dhall.setInput . Dhall.InputExpression
             <$> Options.strOption
                 (Options.long "expression" <> Options.metavar "EXPRESSION")
 
-    inputOption
-        :: HasInput a
-        => Options.Parser (Endo a)
-    inputOption =
-        Endo . setInput
+    inputOption :: IsInput a => (a -> b -> b) -> Options.Parser (Endo b)
+    inputOption f =
+        Endo . f
             <$> Options.option (Options.eitherReader parseInput)
                     (Options.long "input" <> Options.short 'i')
 
@@ -734,7 +736,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         ]
 
     menuFlag
-        :: Options.Parser ([String] -> Endo (ConfigMode Global.Config))
+        :: Options.Parser (Endo MenuOptions -> Endo (ConfigMode Global.Config))
     menuFlag = Options.flag mempty switchToMenuMode (Options.long "menu")
 
     fileArgument :: Options.Parser (Endo EditOptions)
@@ -755,6 +757,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     subcommandArgument :: Options.Parser String
     subcommandArgument = Options.strArgument (Options.metavar "SUBCOMMAND")
+
+    argumentsFlag :: Options.Parser ()
+    argumentsFlag = Options.flag' () (Options.long "arguments")
+
+    menuArguments :: Options.Parser (Endo MenuOptions)
+    menuArguments =
+        Endo . Menu.setInput . Menu.InputItems
+            <$> many (Options.strArgument (Options.metavar "STRING"))
 
     helpFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
@@ -936,7 +946,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "menu"
-            <+> Pretty.brackets (metavar "STRING" <+> "...")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "input" "FILE"
+                <> "|" <> longOption "arguments"
+                    <+> Pretty.brackets (metavar "STRING" <+> "...")
+                )
 
         , "config"
             <+> longOption "init"
@@ -1127,9 +1141,14 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , longOption "edit" <> "."
             ]
 
-        , optionDescription ["--menu [STRING ...]"]
+        , optionDescription ["--menu"]
             [ Pretty.reflow "Display selection menu. Selected value is printed\
                 \ to standard output."
+            ]
+
+        , optionDescription ["--arguments [STRING ...]"]
+            [ Pretty.reflow "Use arguments", "(" <> metavar "STRING" <> "s)"
+            , Pretty.reflow "as input."
             ]
 
         , optionDescription ["--help", "-h"]
@@ -1289,6 +1308,9 @@ configSubcommandCompleter appNames cfg _shell index words
     hadSubcommandConfig =
         "--subcommand-config" `List.elem` wordsBeforePattern
 
+    hadArguments =
+        "--arguments" `List.elem` wordsBeforePattern
+
     mwhen p x = if p then x else mempty
     munless p = mwhen (not p)
 
@@ -1394,13 +1416,16 @@ configSubcommandCompleter appNames cfg _shell index words
                 , hadDhallRepl
                 , hadHelp
                 , hadInit
-                , hadMenu
 
                 -- Input options can be specified only once.
                 , hadInput
 
                 -- '--input' and '--expression' are mutually exclusive.
                 , hadExpression
+
+                -- Once '--arguments' was passed we can't pass '--input' any
+                -- more.
+                , hadMenu && hadArguments
 
                 , not $ List.or
                     [ hadDhall
@@ -1414,6 +1439,7 @@ configSubcommandCompleter appNames cfg _shell index words
                     , hadDhallLint
                     , hadDhallResolve
                     , hadDhallText
+                    , hadMenu
                     ]
                 ]
             )
@@ -1668,6 +1694,7 @@ configSubcommandCompleter appNames cfg _shell index words
             )
             ["--for-security", "--for-caching"]
         <> mwhen (hadEdit && not hadSubcommandConfig) ["--subcommand-config"]
+        <> mwhen (hadMenu && not hadArguments) ["--arguments"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 
