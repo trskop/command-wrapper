@@ -415,6 +415,8 @@ function dhall-filter() {
 # Usage:
 #
 #   dhall-format
+#     [--expression=EXPRESSION|--expression EXPRESSION|--input=FILE|--input FILE|-i FILE]
+#     [--output=FILE|--output FILE|-o FILE]
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-format() {
@@ -521,6 +523,38 @@ function dhall-exec() {
     # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
     # specific toolset configuration.
     "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-exec "$@"
+}
+
+# Display selection menu.  Selected value is printed to standard output.
+#
+# Usage:
+#
+#   edit-file [FILE|--subcommand-config SUBCOMMAND]
+#
+# See `TOOLSET help [--man] config` for more details.
+function edit-file() {
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    #
+    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
+    # specific toolset configuration.
+    "${COMMAND_WRAPPER_EXE}" --no-aliases config --edit "$@"
+}
+
+# Display selection menu.  Selected value is printed to standard output.
+#
+# Usage:
+#
+#   select-menu [--input=FILE|--arguments [STRING ...]]
+#
+# See `TOOLSET help [--man] config` for more details.
+function select-menu() {
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    #
+    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
+    # specific toolset configuration.
+    "${COMMAND_WRAPPER_EXE}" --no-aliases config --menu "$@"
 }
 
 # Print Dhall expression that describes how this subcommand should be invoked
