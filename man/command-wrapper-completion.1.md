@@ -108,6 +108,9 @@ interface for querying Command Wrapper's command line interface (CLI).
     control which library is produced.  If neither `--shell=`*SHELL* nor
     `--dhall=`*LIBRARY* are specified then `--shell=bash` is assumed.
 
+\--shell=*SHELL*
+:   Print library for *SHELL*.  Currently only supported value is *bash*.
+
     In a subcommand implemented in Bash we can include a support library using
     a code snippet that is printed by following command:
 
@@ -121,24 +124,8 @@ interface for querying Command Wrapper's command line interface (CLI).
     TOOLSET completion --library [--shell=SHELL]
     ```
 
-    Or piping it to pager:
-
-    ```
-    TOOLSET completion --library [--shell=SHELL] | less
-    ```
-
-    On Debian we can also use `sensible-pager` command instead of directly
-    calling specific one.  Commands like `bat` or other `cat`-like tool with
-    syntax highlighting support are also a great choice:
-
-    ```
-    TOOLSET completion --library --shell=bash | bat --language bash
-    ```
-
-    See also `command-wrapper-bash-library(7)` manual page.
-
-\--shell=*SHELL*
-:   Print library for *SHELL*.  Currently only supported value is *bash*.
+    For more useful tips and additional documentation see also
+    `command-wrapper-bash-library(7)` manual page.
 
 \--dhall=*LIBRARY*
 :   Print specified Dhall *LIBRARY*, or its import snippet when `--import` is
@@ -150,6 +137,12 @@ interface for querying Command Wrapper's command line interface (CLI).
     *   **command-wrapper** -- Latest (known) version of Command Wrapper's
         Dhall library.
     *   **exec** -- Latest (known) version of Command Wrapper's Exec library.
+
+    Produced dhall libraries can be examined using following:
+
+    ```
+    TOOLSET completion --library --dhall=prelude | TOOLSET config --dhall-filter input.List.map
+    ```
 
 \--import
 :   Print code snipped for importing *SHELL* or Dhall *LIBRARY*.

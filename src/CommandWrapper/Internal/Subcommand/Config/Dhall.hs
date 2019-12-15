@@ -1017,8 +1017,7 @@ filter appNames config Filter{..} = handleExceptions appNames config do
                     }
                 , Dhall.Core.Binding
                     { variable = "Input"
-                    , annotation =
-                        Just (Nothing, Dhall.Core.Const Dhall.Core.Type)
+                    , annotation = Nothing
                     , value = annotation
                     , bindingSrc0 = Nothing
                     , bindingSrc1 = Nothing
