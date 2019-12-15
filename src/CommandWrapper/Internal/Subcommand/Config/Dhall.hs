@@ -97,9 +97,12 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     , addVariable
 
     -- * Helpers
-    , setAllowImports
-    , handleExceptions
     , hPutExpr
+    , handleExceptions
+    , setAllowImports
+    , setAlpha
+    , setAnnotate
+    , setShowType
     )
   where
 
@@ -973,11 +976,14 @@ toText appNames config ToText{..} = handleExceptions appNames config do
 -- {{{ Filter -----------------------------------------------------------------
 
 data Filter = Filter
-    { input :: Input
-    , output :: Output
+    { allowImports :: Bool
+    , alpha :: Bool
+    , annotate :: Bool
     , expression :: Text
-    , allowImports :: Bool
+    , input :: Input
+    , output :: Output
     , semanticCache :: SemanticCacheMode
+    , showType :: Bool
     , variables :: [Variable]
     }
   deriving stock (Generic, Show)
@@ -989,11 +995,14 @@ instance HasOutput Filter where
 
 defFilter :: Text -> Filter
 defFilter expression = Filter
-    { input = InputStdin
-    , output = OutputStdout
+    { allowImports = True
+    , alpha = False
+    , annotate = False
     , expression
-    , allowImports = True
+    , input = InputStdin
+    , output = OutputStdout
     , semanticCache = UseSemanticCache
+    , showType = False
     , variables = []
     }
 
@@ -1029,13 +1038,36 @@ filter appNames config Filter{..} = handleExceptions appNames config do
         expr' <- Dhall.Core.Let inVar . Dhall.Core.Let inVarType
             <$> resolveImports True (expr, emptyStatus)
         expr'' <- doTheLetThing allowImports semanticCache variables expr'
-        _ <- typeOf expr''
-        withOutputHandle' (hPutExpr config) (Dhall.Core.normalize expr'')
+        processExpression expr'' >>= withOutputHandle' (hPutExpr config)
   where
     withOutputHandle' :: (Handle -> a -> IO ()) -> a -> IO ()
     withOutputHandle' = withOutputHandle input output
 
     typeOf = Dhall.Core.throws . Dhall.TypeCheck.typeOf
+
+    processExpression expr = do
+        expressionType <- typeOf expr
+
+        (resultExpression, inferredType) <- if showType
+            then
+                (expressionType,) <$> Dhall.Core.throws
+                    (Dhall.TypeCheck.typeOf expressionType)
+            else
+                pure (expr, expressionType)
+
+        let normalizedExpression = Dhall.Core.normalize resultExpression
+
+            alphaNormalizedExpression =
+                if alpha
+                    then Dhall.Core.alphaNormalize normalizedExpression
+                    else normalizedExpression
+
+            annotatedExpression =
+                if annotate
+                    then Annot alphaNormalizedExpression inferredType
+                    else alphaNormalizedExpression
+
+        pure annotatedExpression
 
     resolveImports
         :: Bool
@@ -1209,6 +1241,15 @@ setSemanticCacheMode = set (field' @"semanticCache")
 
 setAllowImports :: HasField' "allowImports" a Bool => Bool -> a -> a
 setAllowImports = set (field' @"allowImports")
+
+setAlpha :: HasField' "alpha" a Bool => Bool -> a -> a
+setAlpha = set (field' @"alpha")
+
+setAnnotate :: HasField' "annotate" a Bool => Bool -> a -> a
+setAnnotate = set (field' @"annotate")
+
+setShowType :: HasField' "showType" a Bool => Bool -> a -> a
+setShowType = set (field' @"showType")
 
 renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
 renderDoc Config{colourOutput} h doc =

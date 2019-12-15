@@ -162,9 +162,12 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , repl
     , resolve
     , setAllowImports
+    , setAlpha
+    , setAnnotate
     , setFreezePurpose
     , setInput
     , setSemanticCacheMode
+    , setShowType
     , toText
     )
 import CommandWrapper.Internal.Subcommand.Config.Edit
@@ -369,6 +372,9 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> Options.strArgument (Options.metavar "EXPRESSION")
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many (alphaFlag <|> noAlphaFlag)
+                <*> many (annotateFlag <|> noAnnotateFlag)
+                <*> many (typeFlag <|> noTypeFlag)
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> many letOption
                 <*> optional outputOption
@@ -491,24 +497,24 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     dhallFlag =
         Options.flag mempty switchToDhallMode (Options.long "dhall")
 
-    alphaFlag :: Options.Parser (Endo Dhall.Interpreter)
+    alphaFlag :: HasField' "alpha" a Bool => Options.Parser (Endo a)
     alphaFlag = Options.flag' (setAlpha True) (Options.long "alpha")
 
-    noAlphaFlag :: Options.Parser (Endo Dhall.Interpreter)
+    noAlphaFlag :: HasField' "alpha" a Bool => Options.Parser (Endo a)
     noAlphaFlag = Options.flag' (setAlpha False) (Options.long "no-alpha")
 
-    setAlpha :: Bool -> Endo Dhall.Interpreter
-    setAlpha alpha = Endo \opts -> opts{Dhall.alpha}
+    setAlpha :: HasField' "alpha" a Bool => Bool -> Endo a
+    setAlpha = Endo . Dhall.setAlpha
 
-    annotateFlag :: Options.Parser (Endo Dhall.Interpreter)
+    annotateFlag :: HasField' "annotate" a Bool => Options.Parser (Endo a)
     annotateFlag = Options.flag' (setAnnotate True) (Options.long "annotate")
 
-    noAnnotateFlag :: Options.Parser (Endo Dhall.Interpreter)
+    noAnnotateFlag :: HasField' "annotate" a Bool => Options.Parser (Endo a)
     noAnnotateFlag =
         Options.flag' (setAnnotate False) (Options.long "no-annotate")
 
-    setAnnotate :: Bool -> Endo Dhall.Interpreter
-    setAnnotate annotate = Endo \opts -> opts{Dhall.annotate}
+    setAnnotate :: HasField' "annotate" a Bool => Bool -> Endo a
+    setAnnotate = Endo . Dhall.setAnnotate
 
     allowImportsFlag
         :: HasField' "allowImports" a Bool => Options.Parser (a -> a)
@@ -522,14 +528,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.flag' (Dhall.setAllowImports False)
         (Options.long "no-allow-imports")
 
-    typeFlag :: Options.Parser (Endo Dhall.Interpreter)
-    typeFlag = Options.flag' (setType True) (Options.long "type")
+    typeFlag :: HasField' "showType" a Bool => Options.Parser (Endo a)
+    typeFlag = Options.flag' (setShowType True) (Options.long "type")
 
-    noTypeFlag :: Options.Parser (Endo Dhall.Interpreter)
-    noTypeFlag = Options.flag' (setType False) (Options.long "no-type")
+    noTypeFlag :: HasField' "showType" a Bool => Options.Parser (Endo a)
+    noTypeFlag = Options.flag' (setShowType False) (Options.long "no-type")
 
-    setType :: Bool -> Endo Dhall.Interpreter
-    setType showType = Endo \opts -> opts{Dhall.showType}
+    setShowType :: HasField' "showType" a Bool => Bool -> Endo a
+    setShowType = Endo . Dhall.setShowType
 
     expressionOption
         :: Dhall.HasInput a
@@ -807,13 +813,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 --
         [ "config"
             <+> longOption "dhall"
-            <+> Pretty.brackets
-                    ( longOption "[no-]alpha"
-                    <> "|" <> longOption "[no-]allow-imports"
-                    <> "|" <> longOption "[no-]annotate"
-                    <> "|" <> longOption "[no-]type"
-                    <> "|" <> longOption "[no-]cache"
-                    )
+            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "[no-]alpha")
+            <+> Pretty.brackets (longOption "[no-]annotate")
+            <+> Pretty.brackets (longOption "[no-]cache")
+            <+> Pretty.brackets (longOption "[no-]type")
             <+> Pretty.brackets
                 ( longOptionWithArgument "let" "NAME=EXPRESSION"
                 )
@@ -825,10 +829,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-filter"
-            <+> Pretty.brackets
-                    ( longOption "[no-]allow-imports"
-                    <> "|" <> longOption "[no-]cache"
-                    )
+            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "[no-]alpha")
+            <+> Pretty.brackets (longOption "[no-]annotate")
+            <+> Pretty.brackets (longOption "[no-]cache")
+            <+> Pretty.brackets (longOption "[no-]type")
             <+> Pretty.brackets
                 ( longOptionWithArgument "let" "NAME=EXPRESSION"
                 )
@@ -911,10 +916,8 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-bash"
-            <+> Pretty.brackets
-                ( longOption "[no-]allow-imports"
-                <> "|" <> longOption "[no-]cache"
-                )
+            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "[no-]cache")
             <+> Pretty.brackets (longOptionWithArgument "declare" "NAME")
             <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
@@ -924,10 +927,8 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-text"
-            <+> Pretty.brackets
-                ( longOption "[no-]allow-imports"
-                <> "|" <> longOption "[no-]cache"
-                )
+            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "[no-]cache")
             <+> Pretty.brackets
                 ( longOption "list"
                 <+> Pretty.brackets (longOption "nul[l]")
@@ -1357,27 +1358,7 @@ configSubcommandCompleter appNames cfg _shell index words
             , "--menu"
             ]
         <> mwhen (hadInit && not hadToolset) ["--toolset="]
-        <> munless
-            ( List.or
-                [ hadDhallBash
-                , hadDhallDiff
-                , hadDhallExec
-                , hadDhallFilter
-                , hadDhallFormat
-                , hadDhallFreeze
-                , hadDhallHash
-                , hadDhallLint
-                , hadDhallRepl
-                , hadDhallResolve
-                , hadDhallText
-                , hadEdit
-                , hadHelp
-                , hadInit
-                , hadMenu
-
-                , not hadDhall
-                ]
-            )
+        <> mwhen (hadDhall || hadDhallFilter)
             [ "--alpha", "--no-alpha"
             , "--annotate", "--no-annotate"
             , "--type", "--no-type"

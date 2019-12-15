@@ -12,14 +12,21 @@ toolset configuration.
 # USAGE
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
-\[\--\[no-]allow-imports|\--\[no-]alpha|\--\[no-]annotate|\--\[no-]type|\--\[no-]cache]
+\[\--\[no-]allow-imports]
+\[\--\[no-]alpha]
+\[\--\[no-]annotate]
+\[\--\[no-]cache]
+\[\--\[no-]type]
 \[\--let=*NAME*=*EXPRESSION* ...]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-filter
-\[\--\[no-]cache]
 \[\--\[no-]allow-imports]
+\[\--\[no-]alpha]
+\[\--\[no-]annotate]
+\[\--\[no-]cache]
+\[\--\[no-]type]
 \[\--let=*NAME*=*EXPRESSION* ...]
 \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
@@ -56,13 +63,15 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-hash
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-bash
-\[\--\[no-]allow-imports|\--\[no-]cache]
+\[\--\[no-]allow-imports]
+\[\--\[no-]cache]
 \[\--declare=*NAME*]
 \[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-text
-\[\--\[no-]allow-imports|\--\[no-]cache]
+\[\--\[no-]allow-imports]
+\[\--\[no-]cache]
 \[\--list \[--nul\[l]]]
 \[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
