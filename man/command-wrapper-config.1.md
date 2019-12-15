@@ -63,7 +63,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-bash
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-text
 \[\--\[no-]allow-imports|\--\[no-]cache]
-\[\--list]
+\[\--list \[--nul\[l]]]
 \[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 

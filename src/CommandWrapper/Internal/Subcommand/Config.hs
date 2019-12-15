@@ -356,6 +356,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> many listFlag
+                <*> many
+                    ( nulFlag \opts ->
+                        (opts :: Dhall.ToText){Dhall.outputDelimiter = '\0'}
+                    )
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
                 <*> optional outputOption
             )
@@ -380,7 +384,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , menuFlag
         <*> ( dualFoldEndo
-            <$> optional (nulFlag \opts -> opts{delimiter = '\0'})
+            <$> many (nulFlag \opts -> opts{delimiter = '\0'})
             <*> optional
                 ( inputOption Menu.setInput
                 <|> (argumentsFlag *> menuArguments)
@@ -923,7 +927,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 ( longOption "[no-]allow-imports"
                 <> "|" <> longOption "[no-]cache"
                 )
-            <+> Pretty.brackets (longOption "list")
+            <+> Pretty.brackets
+                ( longOption "list"
+                <+> Pretty.brackets (longOption "nul[l]")
+                )
             <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
                 <> "|" <> longOptionWithArgument "input" "FILE"
@@ -1710,7 +1717,13 @@ configSubcommandCompleter appNames cfg _shell index words
             ["--for-security", "--for-caching"]
         <> mwhen (hadEdit && not hadSubcommandConfig) ["--subcommand-config"]
         <> mwhen (hadMenu && not hadArguments) ["--arguments"]
-        <> mwhen (hadMenu && not hadArguments) ["--nul", "-0"]
+        <> mwhen
+            ( List.or
+                [ hadMenu && not hadArguments
+                , hadDhallText
+                ]
+            )
+            ["--nul", "-0"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 

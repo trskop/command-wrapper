@@ -108,7 +108,7 @@ import Control.Exception (Exception, SomeException, bracket, handle, throwIO)
 import Control.Monad (unless)
 import Data.Foldable (foldrM, for_, traverse_)
 import Data.Functor ((<&>))
-import Data.List as List (dropWhile, span)
+import Data.List as List (dropWhile, map, span)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Monoid ((<>))
 import Data.Typeable (Typeable)
@@ -140,7 +140,15 @@ import Data.Generics.Product.Typed (HasType, typed)
 import Data.Output (IsOutput, HasOutput)
 import qualified Data.Output (IsOutput(..), HasOutput(..))
 import Data.Text (Text)
-import qualified Data.Text as Text (unlines, unpack)
+import qualified Data.Text as Text
+    ( concat
+    , intercalate
+    , singleton
+    , snoc
+    , unlines
+    , unpack
+    , unwords
+    )
 import qualified Data.Text.Encoding as Text (encodeUtf8)
 import qualified Data.Text.IO as Text
     ( hPutStr
@@ -901,6 +909,7 @@ data ToText = ToText
     , allowImports :: Bool
     , semanticCache :: SemanticCacheMode
     , mode :: ToTextMode
+    , outputDelimiter :: Char
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
@@ -916,6 +925,7 @@ defToText = ToText
     , allowImports = True
     , semanticCache = UseSemanticCache
     , mode = PlainTextMode
+    , outputDelimiter = '\n'
     }
 
 toText :: AppNames -> Config -> ToText -> IO ()
@@ -945,10 +955,17 @@ toText appNames config ToText{..} = handleExceptions appNames config do
 
         ListTextMode ->
             dhallInput (Dhall.auto @[Text])
-            >>= withOutputHandle' (\h -> Text.hPutStr h . Text.unlines)
+            >>= withOutputHandle' (\h -> Text.hPutStr h . undelimited)
   where
     withOutputHandle' :: (Handle -> a -> IO ()) -> a -> IO ()
     withOutputHandle' = withOutputHandle input output
+
+    undelimited :: [Text] -> Text
+    undelimited = case outputDelimiter of
+        '\n' -> Text.unlines
+        '\0' -> Text.concat . List.map (`Text.snoc` '\0')
+        ' ' -> Text.unwords
+        d -> Text.intercalate (Text.singleton d)
 
 -- }}} To Text ----------------------------------------------------------------
 
