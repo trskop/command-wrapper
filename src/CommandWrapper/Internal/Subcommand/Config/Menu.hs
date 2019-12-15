@@ -30,10 +30,11 @@ import GHC.Generics (Generic)
 import Graphics.Vty (Vty, mkVty)
 import qualified Graphics.Vty as Vty
     ( Config(inputFd, outputFd)
-    , Image
-    , Vty(..)
     , Event(EvKey)
+    , Image
     , Key(KChar, KDown, KEnter, KEsc, KPageDown, KPageUp, KUp)
+    , Modifier(MCtrl)
+    , Vty(..)
     , black
     , currentAttr
     , displayBounds
@@ -169,25 +170,35 @@ data Action
 
 getAction :: Vty.Vty -> Int -> Int -> Int -> IO Action
 getAction vty maxLine pageLines currentLine = Vty.nextEvent vty <&> \case
-    Vty.EvKey key _ -> case key of
-        Vty.KUp ->
+    Vty.EvKey key modifiers -> case key of
+        Vty.KUp | null modifiers ->
             LineChanged lineUp
-        Vty.KDown ->
+        Vty.KDown | null modifiers ->
             LineChanged lineDown
-        Vty.KEnter ->
+        Vty.KEnter | null modifiers ->
             SelectedLine currentLine
-        Vty.KEsc ->
+        Vty.KEsc | null modifiers ->
             Quit
-        Vty.KPageUp ->
+        Vty.KPageUp | null modifiers ->
             LineChanged pageUp
-        Vty.KPageDown ->
+        Vty.KPageDown | null modifiers ->
             LineChanged pageDown
         Vty.KChar ch -> case ch of
-            'k' ->
+            'k' | null modifiers ->
                 LineChanged lineUp
-            'j' ->
+            'j' | null modifiers ->
                 LineChanged lineDown
-            'q' ->
+            'p' | modifiers == [Vty.MCtrl] ->
+                LineChanged lineUp
+            'n' | modifiers == [Vty.MCtrl] ->
+                LineChanged lineDown
+            'G' | null modifiers ->
+                LineChanged maxLine
+            'c' | modifiers == [Vty.MCtrl] ->
+                Quit
+            'q' | null modifiers ->
+                Quit
+            'g' | modifiers == [Vty.MCtrl] ->
                 Quit
             _ ->
                 None

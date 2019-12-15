@@ -159,6 +159,34 @@ We can organise `config` subcommand abilities into following categories:
     When used inside external subcommand we can use `edit-file` function
     provided by Command Wrapper Bash subcommand library.
 
+    Key bindings:
+
+    `Enter`
+    :   Accept current selection, print it to `stdout`, and exit with status
+        code `0`.  If there is no selection to be made, i.e. empty input, then
+        pressing `Enter` will result in nothing being printed to `stdout`, and
+        terminating with exit status `1`.
+
+    `Up`, `CTRL-P`
+    :   Move cursor one line up.
+
+    `Down`, `CTRL-N`
+    :   Move cursor one line down.
+
+    `PageUp`
+    :   Move cursor one page up.
+
+    `PageDown`
+    :   Move cursor one page down.
+
+    `G` (upper-case `g`)
+    :   Move cursor to the last line.
+
+    `ESC`, `CTRL-G`, `CTRL-C`
+    :   Abort, i.e. nothing is printed to `stdout`, and exit with status code
+        `130`.
+
+
 **Edit File** (`--edit`)
 :   Edit configuration file or any other file.  This functionality does allow
     subcommands to respect user editor preferences without needing to
