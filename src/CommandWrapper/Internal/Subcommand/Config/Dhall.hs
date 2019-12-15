@@ -99,6 +99,7 @@ module CommandWrapper.Internal.Subcommand.Config.Dhall
     -- * Helpers
     , setAllowImports
     , handleExceptions
+    , hPutExpr
     )
   where
 
@@ -202,7 +203,7 @@ import qualified Control.Monad.Trans.State.Strict as State
 --import qualified Data.ByteString.Lazy
 --import qualified Data.ByteString.Lazy.Char8
 --import qualified Data.Text
-import qualified Data.Text.Prettyprint.Doc                 as Pretty
+import qualified Data.Text.Prettyprint.Doc as Pretty
 --import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import qualified Dhall
 --import qualified Dhall.Binary
@@ -1171,14 +1172,14 @@ withOutputHandle input = \case
             ($ stdout)
 
         InputFile filePath ->
-            -- TODO: Consider using a temporary file so that this operation can
-            -- be perceived as atomic from the outside.
+            -- TODO: Use atomic version instead.
             \m a -> withFile filePath WriteMode \h -> m h a
 
         InputExpression _ ->
             ($ stdout)
 
     OutputFile filePath ->
+        -- TODO: Use atomic version instead.
         \m a -> withFile filePath WriteMode \h -> m h a
 
 -- }}} Input/Output -----------------------------------------------------------

@@ -58,7 +58,15 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
-import System.IO (IO, putStrLn, stderr, stdout)
+import System.IO
+    ( Handle
+    , IO
+    , IOMode(WriteMode)
+    , putStrLn
+    , stderr
+    , stdout
+    , withFile
+    )
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
@@ -82,7 +90,7 @@ import Data.Output
 import qualified Data.Output as Output (HasOutput(output))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines, unpack)
-import qualified Data.Text.IO as Text (putStr, putStrLn)
+import qualified Data.Text.IO as Text (hPutStrLn, putStr, putStrLn)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -131,6 +139,7 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Input(..)
     , defExec
     , exec
+    , hPutExpr
     )
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
@@ -275,10 +284,22 @@ data ImportOrContent = Import | Content
   deriving stock (Generic, Show)
 
 data LibraryOptions = LibraryOptions
-    { shell :: Options.Shell
+    { library :: Library
     , output :: OutputStdoutOrFile
     , importOrContent :: ImportOrContent
     }
+  deriving stock (Generic, Show)
+
+data Library
+    = ShellLibrary Options.Shell
+    | DhallLibrary DhallLibrary
+  deriving stock (Generic, Show)
+
+data DhallLibrary
+    = PreludeV11_1_0
+    | PreludeV12_0_0
+    | CommandWrapper
+    | CommandWrapperExec
   deriving stock (Generic, Show)
 
 instance HasOutput LibraryOptions where
@@ -317,9 +338,19 @@ instance Options.HasShell ScriptOptions where
     updateShell = mapEndo \f opts@ScriptOptions{shell} ->
         (opts :: ScriptOptions){shell = f shell}
 
+instance Options.HasShell Library where
+    updateShell f = Endo \case
+        ShellLibrary shell ->
+            ShellLibrary (f `appEndo` shell)
+        DhallLibrary _ ->
+            -- Bash is the default shell.
+            ShellLibrary (f `appEndo` Options.Bash)
+
 instance Options.HasShell LibraryOptions where
-    updateShell = mapEndo \f opts@LibraryOptions{shell} ->
-        (opts :: LibraryOptions){shell = f shell}
+    updateShell f = Endo \opts@LibraryOptions{library} ->
+        (opts :: LibraryOptions)
+            { library = Options.updateShell f `appEndo` library
+            }
 
 instance Options.HasShell (CompletionMode cfg) where
     updateShell f = Endo \case
@@ -380,7 +411,7 @@ defScriptOptions = ScriptOptions
 
 defLibraryOptions :: LibraryOptions
 defLibraryOptions = LibraryOptions
-    { shell = Options.Bash
+    { library = ShellLibrary Options.Bash
     , output = OutputStdoutOnly
     , importOrContent = Content
     }
@@ -479,7 +510,76 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                                     Options.Zsh  -> zsh
 
         LibraryMode
-          LibraryOptions{shell, output, importOrContent}
+          LibraryOptions
+            { library = DhallLibrary dhallLib
+            , output
+            , importOrContent
+            }
+          config' -> do
+
+            let hPutExpr = Dhall.hPutExpr config'
+
+                hPutLib :: Handle -> IO ()
+                hPutLib h = case (dhallLib, importOrContent) of
+                    (PreludeV11_1_0, Content) -> hPutExpr h
+                        $(Dhall.TH.staticDhallExpression
+                            "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
+                            \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
+                        )
+
+                    (PreludeV11_1_0, Import) -> Text.hPutStrLn h
+                        "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
+                        \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
+
+                    (PreludeV12_0_0, Content) -> hPutExpr h
+                        $(Dhall.TH.staticDhallExpression
+                            "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
+                            \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
+                        )
+
+                    (PreludeV12_0_0, Import) -> Text.hPutStrLn h
+                        "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
+                        \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
+
+                    -- IMPORTANT!
+                    --
+                    -- Whenever one of these fails to compile then Command
+                    -- Wrapper library was updated, and both hash and import
+                    -- need updating.  Unfortunately it won't always fail due
+                    -- to caching. Keeping this up to date will be a pain.
+                    --
+                    -- TODO: Figure out how to do this in a better way.
+
+                    (CommandWrapper, Content) -> hPutExpr h
+                        $(Dhall.TH.staticDhallExpression
+                            "./dhall/CommandWrapper/package.dhall\
+                            \ sha256:0988a9b80f941e3869bbaab885e80242be13cad8ab3c8d37856baa0bc3b929cb"
+                        )
+
+                    (CommandWrapper, Import) -> Text.hPutStrLn h
+                        "https://raw.githubusercontent.com/trskop/command-wrapper/8af2b37d77e768e12906d61efdcee03fd7cee337/dhall/CommandWrapper/package.dhall\
+                        \ sha256:0988a9b80f941e3869bbaab885e80242be13cad8ab3c8d37856baa0bc3b929cb"
+
+                    (CommandWrapperExec, Content) -> hPutExpr h
+                        $(Dhall.TH.staticDhallExpression
+                            "./dhall/Exec/package.dhall\
+                            \ sha256:150d37b4514e73cea35884e750fc2fc240136162d25589b4cc20cca1f77e3131"
+                        )
+
+                    (CommandWrapperExec, Import) -> Text.hPutStrLn h
+                        "https://raw.githubusercontent.com/trskop/exec/8af2b37d77e768e12906d61efdcee03fd7cee337/dhall/Exec/package.dhall\
+                        \ sha256:150d37b4514e73cea35884e750fc2fc240136162d25589b4cc20cca1f77e3131"
+
+            case output of
+                OutputHandle _ ->
+                    hPutLib stdout
+
+                OutputNotHandle (OutputFile filePath) ->
+                    -- TODO: Use atomic version instead.
+                    withFile filePath WriteMode hPutLib
+
+        LibraryMode
+          LibraryOptions{library = ShellLibrary shell, output, importOrContent}
           Global.Config{colourOutput, verbosity} -> do
 
             let lib :: ByteString
@@ -489,6 +589,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                     $(Dhall.TH.staticDhallExpression
                         "./dhall/import-shell-library.dhall < Bash >.Bash"
                     )
+
                 subcommand' :: forall ann. Pretty.Doc ann
                 subcommand' = pretty (usedName appNames <> " completion")
 
@@ -943,6 +1044,9 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
             <$> findSubcommands appNames config internalSubcommands
                     (List.drop (length @[] "--subcommand=") pat)
 
+  | had "--library", "--dhall=" `List.isPrefixOf` pat =
+      pure (List.filter (pat `List.isPrefixOf`) dhallLibraryOptions)
+
   | hadOneOf ["--help", "-h"] =
         pure []
 
@@ -980,7 +1084,15 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         ] <> outputOptions <> algorithmOptions
 
     -- At the moment we have library only for Bash.
-    libraryOptions = ["--shell=bash", "--import", "--content"]
+    libraryOptions = ["--shell=bash" , "--import" , "--content", "--dhall="]
+
+    dhallLibraryOptions = ("--dhall=" <>)
+        <$> [ "prelude"
+            , "prelude-v11.1.0"
+            , "prelude-v12.0.0"
+            , "command-wrapper"
+            , "exec"
+            ]
 
     completionOptions = ["--shell=", "--subcommand=", "--"] <> outputOptions
 
@@ -1051,9 +1163,9 @@ parseOptions appNames config arguments = do
             <$> ( libraryFlag
                 <*> ( dualFoldEndo
                     <$> many (importFlag <|> contentFlag)
+                    <*> many (Options.shellOption <|> dhallLibraryOption)
                     )
                 )
-            <*> optional Options.shellOption
             <*> optional outputOption
 
         , dualFoldEndo
@@ -1171,6 +1283,29 @@ parseOptions appNames config arguments = do
         Options.flag' setValue (Options.long "content")
       where
         setValue = Endo \opts -> opts{importOrContent = Content}
+
+    dhallLibraryOption :: Options.Parser (Endo LibraryOptions)
+    dhallLibraryOption =
+        Options.option parse (Options.long "dhall" <> Options.metavar "LIBRARY")
+      where
+        parse = Options.eitherReader \s -> case CI.mk s of
+            "prelude-v11.1.0" ->
+                Right $ Endo \opts ->
+                    opts{library = DhallLibrary PreludeV11_1_0}
+            "prelude-v12.0.0" ->
+                Right $ Endo \opts ->
+                    opts{library = DhallLibrary PreludeV12_0_0}
+            "prelude" ->
+                Right $ Endo \opts ->
+                    opts{library = DhallLibrary PreludeV12_0_0}
+            "command-wrapper" ->
+                Right $ Endo \opts ->
+                    opts{library = DhallLibrary CommandWrapper}
+            "exec" ->
+                Right $ Endo \opts ->
+                    opts{library = DhallLibrary CommandWrapperExec}
+            _ ->
+                Left "Unknown Dhall library"
 
     queryFlag :: Options.Parser (Endo (CompletionMode Global.Config))
     queryFlag = Options.flag mempty switchToQueryMode (Options.long "query")
@@ -1355,7 +1490,10 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "completion"
             <+> longOption "library"
-            <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "shell" "SHELL"
+                <> "|" <> longOptionWithArgument "dhall" "LIBRARY"
+                )
             <+> Pretty.brackets
                 (         longOption "import"
                 <> "|" <> longOption "content"
@@ -1503,19 +1641,40 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
     , section "Library options:"
         [ optionDescription ["--library"]
             [ Pretty.reflow "Print a library to standard output that can be\
-                \ used by a subcommand."
+                \ used by a subcommand or a configuration file.  Option"
+            , longOptionWithArgument "shell" "SHELL", "and"
+            , longOptionWithArgument "dhall" "LIBRARY"
+            , Pretty.reflow
+                "are control which library is produced.  If neither"
+            , longOptionWithArgument "shell" "SHELL", "nor"
+            , longOptionWithArgument "dhall" "LIBRARY", "then"
+            , longOptionWithArgument "shell" "bash"
+            , Pretty.reflow "is assumed."
             ]
 
         , optionDescription ["--shell=SHELL"]
-            [ Pretty.reflow "Print library for", metavar "SHELL" <> "."
-            , Pretty.reflow "Currently only supported value is"
+            [ Pretty.reflow "Print library for", metavar "SHELL" <> ","
+            , Pretty.reflow "or import snippet when", longOption "import"
+            , Pretty.reflow "is specified. Currently only supported value is"
             , value "bash" <> "."
             ]
 
+        , optionDescription ["--dhall=LIBRARY"]
+            [ Pretty.reflow "Print specified Dhall", metavar "LIBRARY" <> ","
+            , Pretty.reflow "or its import snippet when", longOption "import"
+            , Pretty.reflow "is specified.  Supported values of"
+            , metavar "LIBRARY", "are"
+            , value "prelude" <> ","
+            , value "prelude-v11.1.0" <> ","
+            , value "prelude-v12.0.0" <> ","
+            , value "command-wrapper" <> ",", "and"
+            , value "exec" <> "."
+            ]
+
         , optionDescription ["--import"]
-            [ Pretty.reflow "Print code snipped for ", metavar "SHELL"
-            , Pretty.reflow
-                "that imports Command Wrapper library for it.  If neither"
+            [ Pretty.reflow "Print code snipped for importing", metavar "SHELL"
+            , Pretty.reflow "or Dhall", metavar "LIBRARY" <> "."
+            , Pretty.reflow "If neither"
             , longOption "content" <> ",", "nor", longOption "import"
             , Pretty.reflow "is specified then", longOption "content"
             , Pretty.reflow "is assumed."

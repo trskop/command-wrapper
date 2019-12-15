@@ -20,7 +20,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--script \[\--shell=*SHELL*]
 \[\--output=*FILE*] \--subcommand=*SUBCOMMAND* \--alias=*ALIAS* \[\--alias=*ALIAS* ...]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library \[\--shell=*SHELL*]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library
+\[\--shell=*SHELL*|\--dhall=*LIBRARY*]
 \[\--import|\--content] \[\--output=*FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[\--output=*FILE*]
@@ -102,11 +103,16 @@ interface for querying Command Wrapper's command line interface (CLI).
 # SUBCOMMAND LIBRARY OPTIONS
 
 \--library
-:   Print a library to standard output that can be used by a subcommand.  In
-    a subcommand implemented in Bash we can include a support library using:
+:   Print a library to standard output that can be used by a subcommand, or a
+    configuration file.  Option `--shell=`*SHELL* and `--dhall=`*LIBRARY*
+    control which library is produced.  If neither `--shell=`*SHELL* nor
+    `--dhall=`*LIBRARY* are specified then `--shell=bash` is assumed.
+
+    In a subcommand implemented in Bash we can include a support library using
+    a code snippet that is printed by following command:
 
     ```
-    source <(COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" "${COMMAND_WRAPPER_EXE}" completion --library --shell=bash)
+    TOOLSET completion --library --shell=bash --import
     ```
 
     Library itself is documented.  One can read through it by just printing it:
@@ -134,8 +140,20 @@ interface for querying Command Wrapper's command line interface (CLI).
 \--shell=*SHELL*
 :   Print library for *SHELL*.  Currently only supported value is *bash*.
 
+\--dhall=*LIBRARY*
+:   Print specified Dhall *LIBRARY*, or its import snippet when `--import` is
+    specified.  Supported values of *LIBRARY* are:
+
+    *   **prelude** -- Latest (known) version of Dhall prelude (v12.0.0).
+    *   **prelude-v11.1.0**
+    *   **prelude-v12.0.0**
+    *   **command-wrapper** -- Latest (known) version of Command Wrapper's
+        Dhall library.
+    *   **exec** -- Latest (known) version of Command Wrapper's Exec library.
+
 \--import
-:   Print code snipped for *SHELL* that imports Command Wrapper library for it.
+:   Print code snipped for importing *SHELL* or Dhall *LIBRARY*.
+
     If neither `--content`, nor `--import` is specified then --content is
     assumed.
 
