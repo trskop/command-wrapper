@@ -553,12 +553,12 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                     (CommandWrapper, Content) -> hPutExpr h
                         $(Dhall.TH.staticDhallExpression
                             "./dhall/CommandWrapper/package.dhall\
-                            \ sha256:0988a9b80f941e3869bbaab885e80242be13cad8ab3c8d37856baa0bc3b929cb"
+                            \ sha256:c4fae1078f5fedfa77589f4acfbbd71d488f7340f2544347e0dc185a9b5b749e"
                         )
 
                     (CommandWrapper, Import) -> Text.hPutStrLn h
-                        "https://raw.githubusercontent.com/trskop/command-wrapper/8af2b37d77e768e12906d61efdcee03fd7cee337/dhall/CommandWrapper/package.dhall\
-                        \ sha256:0988a9b80f941e3869bbaab885e80242be13cad8ab3c8d37856baa0bc3b929cb"
+                        "https://raw.githubusercontent.com/trskop/command-wrapper/9f9ec60ea77d7bec529f7689abb80cb34a47eabe/dhall/CommandWrapper/package.dhall\
+                        \ sha256:c4fae1078f5fedfa77589f4acfbbd71d488f7340f2544347e0dc185a9b5b749e"
 
                     (CommandWrapperExec, Content) -> hPutExpr h
                         $(Dhall.TH.staticDhallExpression
@@ -567,7 +567,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                         )
 
                     (CommandWrapperExec, Import) -> Text.hPutStrLn h
-                        "https://raw.githubusercontent.com/trskop/exec/8af2b37d77e768e12906d61efdcee03fd7cee337/dhall/Exec/package.dhall\
+                        "https://raw.githubusercontent.com/trskop/exec/9f9ec60ea77d7bec529f7689abb80cb34a47eabe/dhall/Exec/package.dhall\
                         \ sha256:150d37b4514e73cea35884e750fc2fc240136162d25589b4cc20cca1f77e3131"
 
             case output of

@@ -102,9 +102,9 @@ import CommandWrapper.Prelude
 
 data Config = Config
     { directories :: [Text]
-    , menuTool :: Maybe Text -> SimpleCommand
+    , menuTool :: Maybe (Maybe Text -> SimpleCommand)
     , shell :: Maybe Text
-    , terminalEmulator :: Text -> Maybe ShellCommand -> SimpleCommand
+    , terminalEmulator :: Maybe (Text -> Maybe ShellCommand -> SimpleCommand)
     }
   deriving stock (Generic)
   deriving anyclass (Dhall.Interpret)
@@ -162,15 +162,19 @@ main = do
              in out params' stdout (helpMsg params')
 
 mainAction :: Params FilePath -> Strategy -> Maybe Text -> Maybe Text -> IO ()
-mainAction params@Params{config = configFile} strategy query directory =
+mainAction ps@Params{config = configFile, params} strategy query directory =
   do
     config@Config{..} <- Dhall.inputFile Dhall.auto configFile
-    action <- evalStrategy (config <$ params) strategy
+    action <- evalStrategy (config <$ ps) strategy
 
-    sh $ do
+    sh do
         dir <- case directory of
-            Nothing ->
-                runMenuTool (menuTool query)
+            Nothing -> do
+                let menuToolCommand = case menuTool of
+                        Nothing -> defaultMenuTool params
+                        Just f  -> f query
+
+                runMenuTool menuToolCommand
                     $ select (unsafeTextToLine <$> List.nub directories)
 
             Just dir ->
@@ -182,7 +186,13 @@ mainAction params@Params{config = configFile} strategy query directory =
                 then unset name
                 else pure ()
 
-        executeAction params dir action
+        executeAction ps dir action
+  where
+    defaultMenuTool Environment.Params{exePath} = SimpleCommand
+        { command = exePath
+        , arguments = ["--no-aliases", "config", "--menu"]
+        , environment = []
+        }
 
 runMenuTool :: SimpleCommand -> Shell Line -> Shell Line
 runMenuTool SimpleCommand{..} input = do
@@ -241,7 +251,12 @@ evalStrategy params@Params{config, inTmux, inKitty} = \case
         die params 3 "Not runing in Kitty terminal and '--kitty was specified."
 
     TerminalEmulatorOnly ->
-        pure (RunTerminalEmulator (`terminalEmulator` fmap shellCommand shell))
+        case terminalEmulator of
+            Nothing ->
+                die params 1 "Terminal emulator command is not configured."
+
+            Just cmd ->
+                pure (RunTerminalEmulator (`cmd` fmap shellCommand shell))
   where
     Config{shell, terminalEmulator} = config
 

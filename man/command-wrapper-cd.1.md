@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 26th June 2019
+% 15th December 2019
 
 
 # NAME
@@ -37,9 +37,19 @@ it's not executed inside Tmux session or Kitty terminal then it executes a new
 instance of `$SHELL` in a selected directory.
 
 Selecting directory from a list is implemented using external command.  Default
-configuration uses [`fzf` command](https://github.com/junegunn/fzf), however,
-there are other alternatives.  One of them is [`fzy`
-](https://github.com/jhawthorn/fzy) which is know to work with `cd` subcommand.
+configuration uses:
+
+```
+TOOLSET_COMMAND --no-aliases config --menu
+```
+
+Dhall library provides smart constructors for two other tools that are known
+to work with `cd` subcommand:
+
+* [`fzf`](https://github.com/junegunn/fzf)
+* [`fzy`](https://github.com/jhawthorn/fzy)
+
+For more information consult Command Wrapper Dhall library.
 
 
 # OPTIONS
