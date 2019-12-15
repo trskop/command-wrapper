@@ -11,8 +11,7 @@ extra-deps:
   - fuzzy-0.1.0.0
   - lock-file-0.7.0.0
   - verbosity-0.3.0.0
-
-  - vty-menu-0.0.4
+  - prettyprinter-1.5.1
 
   # Don't forget to upgrade Dhall Standard version in
   # ./src/CommandWrapper/Internal.hs when upgrading Dhall library.
@@ -45,3 +44,5 @@ flags:
   host-and-port:
     dhall: true
     generic-lens: true
+
+allow-newer: false

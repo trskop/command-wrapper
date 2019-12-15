@@ -33,12 +33,12 @@ packages:
   original:
     hackage: verbosity-0.3.0.0
 - completed:
-    hackage: vty-menu-0.0.4@sha256:9a80065901bc448c5559b4c951e3f334d3e29e3efe17851424da216ecd64a6b8,544
+    hackage: prettyprinter-1.5.1@sha256:fca87c3e2611d3499a0341a59857e9b424a23f31646e4737d535a18582284f96,5375
     pantry-tree:
-      size: 265
-      sha256: bf5bc39e341a5202da23b40f01cd5a673aece7433373122ec90b6dfb4bc16fc1
+      size: 2106
+      sha256: 86fd583112db41bac5ac9ecf258ec402ad615253e9c5eabc56ec127bfb94c096
   original:
-    hackage: vty-menu-0.0.4
+    hackage: prettyprinter-1.5.1
 - completed:
     hackage: dhall-1.28.0@sha256:a0b38be83ab76c59adf6d67868b9b183591edc68d2c3727d38598ddc12c36c95,31625
     pantry-tree:
