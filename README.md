@@ -242,6 +242,9 @@ support) we can browse the library quite comfortably with:
 TOOLSET_COMMAND completion --library --shell=bash --content | bat -l bash
 ```
 
+More about Bash library can be found in a dedicated manual page
+[`command-wrapper-bash-library(7)`](man/command-wrapper-bash-library.7.md).
+
 
 ### Internal Subcommands
 
