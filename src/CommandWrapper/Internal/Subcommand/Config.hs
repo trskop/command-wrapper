@@ -298,7 +298,8 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , dhallHashFlag
         <*> ( dualFoldEndo
-                <$> optional (expressionOption <|> inputOption Dhall.setInput)
+                <$> many (cacheFlag <|> noCacheFlag)
+                <*> optional (expressionOption <|> inputOption Dhall.setInput)
                 <*> optional outputOption
             )
 
