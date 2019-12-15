@@ -152,6 +152,23 @@
         `EDITOR`, and default editor.  This could be used by subcommands to
         allow users to override editor specifically for that subcommand.
 
+*   Enhancements to `--menu`:
+
+    *   Extend global config file to allow specify alternative implementation
+        of `--menu` functionality.  Like `fzf`, `fzy`, `skim`, etc.  This would
+        allow users to have consistent feel with their outher tools and
+        integrations.
+
+    *   Introduce variation that takes Dhall expression of the form
+
+        ```Dhall
+        List { mapKey : Text, mapValue : v }
+        ```
+
+        The value of `mapKey` will be displayed in the selection menu, and
+        `mapValue` will be printed if the item is selected.  Value printed to
+        the standard output will be a Dhall expression of the type `v`.
+
 
 ### Help
 

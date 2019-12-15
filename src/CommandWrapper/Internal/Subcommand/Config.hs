@@ -380,7 +380,8 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     , menuFlag
         <*> ( dualFoldEndo
-            <$> optional
+            <$> optional (nulFlag \opts -> opts{delimiter = '\0'})
+            <*> optional
                 ( inputOption Menu.setInput
                 <|> (argumentsFlag *> menuArguments)
                 )
@@ -766,6 +767,14 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Endo . Menu.setInput . Menu.InputItems
             <$> many (Options.strArgument (Options.metavar "STRING"))
 
+    nulFlag :: (a -> a) -> Options.Parser (Endo a)
+    nulFlag f = Options.flag' (Endo f) $ mconcat
+        [ Options.long "null"   -- Used e.g. by `xargs`
+        , Options.long "nul"    -- ASCII name for the character.
+        , Options.short '0'     -- This one is used by e.g. `xargs`
+        , Options.short 'z'     -- Git likes this one
+        ]
+
     helpFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
@@ -946,6 +955,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "menu"
+            <+> Pretty.brackets (longOption "nul[l]")
             <+> Pretty.brackets
                 ( longOptionWithArgument "input" "FILE"
                 <> "|" <> longOption "arguments"
@@ -1149,6 +1159,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , optionDescription ["--arguments [STRING ...]"]
             [ Pretty.reflow "Use arguments", "(" <> metavar "STRING" <> "s)"
             , Pretty.reflow "as input."
+            ]
+
+        , optionDescription ["--nul[l], -0, -z"]
+            [ "Use", value "NUL", "('" <> value "\\0" <> "')"
+            , Pretty.reflow "character as a separator."
             ]
 
         , optionDescription ["--help", "-h"]
@@ -1695,6 +1710,7 @@ configSubcommandCompleter appNames cfg _shell index words
             ["--for-security", "--for-caching"]
         <> mwhen (hadEdit && not hadSubcommandConfig) ["--subcommand-config"]
         <> mwhen (hadMenu && not hadArguments) ["--arguments"]
+        <> mwhen (hadMenu && not hadArguments) ["--nul", "-0"]
 
     matchingOptions = List.filter (pat `List.isPrefixOf`) possibleOptions
 

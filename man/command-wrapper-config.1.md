@@ -78,7 +78,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e}
 \[*FILE*|\--subcommand-config *SUBCOMMAND*]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--manu
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--menu
+\[\--nul\[l]|-0|-z]
 {\--input=*FILE*|\--input *FILE*|-i *FILE*|\--arguments \[*STRING* \[...]]}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--help|-h}
@@ -436,6 +437,9 @@ We can organise `config` subcommand abilities into following categories:
 
 \--arguments \[*STRING* \[...]]
 :   Use arguments (*STRING*s) as input.
+
+\--nul\[l], -0, -z
+:   Use NUL ('\0') character as a separator.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
