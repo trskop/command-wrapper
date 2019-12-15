@@ -15,12 +15,14 @@ let CommandWithEnvironment
 let CdConfig
     : Type
     = { directories : List Text
-      , menuTool : ∀(query : Optional Text) → CommandWithEnvironment
+      , menuTool : Optional (∀(query : Optional Text) → CommandWithEnvironment)
       , shell : Optional Text
       , terminalEmulator :
-            ∀(directory : Text)
-          → ∀(command : Optional Command)
-          → CommandWithEnvironment
+          Optional
+            (   ∀(directory : Text)
+              → ∀(command : Optional Command)
+              → CommandWithEnvironment
+            )
       }
 
 in  CdConfig

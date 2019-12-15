@@ -9,26 +9,24 @@ let CommandWithEnvironment =
       ? ../CommandWithEnvironment/Type
 
 let CdConfig =
-        ./Type sha256:cdde9b8672815af3ab1345e0c8fe95fa945cf2f62be00da964136770a4e44933
+        ./Type sha256:dec266f74aa018b2f69fb0c5c97b1624788383759de620f5b5d117e3563b33d4
       ? ./Type
 
-let TerminalEmulator/urxvt =
-        ../TerminalEmulator/urxvt sha256:a2a5f3204af9888a219f457ddf2040777564e3c420ee8e6554234ef08056fd91
-      ? ../TerminalEmulator/urxvt
+let CdConfig/default =
+        { directories =
+              ./emptyDirectories sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
+            ? ./emptyDirectories
+        , menuTool = None (Optional Text → CommandWithEnvironment)
+        , shell =
+              ./systemShell sha256:12acd324db4f2ef5f9a79ae53f8e325eea080ded9befc5f73fe2235a725e7c92
+            ? ./systemShell
+        , terminalEmulator =
+            None (Text → Optional Command → CommandWithEnvironment)
+        }
+      : CdConfig
 
-in    { directories =
-            ./emptyDirectories sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
-          ? ./emptyDirectories
-      , menuTool =
-            ./menu-tool/fzf sha256:f6f1587c1adf9736b8653a2c7e575452c217e1470fc5bac85b4136fb8138949d
-          ? ./menu-tool/fzf
-      , shell =
-            ./systemShell sha256:12acd324db4f2ef5f9a79ae53f8e325eea080ded9befc5f73fe2235a725e7c92
-          ? ./systemShell
-      , terminalEmulator =
-            λ(directory : Text)
-          → λ(command : Optional Command)
-          →   TerminalEmulator/urxvt (Some directory) command
-            : CommandWithEnvironment
-      }
-    : CdConfig
+let consistency =
+        assert
+      : { Type = CdConfig, default = CdConfig/default }::{=} ≡ CdConfig/default
+
+in  CdConfig/default
