@@ -84,16 +84,6 @@
 
 *   Find a way how we can set history file for `TOOLSET config --dhall-repl`.
 
-*   Include editor and shell settings in Command Wrappers global (default)
-    config.  Expose them via `config` command to allow scripts and subcommands
-    to get access to it.  Also, having something like
-
-    ```
-    config --run-editor [FILE [+LINE]]
-    ```
-
-    Would be really convenient for multitude of existing use cases.
-
 *   Support most of options of `--dhall` mode in `--dhall-filter` mode as well.
 
 *   Following Dhall commands should have `--let=VARIABLE=EXPRESSION` option:
@@ -132,6 +122,35 @@
     `List Text` into delimiter separated text.  This may be interesting when
     used with `xargs`.  However, there's an overlap with `--dhall-text` as well
     as `--dhall-filter`.
+
+*   Include editor and shell settings in Command Wrappers global (default)
+    config.  Expose them via `config` command to allow scripts and subcommands
+    to get access to it.  Editor is already exposed via `config` subcommand,
+    but improvements would be nice.  That includes:
+
+    *   Extend global configuration file to specify default editor to use.
+
+    *   Option to allow override of default editor:
+        `--override-default={COMMAND|EXPRESSION}`.  Where `COMMAND` is just a
+        command name and `EXPRESSION` is a Dhall expression for composing
+        command for editing a file.  It may be better idea to have two options
+        instead of one that analyses its pargument, e.g.
+        `--override-default-command=COMMAND` and
+        `--override-default-expression=EXPRESSION`.
+
+    *   Allow specifying line number:
+
+        ```
+        config --edit [FILE [+LINE]|--subcommand-config SUBCOMMAND [+LINE]]
+        config --edit [FILE [--line=LINE]|--subcommand-config SUBCOMMAND [--line=LINE]]
+        ```
+
+        Not sure if this will be reliable enough to be actually useful.
+
+    *   Option that defines an environment variable name
+        (`--override-variable=NAME`) that would have precedence over `VISUAL`,
+        `EDITOR`, and default editor.  This could be used by subcommands to
+        allow users to override editor specifically for that subcommand.
 
 
 ### Help

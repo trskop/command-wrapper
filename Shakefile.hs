@@ -1,6 +1,6 @@
 #!/usr/bin/env stack
 {- stack script
-    --resolver lts-14.15
+    --resolver lts-14.17
     --package directory
     --package executable-path
     --package shake
@@ -37,6 +37,7 @@ module Main (main)
   where
 
 import Control.Monad (unless)
+import Data.Functor ((<&>))
 import System.Exit (die)
 
 import Data.Time.Clock.POSIX (getCurrentTime)
@@ -125,22 +126,38 @@ shakeMain Directories{..} opts = shakeArgs opts do
         man1Dir = manDir </> "man1"
         man7Dir = manDir </> "man7"
 
-    want
-        [ commandWrapperBin
-        , cdBin
-        , execBin
-        , skelBin
+        manPages :: FilePath -> FilePath -> [FilePath]
+        manPages dir1 dir7 =
+            [ dir1 </> "command-wrapper.1.gz"
+            , dir1 </> "command-wrapper-cd.1.gz"
+            , dir1 </> "command-wrapper-completion.1.gz"
+            , dir1 </> "command-wrapper-config.1.gz"
+            , dir1 </> "command-wrapper-exec.1.gz"
+            , dir1 </> "command-wrapper-help.1.gz"
+            , dir1 </> "command-wrapper-skel.1.gz"
+            , dir1 </> "command-wrapper-version.1.gz"
+            , dir7 </> "command-wrapper-bash-library.7.gz"
+            , dir7 </> "command-wrapper-subcommand-protocol.7.gz"
+            ]
 
-        , man1Dir </> "command-wrapper.1.gz"
-        , man1Dir </> "command-wrapper-cd.1.gz"
-        , man1Dir </> "command-wrapper-completion.1.gz"
-        , man1Dir </> "command-wrapper-config.1.gz"
-        , man1Dir </> "command-wrapper-exec.1.gz"
-        , man1Dir </> "command-wrapper-help.1.gz"
-        , man1Dir </> "command-wrapper-skel.1.gz"
-        , man1Dir </> "command-wrapper-version.1.gz"
-        , man7Dir </> "command-wrapper-subcommand-protocol.7.gz"
+        binaries :: [FilePath]
+        binaries =
+            [ commandWrapperBin
+            , cdBin
+            , execBin
+            , skelBin
+            ]
+
+    want $ mconcat
+        [ binaries
+        , ["man"]
         ]
+
+    "man" ~>
+        need (manPages man1Dir man7Dir)
+
+    "man-html" ~>
+        need (manPages "man" "man" <&> (-<.> "html"))
 
     hasThisRepoChanged <- addOracle (thisGitRepo projectRoot)
     [commandWrapperBin, cdBin, execBin, skelBin] &%> \outs -> do
@@ -155,7 +172,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
 
     [man1Dir </> "*.1.gz", man7Dir </> "*.7.gz"] |%> \out -> do
         let tempOut = dropExtension out
-            src = "man" </> dropExtension (takeFileName out) <.> "md"
+            src = "man" </> takeFileName out -<.> "md"
             dst = takeDirectory out
 
         need [src]
@@ -166,5 +183,17 @@ shakeMain Directories{..} opts = shakeArgs opts do
 
         cmd_ "pandoc --standalone --to=man" ["--output=" <> tempOut, src]
         cmd_ "gzip --force -9" [tempOut]
+
+    ["man" </> "*.1.html", "man" </> "*.7.html"] |%> \out -> do
+        let src = "man" </> takeFileName out -<.> "md"
+            dst = takeDirectory out
+
+        need [src]
+
+        targetExists <- doesDirectoryExist dst
+        unless targetExists
+            $ cmd_ "mkdir -p" [dst]
+
+        cmd_ "pandoc --standalone --to=html" ["--output=" <> out, src]
 
 -- vim:ft=haskell

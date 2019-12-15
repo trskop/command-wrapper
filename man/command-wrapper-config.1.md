@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 12th December 2019
+% 15th December 2019
 
 
 # NAME
@@ -142,6 +142,28 @@ We can organise `config` subcommand abilities into following categories:
         $ TOOLSET_COMMAND config --dhall-exec --expression='"echo Hello World"' --interpreter=bash
         Hello World
         ```
+
+**Selection Menu** (`--menu`)
+:   Display input in a menu to select an item.  Usage examples:
+
+    ```Bash
+    fd --type file | TOOLSET_COMMAND config --menu
+    ```
+
+    ```Bash
+    # This example uses Bash-specific syntax.
+    declare -a list=( ... )
+    TOOLSET_COMMAND config --menu --arguments "${list[@]}"
+    ```
+
+    When used inside external subcommand we can use `edit-file` function
+    provided by Command Wrapper Bash subcommand library.
+
+**Edit File** (`--edit`)
+:   Edit configuration file or any other file.  This functionality does allow
+    subcommands to respect user editor preferences without needing to
+    reimplement editor lookup strategy, or depending on distribution-specific
+    tools.
 
 **Initialisation** (`--init`)
 :   Initialise toolset configuration.  This action tries to be as safe as
@@ -425,6 +447,20 @@ For documentation of generic *EXIT STATUS* codes see `command-wrapper(1)`
 manual page section *EXIT STATUS*.  Any *EXIT STATUS* codes specific to this
 subcommand will be listed below.
 
+`1`
+:   When invoked with `--edit` this status code is returned when no
+    match/selection has been made.  This happens when input ends up being empty
+    and there is nothing to select.  This is the same status code as `fzf`
+    returns under the same conditions.
+
+    This extends the use of `1` as an exit status.  See `command-wrapper(1)`
+    manual page to see in what other cases this exit code is returned.
+
+`130`
+:   When invoked with `--edit` this status code is returned when selection menu
+    was interrupted by **ESC** or **q**.  This is the same status code as `fzf`
+    returns in this case.
+
 
 # FILES AND DIRECTORIES
 
@@ -474,7 +510,7 @@ mentioned there applies to this subcommand as well.
 
 # SEE ALSO
 
-command-wrapper(1)
+command-wrapper(1), fzf(1)
 
 * [XDG Base Directory Specification
   ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)

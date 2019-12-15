@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SUBCOMMAND-PROTOCOL(7) Subcommand Protocol | v1.0.0
 % Peter Trsko
-% 16th November 2019
+% 15th December 2019
 
 
 # NAME
@@ -282,7 +282,8 @@ TOOLSET_COMMAND help [--man] completion
 
 # SEE ALSO
 
-command-wrapper(1), command-wrapper-completion(1), command-wrapper-config(1)
+command-wrapper(1), command-wrapper-bash-library(7),
+command-wrapper-completion(1), command-wrapper-config(1)
 
 * [Dhall configuration language](https://dhall-lang.org)
 * [Advanced Bash-Scripting Guide: Appendix E. Exit Codes With Special Meanings
