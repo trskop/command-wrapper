@@ -34,7 +34,8 @@ import Text.Show (Show, show)
 
 import Data.Monoid.Endo (E)
 import Data.Verbosity (Verbosity)
-import qualified Dhall (Interpret, InvalidDecoder, auto, inputFile)
+import Dhall (FromDhall)
+import qualified Dhall (InvalidDecoder, auto, inputFile)
 import qualified Dhall.Parser as Dhall (ParseError, Src)
 import qualified Dhall.TypeCheck as Dhall (TypeError)
 
@@ -54,7 +55,7 @@ data Config = Config
     , colourOutput :: Maybe ColourOutput
     }
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (FromDhall)
 
 -- | Apply configuration file to internal configuration that represents not
 -- only configuration file, but also command line options, see

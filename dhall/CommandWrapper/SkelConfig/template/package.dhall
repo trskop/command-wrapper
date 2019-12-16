@@ -7,6 +7,6 @@
       ./dhall sha256:8a78d4a15f202a63d130b48c141c1c4e9898faba19a1a1e8495bafbd0d43133a
     ? ./dhall
 , haskell =
-      ./haskell sha256:1d11e1c679862fdc8134ef3f12355e8e59069cde3a6a031a2bf17b1cd3aba115
+      ./haskell sha256:e1fd58d8a400a81abfe9e3b0e96aa50615db95a93fa45848e0b0c3ea92366229
     ? ./haskell
 }

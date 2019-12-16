@@ -34,7 +34,8 @@ import Data.CaseInsensitive as CI (mk)
 import Data.Monoid.Endo (Endo(appEndo))
 import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
-import qualified Dhall (Inject, Interpret, auto, inputFile)
+import Dhall (FromDhall, ToDhall)
+import qualified Dhall (auto, inputFile)
 import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
@@ -101,7 +102,7 @@ data Language
     | Bash
     | Dhall
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Inject, Dhall.Interpret)
+  deriving anyclass (Dhall.ToDhall, Dhall.FromDhall)
 
 data Config = Config
     { template :: Language -> Template
@@ -110,7 +111,7 @@ data Config = Config
     , editor :: Maybe Editor
     }
   deriving stock (Generic)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (Dhall.FromDhall)
 
 data Template = Template
     { targetFile :: FilePath
@@ -118,7 +119,7 @@ data Template = Template
     , executable :: Bool
     }
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (Dhall.FromDhall)
 
 data DefaultModeOptions = DefaultModeOptions
     { subcommandName :: String

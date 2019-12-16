@@ -53,7 +53,8 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Tree (Forest, Tree(Node), unfoldForest)
-import qualified Dhall (Inject, Interpret, auto, inject, input, inputFile)
+import Dhall (FromDhall, ToDhall)
+import qualified Dhall (auto, inject, input, inputFile)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
     ( Parser
@@ -118,7 +119,7 @@ newtype Config = Config
     -- - Command line completion defaults
     }
   deriving stock (Generic)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (Dhall.FromDhall)
 
 data Action
     = List
@@ -359,7 +360,7 @@ executeCommand Command{..} = do
         varToTuple =
             bimap Text.unpack Text.unpack . EnvironmentVariable.toTuple
 
-printAsDhall :: Dhall.Inject a => Params -> a -> IO ()
+printAsDhall :: ToDhall a => Params -> a -> IO ()
 printAsDhall Params{colour} =
     Dhall.hPut colour Dhall.Unicode stdout Dhall.inject
 

@@ -21,13 +21,14 @@ import CommandWrapper.Prelude
     , stdout
     , subcommandParams
     )
-import qualified Dhall
+import Dhall (FromDhall)
+import qualified Dhall (auto, inputFile)
 import qualified Turtle
 
 
 data Config = Config
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (FromDhall)
 
 data Mode
     = DefaultMode

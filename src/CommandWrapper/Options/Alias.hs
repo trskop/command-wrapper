@@ -28,7 +28,7 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Text.Show (Show)
 
-import qualified Dhall
+import Dhall (FromDhall)
 
 
 data Alias = Alias
@@ -38,7 +38,7 @@ data Alias = Alias
     , arguments :: [String]
     }
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (FromDhall)
 
 applyAlias :: [Alias] -> String -> [String] -> (String, [String])
 applyAlias aliases subcommand arguments =

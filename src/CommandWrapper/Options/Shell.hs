@@ -31,7 +31,7 @@ import GHC.Generics (Generic)
 import Text.Show (Show)
 
 import qualified Data.CaseInsensitive as CI (mk)
-import qualified Dhall (Inject, Interpret)
+import Dhall (FromDhall, ToDhall)
 import qualified Options.Applicative as Options
     ( Parser
     , eitherReader
@@ -47,7 +47,7 @@ data Shell
     | Fish
     | Zsh
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Inject, Dhall.Interpret)
+  deriving anyclass (FromDhall, ToDhall)
 
 parse :: (Eq s, IsString s) => s -> Maybe Shell
 parse = \case

@@ -11,7 +11,7 @@
 -- Dhall utilities.
 module CommandWrapper.Internal.Dhall
     (
-    -- * Interpret Combinators
+    -- * FromDhall Combinators
       interpretWord
     , interpretLazyByteString
     , interpretStrictByteString
@@ -22,7 +22,7 @@ module CommandWrapper.Internal.Dhall
     , constructor0
     , union
 
-    -- * Inject Combinators
+    -- * ToDhall Combinators
     , inputString
     , inputList
     , inputMaybe
@@ -107,7 +107,7 @@ import qualified System.Console.Terminal.Size as Terminal
 import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
 
 
--- {{{ Inject Combinators -----------------------------------------------------
+-- {{{ ToDhall Combinators ----------------------------------------------------
 
 inputString :: Dhall.Encoder String
 inputString = Dhall.Encoder
@@ -129,8 +129,8 @@ inputMaybe Dhall.Encoder{..} = Dhall.Encoder
     , embed = maybe (Dhall.None `Dhall.App` declared) (Dhall.Some . embed)
     }
 
--- }}} Inject Combinators -----------------------------------------------------
--- {{{ Interpret Combinators --------------------------------------------------
+-- }}} ToDhall Combinators ----------------------------------------------------
+-- {{{ FromDhall Combinators --------------------------------------------------
 
 newtype UnionType a =
     UnionType (Dhall.Map Text (Either a (Dhall.Decoder a)))
@@ -217,7 +217,7 @@ interpretLazyByteString = Lazy.Text.encodeUtf8 <$> Dhall.lazyText
 interpretStrictByteString :: Dhall.Decoder Strict.ByteString
 interpretStrictByteString = Strict.Text.encodeUtf8 <$> Dhall.strictText
 
--- }}} Interpret Combinators --------------------------------------------------
+-- }}} FromDhall Combinators --------------------------------------------------
 -- {{{ I/O --------------------------------------------------------------------
 
 -- | Print haskell value as a Dhall expression.

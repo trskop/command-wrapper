@@ -48,7 +48,7 @@ import Text.Show (Show)
 import Data.Verbosity (Verbosity)
 import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 import Data.Verbosity.Class (HasVerbosity)
-import qualified Dhall (Interpret)
+import Dhall (FromDhall)
 
 import CommandWrapper.Options.Alias (Alias)
 import CommandWrapper.Options.ColourOutput (ColourOutput)
@@ -102,7 +102,7 @@ data Config = Config
     -- before doing anything.
     }
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Interpret, HasVerbosity)
+  deriving anyclass (FromDhall, HasVerbosity)
 
 -- | Used by 'def' smart constructor to avoid accidentally swapping 'manPath'
 -- and 'searchPath'..

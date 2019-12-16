@@ -34,7 +34,8 @@ import System.Environment (getArgs)
 import Data.CaseInsensitive as CI (mk)
 import Data.Text (Text, isPrefixOf)
 import qualified Data.Text as Text (unpack)
-import qualified Dhall (Inject, Interpret, auto, inputFile)
+import Dhall (FromDhall, ToDhall)
+import qualified Dhall (auto, inputFile)
 import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
@@ -107,14 +108,14 @@ data Config = Config
     , terminalEmulator :: Maybe (Text -> Maybe ShellCommand -> SimpleCommand)
     }
   deriving stock (Generic)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (Dhall.FromDhall)
 
 data ShellCommand = ShellCommand
     { command :: Text
     , arguments :: [Text]
     }
   deriving stock (Generic)
-  deriving anyclass (Dhall.Inject)
+  deriving anyclass (Dhall.ToDhall)
 
 -- | Smart constructor for 'ShellCommand'.
 shellCommand :: Text -> ShellCommand

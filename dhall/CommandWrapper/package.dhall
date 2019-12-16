@@ -58,7 +58,7 @@
       ./Shell/package.dhall sha256:ec32d80f4962cf4f2a5be99dfbc2534c15431a40bad5142448fb6ec2bd8ef0a4
     ? ./Shell/package.dhall
 , SkelConfig =
-      ./SkelConfig/package.dhall sha256:6b351aaf60a93a7cc3c373ec5ee99a08d0d7c39ab9be748175c48f42b3a0183e
+      ./SkelConfig/package.dhall sha256:472af7056ef8b087d208ad17f7058afd341bdee98b8b1146de2eb48d6ef5612f
     ? ./SkelConfig/package.dhall
 , SubcommandAlias =
       ./SubcommandAlias/package.dhall sha256:3c0eb761e752cf7f43a794586af41951faf744d5d6c8b7c00e0fb31f4e6a9ff2

@@ -100,6 +100,7 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import Dhall (FromDhall)
 import qualified Dhall
 import qualified Dhall.TH (staticDhallExpression)
 import qualified Mainplate (applySimpleDefaults)
@@ -325,7 +326,7 @@ data Scripts = Scripts
     , zsh :: Text
     }
   deriving stock (Generic, Show)
-  deriving anyclass (Dhall.Interpret)
+  deriving anyclass (FromDhall)
 
 type CompletionInfo = Options.Shell -> Natural -> [Text] -> [Text]
 
