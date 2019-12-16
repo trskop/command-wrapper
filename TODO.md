@@ -169,6 +169,12 @@
         `mapValue` will be printed if the item is selected.  Value printed to
         the standard output will be a Dhall expression of the type `v`.
 
+*   Pager mode:
+
+    ```
+    TOOLSET config --pager [--ansi] [--input=FILE]
+    ```
+
 
 ### Help
 
