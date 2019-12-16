@@ -24,7 +24,6 @@ import Control.Exception (bracket)
 import Data.Functor ((<&>))
 import Data.Word (Word8)
 import System.Exit (ExitCode(ExitFailure), exitWith)
-import System.IO (stdout)
 import GHC.Generics (Generic)
 
 import Graphics.Vty (Vty, mkVty)
@@ -52,8 +51,8 @@ import System.Posix (OpenMode(ReadWrite), closeFd, defaultFileFlags, openFd)
 import CommandWrapper.Config.Global (Config(Config, colourOutput))
 import CommandWrapper.Environment (AppNames(AppNames))
 import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput(..))
+import CommandWrapper.Message (withTerminal)
 import CommandWrapper.Options.ColourOutput (shouldUseColours)
-
 
 data MenuOptions = MenuOptions
     { input :: Input
@@ -74,10 +73,9 @@ defMenuOptions = MenuOptions
     }
 
 menu :: AppNames -> Config -> MenuOptions -> IO ()
-menu AppNames{} Config{colourOutput} opts@MenuOptions{delimiter, input} = do
-    colours <- shouldUseColours stdout colourOutput
+menu AppNames{} config opts@MenuOptions{delimiter, input} = do
     items <- readInput delimiter input
-    withVty (renderMenu items opts colours) >>= \case
+    withVty config (renderMenu items opts) >>= \case
         Selection s -> putStrLn s
         NoSelection -> exitFailure (noSelectionExitCode opts)
         Interrupted -> exitFailure (interruptedExitCode opts)
@@ -223,22 +221,32 @@ getAction vty maxLine pageLines currentLine = Vty.nextEvent vty <&> \case
         let newLine = currentLine + pageLines
         in  if newLine > maxLine then maxLine else newLine
 
-withVty :: (Vty -> IO a) -> IO a
-withVty f = (acquire `bracket` release) \(vty, _) -> f vty
+withVty :: Config -> (Bool -> Vty -> IO a) -> IO a
+withVty Config{colourOutput} f =
+    (acquire `bracket` release) \(vty, useColours, _) -> f useColours vty
   where
     acquire = do
         config <- Vty.standardIOConfig
 
         -- TODO: Gracefully handle case when "/dev/tty" cannot be opened.  It
         -- happens when there is no controlling terminal.
+        --
+        -- TODO: We should have an option to pass TTY device manually.
+        --
+        -- TODO: We should open TTY just once, as a Handle, check that it is
+        -- capable of colours, and convert it to file descriptor.
+        --
+        -- TODO: Is checking colours actually relevant here? Maybe we should
+        -- just have a simple fallback when on dumb terminal.
         ttyFd <- openFd "/dev/tty" ReadWrite Nothing defaultFileFlags
+        useColours <- withTerminal \h -> shouldUseColours h colourOutput
 
-        (, ttyFd) <$> mkVty config
+        (, useColours, ttyFd) <$> mkVty config
             { Vty.inputFd = Just ttyFd
             , Vty.outputFd = Just ttyFd
             }
 
-    release (vty, ttyFd) = do
+    release (vty, _, ttyFd) = do
         Vty.shutdown vty
         closeFd ttyFd
 
