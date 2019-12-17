@@ -329,3 +329,7 @@
     -   Supports mirrors and multiple repositories for tldr pages.
     -   Consider supporting [*Bro pages*](http://bropages.org/) and
         [*eg*](https://github.com/srsudar/eg)
+
+*   `askpass` -- Something that allows us to abstract away from `ssh-askpass`
+    variants and maybe provides a sensible (minimalistinc) default.  It should
+    have the capability of working on terminal as well.
