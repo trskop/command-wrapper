@@ -8,6 +8,20 @@
         `NIX_COMMAND_WRAPPER_ROOT` environment variable?  How can we mix this
         with user configuration?
 
+    -   Variation of toolset initialisation for Nix:
+
+        ```
+        TOOLSET config --init --toolset=NAME --nix
+        ```
+
+        Or:
+
+        ```
+        TOOLSET config --nix --toolset=NAME
+        ```
+
+        Which would create a Nix expression to install the toolset.
+
 *   Config file control:
 
     ```
