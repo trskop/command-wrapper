@@ -22,7 +22,7 @@
 -- `Some True` means "Yes", use extended-search mode.
 { extended : Optional Bool
 
--- Enable Exact-match?  `True` means "Yes", enable extact-match.
+-- Enable Exact-match?  `Some True` means "Yes", enable extact-match.
 , exactMatch : Optional Bool
 
 -- Fuzzy matching algorithm to use.  `None < v1 | v2 >` means that default
@@ -37,10 +37,11 @@
 , delimiter : Optional Text
 
 -- Sort the result?  `None Bool` mans that neither `--sort` nor `--no-sort`
--- will be passed to `fzr`.  `Some True` means "Yes", sort the result.
+-- will be passed to `fzf`.  `Some True` means "Yes", sort the result.
 , sortResult : Optional Bool
 
--- Reverse order of the input?  `True` means "Yes", reverse order of the input.
+-- Reverse order of the input?  `Some True` means "Yes", reverse order of the
+-- input.
 , reverseInputOrder : Optional Bool
 
 -- Empty list means that default value is used, i.e. no command line option is
@@ -132,6 +133,9 @@
 
 -- Exit immediately when there's no match
 , exit0 : Optional Bool
+
+-- Filter/grep for specified text.
+, filter : Optional Text
 
 -- Print query as the first line.
 , printQuery : Optional Bool

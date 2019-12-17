@@ -1,7 +1,7 @@
 # Fzf
 
 Fzf (`fzf`) is a general-purpose command-line fuzzy finder.
-<https://github.com/junegunn/fzf>
+[github.com/junegunn/fzf](https://github.com/junegunn/fzf)
 
 
 ## Usage Example

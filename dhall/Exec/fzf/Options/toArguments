@@ -1,11 +1,11 @@
 -- vim: filetype=dhall
 
 let Options =
-        ./Type sha256:a552dba7eb61eef696b9138a6990d983c5e7c1e6e2081a3771e320854ebd4b05
+        ./Type sha256:9bcc86b43447666bc5ffa46c1f9587a5015abf614fd8b11295fc9fdfca3dc0cc
       ? ./Type
 
 let Options/default =
-        ./default sha256:d39a3bdc3f453f2e08c47dea644506e613042bf26588b7052e9ba2514d5c8ba2
+        ./default sha256:ed86da732b0c882699b678d18f8f3380c50393461f5557e809928ba803d65d7c
       ? ./default
 
 let optionalOptions =
@@ -236,6 +236,7 @@ let Options/toArguments =
         # optionalOptions Text (λ(str : Text) → [ "--query=${str}" ]) _.query
         # optionalFlag "select-1" _.select1
         # optionalFlag "exit-0" _.exit0
+        # optionalOptions Text (λ(str : Text) → [ "--filter=${str}" ]) _.filter
         # optionalFlag "print-query" _.printQuery
         # (       if List/null Text _.expectKeys
 

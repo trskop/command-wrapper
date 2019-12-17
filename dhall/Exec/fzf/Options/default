@@ -1,7 +1,7 @@
 -- vim: filetype=dhall
 
 let Options =
-        ./Type sha256:a552dba7eb61eef696b9138a6990d983c5e7c1e6e2081a3771e320854ebd4b05
+        ./Type sha256:9bcc86b43447666bc5ffa46c1f9587a5015abf614fd8b11295fc9fdfca3dc0cc
       ? ./Type
 
 let Options/default =
@@ -47,6 +47,7 @@ let Options/default =
       , query = None Text
       , select1 = None Bool
       , exit0 = None Bool
+      , filter = None Text
       , printQuery = None Bool
       , expectKeys = [] : List Text
       , read0 = None Bool
