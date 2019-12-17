@@ -50,6 +50,9 @@
 , run-mailcap =
       ./run-mailcap/package.dhall sha256:86ae21c3007712c87f519297d036135c33c9bf23bd89008b8134ee1907940d88
     ? ./run-mailcap/package.dhall
+, sk =
+      ./sk/package.dhall sha256:8b783d59f89be1b54cc4756dab39157f64695ad2460751f34af8c5e7afe86d71
+    ? ./sk/package.dhall
 , ssh =
       ./ssh/package.dhall sha256:14a415e7a977a3489c9f6d9feee7c1af32b385ad84be575215cf9f2199d6e83f
     ? ./ssh/package.dhall

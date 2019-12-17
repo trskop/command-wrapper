@@ -1,0 +1,51 @@
+-- vim: filetype=dhall
+
+let Options =
+        ./Type sha256:ba250876847f6f6a0e54562d8a6f3be1af22f7c2aba2d6f0820630b50de65482
+      ? ./Type
+
+let Options/default =
+      { exactMatch = False
+      , regex = False
+      , delimiter = None Text
+      , reverseInputOrder = False
+      , tiebreakSortCriteria = [] : List < Score | Index | Begin | End >
+      , interactive = False
+      , command = None Text
+      , multiSelect = None Bool
+      , height = None < Lines : Natural | Percentage : Natural >
+      , minHeight = None Natural
+      , layout =
+          None
+            < BottomOfTheScreen
+            | TopOfTheScreen
+            | TopOfTheScreenPromptAtTheBottom
+            >
+      , inlineFinderInfo = False
+      , prompt = None Text
+      , cmdPrompt = None Text
+      , header = None Text
+      , headerLines = None Natural
+      , interpretAnsiCodes = False
+      , tabstop = None Natural
+      , previewCommand = None Text
+      , previewWindowOptions =
+          { position = None < Up | Down | Left | Right >
+          , size = None < Lines : Natural | Percentage : Natural >
+          , wrapLines = False
+          , startHidden = False
+          }
+      , query = None Text
+      , cmdQuery = None Text
+      , printQuery = False
+      , filter = None Text
+      , expectKeys = [] : List Text
+      , read0 = False
+      , print0 = False
+      }
+
+let consistency =
+        assert
+      : { Type = Options, default = Options/default }::{=} ≡ Options/default
+
+in  Options/default
