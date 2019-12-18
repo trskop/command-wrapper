@@ -4,7 +4,7 @@
 -- external subcommands installed with it by default.
 
 { CdConfig =
-      ./CdConfig/package.dhall sha256:46884025399330c9b7843eee13d741bbfcb6bd31810cce94f8fa55262412f337
+      ./CdConfig/package.dhall sha256:ef3299a1b9aa40cef88f51364deed4d82fdc52aeb9505eab3fd61e85febb6ba2
     ? ./CdConfig/package.dhall
 , ColourOutput =
       ./ColourOutput/package.dhall sha256:8fd5555f273cd4424f8fe2003154c4e36ea657bb5a2642d3677c4756b14c32e8

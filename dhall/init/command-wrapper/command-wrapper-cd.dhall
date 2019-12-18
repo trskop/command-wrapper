@@ -15,13 +15,74 @@
         # (./cd/directories-local.dhall ? emptyDirectories)
         # (./cd/directories.dhall ? emptyDirectories)
 
+  --let fzf =
+  --        λ(query : Optional Text)
+  --      → CommandWrapper.CommandWithEnvironment::{
+  --        , command = "fzf"
+  --        , arguments =
+  --            Exec.fzf.Options.toArguments
+  --              Exec.fzf.Options::{
+  --              , query = query
+  --              , layout =
+  --                  Some
+  --                    < BottomOfTheScreen
+  --                    | TopOfTheScreen
+  --                    | TopOfTheScreenPromptAtTheBottom
+  --                    >.TopOfTheScreen
+  --              , height =
+  --                  Some
+  --                    ( < Lines : Natural | Percentage : Natural >.Percentage
+  --                        40
+  --                    )
+  --              }
+  --        }
+
+  --let fzy =
+  --        λ(query : Optional Text)
+  --      → CommandWrapper.CommandWithEnvironment::{
+  --        , command = "fzy"
+  --        , arguments =
+  --            Exec.fzy.Options.toArguments Exec.fzy.Options::{ query = query }
+  --        }
+
+  --let skim =
+  --        λ(query : Optional Text)
+  --      → CommandWrapper.CommandWithEnvironment::{
+  --        , command = "sk"
+  --        , arguments =
+  --            Exec.sk.Options.toArguments
+  --              Exec.sk.Options::{
+  --              , query = query
+  --              , layout =
+  --                  Some
+  --                    < BottomOfTheScreen
+  --                    | TopOfTheScreen
+  --                    | TopOfTheScreenPromptAtTheBottom
+  --                    >.TopOfTheScreen
+  --              , height =
+  --                  Some
+  --                    ( < Lines : Natural | Percentage : Natural >.Percentage
+  --                        40
+  --                    )
+  --              }
+  --        }
+
   in  CommandWrapper.CdConfig::{
       , directories = directories
-      , menuTool =
-            λ(query : Optional Text)
-          → let fzf = CommandWrapper.CdConfig.menu-tool.fzf query
 
-            in  fzf // { arguments = [ "--height=40%" ] # fzf.arguments }
+      -- By default we use very simple internal menu tool:
+      --
+      -- ```
+      -- TOOLSET config --menu
+      -- ```
+      --
+      -- Tools known to work are:
+      --
+      -- * Fzf (`fzf`)
+      -- * Fzy (`fzy`)
+      -- * Skim (`sk`)
+      --
+  --  , menuTool = Some menuTool.fzf
 
       -- Here we can set what terminal emulator should be executed.  Some
       -- definitions are already available in Command Wrapper library list
@@ -31,6 +92,13 @@
       -- ```
       -- (~/.config/command-wrapper/library.dhall).TerminalEmulator
       -- ```
-  --  , terminalEmulator = CommandWrapper.CdConfig.defaul.terminalEmulator
+      --
+      -- If terminal emulator is not specified then `cd` subcommand is unable
+      -- to start one when requested on command line.
+  --  , terminalEmulator =
+  --      Some
+  --        (   λ(directory : Text)
+  --          → CommandWrapper.TerminalEmulator.urxvt (Some directory)
+  --        )
       }
   ''
