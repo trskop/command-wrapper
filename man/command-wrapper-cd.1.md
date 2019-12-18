@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 17th December 2019
+% 18th December 2019
 
 
 # NAME
@@ -175,6 +175,7 @@ command-wrapper(1)
 * [FZF -- Related Projects](https://github.com/junegunn/fzf/wiki/Related-projects)
   page includes links to similar tools that could be used instead of FZF.
 * [fzy -- fast, simple fuzzy text selector for the terminal with an advanced
+  scoring algorithm](https://github.com/jhawthorn/fzy)
 * [Skim -- Fuzzy Finder in rust!](https://github.com/lotabout/skim)
 
 
