@@ -69,18 +69,18 @@ packages:
     hackage: aeson-yaml-1.0.5.0
 - completed:
     cabal-file:
-      size: 2334
-      sha256: 33b2754a627b9c0971e8188d2751b73f6590e75b1f740893c6909a18707988f6
+      size: 2396
+      sha256: b6ae849b61ecb266c73a4313034afb253efb55e93449ac5d288a794d040cdbe7
     name: host-and-port
     version: 0.0.1.0
     git: https://github.com/trskop/host-and-port.git
     pantry-tree:
-      size: 765
-      sha256: d79f0a0dc3310d171e69646db84dafd91bff548f3e84fd69645380117b96a437
-    commit: e934d338b8ba6b5ce6c0e16e1d1a46d2d5099808
+      size: 815
+      sha256: f338f7c749df41bd203ea29954d740bd75e682362686a6b97a1f0ce3f79efc29
+    commit: 67a38bd04c7385542706da7d80822b1a35e76322
   original:
     git: https://github.com/trskop/host-and-port.git
-    commit: e934d338b8ba6b5ce6c0e16e1d1a46d2d5099808
+    commit: 67a38bd04c7385542706da7d80822b1a35e76322
 - completed:
     cabal-file:
       size: 1744
@@ -103,12 +103,12 @@ packages:
     version: 0.1.0.0
     git: https://github.com/trskop/open-in-editor.git
     pantry-tree:
-      size: 767
-      sha256: 7568615cd9b5dd342013dbf1791146137742e0f43e49498c603dc18b8568b045
-    commit: eec72c9c99fd8bd89866bdd85a23343a4a6fbae8
+      size: 817
+      sha256: 9aed723b3590b92e89b644e394d682bc0b83215163bc5b56b047f05d27a0e95f
+    commit: 003e0c7c32628ee27332becfab92b62cad194163
   original:
     git: https://github.com/trskop/open-in-editor.git
-    commit: eec72c9c99fd8bd89866bdd85a23343a4a6fbae8
+    commit: 003e0c7c32628ee27332becfab92b62cad194163
 snapshots:
 - completed:
     size: 524799
