@@ -83,18 +83,18 @@ packages:
     commit: 67a38bd04c7385542706da7d80822b1a35e76322
 - completed:
     cabal-file:
-      size: 1744
-      sha256: a5eb034128f648a6531e4e2880fe27c856a608dc837c0030d0d31577d73b5719
+      size: 2046
+      sha256: 242daa559f7971649439ed47c47b7d947cdbd1df6912e8ae142604984749a291
     name: mainplate
     version: 0.0.1.0
     git: https://github.com/trskop/mainplate.git
     pantry-tree:
-      size: 1572
-      sha256: 98eda1b5d8801ebd34f2a132b314aa38437f135e928e60a45c1d8349f45dc6bb
-    commit: 118acdb919e7bd7aaa07e7554a2d1eabde86acf5
+      size: 2031
+      sha256: 003139778b8640ee5af478006a63786a293e0b9a5b2814b1d91bb9a9941a0905
+    commit: b6ac83b01434031522893bb4906ef4971c3d6e3f
   original:
     git: https://github.com/trskop/mainplate.git
-    commit: 118acdb919e7bd7aaa07e7554a2d1eabde86acf5
+    commit: b6ac83b01434031522893bb4906ef4971c3d6e3f
 - completed:
     cabal-file:
       size: 1473

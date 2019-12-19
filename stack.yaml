@@ -32,7 +32,7 @@ extra-deps:
     commit: 67a38bd04c7385542706da7d80822b1a35e76322
 
   - git: https://github.com/trskop/mainplate.git
-    commit: 118acdb919e7bd7aaa07e7554a2d1eabde86acf5
+    commit: b6ac83b01434031522893bb4906ef4971c3d6e3f
 
   - git: https://github.com/trskop/open-in-editor.git
     commit: 003e0c7c32628ee27332becfab92b62cad194163
