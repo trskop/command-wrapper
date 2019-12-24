@@ -41,6 +41,9 @@
 
     This will require Subcommand Protocol to be extended.
 
+*   Restructure library into two, one for building subcommands, and another for
+    building toolsets.
+
 
 ## Internal Subcommands
 
