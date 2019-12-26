@@ -973,7 +973,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "init"
-            <+> longOptionWithArgument "toolset" "NAME"
+            <+> Pretty.brackets (longOptionWithArgument "toolset" "NAME")
 
         , "config" <+> helpOptions
         , "help config"
