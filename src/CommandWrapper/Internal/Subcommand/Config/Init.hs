@@ -35,7 +35,7 @@ import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Int (Int)
 import qualified Data.List as List (intercalate)
-import Data.Maybe (Maybe(Just, Nothing))
+import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Monoid ((<>))
 import Data.String (String, fromString)
 import GHC.Generics (Generic)
@@ -84,8 +84,18 @@ import CommandWrapper.Message (errorMsg, out)
 
 data InitOptions = InitOptions
     { toolsetName :: String
+    -- ^ Toolset which we are initialising.
     , binDir :: Maybe FilePath
     -- ^ Bin directory specified by the user.
+    , configDir :: Maybe FilePath
+    -- ^ Configuration directory specified by the user.  Toolset name is
+    -- appended to it: @'configDir' '</>' 'toolsetName'@.
+    , libexecDir :: Maybe FilePath
+    -- ^ Directory for subcommand executables as specified by the user.  By
+    -- default @~\/.local\/lib\/${toolsetName}@ is used.
+    , manDir :: Maybe FilePath
+    -- ^ Directory for manual pages as specified by the user.  By default @man@
+    -- directory in XDG data directory is used.
     }
   deriving stock (Generic, Show)
 
@@ -96,14 +106,23 @@ defInitOptions
 defInitOptions toolsetName = InitOptions
     { toolsetName
     , binDir = Nothing
+    , configDir = Nothing
+    , libexecDir = Nothing
+    , manDir = Nothing
     }
 
 init :: AppNames -> Config -> InitOptions -> IO ()
 init
   appNames@AppNames{exePath, usedName}
   config@Config{colourOutput, verbosity}
-  InitOptions{..} = do
-
+  InitOptions
+    { toolsetName
+    , binDir
+    , configDir = configDir'
+    , libexecDir
+    , manDir = manDir'
+    }
+  = do
     destination <- case binDir of
         Just dir -> do
             checkDir dir >>= \case
@@ -145,11 +164,20 @@ init
                     , command (fromString exePath) <> "."
                     ]
 
-    configDir <- getXdgDirectory XdgConfig toolsetName
-    libDir <- (</> (".local/lib" </> toolsetName)) <$> getHomeDirectory
-    manDir <- getXdgDirectory XdgData ("man" </> toolsetName)
+    configDir <- maybe
+        (getXdgDirectory XdgConfig toolsetName)
+        (\d -> pure (d </> toolsetName))
+        configDir'
+    libDir <- maybe
+        ((</> (".local/lib" </> toolsetName)) <$> getHomeDirectory)
+        (\d -> pure (d </> toolsetName))
+        libexecDir
+    manDir <- maybe
+        (getXdgDirectory XdgData ("man" </> toolsetName))
+        pure
+        manDir'
     let defaultConfigDir = configDir </> "default"
-    dirsExistence [configDir, defaultConfigDir, libDir]
+    dirsExistence [configDir, defaultConfigDir, libDir, manDir]
         >>= createOrSkipDirectories
 
     templates <- getConfigTemplates appNames config
@@ -596,6 +624,10 @@ configFileContent runtimePaths ConfigTemplates{..} = \case
 
     -- ${CONFIG_DIR}/command-wrapper/exec/library.dhall
     ExecLibrary -> Text.unlines
+        -- TODO: Use the same import as provided by:
+        -- ```
+        -- completion --library --dhall=exec --import
+        -- ```
         [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall"
         ]
 
@@ -658,6 +690,10 @@ configFileContent runtimePaths ConfigTemplates{..} = \case
 
     -- ${CONFIG_DIR}/command-wrapper/library.dhall
     Library -> Text.unlines
+        -- TODO: Use the same import as provided by:
+        -- ```
+        -- completion --library --dhall=command-wrapper --import
+        -- ```
         [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall"
         ]
 
@@ -679,4 +715,3 @@ configFileContent runtimePaths ConfigTemplates{..} = \case
                 , exec = "./exec/library.dhall"
                 }
             runtimePaths
-

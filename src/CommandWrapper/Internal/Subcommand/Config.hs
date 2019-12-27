@@ -45,7 +45,7 @@ import Data.String (String, fromString)
 import Data.Word (Word)
 import GHC.Generics (Generic)
 --import System.Exit (ExitCode(ExitFailure), exitWith)
-import System.IO (IO{-, stderr-}, stdout)
+import System.IO (FilePath, IO{-, stderr-}, stdout)
 import Text.Show (Show)
 
 import qualified Data.CaseInsensitive as CI (mk)
@@ -274,9 +274,14 @@ parseOptions
     -> [String]
     -> IO (Endo (ConfigMode Global.Config))
 parseOptions appNames@AppNames{usedName} globalConfig options = execParser
-    [ dualFoldEndo
-        <$> initFlag
-        <*> optional toolsetOption
+    [ initFlag
+        <*> ( dualFoldEndo
+                <$> optional toolsetOption
+                <*> many (configDirOption \d opts -> opts{configDir = Just d})
+                <*> many (binDirOption \d opts -> opts{binDir = Just d})
+                <*> many (libexecDirOption \d opts -> opts{libexecDir = Just d})
+                <*> many (manDirOption \d opts -> opts{manDir = Just d})
+            )
 
     , dhallFlag
         <*> ( dualFoldEndo
@@ -409,8 +414,9 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchToHelpMode :: Endo (ConfigMode Global.Config)
     switchToHelpMode = switchTo (Help globalConfig)
 
-    switchToInitMode :: Endo (ConfigMode Global.Config)
-    switchToInitMode = switchTo (Init (defInitOptions usedName) globalConfig)
+    switchToInitMode :: Endo InitOptions -> Endo (ConfigMode Global.Config)
+    switchToInitMode (Endo f) =
+        switchTo (Init (f (defInitOptions usedName)) globalConfig)
 
     switchToEditMode :: Endo EditOptions -> Endo (ConfigMode Global.Config)
     switchToEditMode (Endo f) = switchTo (Edit (f defEditOptions) globalConfig)
@@ -488,7 +494,8 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchToDhallFilterMode expr f =
         switchTo (DhallFilter (f `appEndo` Dhall.defFilter expr) globalConfig)
 
-    initFlag :: Options.Parser (Endo (ConfigMode Global.Config))
+    initFlag
+        :: Options.Parser (Endo InitOptions -> Endo (ConfigMode Global.Config))
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
 
     dhallFlag
@@ -731,14 +738,11 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.flag mempty switchToDhallFilterMode
             (Options.long "dhall-filter")
 
-    toolsetOption :: Options.Parser (Endo (ConfigMode Global.Config))
+    toolsetOption :: Options.Parser (Endo InitOptions)
     toolsetOption =
         Options.strOption (Options.long "toolset" <> Options.metavar "NAME")
-            <&> \toolsetName -> Endo \case
-                    Init opts cfg ->
-                        Init (opts :: InitOptions){toolsetName} cfg
-                    mode ->
-                        mode
+            <&> \toolsetName -> Endo \opts ->
+                    (opts :: InitOptions){toolsetName}
 
     editFlag
         :: Options.Parser (Endo EditOptions -> Endo (ConfigMode Global.Config))
@@ -785,6 +789,50 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         , Options.short '0'     -- This one is used by e.g. `xargs`
         , Options.short 'z'     -- Git likes this one
         ]
+
+    binDirOption :: (FilePath -> a -> a) -> Options.Parser (Endo a)
+    binDirOption f = Options.option parser $ mconcat
+        [ Options.long "bin-dir"
+        , Options.long "bin-directory"
+        , Options.metavar "DIRECTORY"
+        ]
+      where
+        parser = Options.eitherReader \case
+            "" -> Left "Expected DIRECTORY, but got empty file path"
+            fp -> Right (Endo (f fp))
+
+    configDirOption :: (FilePath -> a -> a) -> Options.Parser (Endo a)
+    configDirOption f = Options.option parser $ mconcat
+        [ Options.long "config-dir"
+        , Options.long "config-directory"
+        , Options.metavar "DIRECTORY"
+        ]
+      where
+        parser = Options.eitherReader \case
+            "" -> Left "Expected DIRECTORY, but got empty file path"
+            fp -> Right (Endo (f fp))
+
+    libexecDirOption :: (FilePath -> a -> a) -> Options.Parser (Endo a)
+    libexecDirOption f = Options.option parser $ mconcat
+        [ Options.long "libexec-dir"
+        , Options.long "libexec-directory"
+        , Options.metavar "DIRECTORY"
+        ]
+      where
+        parser = Options.eitherReader \case
+            "" -> Left "Expected DIRECTORY, but got empty file path"
+            fp -> Right (Endo (f fp))
+
+    manDirOption :: (FilePath -> a -> a) -> Options.Parser (Endo a)
+    manDirOption f = Options.option parser $ mconcat
+        [ Options.long "man-dir"
+        , Options.long "man-directory"
+        , Options.metavar "DIRECTORY"
+        ]
+      where
+        parser = Options.eitherReader \case
+            "" -> Left "Expected DIRECTORY, but got empty file path"
+            fp -> Right (Endo (f fp))
 
     helpFlag :: Options.Parser (Endo (ConfigMode Global.Config))
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
@@ -974,6 +1022,18 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "config"
             <+> longOption "init"
             <+> Pretty.brackets (longOptionWithArgument "toolset" "NAME")
+            <+> Pretty.brackets
+                ( longOptionWithArgument "bin-dir[ectory]" "DIRECTORY"
+                )
+            <+> Pretty.brackets
+                ( longOptionWithArgument "config-dir[ectory]" "DIRECTORY"
+                )
+            <+> Pretty.brackets
+                ( longOptionWithArgument "libexec-dir[ectory]" "DIRECTORY"
+                )
+            <+> Pretty.brackets
+                ( longOptionWithArgument "man-dir[ectory]" "DIRECTORY"
+                )
 
         , "config" <+> helpOptions
         , "help config"
@@ -1147,6 +1207,39 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ Pretty.reflow "When specified allong with", longOption "init"
             , Pretty.reflow "then configuration for toolset", metavar "NAME"
             , Pretty.reflow "is initialised."
+            ]
+
+        , optionDescription ["--bin-dir[ectory]=DIRECTORY"]
+            [ Pretty.reflow "When specified allong with", longOption "init"
+            , Pretty.reflow "then symbolic link for toolset", metavar "NAME"
+            , Pretty.reflow "is created in", metavar "DIRECTORY"
+            , Pretty.reflow "instead of trying to create it in"
+            , value "~/.local/bin" <> ",", "or"
+            , value "~/bin"
+            , Pretty.reflow "(directories are tried in that order)."
+            ]
+
+        , optionDescription ["--output-dir[ectory]=DIRECTORY"]
+            [ Pretty.reflow "When specified allong with", longOption "init"
+            , Pretty.reflow "then configuration for toolset", metavar "NAME"
+            , Pretty.reflow "is initialised in"
+            , metavar "DIRECTORY" <> "/" <> metavar "NAME"
+            , Pretty.reflow
+                "instead of following XDG Base Directory Specification."
+            ]
+
+        , optionDescription ["--libexec-dir[ectory]=DIRECTORY"]
+            [ Pretty.reflow "When specified allong with", longOption "init"
+            , Pretty.reflow "then it is assumed that subcommand executables\
+                \ will be stored in"
+            , metavar "DIRECTORY" <> "."
+            ]
+
+        , optionDescription ["--man-dir[ectory]=DIRECTORY"]
+            [ Pretty.reflow "When specified allong with", longOption "init"
+            , Pretty.reflow
+                "then it is assumed that manual pages will be stored in"
+            , metavar "DIRECTORY" <> "."
             ]
 
         , optionDescription ["--edit", "-e"]
@@ -1329,6 +1422,34 @@ configSubcommandCompleter appNames cfg _shell index words
         , List.any ("--toolset=" `List.isPrefixOf`) wordsBeforePattern
         ]
 
+    hadBinDir = List.or
+        [ "--bin-dir" `List.elem` wordsBeforePattern
+        , "--bin-directory" `List.elem` wordsBeforePattern
+        , List.any ("--bin-dir=" `List.isPrefixOf`) wordsBeforePattern
+        , List.any ("--bin-directory=" `List.isPrefixOf`) wordsBeforePattern
+        ]
+
+    hadConfigDir = List.or
+        [ "--config-dir" `List.elem` wordsBeforePattern
+        , "--config-directory" `List.elem` wordsBeforePattern
+        , List.any ("--config-dir=" `List.isPrefixOf`) wordsBeforePattern
+        , List.any ("--config-directory=" `List.isPrefixOf`) wordsBeforePattern
+        ]
+
+    hadLibexecDir = List.or
+        [ "--libexec-dir" `List.elem` wordsBeforePattern
+        , "--libexec-directory" `List.elem` wordsBeforePattern
+        , List.any ("--libexec-dir=" `List.isPrefixOf`) wordsBeforePattern
+        , List.any ("--libexec-directory=" `List.isPrefixOf`) wordsBeforePattern
+        ]
+
+    hadManDir = List.or
+        [ "--man-dir" `List.elem` wordsBeforePattern
+        , "--man-directory" `List.elem` wordsBeforePattern
+        , List.any ("--man-dir=" `List.isPrefixOf`) wordsBeforePattern
+        , List.any ("--man-directory=" `List.isPrefixOf`) wordsBeforePattern
+        ]
+
     hadSubcommandConfig =
         "--subcommand-config" `List.elem` wordsBeforePattern
 
@@ -1358,6 +1479,10 @@ configSubcommandCompleter appNames cfg _shell index words
             , "--menu"
             ]
         <> mwhen (hadInit && not hadToolset) ["--toolset="]
+        <> mwhen (hadInit && not hadBinDir) ["--bin-dir="]
+        <> mwhen (hadInit && not hadConfigDir) ["--config-dir="]
+        <> mwhen (hadInit && not hadLibexecDir) ["--libexec-dir="]
+        <> mwhen (hadInit && not hadManDir) ["--man-dir="]
         <> mwhen (hadDhall || hadDhallFilter)
             [ "--alpha", "--no-alpha"
             , "--annotate", "--no-annotate"

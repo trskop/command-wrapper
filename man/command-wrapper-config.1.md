@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 15th December 2019
+% 27th December 2019
 
 
 # NAME
@@ -83,6 +83,10 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-exec
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init
 \[\--toolset=*NAME*|\--toolset *NAME*]
+\[\--bin-dir\[ectory]=*DIRECTORY*|\--bin-dir\[ectory] *DIRECTORY*]
+\[\--config-dir\[ectory]=*DIRECTORY*|\--config-dir\[ectory] *DIRECTORY*]
+\[\--libexec-dir\[ectory]=*DIRECTORY*|\--libexec-dir\[ectory] *DIRECTORY*]
+\[\--man-dir\[ectory]=*DIRECTORY*|\--man-dir\[ectory] *DIRECTORY*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e}
 \[*FILE*|\--subcommand-config *SUBCOMMAND*]
@@ -196,7 +200,6 @@ We can organise `config` subcommand abilities into following categories:
     :   Abort, i.e. nothing is printed to `stdout`, and exit with status code
         `130`.
 
-
 **Edit File** (`--edit`)
 :   Edit configuration file or any other file.  This functionality does allow
     subcommands to respect user editor preferences without needing to
@@ -274,6 +277,11 @@ We can organise `config` subcommand abilities into following categories:
     ├── ...
     └── ${toolset} -> $HOME/.local/lib/command-wrapper
     ```
+
+    Location of bin, configuration, libexec, and man directory can be overriden
+    using `--bin-dir[ectory]=`*DIRECTORY*, `--config-dir[ectory]=`*DIRECTORY*,
+    `--libexec-dir[ectory]=`*DIRECTORY*, and `--man-dir[ectory]=`*DIRECTORY*
+    options, respectively.
 
     For more information about individual files and directories see
     `command-wrapper(1)`,  `command-wrapper-cd(1)`,  `command-wrapper-exec(1)`,
@@ -380,6 +388,25 @@ We can organise `config` subcommand abilities into following categories:
 :   When specified allong with `--init` then configuration for toolset *NAME*
     is initialised.  Alternatively `COMMAND_WRAPPER_INVOKE_AS=`*NAME* can be
     used.  See `command-wrapper(1) section *ENVIRONMENT VARIABLES* for details.
+
+\--bin-dir\[ectory]=*DIRECTORY*
+:   When specified allong with `--init` then symbolic link for toolset *NAME*
+    is created in *DIRECTORY* instead of trying to create it in `~/.local/bin`,
+    or `~/bin` (directories are tried in that order).
+
+\--config-dir\[ectory]=*DIRECTORY*
+:   When specified allong with --init then configuration for toolset *NAME* is
+    initialised in `DIRECTORY/NAME` instead of following [XDG Base Directory
+    Specification
+    ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
+
+\--libexec-dir\[ectory]=*DIRECTORY*
+:   When specified allong with `--init` then it is assumed that subcommand
+    executables will be stored in *DIRECTORY*.
+
+\--man-dir\[ectory]=*DIRECTORY*
+:   When specified allong with `--init` then it is assumed that manual pages
+    will be stored in *DIRECTORY*.
 
 \--dhall-bash
 :   Compile Dhall expression into Bash expression or statement.
