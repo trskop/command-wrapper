@@ -47,26 +47,34 @@ default-extensions:
 dependencies:
   - base
 
+  - aeson
+  - aeson-pretty
   - ansi-terminal
   - atomic-write >=0.2.0.0
   - bytestring
   - case-insensitive
+  - cborg
+  - cborg-json
   - comonad
   - containers
   - cryptonite
-  - dhall >=1.26  # Functioning support of Dhall Standard 10.0.0
-  - dhall-bash
-  - dhall-json
+  - dhall >=1.28
+  # ^ Dhall Standard 12.0.0; Command Wrapper switched to {From,To}Dhall,
+  # Encoder, Decoder, etc. which is backwards incompatible with older versions.
+  - dhall-bash >=1.0.25
+  # ^ First version supporting dhall-1.28.
+  - dhall-json >=1.6.0
+  # ^ First version supporting dhall-1.28.
   - directory
   - either
-  - endo
+  - endo >=0.3.0.1
   - executable-path
   - file-embed
   - filepath
   - fuzzy
   - generic-lens
   - host-and-port
-  - lock-file
+  - lock-file >=0.7.0.0
   - mainplate
   - mtl
   - open-in-editor
@@ -75,29 +83,19 @@ dependencies:
   - prettyprinter-ansi-terminal
   - process
   - safe
+  - serialise
   - template-haskell
   - temporary
   - terminal-size
   - terminfo
   - text
+  - transformers
   - unix
   - unordered-containers
   - verbosity >=0.3
   - vty
 
-  # For `config`, may be redesigned:
-  - projectroot
-
-  # `config --dhall[-repl]`
-  - aeson
-  - aeson-pretty
-  - cborg
-  - cborg-json
-# - dotgen
-  - serialise
-  - transformers
-
-ghc-options: -Wall -Wcompat
+ghc-options: ["-Wall", "-Wcompat"]
 
 library:
   source-dirs: src
@@ -108,29 +106,46 @@ executables:
     main: Main.hs
     dependencies:
       - *this
-    ghc-options: -threaded
+    ghc-options: ["-threaded"]
 
   command-wrapper-cd:
     source-dirs: app-cd
     main: Main.hs
     dependencies:
       - *this
+
       - turtle
-    ghc-options: -threaded
+    ghc-options: ["-threaded"]
 
   command-wrapper-skel:
     source-dirs: app-skel
     main: Main.hs
     dependencies:
       - *this
+
       - turtle
-    ghc-options: -threaded
+    ghc-options: ["-threaded"]
 
   command-wrapper-exec:
     source-dirs: app-exec
     main: Main.hs
     dependencies:
       - *this
+
       - clock
       - turtle
-    ghc-options: -threaded
+    ghc-options: ["-threaded"]
+
+tests:
+  command-wrapper-tests:
+    source-dirs: test
+    main: Main.hs
+    dependencies:
+      - *this
+
+      - call-stack
+      - deepseq
+      - tasty
+      - tasty-hunit
+#     - tasty-program
+    ghc-options: ["-threaded", "-rtsopts", "-with-rtsopts=-N"]
