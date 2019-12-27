@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Config.Environment
 -- Description: Environment variables
@@ -16,12 +17,14 @@ module CommandWrapper.Config.Environment
   where
 
 import GHC.Generics (Generic)
+import Text.Show (Show)
 
 import Dhall (FromDhall, ToDhall)
 
 import CommandWrapper.Environment.Variable (EnvVarName, EnvVarValue)
 
 
+-- | Represents environment variable @name=value@.
 data EnvironmentVariable = EnvironmentVariable
     { name :: EnvVarName
     , value :: EnvVarValue

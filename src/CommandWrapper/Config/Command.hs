@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Config.Command
 -- Description: Command description suitable for execution
@@ -17,7 +18,14 @@ module CommandWrapper.Config.Command
     )
   where
 
+import Data.Bool (Bool)
+import Data.Eq ((==))
+import Data.Function ((.))
+import Data.Maybe (Maybe)
+import Data.String (String)
 import GHC.Generics (Generic)
+import System.IO (FilePath)
+import Text.Show (Show)
 
 import Data.Text (Text)
 import Dhall ((>$<), (>*<))

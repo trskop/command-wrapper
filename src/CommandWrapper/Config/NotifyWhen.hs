@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Config.NotifyWhen
 -- Description: Data type that represents when desktop notifications should be
@@ -15,8 +16,13 @@ module CommandWrapper.Config.NotifyWhen
 --  )
   where
 
+import Data.Eq (Eq)
+import Data.Function (($))
+import Data.Functor ((<$>))
+import Data.Monoid (mconcat)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
+import Text.Show (Show)
 
 import Data.Text (Text)
 import Dhall (FromDhall)

@@ -72,12 +72,10 @@
     TOOLSET completion --script [--standalone|--source] ...
     ```
 
-*   Support fuzzy search when doing `--query`.
-
 *   Support for custom libraries:
 
     ```
-    TOOLSET completion --library [--shell=SHELL|--custom] [--import|--content] [--output=FILE]
+    TOOLSET completion --library --custom=NAME [--import|--content] [--output=FILE]
     ```
 
     Maybe this will require a little more thought.
@@ -233,9 +231,6 @@
 
 -   Make it aware of Vim/Neovim terminal, which can prevent us to create new
     terminal window.
-
--   Provide default menu tool implementation so that command can work without
-    `fzf`/`fzy` installed.
 
 
 ### Exec

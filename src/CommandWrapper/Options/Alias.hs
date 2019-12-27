@@ -31,16 +31,32 @@ import Text.Show (Show)
 import Dhall (FromDhall)
 
 
+-- | Represents an alias of a subcommand invocation.
 data Alias = Alias
     { alias :: String
+    -- ^ Name under which this alias is known and can be invoked.
     , description :: Maybe String
+    -- ^ Short description of what the alias does.
     , command :: String
+    -- ^ Subcommand that should be invoked.
     , arguments :: [String]
+    -- ^ Arguments passed to the subcommand ('command').  Anything passed
+    -- directly on the command line (when invoked via alias) will be appended
+    -- to this list.
     }
   deriving stock (Generic, Show)
   deriving anyclass (FromDhall)
 
-applyAlias :: [Alias] -> String -> [String] -> (String, [String])
+-- | Resolve aliases into subcommand invocations.  If passed subcommand name
+-- is not an alias then it is left untouched.
+applyAlias
+    :: [Alias]
+    -> String
+    -- ^ Subcommand or alias name.
+    -> [String]
+    -- ^ Arguments passed to toolset when subcommand or alias was invoked.
+    -> (String, [String])
+    -- ^ Subcommand to be actually invoked with specified arguments.
 applyAlias aliases subcommand arguments =
     let (cmd, args, _) = applyAliasCompletion aliases subcommand arguments 0
      in (cmd, args)

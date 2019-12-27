@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Environment
--- Description: TODO: Module synopsis
+-- Description: Application environment and environment variables.
 -- Copyright:   (c) 2018 Peter Trško
 -- License:     BSD3
 --
@@ -9,9 +9,11 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Application environment and environment variables.
 module CommandWrapper.Environment
-    ( module CommandWrapper.Environment.Variable
+    (
+    -- * Environment Variables
+      module CommandWrapper.Environment.Variable
 
     -- * Environment Builder
     , module CommandWrapper.Environment.Builder
@@ -20,9 +22,13 @@ module CommandWrapper.Environment
     , module CommandWrapper.Environment.Parser
 
     -- * Application Params
+    --
+    -- | Subcommand parameters passed via Subcommand Protocol.
     , module CommandWrapper.Environment.Params
 
     -- * Application Names
+    --
+    -- | Names and paths under which Command Wrapper toolset is known.
     , module CommandWrapper.Environment.AppNames
     )
   where

@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Environment.AppNames
 -- Description: Representation of all the names and paths under wich Command
---              Wrapper is known.
+--              Wrapper toolset is known.
 -- Copyright:   (c) 2018-2019 Peter Trško
 -- License:     BSD3
 --
@@ -10,8 +10,8 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- Representation of all the names and paths under wich Command Wrapper is
--- known.  These are used to search for subcommands, populate environment
+-- Representation of all the names and paths under wich Command Wrapper toolset
+-- is known.  These are used to search for subcommands, populate environment
 -- variables for subcommands, in error messages, etc.
 --
 -- See also @command-wrapper(1)@ and @command-wrapper-subcommand-protocol(7)@

@@ -81,6 +81,7 @@ import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
+import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Verbosity (Verbosity(..))
 import qualified Dhall.Core as Dhall (Expr)
 import qualified Dhall.Parser as Dhall (Src)
@@ -129,11 +130,11 @@ subcommandParams = parseEnvIO protocolError askParams
         exitWith (ExitFailure 1)
 
     mkMessage err =
-        "This command must be executed inside Command Wrapper environment:"
-        <+> "Failed to parse environment variables:"
+        Pretty.reflow "This command must be executed inside Command Wrapper\
+            \ environment: Failed to parse environment variables:"
         <+> Pretty.viaShow err <> Pretty.colon
-        <+> "See command-wrapper-subcommand-protocol(1) manual page for more"
-        <+> "details."
+        <+> Pretty.reflow "See command-wrapper-subcommand-protocol(1) manual\
+            \ page for more details."
 
 errorMsg :: Params -> Handle -> Text -> IO ()
 errorMsg Params{colour, name, subcommand, verbosity} h msg =
@@ -234,10 +235,3 @@ printCommandWrapperStyleCompletionInfoExpression outHandle =
             )
 
      in Dhall.hPutExpr Never Dhall.Unicode outHandle completionInfo
-
--- TODO:
---
--- Open controlling terminal and use it to print a message.  This is useful in
--- case when @stdout@\/@stderr@ is redirected or being used for other purposes.
---
---withTerminal :: (Handle -> Text -> IO a) -> Text -> IO a

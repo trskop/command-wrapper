@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Message
 -- Description: Helper functions for printing messages.
@@ -57,16 +57,24 @@ module CommandWrapper.Message
 
 import Control.Exception (bracket_)
 import Control.Monad (when)
+import Data.Bool (Bool)
+import Data.Function (($), (.))
+import Data.Functor ((<$>))
 import Data.Coerce (Coercible, coerce)
-import Data.Maybe (fromMaybe)
+import Data.Int (Int)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe, maybe)
+import Data.Monoid ((<>))
+import Data.Ord ((>), (>=))
 import Data.Proxy (Proxy(Proxy))
+import Data.String (String)
 import System.Exit (ExitCode(ExitFailure), exitWith)
-import System.IO (Handle, IOMode(WriteMode), hPutStr, hPutStrLn, withFile)
+import System.IO (Handle, IO, IOMode(WriteMode), hPutStr, hPutStrLn, withFile)
 
 import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
+import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Verbosity (Verbosity(Annoying, Normal, Silent, Verbose))
 import qualified Options.Applicative.Help as Options
     ( Chunk(..)
@@ -105,7 +113,9 @@ errorMsg
     -> IO ()
 errorMsg command verbosity colourOutput h msg =
     message defaultLayoutOptions verbosity colourOutput h
-        $ errorDoc (command <> Pretty.colon <+> "Error:" <+> msg) <> Pretty.line
+        ( errorDoc (command <> Pretty.colon <+> "Error:" <+> msg)
+        <> Pretty.line
+        )
 
 warningMsg
     :: (forall ann. Pretty.Doc ann)
@@ -119,7 +129,9 @@ warningMsg
     -> IO ()
 warningMsg command verbosity colourOutput h msg =
     message defaultLayoutOptions verbosity colourOutput h
-        $ warningDoc (command <> Pretty.colon <+> "Warning:" <+> msg) <> Pretty.line
+        ( warningDoc (command <> Pretty.colon <+> "Warning:" <+> msg)
+        <> Pretty.line
+        )
 
 noticeMsg
     :: (forall ann. Pretty.Doc ann)
@@ -133,7 +145,7 @@ noticeMsg
     -> IO ()
 noticeMsg command verbosity colourOutput h msg =
     message defaultLayoutOptions verbosity colourOutput h
-        $ noticeDoc (command <> Pretty.colon <+> msg) <> Pretty.line
+        (noticeDoc (command <> Pretty.colon <+> msg) <> Pretty.line)
 
 -- TODO: Debug message should include source code location.
 debugMsg
@@ -148,7 +160,9 @@ debugMsg
     -> IO ()
 debugMsg command verbosity colourOutput h msg =
     message defaultLayoutOptions verbosity colourOutput h
-        $ debugDoc (command <> Pretty.colon <+> "Debug:" <+> msg) <> Pretty.line
+        ( debugDoc (command <> Pretty.colon <+> "Debug:" <+> msg)
+        <> Pretty.line
+        )
 
 hSetSgrCode :: Handle -> Terminal.SGR -> IO ()
 hSetSgrCode h code = hPutStr h $ Terminal.setSGRCode [code]
@@ -169,9 +183,9 @@ dieUnableToFindSubcommandExecutable
     -> IO a
 dieUnableToFindSubcommandExecutable name verbosity colour h subcommand = do
     errorMsg name verbosity colour h
-        ( pretty subcommand
-        <> Pretty.colon
-        <+> "Unable to find suitable executable for this subcommand."
+        ( pretty subcommand <> Pretty.colon
+        <+> Pretty.reflow "Unable to find suitable executable for this\
+            \ subcommand."
         )
     exitWith (ExitFailure 127)
 
@@ -191,7 +205,7 @@ dieUnableToExecuteSubcommand
 dieUnableToExecuteSubcommand name verbosity colour h subcommand executable = do
     errorMsg name verbosity colour h
         ( Pretty.dquotes (pretty subcommand) <> Pretty.colon
-        <+> "Unable to execute external subcommand executable:"
+        <+> Pretty.reflow "Unable to execute external subcommand executable:"
         <+> Pretty.dquotes (pretty executable) <> "."
         )
     exitWith (ExitFailure 126)
@@ -209,7 +223,9 @@ dieTooManyArguments
     -> IO a
 dieTooManyArguments name subcommand verbosity colourOutput h argument = do
     errorMsg (name <+> subcommand) verbosity colourOutput h
-        $ Pretty.dquotes argument <> Pretty.colon <+> "Too many arguments."
+        ( Pretty.dquotes argument <> Pretty.colon
+        <+> Pretty.reflow "Too many arguments."
+        )
     exitWith (ExitFailure 1)
 
 dieSubcommandNotYetImplemented
@@ -224,7 +240,7 @@ dieSubcommandNotYetImplemented
 dieSubcommandNotYetImplemented name verbosity colourOutput h subcommand = do
     errorMsg name verbosity colourOutput h
         ( Pretty.dquotes subcommand <> Pretty.colon
-        <+> "Subcommand not yet implemented."
+        <+> Pretty.reflow "Subcommand not yet implemented."
         )
     exitWith (ExitFailure 125)
 
@@ -238,7 +254,9 @@ dieFailedToParseEnvironment
     -> IO a
 dieFailedToParseEnvironment name verbosity colourOutput h err = do
     errorMsg name verbosity colourOutput h
-        $ "Failed to parse environment:" <+> Pretty.viaShow err
+         ( Pretty.reflow "Failed to parse environment:"
+         <+> Pretty.viaShow err
+         )
     exitWith (ExitFailure 1)
 
 dieFailedToParseOptions
