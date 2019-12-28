@@ -1,6 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE TemplateHaskell #-}
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion
 -- Description: Implementation of internal subcommand that provides command
@@ -25,7 +23,7 @@ module CommandWrapper.Internal.Subcommand.Completion
     )
   where
 
-import Prelude ((+), (-), fromIntegral)
+import Prelude ((+), (-), fromIntegral, maxBound, minBound)
 
 import Control.Applicative ((<*), (<*>), (<|>), many, optional, pure, some)
 import Control.Monad ((=<<), (>>=), join, when)
@@ -60,11 +58,10 @@ import Numeric.Natural (Natural)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import System.IO (IO, putStrLn, stderr, stdout)
 import Text.Read (readMaybe)
-import Text.Show (Show, show)
+import Text.Show (Show)
 
 import Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI (foldedCase, mk)
-import Data.Either.Validation (validationToEither)
 import Data.Generics.Product.Typed (typed)
 import Data.Monoid.Endo (mapEndo)
 import Data.Monoid.Endo.Fold (dualFoldEndo, foldEndo)
@@ -79,7 +76,6 @@ import Data.Output
 import qualified Data.Output as Output (HasOutput(output))
 import Data.Text (Text)
 import qualified Data.Text as Text (unpack)
-import qualified Data.Text.IO as Text (putStr)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -90,7 +86,6 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Dhall
-import qualified Dhall.TH (staticDhallExpression)
 import qualified Mainplate (applySimpleDefaults)
 import qualified Options.Applicative as Options
     ( Parser
@@ -108,13 +103,12 @@ import qualified Options.Applicative as Options
 import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, headMay, lastMay)
 import System.AtomicWrite.Writer.String (atomicWriteFile)
-import qualified System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
 import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..), getAliases)
-import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
+import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External
     ( executeCommand
     , executeCommandWith
@@ -150,16 +144,18 @@ import qualified CommandWrapper.Options.Optparse as Options
     )
 import qualified CommandWrapper.Options.Shell as Options
 import CommandWrapper.Internal.Subcommand.Completion.Libraries
-    ( DhallLibrary
-        ( CommandWrapper
-        , CommandWrapperExec
-        , PreludeV11_1_0
-        , PreludeV12_0_0
-        )
-    , ImportOrContent(Content, Import)
-    , putBashLibrary
-    , putDhallLibrary
+    ( ImportOrContent(Content, Import)
+    , Library(..)
+    , LibraryOptions(..)
+    , ScriptOptions(..)
+    , defLibraryOptions
+    , defScriptOptions
+    , parseDhallLibrary
+    , putLibrary
+    , putShellCompletionScript
+    , showDhallLibrary
     )
+
 
 -- | Returns completer if the first argument is a name of an internal command.
 type InternalCompleter = String -> Maybe Completer
@@ -194,10 +190,10 @@ data Query = Query
     -- * @False@: don't be case sensitive when pattern matching.
     -- * @True@: be case sensitive when pattern matching.
 
+    , output :: OutputStdoutOrFile
+
 --  , addPrefix :: String
 --  , addSuffix :: String
-
-    , output :: OutputStdoutOrFile
     }
   deriving stock (Generic, Show)
     -- TODO: Extend this data type to be able to list various combinations of
@@ -230,6 +226,8 @@ defQueryOptions = Query
     , matchingAlgorithm = PrefixEquivalence
     , caseSensitive = False
     , output = OutputStdoutOnly
+--  , addPrefix = ""
+--  , addSuffix = ""
     }
 
 data CompletionMode a
@@ -263,66 +261,12 @@ instance HasOutput CompletionOptions where
     type Output CompletionOptions = OutputStdoutOrFile
     output = typed
 
-data ScriptOptions = ScriptOptions
-    { aliases :: [String]
-    , shell :: Options.Shell
-    , subcommand :: Maybe String
-    , output :: OutputStdoutOrFile
-    }
-  deriving stock (Generic, Show)
-
-instance HasOutput ScriptOptions where
-    type Output ScriptOptions = OutputStdoutOrFile
-    output = typed
-
-data LibraryOptions = LibraryOptions
-    { library :: Library
-    , output :: OutputStdoutOrFile
-    , importOrContent :: ImportOrContent
-    }
-  deriving stock (Generic, Show)
-
-data Library
-    = ShellLibrary Options.Shell
-    | DhallLibrary DhallLibrary
-  deriving stock (Generic, Show)
-
-instance HasOutput LibraryOptions where
-    type Output LibraryOptions = OutputStdoutOrFile
-    output = typed
-
-type MkCompletionScript =
-           Options.Shell
-        -> Text
-        -> Text
-        -> Maybe Text
-        -> [Text]
-        -> Text
-
 type CompletionInfo = Options.Shell -> Natural -> [Text] -> [Text]
 
 instance Options.HasShell CompletionOptions where
     updateShell =
         mapEndo \f opts@CompletionOptions{shell} ->
             (opts :: CompletionOptions){shell = f shell}
-
-instance Options.HasShell ScriptOptions where
-    updateShell = mapEndo \f opts@ScriptOptions{shell} ->
-        (opts :: ScriptOptions){shell = f shell}
-
-instance Options.HasShell Library where
-    updateShell f = Endo \case
-        ShellLibrary shell ->
-            ShellLibrary (f `appEndo` shell)
-        DhallLibrary _ ->
-            -- Bash is the default shell.
-            ShellLibrary (f `appEndo` Options.Bash)
-
-instance Options.HasShell LibraryOptions where
-    updateShell f = Endo \opts@LibraryOptions{library} ->
-        (opts :: LibraryOptions)
-            { library = Options.updateShell f `appEndo` library
-            }
 
 instance Options.HasShell (CompletionMode cfg) where
     updateShell f = Endo \case
@@ -373,21 +317,6 @@ instance HasPattern Query where
 setPattern :: HasPattern a => String -> Endo a
 setPattern pat = updatePattern (Endo \_ -> pat)
 
-defScriptOptions :: ScriptOptions
-defScriptOptions = ScriptOptions
-    { shell = Options.Bash
-    , subcommand = Nothing
-    , aliases = []
-    , output = OutputStdoutOnly
-    }
-
-defLibraryOptions :: LibraryOptions
-defLibraryOptions = LibraryOptions
-    { library = ShellLibrary Options.Bash
-    , output = OutputStdoutOnly
-    , importOrContent = Content
-    }
-
 data WrapperOptions = WrapperOptions
     { arguments :: [String]
     , expression :: Text
@@ -419,65 +348,11 @@ completion completionConfig@CompletionConfig{..} appNames options config =
         -- TODO:
         --
         -- - Completion script should be configurable.
-        ScriptMode
-          ScriptOptions{shell, aliases, subcommand, output}
-          Global.Config{colourOutput, verbosity} -> do
+        ScriptMode opts config' ->
+            putShellCompletionScript subcommand' appNames config' opts
 
-            let mkCompletionScriptExpr =
-                    $(Dhall.TH.staticDhallExpression
-                        "./dhall/completion.dhall"
-                    )
-
-                AppNames{exePath, usedName} = appNames
-
-                script = Dhall.extract Dhall.auto mkCompletionScriptExpr
-
-            case validationToEither script of
-                Left e -> do
-                    errorMsg subcommand' verbosity colourOutput stderr
-                        ( "Failed to generate completion script: "
-                        <> fromString (show e)
-                        )
-                    -- TODO: This is probably not the best exit code.
-                    exitWith (ExitFailure 1)
-
-                Right (mkScript :: MkCompletionScript) ->
-                    let completionScript = mkScript
-                            shell
-                            (fromString usedName :: Text)
-                            (fromString exePath :: Text)
-                            (fromString <$> subcommand :: Maybe Text)
-                            (fromString <$> aliases :: [Text])
-
-                     in case output of
-                            OutputHandle _ ->
-                                Text.putStr completionScript
-
-                            OutputNotHandle (OutputFile fn) ->
-                                Text.atomicWriteFile fn completionScript
-
-        LibraryMode
-          LibraryOptions
-            { library = DhallLibrary dhallLib
-            , output
-            , importOrContent
-            }
-          config' ->
-            putDhallLibrary config' dhallLib importOrContent output
-
-        LibraryMode
-          LibraryOptions{library = ShellLibrary shell, output, importOrContent}
-          config'@Global.Config{colourOutput, verbosity} ->
-            case shell of
-                Options.Bash ->
-                    putBashLibrary subcommand' config' importOrContent output
-
-                _ -> do
-                    errorMsg subcommand' verbosity colourOutput stderr
-                        ( fromString (show shell)
-                        <> ": Unsupported SHELL value."
-                        )
-                    exitWith (ExitFailure 125)
+        LibraryMode opts config' ->
+            putLibrary subcommand' config' opts
 
         QueryMode query@Query{..} config' -> case what of
             QuerySubcommands
@@ -928,13 +803,8 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
     -- At the moment we have library only for Bash.
     libraryOptions = ["--shell=bash" , "--import" , "--content", "--dhall="]
 
-    dhallLibraryOptions = ("--dhall=" <>)
-        <$> [ "prelude"
-            , "prelude-v11.1.0"
-            , "prelude-v12.0.0"
-            , "command-wrapper"
-            , "exec"
-            ]
+    dhallLibraryOptions = [minBound..maxBound] <&> \lib ->
+        "--dhall=" <> showDhallLibrary lib
 
     completionOptions = ["--shell=", "--subcommand=", "--"] <> outputOptions
 
@@ -1130,24 +1000,13 @@ parseOptions appNames config arguments = do
     dhallLibraryOption =
         Options.option parse (Options.long "dhall" <> Options.metavar "LIBRARY")
       where
-        parse = Options.eitherReader \s -> case CI.mk s of
-            "prelude-v11.1.0" ->
-                Right $ Endo \opts ->
-                    opts{library = DhallLibrary PreludeV11_1_0}
-            "prelude-v12.0.0" ->
-                Right $ Endo \opts ->
-                    opts{library = DhallLibrary PreludeV12_0_0}
-            "prelude" ->
-                Right $ Endo \opts ->
-                    opts{library = DhallLibrary PreludeV12_0_0}
-            "command-wrapper" ->
-                Right $ Endo \opts ->
-                    opts{library = DhallLibrary CommandWrapper}
-            "exec" ->
-                Right $ Endo \opts ->
-                    opts{library = DhallLibrary CommandWrapperExec}
-            _ ->
-                Left "Unknown Dhall library"
+        parse = Options.eitherReader \s ->
+            case parseDhallLibrary (CI.mk s) of
+                Just lib ->
+                    Right $ Endo \opts ->
+                        opts{library = DhallLibrary lib}
+                Nothing ->
+                    Left "Unknown Dhall library"
 
     queryFlag :: Options.Parser (Endo (CompletionMode Global.Config))
     queryFlag = Options.flag mempty switchToQueryMode (Options.long "query")
@@ -1514,6 +1373,7 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.reflow "or its import snippet when", longOption "import"
             , Pretty.reflow "is specified.  Supported values of"
             , metavar "LIBRARY", "are"
+            -- TODO: Derivee these values using 'showDhallLibrary':
             , value "prelude" <> ","
             , value "prelude-v11.1.0" <> ","
             , value "prelude-v12.0.0" <> ","

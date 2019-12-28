@@ -76,6 +76,45 @@ main = defaultMain $ testGroup "CommandWrapper.Tests"
         expectedHash <- dhallHash ["--input=" <> pkgFile] ""
 
         actualHash @?= expectedHash
+
+    , testCase "dhall/Prelude v12.0.0 lib is consistent" do
+        let actualHash =
+                "sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
+        lib <- callCommandWrapper
+            ["completion", "--library", "--dhall=prelude-v12.0.0"] ""
+        expectedHash <- dhallHash [] lib
+
+        (actualHash <> "\n") @?= expectedHash
+
+    , testCase "dhall/Prelude v12.0.0 lib is consistent" do
+        let actualHash =
+                "sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
+        lib <- callCommandWrapper
+            ["completion", "--library", "--dhall=prelude-v12.0.0", "--import"]
+            ""
+        expectedHash <- dhallHash [] lib
+
+        (actualHash <> "\n") @?= expectedHash
+
+    , testCase "dhall/Prelude v11.1.0 lib is consistent" do
+        let actualHash =
+                "sha256:99462c205117931c0919f155a6046aec140c70fb8876d208c7c77027ab19c2fa"
+        lib <- callCommandWrapper
+            ["completion", "--library", "--dhall=prelude-v11.1.0"] ""
+        expectedHash <- dhallHash [] lib
+
+        (actualHash <> "\n") @?= expectedHash
+
+    , testCase "dhall/Prelude v11.1.0 lib is consistent" do
+        let actualHash =
+                "sha256:99462c205117931c0919f155a6046aec140c70fb8876d208c7c77027ab19c2fa"
+        lib <- callCommandWrapper
+            ["completion", "--library", "--dhall=prelude-v11.1.0", "--import"]
+            ""
+        expectedHash <- dhallHash [] lib
+
+        (actualHash <> "\n") @?= expectedHash
+
     ]
 
 callCommandWrapper

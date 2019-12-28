@@ -35,6 +35,7 @@ default-extensions:
   - MultiWayIf
   - NamedFieldPuns
   - OverloadedStrings
+  - PatternSynonyms
   - RankNTypes
   - RecordWildCards
   - ScopedTypeVariables

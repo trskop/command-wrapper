@@ -13,24 +13,40 @@
 -- Print requested library to stdout or write it into a file.
 module CommandWrapper.Internal.Subcommand.Completion.Libraries
     (
-      ImportOrContent(..)
+    -- * Script and Dhall Libraries
+      LibraryOptions(..)
+    , Library(..)
+    , ImportOrContent(..)
+    , defLibraryOptions
+    , putLibrary
 
-    -- * Bash Library
+    -- ** Bash Library
     , putBashLibrary
 
-    -- * Dhall Libraries
+    -- ** Dhall Libraries
     , DhallLibrary(..)
+    , parseDhallLibrary
+    , showDhallLibrary
     , putDhallLibrary
 
-    -- * Completion Script
+    -- * Shell Completion Script
+    , ScriptOptions(..)
+    , defScriptOptions
+    , putShellCompletionScript
     )
   where
+
+import Prelude (Bounded, Enum)
 
 import Control.Applicative (pure)
 import Control.Monad ((>>=))
 import Data.Either (Either(Left, Right))
-import Data.Monoid ((<>))
-import Data.String (fromString)
+import Data.Eq (Eq)
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe(Just, Nothing))
+import Data.Monoid (Endo(Endo, appEndo), (<>))
+import Data.String (IsString, String, fromString)
+import Data.Void (Void)
 import GHC.Generics (Generic)
 import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.IO (IO, IOMode(WriteMode), stderr, stdout, withFile)
@@ -40,15 +56,21 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (putStr)
 import Data.Either.Validation (validationToEither)
 import Data.FileEmbed (embedFile)
+import Data.Generics.Product.Typed (typed)
+import Data.Monoid.Endo (mapEndo)
 import Data.Output
-    ( OutputFile(OutputFile)
+    ( HasOutput(Output)
+    , OutputFile(OutputFile)
     , OutputHandle(OutputHandle, OutputNotHandle)
     , OutputStdoutOrFile
+    , pattern OutputStdoutOnly
     )
+import qualified Data.Output (HasOutput(output))
 import Data.Text (Text)
 import qualified Data.Text.IO as Text (hPutStrLn, putStr)
 import qualified Data.Text.Prettyprint.Doc as Pretty (Doc)
-import qualified Dhall (auto, extract)
+import qualified Dhall (ExtractErrors, auto, extract)
+import qualified Dhall.Src as Dhall (Src)
 import qualified Dhall.TH (staticDhallExpression)
 import qualified System.AtomicWrite.Writer.ByteString as ByteString
     ( atomicWriteFile
@@ -56,18 +78,113 @@ import qualified System.AtomicWrite.Writer.ByteString as ByteString
 import qualified System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
+import CommandWrapper.Environment (AppNames(exePath, usedName))
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( hPutExpr
     )
+import CommandWrapper.Internal.Subcommand.Completion.DhallExpressions
+    ( commandWrapperContent
+    , commandWrapperImport
+    , execContent
+    , execImport
+    , preludeV11_1_0Content
+    , preludeV11_1_0Import
+    , preludeV12_0_0Content
+    , preludeV12_0_0Import
+    , shellCompletionTemplate
+    )
 import CommandWrapper.Message (errorMsg)
+import qualified CommandWrapper.Options.Shell as Options
+    ( HasShell(..)
+    , Shell(..)
+    )
 
 
-data ImportOrContent = Import | Content
+-- TODO:
+--
+-- *   We should consider piping the output to a pager or similar tool when the
+--     stdout is attached to a terminal.  For example `bat` would be a great
+--     choice if it is installed.  This applies for all functions in here.
+
+-- {{{ Script and Dhall Libraries ---------------------------------------------
+
+data LibraryOptions = LibraryOptions
+    { library :: Library
+    -- ^ Which library or import to produce.
+    , output :: OutputStdoutOrFile
+    -- ^ Where to write the library or import to.
+    , importOrContent :: ImportOrContent
+    -- ^ Produce library content or import statement.
+    }
   deriving stock (Generic, Show)
 
--- TODO: We should consider piping the output to a pager or similar tool when
--- the stdout is attached to a terminal.  For example `bat` would be a great
--- choice if it is installed.  This applies for all functions in here.
+instance Options.HasShell LibraryOptions where
+    updateShell f = Endo \opts@LibraryOptions{library} ->
+        (opts :: LibraryOptions)
+            { library = Options.updateShell f `appEndo` library
+            }
+
+instance HasOutput LibraryOptions where
+    type Output LibraryOptions = OutputStdoutOrFile
+    output = typed
+
+defLibraryOptions :: LibraryOptions
+defLibraryOptions = LibraryOptions
+    { library = ShellLibrary Options.Bash
+    , output = OutputStdoutOnly
+    , importOrContent = Content
+    }
+
+-- | Defines which library content or import will be produced.
+data Library
+    = ShellLibrary Options.Shell
+    | DhallLibrary DhallLibrary
+  deriving stock (Generic, Show)
+
+instance Options.HasShell Library where
+    updateShell f = Endo \case
+        ShellLibrary shell ->
+            ShellLibrary (f `appEndo` shell)
+        DhallLibrary _ ->
+            -- Bash is the default shell.
+            ShellLibrary (f `appEndo` Options.Bash)
+
+data ImportOrContent
+    = Import
+    -- ^ Produce import statement for the library.
+    | Content
+    -- ^ Produce library content.
+  deriving stock (Generic, Show)
+
+putLibrary
+    :: (forall ann. Pretty.Doc ann)
+    -> Config
+    -> LibraryOptions
+    -> IO ()
+putLibrary subcmd config LibraryOptions{..} = case library of
+    ShellLibrary shell ->
+        case shell of
+            Options.Bash ->
+                putBashLibrary subcmd config importOrContent output
+            _ ->
+                dieUnsupportedShell subcmd config shell
+
+    DhallLibrary dhallLib ->
+        putDhallLibrary config dhallLib importOrContent output
+
+dieUnsupportedShell
+    :: (forall ann. Pretty.Doc ann)
+    -> Config
+    -> Options.Shell
+    -> IO a
+dieUnsupportedShell subcmd Config{colourOutput, verbosity} shell = do
+    errorMsg subcmd verbosity colourOutput stderr
+        ( fromString (show shell)
+        <> ": Unsupported SHELL value."
+        )
+    exitWith (ExitFailure 125)
+
+-- {{{ Script and Dhall Libraries -- Bash Library -----------------------------
 
 putBashLibrary
     :: (forall ann. Pretty.Doc ann)
@@ -75,7 +192,7 @@ putBashLibrary
     -> ImportOrContent
     -> OutputStdoutOrFile
     -> IO ()
-putBashLibrary subcmd Config{colourOutput, verbosity} importOrContent = \case
+putBashLibrary subcmd config importOrContent = \case
     OutputHandle _ ->
         case importOrContent of
             Import ->
@@ -102,27 +219,55 @@ putBashLibrary subcmd Config{colourOutput, verbosity} importOrContent = \case
     getLibImportScript = do
         let script = Dhall.extract Dhall.auto libImportScriptExpr
         case validationToEither script of
-            Left e -> do
+            Left e ->
                 -- TODO: Error handling  should probably be left to higher
                 -- level code.
-                errorMsg subcmd verbosity colourOutput stderr
-                    ( "Failed to generate completion script: "
-                    <> fromString (show e)
-                    )
-                -- TODO: This is probably not the best exit code.
-                exitWith (ExitFailure 1)
+                dieFailedToGenerateLibrary subcmd config e
 
             Right t ->
                 pure t
 
--- {{{ Dhall Libraries --------------------------------------------------------
+dieFailedToGenerateLibrary
+    :: (forall ann. Pretty.Doc ann)
+    -> Config
+    -> Dhall.ExtractErrors Dhall.Src Void
+    -> IO a
+dieFailedToGenerateLibrary subcmd Config{colourOutput, verbosity} err = do
+    errorMsg subcmd verbosity colourOutput stderr
+        ( "Failed to generate library or its import with: "
+        <> fromString (show err)
+        )
+    -- TODO: This is probably not the best exit code.
+    exitWith (ExitFailure 1)
+
+-- }}} Script and Dhall Libraries -- Bash Library -----------------------------
+
+-- {{{ Script and Dhall Libraries -- Dhall Libraries --------------------------
 
 data DhallLibrary
-    = PreludeV11_1_0
+    = LatestPrelude
     | PreludeV12_0_0
+    | PreludeV11_1_0
     | CommandWrapper
     | CommandWrapperExec
-  deriving stock (Generic, Show)
+  deriving stock (Bounded, Enum, Generic, Show)
+
+parseDhallLibrary :: (Eq s, IsString s) => s -> Maybe DhallLibrary
+parseDhallLibrary = \case
+    "prelude"         -> Just LatestPrelude
+    "prelude-v11.1.0" -> Just PreludeV11_1_0
+    "prelude-v12.0.0" -> Just PreludeV12_0_0
+    "command-wrapper" -> Just CommandWrapper
+    "exec"            -> Just CommandWrapperExec
+    _                 -> Nothing
+
+showDhallLibrary :: IsString s => DhallLibrary -> s
+showDhallLibrary = \case
+    LatestPrelude      -> "prelude"
+    PreludeV11_1_0     -> "prelude-v11.1.0"
+    PreludeV12_0_0     -> "prelude-v12.0.0"
+    CommandWrapper     -> "command-wrapper"
+    CommandWrapperExec -> "exec"
 
 putDhallLibrary
     :: Config
@@ -141,25 +286,23 @@ putDhallLibrary config dhallLib importOrContent = \case
     hPutExpr = Dhall.hPutExpr config
 
     hPutDhallLibrary h = case (dhallLib, importOrContent) of
-        (PreludeV11_1_0, Content) -> hPutExpr h
-            $(Dhall.TH.staticDhallExpression
-                "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
-                \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
-            )
+        (PreludeV11_1_0, Content) ->
+            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV11_1_0Content)
 
-        (PreludeV11_1_0, Import) -> Text.hPutStrLn h
-            "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
-            \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
+        (PreludeV11_1_0, Import) ->
+            Text.hPutStrLn h preludeV11_1_0Import
 
-        (PreludeV12_0_0, Content) -> hPutExpr h
-            $(Dhall.TH.staticDhallExpression
-                "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
-                \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
-            )
+        (PreludeV12_0_0, Content) ->
+            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV12_0_0Content)
 
-        (PreludeV12_0_0, Import) -> Text.hPutStrLn h
-            "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
-            \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
+        (PreludeV12_0_0, Import) ->
+            Text.hPutStrLn h preludeV12_0_0Import
+
+        (LatestPrelude, Content) ->
+            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV12_0_0Content)
+
+        (LatestPrelude, Import) ->
+            Text.hPutStrLn h preludeV12_0_0Import
 
         -- IMPORTANT!
         --
@@ -170,24 +313,97 @@ putDhallLibrary config dhallLib importOrContent = \case
         --
         -- TODO: Figure out how to do this in a better way.
 
-        (CommandWrapper, Content) -> hPutExpr h
-            $(Dhall.TH.staticDhallExpression
-                "./dhall/CommandWrapper/package.dhall\
-                \ sha256:db7beaa043832c8deca4f19321014f4e0255bc5081dae5ad918d7137711997f5"
-            )
+        (CommandWrapper, Content) ->
+            hPutExpr h $(Dhall.TH.staticDhallExpression commandWrapperContent)
 
-        (CommandWrapper, Import) -> Text.hPutStrLn h
-            "https://raw.githubusercontent.com/trskop/command-wrapper/ed45bcbf451d7cef902cf046856e4b2529a4505b/dhall/CommandWrapper/package.dhall\
-            \ sha256:db7beaa043832c8deca4f19321014f4e0255bc5081dae5ad918d7137711997f5"
+        (CommandWrapper, Import) ->
+            Text.hPutStrLn h commandWrapperImport
 
-        (CommandWrapperExec, Content) -> hPutExpr h
-            $(Dhall.TH.staticDhallExpression
-                "./dhall/Exec/package.dhall\
-                \ sha256:38900a8210a254861364428b9ab96a1ac473a73b2fc271085d4dda2afc2e9a9c"
-            )
+        (CommandWrapperExec, Content) ->
+            hPutExpr h $(Dhall.TH.staticDhallExpression execContent)
 
-        (CommandWrapperExec, Import) -> Text.hPutStrLn h
-            "https://raw.githubusercontent.com/trskop/exec/ed45bcbf451d7cef902cf046856e4b2529a4505b/dhall/Exec/package.dhall\
-            \ sha256:38900a8210a254861364428b9ab96a1ac473a73b2fc271085d4dda2afc2e9a9c"
+        (CommandWrapperExec, Import) ->
+            Text.hPutStrLn h execImport
 
--- }}} Dhall Libraries --------------------------------------------------------
+-- }}} Script and Dhall Libraries -- Dhall Libraries --------------------------
+
+-- }}} Script and Dhall Libraries ---------------------------------------------
+
+-- {{{ Shell Completion Script ------------------------------------------------
+
+data ScriptOptions = ScriptOptions
+    { aliases :: [String]
+    , shell :: Options.Shell
+    , subcommand :: Maybe String
+    , output :: OutputStdoutOrFile
+    }
+  deriving stock (Generic, Show)
+
+instance Options.HasShell ScriptOptions where
+    updateShell = mapEndo \f opts@ScriptOptions{shell} ->
+        (opts :: ScriptOptions){shell = f shell}
+
+instance HasOutput ScriptOptions where
+    type Output ScriptOptions = OutputStdoutOrFile
+    output = typed
+
+defScriptOptions :: ScriptOptions
+defScriptOptions = ScriptOptions
+    { shell = Options.Bash
+    , subcommand = Nothing
+    , aliases = []
+    , output = OutputStdoutOnly
+    }
+
+type MkCompletionScript =
+           Options.Shell
+        -> Text
+        -> Text
+        -> Maybe Text
+        -> [Text]
+        -> Text
+
+putShellCompletionScript
+    :: (forall ann. Pretty.Doc ann)
+    -> AppNames
+    -> Config
+    -> ScriptOptions
+    -> IO ()
+putShellCompletionScript subcmd appNames config ScriptOptions{..} =
+    case validationToEither script of
+        Left e ->
+            dieFailedToGenerateCompletionScript subcmd config e
+
+        Right (mkScript :: MkCompletionScript) -> do
+            let completionScript = mkScript
+                    shell
+                    (fromString (usedName appNames) :: Text)
+                    (fromString (exePath appNames) :: Text)
+                    (fromString <$> subcommand :: Maybe Text)
+                    (fromString <$> aliases :: [Text])
+
+            case output of
+                OutputHandle _ ->
+                    Text.putStr completionScript
+
+                OutputNotHandle (OutputFile fn) ->
+                    Text.atomicWriteFile fn completionScript
+  where
+    script = Dhall.extract Dhall.auto
+        $(Dhall.TH.staticDhallExpression shellCompletionTemplate)
+
+dieFailedToGenerateCompletionScript
+    :: (forall ann. Pretty.Doc ann)
+    -> Config
+    -> Dhall.ExtractErrors Dhall.Src Void
+    -> IO a
+dieFailedToGenerateCompletionScript
+  subcmd Config{colourOutput, verbosity} err = do
+    errorMsg subcmd verbosity colourOutput stderr
+        ( "Failed to generate completion script: "
+        <> fromString (show err)
+        )
+    -- TODO: This is probably not the best exit code.
+    exitWith (ExitFailure 1)
+
+-- }}} Shell Completion Script ------------------------------------------------

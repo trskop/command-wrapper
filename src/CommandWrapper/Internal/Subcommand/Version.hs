@@ -1,5 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE PatternSynonyms #-}
 -- |
 -- Module:      CommandWrapper.Internal.Version
 -- Description: Implementation of internal command named version
