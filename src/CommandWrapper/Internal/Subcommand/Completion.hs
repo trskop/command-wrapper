@@ -33,7 +33,7 @@ import Data.Bool (Bool(False), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq (Eq, (/=), (==))
-import Data.Foldable (all, any, asum, forM_, length, mapM_, null)
+import Data.Foldable (all, any, asum, length, mapM_, null)
 import Data.Function (($), (.), id, on)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List
@@ -78,8 +78,8 @@ import Data.Output
     )
 import qualified Data.Output as Output (HasOutput(output))
 import Data.Text (Text)
-import qualified Data.Text as Text (unlines, unpack)
-import qualified Data.Text.IO as Text (putStrLn)
+import qualified Data.Text as Text (unpack)
+import qualified Data.Text.IO as Text (putStr)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -89,7 +89,6 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
-import Dhall (FromDhall)
 import qualified Dhall
 import qualified Dhall.TH (staticDhallExpression)
 import qualified Mainplate (applySimpleDefaults)
@@ -292,26 +291,13 @@ instance HasOutput LibraryOptions where
     type Output LibraryOptions = OutputStdoutOrFile
     output = typed
 
--- | We'll change this data type to:
--- @
--- newtype MkCompletionScript = MkCompletionScript
---     { mkCompletionScript :: 'Options.Shell' -> Text -> Text -> Text
---     }
--- @
-newtype MkCompletionScript = MkCompletionScript
-    { mkCompletionScript :: Text -> Text -> Text -> Maybe Text -> Scripts
-    }
-  deriving stock (Generic)
-
--- We'll get rid of this type once Dhall function is redefined to accept sum
--- type representing shell variant.
-data Scripts = Scripts
-    { bash :: Text
-    , fish :: Text
-    , zsh :: Text
-    }
-  deriving stock (Generic, Show)
-  deriving anyclass (FromDhall)
+type MkCompletionScript =
+           Options.Shell
+        -> Text
+        -> Text
+        -> Maybe Text
+        -> [Text]
+        -> Text
 
 type CompletionInfo = Options.Shell -> Natural -> [Text] -> [Text]
 
@@ -444,8 +430,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
                 AppNames{exePath, usedName} = appNames
 
-                script = MkCompletionScript
-                    <$> Dhall.extract Dhall.auto mkCompletionScriptExpr
+                script = Dhall.extract Dhall.auto mkCompletionScriptExpr
 
             case validationToEither script of
                 Left e -> do
@@ -456,40 +441,20 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                     -- TODO: This is probably not the best exit code.
                     exitWith (ExitFailure 1)
 
-                -- TODO:
-                --
-                -- - Aliases should be passed to the Dhall expression so that
-                --   generated script can be more optimal.  It will also reduce
-                --   complexity of this code.
-                --
-                -- - There's a lot of duplication in here.
-                --
-                -- - Maybe we should consider passing Shell to the Dhall
-                --   function instead of expecting multiple results.
-                Right (MkCompletionScript mkScript) -> case subcommand of
-                    Nothing ->
-                        forM_ (usedName : aliases) \name ->
-                            let Scripts{..} = mkScript
-                                    (fromString name :: Text)
-                                    (fromString usedName :: Text)
-                                    (fromString exePath :: Text)
-                                    Nothing
-                             in outputTextLines output $ pure case shell of
-                                    Options.Bash -> bash
-                                    Options.Fish -> fish
-                                    Options.Zsh  -> zsh
+                Right (mkScript :: MkCompletionScript) ->
+                    let completionScript = mkScript
+                            shell
+                            (fromString usedName :: Text)
+                            (fromString exePath :: Text)
+                            (fromString <$> subcommand :: Maybe Text)
+                            (fromString <$> aliases :: [Text])
 
-                    Just subcmd ->
-                        forM_ aliases \name ->
-                            let Scripts{..} = mkScript
-                                    (fromString name :: Text)
-                                    (fromString usedName :: Text)
-                                    (fromString exePath :: Text)
-                                    (Just (fromString subcmd :: Text))
-                             in outputTextLines output $ pure case shell of
-                                    Options.Bash -> bash
-                                    Options.Fish -> fish
-                                    Options.Zsh  -> zsh
+                     in case output of
+                            OutputHandle _ ->
+                                Text.putStr completionScript
+
+                            OutputNotHandle (OutputFile fn) ->
+                                Text.atomicWriteFile fn completionScript
 
         LibraryMode
           LibraryOptions
@@ -694,14 +659,6 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
         OutputNotHandle (OutputFile fn) ->
             atomicWriteFile fn . List.unlines
-
-    outputTextLines :: OutputStdoutOrFile -> [Text] -> IO ()
-    outputTextLines = \case
-        OutputHandle _ ->
-            mapM_ Text.putStrLn
-
-        OutputNotHandle (OutputFile fn) ->
-            Text.atomicWriteFile fn . Text.unlines
 
 -- TODO: Generate these values instead of hard-coding them.
 verbosityValues :: [String]
@@ -1313,6 +1270,14 @@ parseOptions appNames config arguments = do
     wordsFlag ws = Options.flag mempty f (Options.long "words")
       where
         f = Endo \q -> q{what = QueryWords ws}
+
+--  prefixOption :: (String -> a -> a) -> Options.Parser (Endo a)
+--  prefixOption f = Endo . f <$> Options.strOption
+--      (Options.long "prefix" <> Options.metavar "STRING")
+
+--  suffixOption :: (String -> a -> a) -> Options.Parser (Endo a)
+--  suffixOption f = Endo . f <$> Options.strOption
+--      (Options.long "suffix" <> Options.metavar "STRING")
 
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
