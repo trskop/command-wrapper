@@ -58,24 +58,13 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
-import System.IO
-    ( Handle
-    , IO
-    , IOMode(WriteMode)
-    , putStrLn
-    , stderr
-    , stdout
-    , withFile
-    )
+import System.IO (IO, putStrLn, stderr, stdout)
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as ByteString (putStr)
 import Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI (foldedCase, mk)
 import Data.Either.Validation (validationToEither)
-import Data.FileEmbed (embedFile)
 import Data.Generics.Product.Typed (typed)
 import Data.Monoid.Endo (mapEndo)
 import Data.Monoid.Endo.Fold (dualFoldEndo, foldEndo)
@@ -90,7 +79,7 @@ import Data.Output
 import qualified Data.Output as Output (HasOutput(output))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines, unpack)
-import qualified Data.Text.IO as Text (hPutStrLn, putStr, putStrLn)
+import qualified Data.Text.IO as Text (putStrLn)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
@@ -119,9 +108,6 @@ import qualified Options.Applicative as Options
     )
 import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, headMay, lastMay)
-import qualified System.AtomicWrite.Writer.ByteString as ByteString
-    ( atomicWriteFile
-    )
 import System.AtomicWrite.Writer.String (atomicWriteFile)
 import qualified System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
 import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
@@ -140,7 +126,6 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Input(..)
     , defExec
     , exec
-    , hPutExpr
     )
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
@@ -165,7 +150,17 @@ import qualified CommandWrapper.Options.Optparse as Options
     , splitArguments'
     )
 import qualified CommandWrapper.Options.Shell as Options
-
+import CommandWrapper.Internal.Subcommand.Completion.Libraries
+    ( DhallLibrary
+        ( CommandWrapper
+        , CommandWrapperExec
+        , PreludeV11_1_0
+        , PreludeV12_0_0
+        )
+    , ImportOrContent(Content, Import)
+    , putBashLibrary
+    , putDhallLibrary
+    )
 
 -- | Returns completer if the first argument is a name of an internal command.
 type InternalCompleter = String -> Maybe Completer
@@ -281,9 +276,6 @@ instance HasOutput ScriptOptions where
     type Output ScriptOptions = OutputStdoutOrFile
     output = typed
 
-data ImportOrContent = Import | Content
-  deriving stock (Generic, Show)
-
 data LibraryOptions = LibraryOptions
     { library :: Library
     , output :: OutputStdoutOrFile
@@ -294,13 +286,6 @@ data LibraryOptions = LibraryOptions
 data Library
     = ShellLibrary Options.Shell
     | DhallLibrary DhallLibrary
-  deriving stock (Generic, Show)
-
-data DhallLibrary
-    = PreludeV11_1_0
-    | PreludeV12_0_0
-    | CommandWrapper
-    | CommandWrapperExec
   deriving stock (Generic, Show)
 
 instance HasOutput LibraryOptions where
@@ -464,10 +449,6 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
             case validationToEither script of
                 Left e -> do
-                    -- TODO: Figure out how to handle this better.
-                    let subcommand' :: forall ann. Pretty.Doc ann
-                        subcommand' = pretty (usedName <> " completion")
-
                     errorMsg subcommand' verbosity colourOutput stderr
                         ( "Failed to generate completion script: "
                         <> fromString (show e)
@@ -516,122 +497,21 @@ completion completionConfig@CompletionConfig{..} appNames options config =
             , output
             , importOrContent
             }
-          config' -> do
-
-            let hPutExpr = Dhall.hPutExpr config'
-
-                hPutLib :: Handle -> IO ()
-                hPutLib h = case (dhallLib, importOrContent) of
-                    (PreludeV11_1_0, Content) -> hPutExpr h
-                        $(Dhall.TH.staticDhallExpression
-                            "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
-                            \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
-                        )
-
-                    (PreludeV11_1_0, Import) -> Text.hPutStrLn h
-                        "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
-                        \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
-
-                    (PreludeV12_0_0, Content) -> hPutExpr h
-                        $(Dhall.TH.staticDhallExpression
-                            "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
-                            \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
-                        )
-
-                    (PreludeV12_0_0, Import) -> Text.hPutStrLn h
-                        "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
-                        \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
-
-                    -- IMPORTANT!
-                    --
-                    -- Whenever one of these fails to compile then Command
-                    -- Wrapper library was updated, and both hash and import
-                    -- need updating.  Unfortunately it won't always fail due
-                    -- to caching. Keeping this up to date will be a pain.
-                    --
-                    -- TODO: Figure out how to do this in a better way.
-
-                    (CommandWrapper, Content) -> hPutExpr h
-                        $(Dhall.TH.staticDhallExpression
-                            "./dhall/CommandWrapper/package.dhall\
-                            \ sha256:db7beaa043832c8deca4f19321014f4e0255bc5081dae5ad918d7137711997f5"
-                        )
-
-                    (CommandWrapper, Import) -> Text.hPutStrLn h
-                        "https://raw.githubusercontent.com/trskop/command-wrapper/ed45bcbf451d7cef902cf046856e4b2529a4505b/dhall/CommandWrapper/package.dhall\
-                        \ sha256:db7beaa043832c8deca4f19321014f4e0255bc5081dae5ad918d7137711997f5"
-
-                    (CommandWrapperExec, Content) -> hPutExpr h
-                        $(Dhall.TH.staticDhallExpression
-                            "./dhall/Exec/package.dhall\
-                            \ sha256:38900a8210a254861364428b9ab96a1ac473a73b2fc271085d4dda2afc2e9a9c"
-                        )
-
-                    (CommandWrapperExec, Import) -> Text.hPutStrLn h
-                        "https://raw.githubusercontent.com/trskop/exec/ed45bcbf451d7cef902cf046856e4b2529a4505b/dhall/Exec/package.dhall\
-                        \ sha256:38900a8210a254861364428b9ab96a1ac473a73b2fc271085d4dda2afc2e9a9c"
-
-            case output of
-                OutputHandle _ ->
-                    hPutLib stdout
-
-                OutputNotHandle (OutputFile filePath) ->
-                    -- TODO: Use atomic version instead.
-                    withFile filePath WriteMode hPutLib
+          config' ->
+            putDhallLibrary config' dhallLib importOrContent output
 
         LibraryMode
           LibraryOptions{library = ShellLibrary shell, output, importOrContent}
-          Global.Config{colourOutput, verbosity} -> do
-
-            let lib :: ByteString
-                lib = $(embedFile "bash/lib.bash")
-
-                importScriptExpr =
-                    $(Dhall.TH.staticDhallExpression
-                        "./dhall/import-shell-library.dhall < Bash >.Bash"
-                    )
-
-                subcommand' :: forall ann. Pretty.Doc ann
-                subcommand' = pretty (usedName appNames <> " completion")
-
-                getImportScript :: IO Text
-                getImportScript = do
-                    let script = Dhall.extract Dhall.auto importScriptExpr
-                    case validationToEither script of
-                        Left e -> do
-                            errorMsg subcommand' verbosity colourOutput stderr
-                                ( "Failed to generate completion script: "
-                                <> fromString (show e)
-                                )
-                            -- TODO: This is probably not the best exit code.
-                            exitWith (ExitFailure 1)
-
-                        Right t ->
-                            pure t
-
+          config'@Global.Config{colourOutput, verbosity} ->
             case shell of
-                -- TODO: We should consider piping the output to a pager or
-                -- similar tool when the stdout is attached to a terminal.  For
-                -- example `bat` would be a great choice if it is installed.
-                Options.Bash -> do
-                    case output of
-                        OutputHandle _ ->
-                            case importOrContent of
-                                Import ->
-                                    getImportScript >>= Text.putStr
-                                Content ->
-                                    ByteString.putStr lib
-
-                        OutputNotHandle (OutputFile fn) ->
-                            case importOrContent of
-                                Import ->
-                                    getImportScript >>= Text.atomicWriteFile fn
-                                Content ->
-                                    ByteString.atomicWriteFile fn lib
+                Options.Bash ->
+                    putBashLibrary subcommand' config' importOrContent output
 
                 _ -> do
                     errorMsg subcommand' verbosity colourOutput stderr
-                        $ fromString (show shell) <> ": Unsupported SHELL value."
+                        ( fromString (show shell)
+                        <> ": Unsupported SHELL value."
+                        )
                     exitWith (ExitFailure 125)
 
         QueryMode query@Query{..} config' -> case what of
@@ -767,6 +647,10 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                 }
 
         in Mainplate.applySimpleDefaults (CompletionMode opts config)
+
+    -- TODO: Figure out how to handle this better.
+    subcommand' :: forall ann. Pretty.Doc ann
+    subcommand' = pretty (usedName appNames <> " completion")
 
     getAliases :: Global.Config -> [String]
     getAliases = List.nub . fmap alias . Global.getAliases
