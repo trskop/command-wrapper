@@ -7,7 +7,7 @@
       ./optparse-applicative sha256:00d877d341515117d8f20b93d7119bd0342ece43d2202e01f470db73f162cb44
     ? ./optparse-applicative
 , wordlist =
-      ./wordlist sha256:7cb215d6ffd631ae373aa87cb2099912f6cf9c85817466d8f99a665360ba8153
+      ./wordlist sha256:dfc45aeb0300b5706c9090ce2af5595090218bc75e244af8fe7aa8d3fb00c6fa
     ? ./wordlist
 , scripts =
       ./scripts/package.dhall sha256:afe58176b31fb9cbb98a8f0abf01a2c9561f1ec9567bbed1d72e5d785240e7bd

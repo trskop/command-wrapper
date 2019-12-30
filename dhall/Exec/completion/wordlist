@@ -35,7 +35,7 @@ in    λ(toolset : Text)
     → λ(index : Natural)
     → λ(words : List Text)
     → ExecCommand::{
-      , command = "toolset"
+      , command = toolset
       , arguments =
           let pattern = Optional/from Text "" (List/index index Text words)
 
