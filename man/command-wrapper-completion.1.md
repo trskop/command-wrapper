@@ -215,6 +215,12 @@ interface for querying Command Wrapper's command line interface (CLI).
     *   *fuzzy* -- matches when *PATTERN* fuzzily matches a string.
     *   *equality* -- matches when *PATTERN* exactly matches a string.
 
+\--prefix=*STRING*
+:   Prepend *STRING* to every result entry.
+
+\--suffix=*STRING*
+:   Append *STRING* to every result entry.
+
 \--pattern=*PATTERN*
 :   Print only values that are matching *PATTERN*.
 

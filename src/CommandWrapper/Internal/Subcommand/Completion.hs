@@ -811,6 +811,7 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         ["--subcommands", "--subcommand-aliases", "--supported-shells"
         , "--verbosity-values", "--colour-values", "--color-values"
         , "--pattern=", "--internal-subcommands", "--words"
+        , "--prefix=", "--suffix="
         ] <> outputOptions <> algorithmOptions <> queryFileSystemOptions
 
     queryFileSystemOptions =
@@ -914,6 +915,14 @@ parseOptions appNames config arguments = do
                 )
             <*> optional (updateQueryOptions patternOption)
             <*> optional (updateQueryOptions algorithmOption)
+            <*> optional
+                ( updateQueryOptions $ prefixOption \prefix opts ->
+                    (opts :: Query){prefix}
+                )
+            <*> optional
+                ( updateQueryOptions $ suffixOption \suffix opts ->
+                    (opts :: Query){suffix}
+                )
 --          <*> updateQueryOptions
 --              ( pure $ Endo \q ->
 --                  -- TODO: This is not very intuitive if user passes more
@@ -1160,13 +1169,13 @@ parseOptions appNames config arguments = do
       where
         f = Endo \q -> q{what = QueryWords ws}
 
---  prefixOption :: (String -> a -> a) -> Options.Parser (Endo a)
---  prefixOption f = Endo . f <$> Options.strOption
---      (Options.long "prefix" <> Options.metavar "STRING")
+    prefixOption :: (String -> a -> a) -> Options.Parser (Endo a)
+    prefixOption f = Endo . f <$> Options.strOption
+        (Options.long "prefix" <> Options.metavar "STRING")
 
---  suffixOption :: (String -> a -> a) -> Options.Parser (Endo a)
---  suffixOption f = Endo . f <$> Options.strOption
---      (Options.long "suffix" <> Options.metavar "STRING")
+    suffixOption :: (String -> a -> a) -> Options.Parser (Endo a)
+    suffixOption f = Endo . f <$> Options.strOption
+        (Options.long "suffix" <> Options.metavar "STRING")
 
     helpFlag = Options.flag mempty switchToHelpMode $ mconcat
         [ Options.short 'h'
@@ -1381,6 +1390,16 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.reflow "is provided. Possible values are:"
             , value "prefix" <> ",", value "fuzzy" <> ",", "and"
             , value "equality."
+            ]
+
+        , optionDescription ["--prefix=STRING"]
+            [ "Prepend", metavar "STRING"
+            , Pretty.reflow "to every result entry."
+            ]
+
+        , optionDescription ["--suffix=STRING"]
+            [ "Append", metavar "STRING"
+            , Pretty.reflow "to every result entry."
             ]
 
         , optionDescription ["--pattern=PATTERN"]
