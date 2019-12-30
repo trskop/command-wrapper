@@ -83,9 +83,6 @@
 
     Maybe this will require a little more thought.
 
-*   Introduce `--prefix=STRING` and `--suffix=STRING` options that are added to
-    results.
-
 
 ### Config
 
