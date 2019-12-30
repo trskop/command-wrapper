@@ -49,13 +49,16 @@
 
 ### Completion
 
-*   Expand `completion` to support basic `compgen` actions.  This way we can
-    get rid of Bash dependency.
+*   Extend file system completion to support:
 
-    ```
-    TOOLSET completion --query --directories [--regex=REGEX|--glob=GLOB] [--pattern=PATTERN]
-    TOOLSET completion --query --files [--regex=REGEX|--glob=GLOB] [--pattern=PATTERN]
-    ```
+    -   Regular expressions and glob patterns to filter vialble completions:
+
+        ```
+        TOOLSET completion --query --file-system=TYPE [--regex=REGEX|--glob=GLOB] [--pattern=PATTERN]
+        ```
+
+    -   Support `--algorithm=ALGORITHM` option.  At the moment only prefix
+        equivalence is used.
 
 *   Hosts completion:
 

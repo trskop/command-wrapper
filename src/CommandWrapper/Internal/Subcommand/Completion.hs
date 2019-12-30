@@ -31,7 +31,7 @@ import Data.Bool (Bool(False), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq (Eq, (/=), (==))
-import Data.Foldable (all, any, asum, length, mapM_, null)
+import Data.Foldable (all, any, asum, length, null)
 import Data.Function (($), (.), id, on)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List
@@ -44,7 +44,6 @@ import qualified Data.List as List
     , nub
     , take
     , takeWhile
-    , unlines
     )
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
@@ -56,7 +55,7 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
-import System.IO (IO, putStrLn, stderr, stdout)
+import System.IO (IO, stderr, stdout)
 import Text.Read (readMaybe)
 import Text.Show (Show)
 
@@ -67,8 +66,6 @@ import Data.Monoid.Endo (mapEndo)
 import Data.Monoid.Endo.Fold (dualFoldEndo, foldEndo)
 import Data.Output
     ( HasOutput(Output)
-    , OutputFile(OutputFile)
-    , OutputHandle(OutputHandle, OutputNotHandle)
     , OutputStdoutOrFile
     , pattern OutputStdoutOnly
     , setOutput
@@ -80,6 +77,8 @@ import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
     , brackets
+    , encloseSep
+    , softline
     , squotes
     , vsep
     )
@@ -102,7 +101,6 @@ import qualified Options.Applicative as Options
     )
 import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, headMay, lastMay)
-import System.AtomicWrite.Writer.String (atomicWriteFile)
 import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
@@ -143,6 +141,15 @@ import qualified CommandWrapper.Options.Optparse as Options
     , splitArguments'
     )
 import qualified CommandWrapper.Options.Shell as Options
+import CommandWrapper.Internal.Subcommand.Completion.FileSystem
+    ( EntryType
+    , FileSystemOptions(entryType, output, prefix, suffix, word)
+    , defFileSystemOptions
+    , outputLines
+    , parseEntryType
+    , queryFileSystem
+    , showEntryType
+    )
 import CommandWrapper.Internal.Subcommand.Completion.Libraries
     ( ImportOrContent(Content, Import)
     , Library(..)
@@ -192,8 +199,8 @@ data Query = Query
 
     , output :: OutputStdoutOrFile
 
---  , addPrefix :: String
---  , addSuffix :: String
+    , prefix :: String
+    , suffix :: String
     }
   deriving stock (Generic, Show)
     -- TODO: Extend this data type to be able to list various combinations of
@@ -217,6 +224,7 @@ data WhatToQuery
     | QueryColourValues
     | QuerySupportedShells
     | QueryWords [String]
+    | QueryFileSystem EntryType
   deriving stock (Generic, Show)
 
 defQueryOptions :: Query
@@ -226,8 +234,8 @@ defQueryOptions = Query
     , matchingAlgorithm = PrefixEquivalence
     , caseSensitive = False
     , output = OutputStdoutOnly
---  , addPrefix = ""
---  , addSuffix = ""
+    , prefix = ""
+    , suffix = ""
     }
 
 data CompletionMode a
@@ -343,7 +351,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
     runMain (parseOptions appNames config options) defaults \case
         CompletionMode opts@CompletionOptions{output} config' ->
             getCompletions completionConfig appNames config' opts
-                >>= outputStringLines output
+                >>= outputLines id output
 
         -- TODO:
         --
@@ -358,10 +366,10 @@ completion completionConfig@CompletionConfig{..} appNames options config =
             QuerySubcommands
               | null patternToMatch ->
                     getSubcommands appNames config' internalSubcommands
-                        >>= outputStringLines output
+                        >>= outputQueryLines query output
 
               | otherwise ->
-                    outputStringLines output =<< case matchingAlgorithm of
+                    outputQueryLines query output =<< case matchingAlgorithm of
                         PrefixEquivalence ->
                             findSubcommandsPrefix config' query
 
@@ -376,10 +384,10 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
             QueryInternalSubcommands
               | null patternToMatch ->
-                    outputStringLines output internalSubcommands
+                    outputQueryLines query output internalSubcommands
 
               | otherwise ->
-                    outputStringLines output case matchingAlgorithm of
+                    outputQueryLines query output case matchingAlgorithm of
                         PrefixEquivalence ->
                             prefixEquivalence query internalSubcommands
 
@@ -392,10 +400,10 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
             QuerySubcommandAliases
               | null patternToMatch ->
-                    outputStringLines output (getAliases config')
+                    outputQueryLines query output (getAliases config')
 
               | otherwise ->
-                    outputStringLines output case matchingAlgorithm of
+                    outputQueryLines query output case matchingAlgorithm of
                         PrefixEquivalence ->
                             findSubcommandAliasesPrefix config' query
 
@@ -408,10 +416,10 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
             QueryVerbosityValues
               | null patternToMatch ->
-                    outputStringLines output verbosityValues
+                    outputQueryLines query output verbosityValues
 
               | otherwise ->
-                    outputStringLines output case matchingAlgorithm of
+                    outputQueryLines query output case matchingAlgorithm of
                         PrefixEquivalence ->
                             prefixEquivalence query verbosityValues
 
@@ -423,10 +431,10 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
             QueryColourValues
               | null patternToMatch ->
-                    outputStringLines output colourValues
+                    outputQueryLines query output colourValues
 
               | otherwise ->
-                    outputStringLines output case matchingAlgorithm of
+                    outputQueryLines query output case matchingAlgorithm of
                         PrefixEquivalence ->
                             prefixEquivalence query colourValues
 
@@ -438,10 +446,10 @@ completion completionConfig@CompletionConfig{..} appNames options config =
 
             QuerySupportedShells
               | null patternToMatch ->
-                    outputStringLines output supportedShells
+                    outputQueryLines query output supportedShells
 
               | otherwise ->
-                    outputStringLines output case matchingAlgorithm of
+                    outputQueryLines query output case matchingAlgorithm of
                         PrefixEquivalence ->
                             prefixEquivalence query supportedShells
 
@@ -451,12 +459,21 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                         Equality ->
                             List.filter (== patternToMatch) supportedShells
 
+            QueryFileSystem entryType ->
+                queryFileSystem defFileSystemOptions
+                    { entryType = Just entryType
+                    , output
+                    , prefix
+                    , suffix
+                    , word = patternToMatch
+                    }
+
             QueryWords words
               | null patternToMatch ->
-                    outputStringLines output words
+                    outputQueryLines query output words
 
               | otherwise ->
-                    outputStringLines output case matchingAlgorithm of
+                    outputQueryLines query output case matchingAlgorithm of
                         PrefixEquivalence ->
                             prefixEquivalence query words
 
@@ -527,13 +544,9 @@ completion completionConfig@CompletionConfig{..} appNames options config =
     findSubcommandAliasesPrefix cfg query =
         prefixEquivalence query (getAliases cfg)
 
-    outputStringLines :: OutputStdoutOrFile -> [String] -> IO ()
-    outputStringLines = \case
-        OutputHandle _ ->
-            mapM_ putStrLn
-
-        OutputNotHandle (OutputFile fn) ->
-            atomicWriteFile fn . List.unlines
+    outputQueryLines :: Query -> OutputStdoutOrFile -> [String] -> IO ()
+    outputQueryLines Query{prefix, suffix} =
+        outputLines \s -> prefix <> s <> suffix
 
 -- TODO: Generate these values instead of hard-coding them.
 verbosityValues :: [String]
@@ -798,7 +811,11 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         ["--subcommands", "--subcommand-aliases", "--supported-shells"
         , "--verbosity-values", "--colour-values", "--color-values"
         , "--pattern=", "--internal-subcommands", "--words"
-        ] <> outputOptions <> algorithmOptions
+        ] <> outputOptions <> algorithmOptions <> queryFileSystemOptions
+
+    queryFileSystemOptions =
+        [minBound..maxBound] <&> \s ->
+            "--file-system=" <> showEntryType s
 
     -- At the moment we have library only for Bash.
     libraryOptions = ["--shell=bash" , "--import" , "--content", "--dhall="]
@@ -892,6 +909,7 @@ parseOptions appNames config arguments = do
                     <|> verbosityValuesFlag
                     <|> colourValuesFlag
                     <|> wordsFlag words
+                    <|> fileSystemOption
                     )
                 )
             <*> optional (updateQueryOptions patternOption)
@@ -1046,6 +1064,18 @@ parseOptions appNames config arguments = do
       where
         f = Endo \q -> q{what = QuerySupportedShells}
 
+    fileSystemOption :: Options.Parser (Endo Query)
+    fileSystemOption = Options.option parse
+        (Options.long "file-system" <> Options.metavar "TYPE")
+      where
+        parse = Options.eitherReader \s ->
+            case parseEntryType (CI.mk s) of
+                Just entryType ->
+                    Right $ Endo \opts ->
+                        opts{what = QueryFileSystem entryType}
+                Nothing ->
+                    Left "Unknown file system entry type"
+
     subcommandOption :: HasSubcommand a => Options.Parser (Endo a)
     subcommandOption =
         Options.strOption (Options.long "subcommand") <&> \subcommand ->
@@ -1194,6 +1224,7 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 <> "|" <> longOption "supported-shells"
                 <> "|" <> longOption "verbosity-values"
                 <> "|" <> longOption "colo[u]r-values"
+                <> "|" <> longOptionWithArgument "file-system" "TYPE"
                 )
             <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
 
@@ -1329,8 +1360,19 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.reflow "environment variable."
             ]
 
+        , optionDescription ["--file-system=TYPE"]
+            [ Pretty.reflow "Query for entries of"
+            , metavar "TYPE" <> ","
+            , "where"
+            , metavar "TYPE"
+            , "is one of:"
+            , Pretty.encloseSep mempty mempty ("," <> Pretty.softline)
+                (value . showEntryType <$> [minBound..maxBound])
+            ]
+
         , optionDescription ["--words [--] [WORD [...]]"]
-            [ "Query matching words from", metavar "WORD", "list."
+            [ Pretty.reflow "Query matching words from"
+            , metavar "WORD", "list."
             ]
 
         , optionDescription ["--algorithm=ALGORITHM"]
@@ -1372,13 +1414,9 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ Pretty.reflow "Print specified Dhall", metavar "LIBRARY" <> ","
             , Pretty.reflow "or its import snippet when", longOption "import"
             , Pretty.reflow "is specified.  Supported values of"
-            , metavar "LIBRARY", "are"
-            -- TODO: Derivee these values using 'showDhallLibrary':
-            , value "prelude" <> ","
-            , value "prelude-v11.1.0" <> ","
-            , value "prelude-v12.0.0" <> ","
-            , value "command-wrapper" <> ",", "and"
-            , value "exec" <> "."
+            , metavar "LIBRARY", "are:"
+            , Pretty.encloseSep mempty mempty ("," <> Pretty.softline)
+                (value . showDhallLibrary <$> [minBound..maxBound])
             ]
 
         , optionDescription ["--import"]
