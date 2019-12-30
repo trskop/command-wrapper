@@ -57,18 +57,18 @@ commandWrapperContent =
 
 commandWrapperImport :: IsString s => s
 commandWrapperImport =
-    "https://raw.githubusercontent.com/trskop/command-wrapper/3916463b75ced6c032123f8e3fdfc06bea17e468/dhall/CommandWrapper/package.dhall\
+    "https://raw.githubusercontent.com/trskop/command-wrapper/d9109e5df506d180c8491861b8e7d23d98e863d6/dhall/CommandWrapper/package.dhall\
     \ sha256:db7beaa043832c8deca4f19321014f4e0255bc5081dae5ad918d7137711997f5"
 
 execContent :: IsString s => s
 execContent =
     "./dhall/Exec/package.dhall\
-    \ sha256:94770d2740405754c4d48793a0b5e46f6ce6933be9ba6eec57f085b2da849ca0"
+    \ sha256:d66328a55da4aa3ee070f11e52e839152ed4d270b41fe12060c59ddbc42fbf6b"
 
 execImport :: IsString s => s
 execImport =
-    "https://raw.githubusercontent.com/trskop/exec/3916463b75ced6c032123f8e3fdfc06bea17e468/dhall/Exec/package.dhall\
-    \ sha256:94770d2740405754c4d48793a0b5e46f6ce6933be9ba6eec57f085b2da849ca0"
+    "https://raw.githubusercontent.com/trskop/exec/d9109e5df506d180c8491861b8e7d23d98e863d6/dhall/Exec/package.dhall\
+    \ sha256:d66328a55da4aa3ee070f11e52e839152ed4d270b41fe12060c59ddbc42fbf6b"
 
 shellCompletionTemplate :: IsString s => s
 shellCompletionTemplate = "./dhall/completion.dhall"
