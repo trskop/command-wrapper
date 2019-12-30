@@ -12,7 +12,7 @@
       ./command-wrapper/package.dhall sha256:196834fd31413e78d5f8e28d6dfec488e74b8bf21f7e90c20d610bdca3c880bb
     ? ./command-wrapper/package.dhall
 , completion =
-      ./completion/package.dhall sha256:2f0400ece79762e2749337e88f6aae3be72de70146abaf894213aa35ad57ec67
+      ./completion/package.dhall sha256:8a6503c693ccaebf72fcff35efd22c95d5c7b9b291e15f8be8b8d0e8b7f6571d
     ? ./completion/package.dhall
 , direnv =
       ./direnv/package.dhall sha256:4cd1eb2a57bc33bd178772417c8553199f002458e42fe9524ebe688e0d71397d

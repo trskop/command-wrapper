@@ -5,7 +5,7 @@
 --
 -- ```
 -- TOOLSET --no-aliases --silent completion --query --words
---     --pattern="${words[${index}]}'" -- "${words[@]}"
+--     --pattern="${words[${index}]}'" -- "${wordlist[@]}"
 -- ```
 
 let ExecCommand =
@@ -47,5 +47,5 @@ in    λ(toolset : Text)
                 , "--pattern=${pattern}"
                 , "--"
                 ]
-              # words
+              # wordlist
       }
