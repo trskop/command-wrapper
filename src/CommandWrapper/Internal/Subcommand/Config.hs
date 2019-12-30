@@ -26,11 +26,12 @@ import Data.Bool (Bool(False, True), (&&), (||), not, otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq ((==))
-import Data.Foldable (asum, null)
+import Data.Foldable (asum, length, null)
 import Data.Function (($), (.), const)
 import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List
     ( any
+    , drop
     , dropWhile
     , elem
     , filter
@@ -87,6 +88,11 @@ import Safe (atMay, lastMay)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
+import CommandWrapper.Internal.Subcommand.Completion.FileSystem
+    ( FileSystemOptions(appendSlashToSingleDirectoryResult, prefix, word)
+    , defFileSystemOptions
+    , fileSystemCompleter
+    )
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
     , helpOptions
@@ -1297,48 +1303,48 @@ configSubcommandCompleter
     -> IO [String]
 configSubcommandCompleter appNames cfg _shell index words
   | Just "-o" <- lastMay wordsBeforePattern =
-        bashCompleter "file" ""
+        fileCompleter ""
 
   | Just "--output" <- lastMay wordsBeforePattern =
-        bashCompleter "file" ""
+        fileCompleter ""
 
   | Just "-i" <- lastMay wordsBeforePattern =
-        bashCompleter "file" ""
+        fileCompleter ""
 
   | Just "--input" <- lastMay wordsBeforePattern =
-        bashCompleter "file" ""
+        fileCompleter ""
 
   | Just "--interpreter" <- lastMay wordsBeforePattern =
-        bashCompleter "command" ""
+        Options.bashCompleter "command" "" pat
 
   -- TODO: This may be Bash-scpecific.  We need to investigate other shells.
   | Just w <- lastMay wordsBeforePattern, isBashRedirection w =
-        bashCompleter "file" ""
+        fileCompleter ""
 
   | Just "--edit" <- lastMay wordsBeforePattern =
-        bashCompleter "file" ""
+        fileCompleter ""
 
   | Just "-e" <- lastMay wordsBeforePattern =
-        bashCompleter "file" ""
+        fileCompleter ""
 
   | Just "--subcommand-config" <- lastMay wordsBeforePattern =
         List.filter (fmap Char.toLower pat `List.isPrefixOf`)
             <$> External.findSubcommands appNames cfg
 
   | "--output=" `List.isPrefixOf` pat =
-        bashCompleter "file" "--output="
+        fileCompleter "--output="
 
   | "--input=" `List.isPrefixOf` pat =
-        bashCompleter "file" "--input="
+        fileCompleter "--input="
 
   | "--interpreter=" `List.isPrefixOf` pat =
-        bashCompleter "command" "--interpreter="
+        Options.bashCompleter "command" "--interpreter=" pat
 
 {-
   | "--let=" `List.isPrefixOf` pat =
         TODO: Figure out if it contains another '=' sign to do completion on
         file.
-        bashCompleter "file" ("--let=" <> variableName <> "=")
+        fsCompleter "file" ("--let=" <> variableName <> "=")
 -}
 
   | null pat =
@@ -1846,4 +1852,9 @@ configSubcommandCompleter appNames cfg _shell index words
         , "<<<"
         ]
 
-    bashCompleter a p = Options.bashCompleter a p pat
+    fileCompleter prefix =
+        fileSystemCompleter defFileSystemOptions
+            { appendSlashToSingleDirectoryResult = True
+            , prefix
+            , word = List.drop (length prefix) pat
+            }

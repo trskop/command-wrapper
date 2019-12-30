@@ -18,6 +18,7 @@ module CommandWrapper.Internal.Subcommand.Completion.FileSystem
     , showEntryType
     , defFileSystemOptions
     , queryFileSystem
+    , fileSystemCompleter
 
     -- * Helper Functions
     , isEntryType
@@ -29,11 +30,11 @@ module CommandWrapper.Internal.Subcommand.Completion.FileSystem
 import Prelude (Bounded, Enum)
 
 import Control.Applicative (pure)
-import Control.Monad ((=<<), filterM, mapM_)
-import Data.Bool (Bool, (&&), not, otherwise)
+import Control.Monad ((>>=), filterM, mapM_)
+import Data.Bool (Bool(True), (&&), not, otherwise)
 import Data.Eq (Eq)
-import Data.Function ((.))
-import Data.Functor ((<$>), fmap)
+import Data.Function ((.), id)
+import Data.Functor ((<$>), (<&>), fmap)
 import qualified Data.List as List (drop, filter, isPrefixOf, unlines)
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid ((<>))
@@ -72,6 +73,7 @@ data FileSystemOptions = FileSystemOptions
     , word :: String
     , prefix :: String
     , suffix :: String
+    , appendSlashToSingleDirectoryResult :: Bool
     , output :: OutputStdoutOrFile
 
 -- TODO:
@@ -90,6 +92,7 @@ defFileSystemOptions = FileSystemOptions
     , word = ""
     , prefix = ""
     , suffix = ""
+    , appendSlashToSingleDirectoryResult = True
     , output = OutputStdoutOnly
     }
 
@@ -120,9 +123,21 @@ showEntryType = \case
     Symlink    -> "symlink"
 
 queryFileSystem :: FileSystemOptions -> IO ()
-queryFileSystem FileSystemOptions{..} = do
-    entries <- listEntries wordDir wordPat
-    outputLines updateEntry output =<< case entryType of
+queryFileSystem opts@FileSystemOptions{output} =
+    fileSystemCompleter opts >>= outputLines id output
+
+fileSystemCompleter :: FileSystemOptions -> IO [String]
+fileSystemCompleter FileSystemOptions{..} = do
+    entries <- listEntries wordDir wordPat <&> \case
+        -- If there is only one completion option, and it is a directory, by
+        -- appending '/' we'll force completion to descend into that directory.
+        es@[path]
+          | appendSlashToSingleDirectoryResult -> [path <> "/"]
+          | otherwise                          -> es
+
+        es -> es
+
+    fmap updateEntry <$> case entryType of
         Just et -> filterM (isEntryType et) entries
         Nothing -> pure entries
   where

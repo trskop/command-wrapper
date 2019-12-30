@@ -27,7 +27,7 @@ import Prelude ((+), (-), fromIntegral, maxBound, minBound)
 
 import Control.Applicative ((<*), (<*>), (<|>), many, optional, pure, some)
 import Control.Monad ((=<<), (>>=), join, when)
-import Data.Bool (Bool(False), otherwise)
+import Data.Bool (Bool(False, True), otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq (Eq, (/=), (==))
@@ -135,16 +135,23 @@ import CommandWrapper.Message (Result, errorMsg, out)
 import CommandWrapper.Options.Alias (Alias(alias))
 import qualified CommandWrapper.Options.Alias as Options (applyAliasCompletion)
 import qualified CommandWrapper.Options.Optparse as Options
-    ( bashCompleter
-    , internalSubcommandParse
+    ( internalSubcommandParse
     , splitArguments
     , splitArguments'
     )
 import qualified CommandWrapper.Options.Shell as Options
 import CommandWrapper.Internal.Subcommand.Completion.FileSystem
-    ( EntryType
-    , FileSystemOptions(entryType, output, prefix, suffix, word)
+    ( EntryType(Directory)
+    , FileSystemOptions
+        ( appendSlashToSingleDirectoryResult
+        , entryType
+        , output
+        , prefix
+        , suffix
+        , word
+        )
     , defFileSystemOptions
+    , fileSystemCompleter
     , outputLines
     , parseEntryType
     , queryFileSystem
@@ -683,9 +690,13 @@ getCompletions CompletionConfig{..} appNames config CompletionOptions{..} =
 
                 Just '-'
                   | "--change-directory=" `List.isPrefixOf` pat ->
-                        -- TODO: This requires `bash` to be available.
-                        Options.bashCompleter "directory" "--change-directory="
-                            pat
+                        let prefix = "--change-directory="
+                        in  fileSystemCompleter defFileSystemOptions
+                                { appendSlashToSingleDirectoryResult = True
+                                , entryType = Just Directory
+                                , prefix
+                                , word = List.drop (length prefix) pat
+                                }
 
                   | otherwise ->
                         pure (matchGlobalOptions pat)
@@ -753,16 +764,13 @@ completionSubcommandCompleter
 completionSubcommandCompleter internalSubcommands appNames config _shell index
   words
   | Just "-o" <- lastBeforePattern =
-        -- TODO: This requires `bash` to be available.
-        Options.bashCompleter "file" "" pat
+        fsCompleter ""
 
   | Just "--output" <- lastBeforePattern =
-        -- TODO: This requires `bash` to be available.
-        Options.bashCompleter "file" "" pat
+        fsCompleter ""
 
   | "--output=" `List.isPrefixOf` pat =
-        -- TODO: This requires `bash` to be available.
-        Options.bashCompleter "file" "--output=" pat
+        fsCompleter "--output="
 
   | "--shell=" `List.isPrefixOf` pat =
         pure if had "--library"
@@ -842,6 +850,13 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         ]
 
     algorithmOptions = ("--algorithm=" <>) <$> ["fuzzy", "prefix", "equality"]
+
+    fsCompleter prefix =
+        fileSystemCompleter defFileSystemOptions
+            { appendSlashToSingleDirectoryResult = True
+            , prefix
+            , word = List.drop (length prefix) pat
+            }
 
 -- | Lookup external and internal subcommands matching pattern (prefix).
 findSubcommands

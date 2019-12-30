@@ -23,11 +23,11 @@ module CommandWrapper.Internal.Subcommand.Version
 import Prelude (fromIntegral)
 
 import Control.Applicative ((<*>), (<|>), optional, pure)
-import Data.Bool ((||), not, otherwise)
-import Data.Foldable (null)
+import Data.Bool (Bool(True), (||), not, otherwise)
+import Data.Foldable (length, null)
 import Data.Function (($), (.), const)
 import Data.Functor (Functor, (<$>), (<&>))
-import qualified Data.List as List (elem, filter, isPrefixOf, take)
+import qualified Data.List as List (drop, elem, filter, isPrefixOf, take)
 import Data.Maybe (Maybe(Just), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
 import Data.Semigroup ((<>))
@@ -70,6 +70,11 @@ import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 --import qualified CommandWrapper.External as External (executeCommand)
 import CommandWrapper.Internal.Dhall as Dhall (hPut)
+import CommandWrapper.Internal.Subcommand.Completion.FileSystem
+    ( FileSystemOptions(appendSlashToSingleDirectoryResult, prefix, word)
+    , defFileSystemOptions
+    , fileSystemCompleter
+    )
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
     , helpOptions
@@ -93,8 +98,7 @@ import CommandWrapper.Message (Result, out)
 --import qualified CommandWrapper.Message as Message (dieTooManyArguments)
 --import CommandWrapper.Options.Alias (applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
-    ( bashCompleter
-    , internalSubcommandParse
+    ( internalSubcommandParse
     )
 import qualified CommandWrapper.Options.Shell as Options
 
@@ -288,10 +292,10 @@ versionSubcommandCompleter
     -> IO [String]
 versionSubcommandCompleter _appNames _config _shell index words
   | Just "-o" <- lastMay wordsBeforePattern =
-        bashCompleter "file" ""
+        fsCompleter ""
 
   | Just "--output" <- lastMay wordsBeforePattern =
-        bashCompleter "file" ""
+        fsCompleter ""
 
   | null pat =
         pure versionOptions
@@ -300,7 +304,7 @@ versionSubcommandCompleter _appNames _config _shell index words
         pure $ List.filter (pat `List.isPrefixOf`) shellOptions
 
   | "--output=" `List.isPrefixOf` pat =
-        bashCompleter "file" "--output="
+        fsCompleter "--output="
 
   | Just '-' <- headMay pat =
         pure case List.filter (pat `List.isPrefixOf`) versionOptions of
@@ -332,4 +336,9 @@ versionSubcommandCompleter _appNames _config _shell index words
 
     munless p x = if not p then x else mempty
 
-    bashCompleter a p = Options.bashCompleter a p pat
+    fsCompleter prefix =
+        fileSystemCompleter defFileSystemOptions
+            { appendSlashToSingleDirectoryResult = True
+            , prefix
+            , word = List.drop (length prefix) pat
+            }
