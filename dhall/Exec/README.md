@@ -57,33 +57,33 @@ TOOLSET help [--man] config
 
 Smart constructor for following commands/tools is provided:
 
-*   [`bazel`](./bazel) – Build automation tool <https://bazel.build/>.
+*   [`bazel`](./bazel) – Build automation tool.
 *   [`buildifier`](./buildifier) – Tool for formatting bazel BUILD and `.bzl`
     files with a standard convention.
-    <https://github.com/bazelbuild/buildtools/tree/master/buildifier>
 *   [`command-wrapper`](./command-wrapper) – Smart constructor for calling
     Command Wrapper itself.
 *   [`direnv`](./direnv) is a shell extension that modifies shell environment
-    based on current directory <https://direnv.net/>.
+    based on current directory.
 *   [`docker`](./docker)
-*   [`docker-compose`](./docker-compose) – <https://docs.docker.com/compose/>
+*   [`docker-compose`](./docker-compose) – Tool for defining and running
+    multi-container Docker applications.
 *   [`firefox`](./firefox)
-*   [`fzf`](./fzf)
-*   [`fzy`](./fzy)
-*   [`go-jira`](./go-jira) – Simple Jira command line client
-    <https://github.com/go-jira/jira>.
-*   [`jq`](./jq) Command-line JSON processor <https://stedolan.github.io/jq/>.
-*   [`nix`](./nix)
+*   [`fzf`](./fzf) – Fuzzy text selector.
+*   [`fzy`](./fzy) – Fuzzy text selector.
+*   [`go-jira`](./go-jira) – Simple Jira command line client.
+*   [`jq`](./jq) – Command-line JSON processor.
+*   [`nix`](./nix) – Cross-platform package manager used by NixOS.
+*   [`nvr`](./nvr) – Command for controlling Neovim process remotely.
 *   [`pg_dump`](./pg_dump)
 *   [`psql`](./psql)
 *   [`run-mailcap`](./run-mailcap)
 *   [`ssh`](./ssh)
-*   [`stack`](./stack) – <https://docs.haskellstack.org/>
-*   [`tmux`](./tmux) – <https://tmux.github.io/>
+*   [`sk`](./sk) – Skim is a fuzzy text selector.
+*   [`stack`](./stack) – Cross-platform program for developing Haskell projects.
+*   [`tmux`](./tmux) – Terminal multiplexer.
 *   [`xdg-open`](./xdg-open)
-*   [`yarn`](./yarn) – <https://yarnpkg.com/>
-*   [`youtube-dl`](./youtube-dl) – <https://ytdl-org.github.io/youtube-dl/>
-    <https://github.com/ytdl-org/youtube-dl/>
+*   [`yarn`](./yarn) – Package manager for JavaScript ecosystem.
+*   [`youtube-dl`](./youtube-dl) – Command-line program to download videos
 
 
 ## Command Line Completion Helpers

@@ -41,6 +41,9 @@
 , nix =
       ./nix/package.dhall sha256:a816e103f072359f0a9a6fc769223796a69de09d4413245ab691075cc207e155
     ? ./nix/package.dhall
+, nvr =
+      ./nvr/package.dhall sha256:c137a4b14427d3f77e912a2b452b78360f3575c34fdc7ce3557e90e495e967ca
+    ? ./nvr/package.dhall
 , pg_dump =
       ./pg_dump/package.dhall sha256:0c0e9c664275c44fe289adf4972a0c8e16afc8d72238ab3c7eb449fa4a479628
     ? ./pg_dump/package.dhall
