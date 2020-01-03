@@ -31,8 +31,11 @@ module CommandWrapper.Internal.Subcommand.Completion.DhallExpressions
     )
   where
 
+import Data.Monoid (Monoid, (<>))
 import Data.String (IsString)
 
+
+-- {{{ Dhall Prelude Library --------------------------------------------------
 
 preludeV11_1_0Content :: IsString s => s
 preludeV11_1_0Content = preludeV11_1_0Import
@@ -50,25 +53,46 @@ preludeV12_0_0Import =
     "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
     \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
 
-commandWrapperContent :: IsString s => s
+-- }}} Dhall Prelude Library --------------------------------------------------
+
+-- {{{ Command Wrapper and Exec Libraries -------------------------------------
+
+commit :: IsString s => s
+commit = "e3e6ee212c767e868914425e6e9b788c7c45432f"
+
+urlBase :: IsString s => s
+urlBase = "https://raw.githubusercontent.com/trskop/command-wrapper/"
+
+commandWrapperHash :: IsString s => s
+commandWrapperHash =
+    "sha256:db7beaa043832c8deca4f19321014f4e0255bc5081dae5ad918d7137711997f5"
+
+commandWrapperContent :: (IsString s, Monoid s) => s
 commandWrapperContent =
-    "./dhall/CommandWrapper/package.dhall\
-    \ sha256:db7beaa043832c8deca4f19321014f4e0255bc5081dae5ad918d7137711997f5"
+    "./dhall/CommandWrapper/package.dhall " <> commandWrapperHash
 
-commandWrapperImport :: IsString s => s
+commandWrapperImport :: (IsString s, Monoid s) => s
 commandWrapperImport =
-    "https://raw.githubusercontent.com/trskop/command-wrapper/d9109e5df506d180c8491861b8e7d23d98e863d6/dhall/CommandWrapper/package.dhall\
-    \ sha256:db7beaa043832c8deca4f19321014f4e0255bc5081dae5ad918d7137711997f5"
+    urlBase <> commit <> "/dhall/CommandWrapper/package.dhall "
+    <> commandWrapperHash
 
-execContent :: IsString s => s
+execHash :: IsString s => s
+execHash =
+    "sha256:a076951c08d9235ffd9d29b7414be8d19b1b9615b9f28c0ff086328358bcb5fa"
+
+execContent :: (IsString s, Monoid s) => s
 execContent =
-    "./dhall/Exec/package.dhall\
-    \ sha256:d66328a55da4aa3ee070f11e52e839152ed4d270b41fe12060c59ddbc42fbf6b"
+    "./dhall/Exec/package.dhall " <> execHash
 
-execImport :: IsString s => s
+execImport :: (IsString s, Monoid s) => s
 execImport =
-    "https://raw.githubusercontent.com/trskop/exec/d9109e5df506d180c8491861b8e7d23d98e863d6/dhall/Exec/package.dhall\
-    \ sha256:d66328a55da4aa3ee070f11e52e839152ed4d270b41fe12060c59ddbc42fbf6b"
+    urlBase <> commit <> "/dhall/Exec/package.dhall " <> execHash
+
+-- }}} Command Wrapper and Exec Libraries -------------------------------------
+
+-- {{{ Shell Completion Template ----------------------------------------------
 
 shellCompletionTemplate :: IsString s => s
 shellCompletionTemplate = "./dhall/completion.dhall"
+
+-- }}} Shell Completion Template ----------------------------------------------
