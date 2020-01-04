@@ -3,7 +3,7 @@
 -- |
 -- Module:      $Header$
 -- Description: Implementation of internal command named config
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -941,6 +941,8 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "config"
             <+> longOption "dhall-hash"
             <+> Pretty.brackets (longOption "[no-]cache")
+--          <+> Pretty.brackets (longOption "[no-]check")
+--          <+> Pretty.brackets (longOptionWithArgument "expected-hash" "HASH")
             <+> Pretty.brackets
                 ( longOptionWithArgument "expression" "EXPRESSION"
                 <> "|" <> longOptionWithArgument "input" "FILE"

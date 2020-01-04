@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion.LibraryImports
 -- Description: Static Dhall expressions to satisfy TH stage restriction.
--- Copyright:   (c) 2019 Peter Trško
+-- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
