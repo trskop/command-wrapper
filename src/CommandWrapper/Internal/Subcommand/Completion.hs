@@ -1249,6 +1249,7 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 <> "|" <> longOption "verbosity-values"
                 <> "|" <> longOption "colo[u]r-values"
                 <> "|" <> longOptionWithArgument "file-system" "TYPE"
+                <> "|" <> longOption "words"
                 )
             <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
 
