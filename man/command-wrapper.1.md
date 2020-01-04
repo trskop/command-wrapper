@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 25th October 2019
+% 4th January 2020
 
 
 # NAME
@@ -412,19 +412,28 @@ used by `man` run `manpath` command, which should print out something like:
 
 # ENVIRONMENT VARIABLES
 
-`XDG_CONFIG_HOME`
-:   Overrides where Command Wrapper looks for configuration files.  Loading
-    *toolset* configuration file uses following logic:
+`COMMAND_WRAPPER_USER_CONFIG_DIR`, `XDG_CONFIG_HOME`
+:   Overrides where Command Wrapper looks for user configuration files.
 
-    * If `XDG_CONFIG_HOME` environment variable is set then the configuration
-      file has path:
+    Following logic is used when looking up *toolset* configuration files:
+
+    *   If `COMMAND_WRAPPER_USER_CONFIG_DIR` environment variable is set then
+        the configuration file has path:
+
+        ```
+        ${COMMAND_WRAPPER_USER_CONFIG_DIR}/${toolset}/default.dhall
+        ```
+
+    *   If `COMMAND_WRAPPER_USER_CONFIG_DIR` environment variable is not set,
+        but `XDG_CONFIG_HOME` environment variable is set then the
+        configuration file has path:
 
         ```
         ${XDG_CONFIG_HOME}/${toolset}/default.dhall
         ```
 
-    * If `XDG_CONFIG_HOME` environment variable is not set then default value
-      is used instead:
+    *   If `XDG_CONFIG_HOME` environment variable is not set then default value
+        is used instead:
 
         ```
         ${HOME}/.config/${toolset}/default.dhall
@@ -432,23 +441,57 @@ used by `man` run `manpath` command, which should print out something like:
 
     For subcommand configuration files it is:
 
-    * If `XDG_CONFIG_HOME` environment variable is set then the configuration
-      file has path:
+    *   If `COMMAND_WRAPPER_USER_CONFIG_DIR` environment variable is set then
+        the configuration file has path:
+
+        ```
+        ${COMMAND_WRAPPER_USER_CONFIG_DIR}/${toolset}/${toolset}-${subcommand}.dhall
+        ```
+
+    *   If `COMMAND_WRAPPER_USER_CONFIG_DIR` environment variable is not set,
+        but `XDG_CONFIG_HOME` environment variable is set then the
+        configuration file has path:
 
         ```
         ${XDG_CONFIG_HOME}/${toolset}/${toolset}-${subcommand}.dhall
         ```
 
-    * If `XDG_CONFIG_HOME` environment variable is not set then default value
-      is used instead:
+    *   If `XDG_CONFIG_HOME` environment variable is not set then default value
+        is used instead:
 
         ```
         ${HOME}/.config/${toolset}/${toolset}-${subcommand}.dhall
         ```
 
+    Reason for having `COMMAND_WRAPPER_USER_CONFIG_DIR` is that
+    `XDG_CONFIG_HOME` is widely used standard.  Overriding its value may have
+    unforseen consequences if we only want to change that directory only for
+    Command Wrapper itself, but not other tools.  This is especially important
+    for functionality/subcommands that call other tools.
+
     See [XDG Base Directory Specification
     ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
     for more information on rationale behind this.
+
+`COMMAND_WRAPPER_LOCAL_CONFIG_DIR`
+:   If this environment variable is set it introduces another level of
+    configuration.
+
+    User configuration file for toolset (see documentation for
+    `COMMAND_WRAPPER_USER_CONFIG_DIR` and `XDG_CONFIG_HOME` environment
+    variables) is still handled the same way and read, but following
+    configuration file has precedence over it:
+
+    ```
+    ${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/${toolset}/default.dhall
+    ```
+
+    See section *CONFIGURATION FILE* for more detailed description of how
+    configuration files are combined.
+
+    Having the ability to specify local, or project-level, configuration in
+    addition to user-level can be very useful when using tools like [`direnv`
+    ](https://direnv.net/).
 
 `NO_COLOR`
 :   This environment variable is an informal standard which is available
@@ -536,16 +579,20 @@ used by `man` run `manpath` command, which should print out something like:
 
 # CONFIGURATION FILE
 
-Toolset configuration files are read from these locations:
+Toolset configuration files are read from these locations (in specified order):
 
-* `${XDG_CONFIG_HOME:-${HOME}/.config}/command-wrapper/default.dhall`
-* `${XDG_CONFIG_HOME:-${HOME}/.config}/${toolset}/default.dhall` -- Read only
-  if invoked under different name than `command-wrapper`.
+* `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME}/.config}}/command-wrapper/default.dhall`
+* `${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/command-wrapper/default.dhall`
+* `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME}/.config}}/${toolset}/default.dhall`
+  -- Read only if invoked under different name than `command-wrapper`.
+* `${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/${toolset}/default.dhall`
+  -- Read only if invoked under different name than `command-wrapper`.
 
 Configuration files are then composed together to form one configuration.  The
 way the fields are composed depends on the individual fields.  Usually they are
 concatenated, or in some case specific toolset configuration overrides
-`command-wrapper` configuration.
+`command-wrapper` configuration, i.e. configuration files mentioned later in
+the above list override those that are specified before it.
 
 Toolset configuration file has following type:
 
@@ -638,6 +685,26 @@ in  -- Subcommand aliases.  These can be used to invoke subcommand in
 Imports in the above description aren't necessary.  To get fully
 normalised/desugared version just paste it as an input to `dhall` command.
 
+It is highly advised  to use imports and to use smart constructor syntax
+instead of listing all values.  It makes it easier to migrate configuration
+between versions.  Smart constructor syntax example:
+
+```Dhall
+let CommandWrapper =
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      -- Note that adding a hash will allow Dhall to cache the import.
+      -- See also `dhall hash --help`.
+
+in  CommandWrapper.ToolsetConfig::{
+    , aliases = ./aliases-common.dhall # ./exec-aliases.dhall
+
+    , searchPath =
+        CommandWrapper.ToolsetConfig.defaultSearchPath
+        env:HOME as Text
+        "command-wrapper"
+    }
+```
+
 
 # SUBCOMMAND PROTOCOL
 
@@ -650,13 +717,15 @@ protocol is described in `command-wrapper-subcommand-protocol(7)` manual page.
 
 command-wrapper-cd(1), command-wrapper-completion(1), command-wrapper-config(1),
 command-wrapper-exec(1), command-wrapper-help(1), command-wrapper-skel(1),
-command-wrapper-version(1), command-wrapper-subcommand-protocol(7)
+command-wrapper-version(1), command-wrapper-subcommand-protocol(7),
+command-wrapper-bash-library(7)
 
 * [Dhall configuration language](https://dhall-lang.org)
 * [XDG Base Directory Specification
   ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
 * [Advanced Bash-Scripting Guide: Appendix E. Exit Codes With Special Meanings
   ](http://tldp.org/LDP/abs/html/exitcodes.html)
+ [`direnv` -- unclutter your `.profile`](https://direnv.net/)
 
 
 # BUGS

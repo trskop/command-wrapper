@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Config.Global
 -- Description: Global toolset configuration.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -35,6 +35,12 @@ module CommandWrapper.Config.Global
     , SearchPath(..)
     , ManPath(..)
     , def
+
+    -- * Configuration Paths
+    --
+    -- | Base directories where configuration files are looked up.
+    , ConfigPaths(..)
+    , defConfigPaths
     )
   where
 
@@ -126,7 +132,12 @@ newtype ManPath = ManPath [FilePath]
 -- * 'extraHelpMessage' -- None, i.e. 'Nothing'.
 -- * 'ignoreAliases' -- No, i.e. 'False'.
 -- * 'verbosity' -- 'Verbosity.Normal'.
-def :: ColourOutput -> SearchPath -> ManPath -> Config
+def :: ColourOutput
+    -- ^ Default value of 'ColourOutput' is affected by environment variables,
+    -- e.g. @NO_COLOR@.
+    -> SearchPath
+    -> ManPath
+    -> Config
 def colourOutput (SearchPath searchPath) (ManPath manPath) = Config
     { aliases = []
     , changeDirectory = Nothing
@@ -146,3 +157,31 @@ getAliases Config{aliases, ignoreAliases} =
     if ignoreAliases
         then []
         else aliases
+
+-- | Configuration base directories where configuration is looked up.  The
+-- lookup order for toolset configuration is:
+--
+-- 1. @${system}\/command-wrapper\/default.dhall
+-- 2. @${user}\/command-wrapper\/default.dhall
+-- 3. @${local}\/command-wrapper\/default.dhall
+-- 4. @${system}\/${toolset}\/default.dhall
+-- 5. @${user}\/${toolset}\/default.dhall
+-- 6. @${local}\/${toolset}\/default.dhall
+data ConfigPaths = ConfigPaths
+    { system :: Maybe FilePath
+    , user :: FilePath
+    , local :: Maybe FilePath
+    }
+  deriving stock (Generic, Show)
+  deriving anyclass (FromDhall)
+
+-- | Smart constructor for default\/initial value of 'ConfigPaths'.
+defConfigPaths
+    :: FilePath
+    -- ^ User config directory is mandatory.
+    -> ConfigPaths
+defConfigPaths user = ConfigPaths
+    { system = Nothing
+    , user
+    , local = Nothing
+    }

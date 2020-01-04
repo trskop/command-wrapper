@@ -2,7 +2,7 @@
 -- |
 -- Module:       Main
 -- Description:  Top-level executable of Command Wrapper.
--- Copyright:    (c) 2014-2019 Peter Trsko
+-- Copyright:    (c) 2014-2020 Peter Trsko
 -- License:      BSD3
 --
 -- Maintainer:   peter.trsko@gmail.com
@@ -29,11 +29,12 @@ import Data.Either (Either(Right), either)
 import Data.Eq ((/=))
 import Data.Foldable (for_)
 import Data.Function (($), (.), id)
-import Data.Functor ((<$>), fmap)
-import Data.Maybe (Maybe(Just, Nothing), fromMaybe, maybe)
+import Data.Functor ((<$>), (<&>), fmap)
+import Data.Maybe (Maybe(Just, Nothing), catMaybes, fromMaybe, maybe)
 import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
+import Data.Traversable (forM)
 import System.Exit (ExitCode(ExitFailure), die, exitWith)
 import System.IO (FilePath, IO, stderr)
 import Text.Show (show)
@@ -52,17 +53,17 @@ import qualified Mainplate.Extensible as Mainplate
     )
 import qualified Options.Applicative as Options
 import qualified Options.Applicative.Standard as Options
-import System.Directory
-    ( XdgDirectory(XdgConfig)
-    , doesFileExist
-    , getXdgDirectory
-    , setCurrentDirectory
-    )
+import System.Directory (doesFileExist, setCurrentDirectory)
 import System.FilePath ((</>), splitSearchPath)
 
-import qualified CommandWrapper.Config.Global as Global (Config(Config))
+import qualified CommandWrapper.Config.Global as Global
+    ( Config(Config)
+    , ConfigPaths(ConfigPaths)
+    , defConfigPaths
+    )
 import qualified CommandWrapper.Config.Global as Global.Config
     ( Config(..)
+    , ConfigPaths(..)
     , ManPath(..)
     , SearchPath(..)
     , def
@@ -72,13 +73,19 @@ import qualified CommandWrapper.Config.File as Config.File (apply, read)
 import CommandWrapper.Environment
     ( AppNames(..)
     , CommandWrapperPrefix
-    , CommandWrapperToolsetVarName(CommandWrapperManPath, CommandWrapperPath)
+    , CommandWrapperToolsetVarName
+        ( CommandWrapperLocalConfigDir
+        , CommandWrapperManPath
+        , CommandWrapperPath
+        , CommandWrapperUserConfigDir
+        )
     , ParseEnv
     , commandWrapperToolsetVarName
     , defaultCommandWrapperPrefix
     , getAppNames
     , optionalVar
     , parseEnvIO
+    , var
     )
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
@@ -123,23 +130,28 @@ main :: IO ()
 main = do
     appNames@AppNames{exeName, usedName} <- getAppNames'
     -- TODO: It would be great to have debugging message with 'appNames' in it.
-    defaultConfig <- parseEnv
+    (defaultConfig, configPaths) <- parseEnv
 
-    -- TODO: This code can be simplified and generalised by mapping over a list
-    --       of names under which command-wrapper is known at the moment.
-    config <- (\f g -> g (f defaultConfig))
-        <$> readGlobalConfig exeName
-        <*> ( if exeName /= usedName
-                 then readGlobalConfig usedName
-                 else pure id
-            )
+    config <- (`appEndo` defaultConfig) <$> do
+        let Global.ConfigPaths{system, user, local} = configPaths
+
+            -- Will always be non-empty directory, but the ordering makes it
+            -- cumbersome to use NonEmpty list.
+            configDirs = catMaybes [system, Just user, local]
+
+        dualFoldEndo
+            <$> forM configDirs (readGlobalConfig exeName)
+            <*> ( if exeName /= usedName
+                     then forM configDirs (readGlobalConfig usedName)
+                     else pure mempty
+                )
 
     Mainplate.runExtensibleAppWith (parseOptions appNames config) readConfig
         (defaults config) (go External.run appNames)
         (go (Internal.run helpMessage) appNames)
   where
-    readGlobalConfig baseName = do
-        configFile <- getXdgDirectory XdgConfig (baseName </> "default.dhall")
+    readGlobalConfig baseName dir = do
+        let configFile = dir </> baseName </> "default.dhall"
         configExists <- doesFileExist configFile
         -- TODO: Debugging message that tells the user that we either read the
         --   configuration file or that we are using hardcoded defaults.
@@ -173,14 +185,20 @@ getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version)
 
 -- | Parse environment variables and produce default configuration that can be
 -- later updated by configuration file and command line options.
-parseEnv :: IO Global.Config
+parseEnv :: IO (Global.Config, Global.ConfigPaths)
 parseEnv = parseEnvIO (die . show) do
     defColour <- fromMaybe ColourOutput.Auto <$> ColourOutput.noColorEnvVar
 
     searchPath <- searchPathVar Global.Config.SearchPath CommandWrapperPath
     manPath    <- searchPathVar Global.Config.ManPath    CommandWrapperManPath
 
-    pure (Global.Config.def defColour searchPath manPath)
+    user <- lookupUserConfigDir
+    local <- lookupLocalConfigDir
+
+    pure
+        ( Global.Config.def defColour searchPath manPath
+        , (Global.defConfigPaths user){Global.Config.local}
+        )
   where
     searchPathVar
         :: ([FilePath] -> a)
@@ -188,7 +206,30 @@ parseEnv = parseEnvIO (die . show) do
         -> ParseEnv CommandWrapperPrefix a
     searchPathVar mk varName = do
         varName' <- commandWrapperToolsetVarName varName
-        mk . maybe [] (splitSearchPath . Text.unpack) <$> optionalVar varName'
+        mk . maybe [] splitSearchPath <$> optionalVar' varName'
+
+    lookupUserConfigDir :: ParseEnv CommandWrapperPrefix FilePath
+    lookupUserConfigDir =
+        commandWrapperToolsetVarName CommandWrapperUserConfigDir
+        >>= optionalVar' >>= \case
+            Just dir ->
+                pure dir
+            Nothing -> do
+                -- This resolution algorithm won't be of much use on
+                -- non-Linux/UNIX systems.
+                optionalVar' "XDG_CONFIG_HOME" >>= \case
+                    Just dir ->
+                        pure dir
+                    Nothing ->
+                        var "HOME" <&> \home ->
+                            Text.unpack home </> ".config"
+
+    lookupLocalConfigDir :: ParseEnv CommandWrapperPrefix (Maybe FilePath)
+    lookupLocalConfigDir =
+        commandWrapperToolsetVarName CommandWrapperLocalConfigDir
+        >>= optionalVar'
+
+    optionalVar' varName' = fmap Text.unpack <$> optionalVar varName'
 
 parseOptions
     :: AppNames

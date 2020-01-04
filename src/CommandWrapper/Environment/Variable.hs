@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Environment.Variable
 -- Description: Environment variables as they are understood by Command Wrapper.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -152,14 +152,40 @@ data CommandWrapperToolsetVarName
     -- > <prefix>_PATH
 
     | CommandWrapperManPath
-    -- ^ `MANPATH` prepended to the one provided by configuration..
+    -- ^ `MANPATH` prepended to the one provided by configuration.
     --
     -- > <prefix>_MANPATH
+
+    | CommandWrapperUserConfigDir
+    -- ^ Overrides @XDG_CONFIG_HOME@ value.
+    --
+    -- > <prefix>_USER_CONFIG_DIR
+    --
+    -- Resolution algorithm is following:
+    --
+    -- 1. If environment variable @\<prefix\>_USER_CONFIG_DIR@ exists then its
+    --    value is used.
+    --
+    -- 2. If environment variable @\<prefix\>_USER_CONFIG_DIR@ doesn't exist
+    --    and @XDG_CONFIG_HOME@ does then the value of @XDG_CONFIG_HOME@ is
+    --    used.
+    --
+    -- 3. Value @${HOME}\/.config@ is used.
+    --
+    -- This resolution algorithm is compatible with
+    -- [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
+
+    | CommandWrapperLocalConfigDir
+    -- ^ This intorduces another configuration level that is used in addition
+    -- to  configuration from 'CommandWrapperUserConfigDir'.  This allows tools
+    -- like [direnv](https://direnv.net) to modify configuration for a specific
+    -- directory\/project.
+    --
+    -- > <prefix>_LOCAL_CONFIG_DIR
   deriving stock (Bounded, Enum, Generic, Show)
 
--- | Get fully formed Command Wrapper (toolset) variable name:
---
--- > <prefix>_INVOKE_AS
+-- | Get fully formed Command Wrapper (toolset) variable name.  See
+-- documentation of 'CommandWrapperToolsetVarName' for more information.
 getCommandWrapperToolsetVarName
     :: CommandWrapperPrefix
     -> CommandWrapperToolsetVarName
@@ -168,3 +194,5 @@ getCommandWrapperToolsetVarName prefix = (prefix <>) . \case
     CommandWrapperInvokeAs -> "_INVOKE_AS"
     CommandWrapperPath -> "_PATH"
     CommandWrapperManPath -> "_MANPATH"
+    CommandWrapperUserConfigDir -> "_USER_CONFIG_DIR"
+    CommandWrapperLocalConfigDir -> "_LOCAL_CONFIG_DIR"
