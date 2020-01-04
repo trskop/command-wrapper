@@ -12,4 +12,7 @@
 , completion-script =
       ./completion-script sha256:699491f149108814be8d08f8c23263fb40de7572df821482b4fd3d8f94fcdd85
     ? ./completion-script
+, completion =
+      ./completion sha256:615309adeb384974c4c697fb32de0fef1e3258ce562348e10798b6e0c18cd73d
+    ? ./completion
 }
