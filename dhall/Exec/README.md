@@ -91,6 +91,28 @@ Smart constructor for following commands/tools is provided:
 Helper functions and scripts for command line completion of Exec commands are
 in [`completion`](./completion) directory:
 
+*   [`completion/bash-completion-script-wrapper`](./completion/bash-completion-script-wrapper)
+    – Takes standard Bash completion file in a script that provides Command
+    Wrapper-style UI on top.  As template it has following type signature:
+
+    ```Dhall
+      ∀(opts : Options)
+    → Text
+    ```
+
+    Type `Options` is defined and documented in
+    [`completion/bash-completion-script-wrapper/Options/Type`
+    ](./completion/bash-completion-script-wrapper/Options/Type).
+
+    Generated script has following calling convention:
+
+    ```
+    COMMAND [--index=NUM] [--shell=SHELL] [-- [WORD ...]]
+    ```
+
+    Together with [`completion/wrapper`](./completion/wrapper) it allows
+    reusing existing Bash completion script.
+
 *   [`completion/command-wrapper`](./completion/command-wrapper) – Call command
     line completion with Command Wrapper style API. The Dhall function has the
     following type:

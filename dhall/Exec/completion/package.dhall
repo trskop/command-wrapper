@@ -15,4 +15,7 @@
 , wrapper =
       ./wrapper sha256:2581cfe8c184898fe6b04aedad5ad9c1be34154b3a795ecab17ee19c899e5c8b
     ? ./wrapper
+, bash-completion-script-wrapper =
+      ./bash-completion-script-wrapper/package.dhall sha256:ef8edc2d55aae2dfa91e8d7aa858befd1d8f107bcb2cc260eb26bc0be840c46d
+    ? ./bash-completion-script-wrapper/package.dhall
 }

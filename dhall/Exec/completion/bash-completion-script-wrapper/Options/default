@@ -1,0 +1,22 @@
+-- vim: filetype=dhall
+
+let Options =
+        ./Type sha256:9ff8f2f6d9cd3a786d7e9ff5d22f807e3f471287d83903b26a3324a4dc163a91
+      ? ./Type
+
+let Options/default =
+      { completion = None Text
+      , searchForCompletionFile = False
+      , strictMode = False
+      , sourceLibrary = None Text
+      }
+
+let consistency =
+        assert
+      :   { Type = Options, default = Options/default }::{
+          , completionFor = "foo"
+          , entryPoint = "_foo"
+          }
+        ≡ (Options/default ⫽ { completionFor = "foo", entryPoint = "_foo" })
+
+in  Options/default

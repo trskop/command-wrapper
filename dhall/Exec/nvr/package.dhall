@@ -9,4 +9,7 @@
 , command =
       ./command sha256:53005a100db768b88ca790522c4dc58be2c7022b5b64db52a62e1d2f8b6941d9
     ? ./command
+, completion-script =
+      ./completion-script sha256:699491f149108814be8d08f8c23263fb40de7572df821482b4fd3d8f94fcdd85
+    ? ./completion-script
 }

@@ -12,7 +12,7 @@
       ./command-wrapper/package.dhall sha256:196834fd31413e78d5f8e28d6dfec488e74b8bf21f7e90c20d610bdca3c880bb
     ? ./command-wrapper/package.dhall
 , completion =
-      ./completion/package.dhall sha256:8a6503c693ccaebf72fcff35efd22c95d5c7b9b291e15f8be8b8d0e8b7f6571d
+      ./completion/package.dhall sha256:cf7cc7082eec8178f94f400173a63d7616bdb3ff1ea864bc8be75552816b1fcc
     ? ./completion/package.dhall
 , direnv =
       ./direnv/package.dhall sha256:4cd1eb2a57bc33bd178772417c8553199f002458e42fe9524ebe688e0d71397d
@@ -42,7 +42,7 @@
       ./nix/package.dhall sha256:a816e103f072359f0a9a6fc769223796a69de09d4413245ab691075cc207e155
     ? ./nix/package.dhall
 , nvr =
-      ./nvr/package.dhall sha256:c137a4b14427d3f77e912a2b452b78360f3575c34fdc7ce3557e90e495e967ca
+      ./nvr/package.dhall sha256:59e358df798b56d5bb1f90dd64471bd60bcd83c7bc7252aa5d9f78a3013007d2
     ? ./nvr/package.dhall
 , pg_dump =
       ./pg_dump/package.dhall sha256:0c0e9c664275c44fe289adf4972a0c8e16afc8d72238ab3c7eb449fa4a479628

@@ -1,0 +1,18 @@
+-- vim: filetype=dhall
+
+let bash-completion-script-wrapper =
+        ../completion/bash-completion-script-wrapper/package.dhall sha256:ef8edc2d55aae2dfa91e8d7aa858befd1d8f107bcb2cc260eb26bc0be840c46d
+      ? ../completion/bash-completion-script-wrapper/package.dhall
+
+let wrappedCompletionScript =
+      https://raw.githubusercontent.com/trskop/neovim-remote/05fe6d0f4858e07bfe275e60bf8a1b29cb2b48d0/contrib/completion.bash sha256:db12d40572cebd14d9abbc75ca43a55815921b0e059733a40da8ee1876d9b15f as Text
+
+let completion-script =
+      bash-completion-script-wrapper.template
+        bash-completion-script-wrapper.Options::{
+        , completionFor = "nvr"
+        , entryPoint = "_nvr_opts_completions"
+        , completion = Some wrappedCompletionScript
+        }
+
+in  completion-script
