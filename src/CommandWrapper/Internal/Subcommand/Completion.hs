@@ -3,7 +3,7 @@
 -- Module:      CommandWrapper.Internal.Subcommand.Completion
 -- Description: Implementation of internal subcommand that provides command
 --              line completion and support for IDE-like functionality.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -76,6 +76,7 @@ import qualified Data.Text as Text (unpack)
 import Data.Text.Prettyprint.Doc ((<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
     ( Doc
+    , braces
     , brackets
     , encloseSep
     , softline
@@ -916,8 +917,7 @@ parseOptions appNames config arguments = do
         , dualFoldEndo
             <$> queryFlag
             <*> optional outputOption
-            <*> optional
-                ( updateQueryOptions
+            <*> ( updateQueryOptions
                     (   subcommandsFlag
                     <|> internalSubcommandsFlag
                     <|> subcommandAliasesFlag
@@ -1241,17 +1241,32 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "completion"
             <+> longOption "query"
-            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
-            <+> Pretty.brackets
+            <+> Pretty.braces
                 (         longOption "subcommands"
                 <> "|" <> longOption "subcommand-aliases"
                 <> "|" <> longOption "supported-shells"
                 <> "|" <> longOption "verbosity-values"
                 <> "|" <> longOption "colo[u]r-values"
-                <> "|" <> longOptionWithArgument "file-system" "TYPE"
-                <> "|" <> longOption "words"
                 )
             <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+
+        , "completion"
+            <+> longOption "query"
+            <+> longOptionWithArgument "file-system" "TYPE"
+            <+> Pretty.brackets
+                ( longOptionWithArgument "pattern" "PATTERN"
+                )
+            <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+
+        , "completion"
+            <+> longOption "query"
+            <+> longOption "words"
+            <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+            <+> Pretty.brackets "--"
+            <+> Pretty.brackets (metavar "WORD" <+> "...")
 
         , "completion"
             <+> longOption "library"
@@ -1333,13 +1348,38 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             ]
         ]
 
-    , section "Query options:"
+    , section "Common query options:"
         [ optionDescription ["--query"]
             [ Pretty.reflow "Query command line interface."
             , Pretty.reflow "Useful for editor/IDE integration."
             ]
 
-        , optionDescription ["--subcommands"]
+        , optionDescription ["--algorithm=ALGORITHM"]
+            [ Pretty.reflow "Specify which pattern matching algorithm to use"
+            , "when", longOptionWithArgument "pattern" "PATTERN"
+            , Pretty.reflow "is provided. Possible values are:"
+            , value "prefix" <> ",", value "fuzzy" <> ",", "and"
+            , value "equality."
+            ]
+
+        , optionDescription ["--pattern=PATTERN"]
+            [ Pretty.reflow "Print only values that are matching"
+            , metavar "PATTERN" <> "."
+            ]
+
+        , optionDescription ["--prefix=STRING"]
+            [ "Prepend", metavar "STRING"
+            , Pretty.reflow "to every result entry."
+            ]
+
+        , optionDescription ["--suffix=STRING"]
+            [ "Append", metavar "STRING"
+            , Pretty.reflow "to every result entry."
+            ]
+        ]
+
+    , section "Query Command Wrapper options:"
+        [ optionDescription ["--subcommands"]
             [ Pretty.reflow "Query all available subcommands. This includes\
                 \ internal subcommands, external subcommands, and subcommand\
                 \ aliases."
@@ -1384,8 +1424,10 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , metavar "COMMAND_WRAPPER_COLOUR"
             , Pretty.reflow "environment variable."
             ]
+        ]
 
-        , optionDescription ["--file-system=TYPE"]
+    , section "Query file system options:"
+        [ optionDescription ["--file-system=TYPE"]
             [ Pretty.reflow "Query for entries of"
             , metavar "TYPE" <> ","
             , "where"
@@ -1394,33 +1436,17 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.encloseSep mempty mempty ("," <> Pretty.softline)
                 (value . showEntryType <$> [minBound..maxBound])
             ]
+        ]
 
-        , optionDescription ["--words [--] [WORD [...]]"]
+    , section "Query words options:"
+        [ optionDescription ["--words"]
             [ Pretty.reflow "Query matching words from"
             , metavar "WORD", "list."
             ]
 
-        , optionDescription ["--algorithm=ALGORITHM"]
-            [ Pretty.reflow "Specify which pattern matching algorithm to use"
-            , "when", longOptionWithArgument "pattern" "PATTERN"
-            , Pretty.reflow "is provided. Possible values are:"
-            , value "prefix" <> ",", value "fuzzy" <> ",", "and"
-            , value "equality."
-            ]
-
-        , optionDescription ["--prefix=STRING"]
-            [ "Prepend", metavar "STRING"
-            , Pretty.reflow "to every result entry."
-            ]
-
-        , optionDescription ["--suffix=STRING"]
-            [ "Append", metavar "STRING"
-            , Pretty.reflow "to every result entry."
-            ]
-
-        , optionDescription ["--pattern=PATTERN"]
-            [ Pretty.reflow "Print only values that are matching"
-            , metavar "PATTERN" <> "."
+        , optionDescription ["WORD"]
+            [ Pretty.reflow "Potential completions that are matched against"
+            , longOptionWithArgument "pattern" "PATTERN" <> "."
             ]
         ]
 

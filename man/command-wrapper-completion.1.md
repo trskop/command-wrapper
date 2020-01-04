@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 30th December 2019
+% 4th January 2020
 
 
 # NAME
@@ -24,8 +24,22 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--library
 \[\--shell=*SHELL*|\--dhall=*LIBRARY*]
 \[\--import|\--content] \[\--output=*FILE*]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \[\--output=*FILE*]
-\[*QUERY\_OPTIONS*] \[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*]
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query
+{\--subcommands|\--subcommand-aliases|\--supported-shells|\--verbosity-values|\--colo\[u]r-values}
+\[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*]
+\[\--prefix=*STRING*] \[\--suffix=*STRING*]
+\[\--output=*FILE*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \--file-system=*TYPE*
+\[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*]
+\[\--prefix=*STRING*] \[\--suffix=*STRING*]
+\[\--output=*FILE*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \--words
+\[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*]
+\[\--prefix=*STRING*] \[\--suffix=*STRING*]
+\[\--output=*FILE*]
+\[\--] \[*WORD* ...]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--wrapper
 \--expression=*EXPRESSION* \--exec
@@ -155,10 +169,35 @@ interface for querying Command Wrapper's command line interface (CLI).
     default behavior if neither `--content`, nor `--import` is specified.
 
 
-# QUERY OPTIONS
+# COMMON QUERY OPTIONS
 
-\--query
-:   Query command line interface.  Useful for editor/IDE integration.
+\--query *QUERY_WHAT_OPTION*
+:   Query command line interface.  Useful for editor/IDE integration.  To see
+    what can be used for *QUERY_WHAT_OPTION* look at following sections:
+
+    *   *QUERY COMMAND WRAPPER OPTIONS*
+    *   *QUERY FILE SYSTEM OPTIONS*
+    *   *QUERY WORDS OPTIONS*
+
+\--algorithm=*ALGORITHM*
+:   Specify which pattern matching *ALGORITHM* to use when `--pattern=`*PATTERN* is
+    provided. Possible values are:
+
+    *   *prefix* -- matches when *PATTERN* is a prefix of matched string.
+    *   *fuzzy* -- matches when *PATTERN* fuzzily matches a string.
+    *   *equality* -- matches when *PATTERN* exactly matches a string.
+
+\--pattern=*PATTERN*
+:   Print only values that are matching *PATTERN*.
+
+\--prefix=*STRING*
+:   Prepend *STRING* to every result entry.
+
+\--suffix=*STRING*
+:   Append *STRING* to every result entry.
+
+
+# QUERY COMMAND WRAPPER OPTIONS
 
 \--subcommands
 :   Query all available subcommands.  This includes internal subcommands,
@@ -191,6 +230,9 @@ interface for querying Command Wrapper's command line interface (CLI).
     `--colo[u]r=WHEN` option, and `command-wrapper-subcommand-protocol(7)`
     regarding `COMMAND_WRAPPER_COLOUR` environment variable.
 
+
+# QUERY FILE SYSTEM OPTIONS
+
 \--file-system=*TYPE*
 :   Query file system for entries of *TYPE*:
 
@@ -204,25 +246,14 @@ interface for querying Command Wrapper's command line interface (CLI).
     behaves as if `--algorithm=prefix` was specified.  This may change in the
     future.
 
-\--words \[\--] \[*WORD* \[...]]
+
+# QUERY WORDS OPTIONS
+
+\--words
 :   Query matching words from *WORD* list.
 
-\--algorithm=*ALGORITHM*
-:   Specify which pattern matching *ALGORITHM* to use when `--pattern=`*PATTERN* is
-    provided. Possible values are:
-
-    *   *prefix* -- matches when *PATTERN* is a prefix of matched string.
-    *   *fuzzy* -- matches when *PATTERN* fuzzily matches a string.
-    *   *equality* -- matches when *PATTERN* exactly matches a string.
-
-\--prefix=*STRING*
-:   Prepend *STRING* to every result entry.
-
-\--suffix=*STRING*
-:   Append *STRING* to every result entry.
-
-\--pattern=*PATTERN*
-:   Print only values that are matching *PATTERN*.
+*WORD*
+:   Potential completions that are matched against `--pattern=`*PATTERN*.
 
 
 # COMPLETION WRAPPER OPTIONS

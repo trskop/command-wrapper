@@ -25,7 +25,7 @@
 *   Config file control:
 
     ```
-    TOOLSET --config=FILE --subcommand-config=FILE SUBCOMMAND [OPTIONS]
+    TOOLSET --local-config-dir[ectory]=DIRECTORY SUBCOMMAND [OPTIONS]
     ```
 
 *   Fallback configuration files for subcommands.  If there is no configuration
@@ -82,6 +82,18 @@
     ```
 
     Maybe this will require a little more thought.
+
+*   Implement `--strip-prefix` option that would strip `STRING` (specified via
+    `--prefix=STRING`) from `PATTERN` (specified via `--pattern=PATTERN`).
+
+    ```
+    TOOLSET completion --query QUERY_WHAT_OPTION
+      [--algorithm=ALGORITHM]
+      [--pattern=PATTERN]
+      [--prefix=STRING [--strip-prefix]]
+      [--suffix=STRING]
+      [--output=FILE]
+    ```
 
 
 ### Config
@@ -166,6 +178,12 @@
         (`--override-variable=NAME`) that would have precedence over `VISUAL`,
         `EDITOR`, and default editor.  This could be used by subcommands to
         allow users to override editor specifically for that subcommand.
+
+    * Consider:
+
+        ```
+        config --edit --{local,user,system}-config
+        ```
 
 *   Enhancements to `--menu`:
 
