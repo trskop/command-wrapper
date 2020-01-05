@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-BASH-LIBRARY(7) Bash Library | v1.0.0
 % Peter Trsko
-% 4th January 2020
+% 5th January 2020
 
 
 # NAME
@@ -23,7 +23,7 @@ library.
 # IMPORTING THE LIBRARY
 
 Command Wrapper provides snippet of code that describes the best way to import
-its Bash library:
+its Bash library.  Paste output of the following command into your script:
 
 ```
 TOOLSET_COMMAND completion --library --shell=bash --import
@@ -36,8 +36,8 @@ When subcommand is created via `skel` template, like:
 TOOLSET_COMMAND skel --language=bash SUBCOMMAND
 ```
 
-Then the created Bash script already handles the library import correctly.
-For more information see `command-wrapper-skel(1)` manual page.
+Then the created Bash script should already handle the library import
+correctly.  For more information see `command-wrapper-skel(1)` manual page.
 
 
 # LIBRARY DOCUMENTATION
@@ -49,8 +49,8 @@ is to run (if you're using `less` as pager, if not read further):
 TOOLSET_COMMAND completion --library --shell=bash [--content] | less
 ```
 
-When we're not using `less` then changhe the last command in the pipeline to
-be your prefered pager. If we're on Debian-like system then an also use
+When we're not using `less` then change the last command in the pipeline to be
+your preferred pager. If we're on Debian-like system then an also use
 `sensible-pager` command instead of directly calling specific one.
 
 If [`bat`](https://github.com/sharkdp/bat), or any other `cat`-like command
@@ -68,7 +68,7 @@ For more information see `command-wrapper-completion(1)` manual page.
 
 # INFO, NOTICE, WARN, and ERROR MESSAGES
 
-Print info/notice/warn/error messages to stderr.  Verbosity level (see
+Print info/notice/warn/error messages to `stderr`.  Verbosity level (see
 `COMMAND_WRAPPER_VERBOSITY` in `command-wrapper-subcommand-protocol(7)` for
 details) affects if the message will actually be printed or not.
 
@@ -84,8 +84,8 @@ error *FORMAT* \[*ARGUMENTS*]
 # OUTPUT MESSAGES
 
 Output messages are slightly different from the info/notice/warn/error
-messages. They are printed to stdout, without any extra formatting or colours,
-but they are suppressed if verbosity is set to *silent*.
+messages. They are printed to `stdout`, without any extra formatting or
+colours, but they are suppressed if verbosity is set to *silent*.
 
 out *FORMAT* \[*ARGUMENTS*]
 
@@ -96,11 +96,6 @@ Common thing is to print an error and exit wit a specific exit status.  For
 this purpose we provide `die` function:
 
 die *EXIT_CODE* *FORMAT* \[*ARGUMENTS*]
-
-Check that the subcommand was called via Commnad Wrapper Subcommand Protocol or
-die with correct error message and exit status:
-
-dieIfExecutedOutsideOfCommandWrapperEnvironment
 
 
 # CALL CURRENT COMMAND WRAPPER TOOLSET
@@ -214,6 +209,30 @@ completion-query \--words
 If speed of completion is of an essence then Bash's `comgpgen`/`complete`
 builtins should be preferred, however, some of the above cannot be reliably
 emulated using Bash builtins.
+
+
+# SUBCOMMAND PROTOCOL HELPERS
+
+Check that the subcommand was called via Commnad Wrapper Subcommand Protocol
+(documented in `command-wrapper-subcommand-protocol(7)`) or die with
+appropriate error message and exit status:
+
+dieIfExecutedOutsideOfCommandWrapperEnvironment
+
+Subcommands are required to implement `--completion-info` option which prints
+Dhall expression that describes how subcommand should be called to do
+completion.  If subcommand uses standard Commnad Wrapper-style calling
+convention then following helper can be used to print respective Dhall
+expression:
+
+stdCompletionInfo \[\--hash]
+
+Subcommand Protocol uses environment variables to pass information to a
+subcommand.  If subcommand executes another command without modifying
+environment then these are passed to that command as well.  Following helper
+removes Subcommand Protocol environment variables before executing a command:
+
+exec\_ \[-cl] \[-a *NAME*] \[*COMMAND* \[*ARGUMENTS* ...]] \[*REDIRECTION* ...]
 
 
 # SEE ALSO

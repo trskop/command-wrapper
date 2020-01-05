@@ -339,7 +339,7 @@ function removeCommandWrapperEnvironmentVariables() {
 #
 # Usage:
 #
-#   exec [-cl] [-a NAME] [COMMAND [ARGUMENTS ...]] [REDIRECTION ...]
+#   exec_ [-cl] [-a NAME] [COMMAND [ARGUMENTS ...]] [REDIRECTION ...]
 #
 # See also:
 #
@@ -603,12 +603,19 @@ function completion-query() {
 #
 # Usage:
 #
-#   stdCompletionInfo
+#   stdCompletionInfo [--hash]
+#
+# Options:
+#
+#   --hash
+#       Print semantic hashe of Dhall expressions instead of the Dhall
+#       expression.
 #
 # See `command-wrapper-subcommand-protocol(7)` for more details on how this
 # works.
 function stdCompletionInfo() {
-    cat <<'EOF'
+    local -r hash='sha256:50721655961fc58a6a66435ac062939e5038cb68955c041fc6e8ca52b5d7ac21'
+    local -r expression=$'
   λ(shell : < Bash | Fish | Zsh >)
 → λ(index : Natural)
 → λ(words : List Text)
@@ -618,5 +625,11 @@ function stdCompletionInfo() {
     , "--"
     ]
   # words
-EOF
+'
+
+    if [[ $# -gt 0 && "$1" = '--hash' ]]; then
+        echo "${hash}"
+    else
+        cat <<< "${expression}"
+    fi
 }
