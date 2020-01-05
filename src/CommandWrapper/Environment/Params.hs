@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Environment.Params
 -- Description: Subcommand parameters as defined by Subcommand Protocol.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -51,6 +51,7 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import Control.Monad.Except (throwError)
 import qualified Data.CaseInsensitive as CaseInsensitive (mk)
 import qualified Data.HashMap.Strict as HashMap (delete, fromList, toList)
+import Data.Text (Text)
 import qualified Data.Text as Text (unpack)
 import Data.Text.Prettyprint.Doc (Doc, Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty (dquotes, viaShow, vsep)
@@ -126,8 +127,8 @@ data Params = Params
     -- variable.  See @command-wrapper-subcommand-protocol(7)@ manual page for
     -- details.
 
-    , config :: FilePath
-    -- ^ Contains a file path to subcommand configuration file.
+    , config :: Text
+    -- ^ Contains a Dhall expression that represents subcommand configuration.
     --
     -- This value is passed via @COMMAND_WRAPPER_CONFIG@ environment variable.
     -- See @command-wrapper-subcommand-protocol(7)@ manual page for details.
@@ -182,7 +183,7 @@ mkEnvVars Params{..} = EnvBuilder $ \prefix ->
         [ (CommandWrapperExe, fromString exePath)
         , (CommandWrapperName, fromString name)
         , (CommandWrapperSubcommand, fromString subcommand)
-        , (CommandWrapperConfig, fromString config)
+        , (CommandWrapperConfig, config)
         , (CommandWrapperVerbosity, fromString $ Char.toLower <$> show verbosity)
         , (CommandWrapperColour, fromString $ Char.toLower <$> show colour)
         , (CommandWrapperVersion, fromString $ showVersion version)
@@ -218,7 +219,7 @@ askParams = Params
     <$> var CommandWrapperExe
     <*> var CommandWrapperName
     <*> var CommandWrapperSubcommand
-    <*> var CommandWrapperConfig
+    <*> commandWrapperVar CommandWrapperConfig
     <*> verbosityVar CommandWrapperVerbosity
     <*> colourOutputVar CommandWrapperColour
     <*> versionVar CommandWrapperVersion

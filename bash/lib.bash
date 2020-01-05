@@ -291,7 +291,9 @@ function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
             'This command must be executed inside command-wrapper environment.'
     fi
 
-    if  [[ -z "${COMMAND_WRAPPER_CONFIG}" ]]; then
+    # We are checking if COMMAND_WRAPPER_CONFIG variable is set or not, which
+    # is a different beast from it being empty.
+    if  [[ -z "${COMMAND_WRAPPER_CONFIG+variable-is-set}" ]]; then
         die 2 'COMMAND_WRAPPER_CONFIG: %s: %s' \
             'Missing environment variable' \
             'This command must be executed inside command-wrapper environment.'
@@ -327,6 +329,10 @@ function commandWrapperEnvironmentVariables() {
 # Usage:
 #
 #   removeCommandWrapperEnvironmentVariables
+#
+# Be aware that once the environment variables are removed the subcommand has
+# no way to access information provided by the Command Wrapper.  See `exec_`
+# function, which uses `removeCommandWrapperEnvironmentVariables`.
 function removeCommandWrapperEnvironmentVariables() {
     local -a vars=()
     mapfile -t vars < <(commandWrapperEnvironmentVariables)
@@ -431,6 +437,7 @@ function dhall-format() {
 # Add integrity checks to import statements of a Dhall expression.
 #
 # Usage:
+#
 #   dhall-freeze
 #     [--[no-]remote-only]
 #     [--for-security|--for-caching]
@@ -631,5 +638,78 @@ function stdCompletionInfo() {
         echo "${hash}"
     else
         cat <<< "${expression}"
+    fi
+}
+
+# Test if configuration is available or not.
+#
+# Usage:
+#
+#   haveConfiguration [--or-die [FORMAT [ARGUMENTS]]]
+#
+# Options:
+#
+#   --or-die [FORMAT [ARGUMENTS]]
+#       Instead of behaving as a predicate perform a check, and if
+#       configuration is not available die with exit status `1` (mandated by
+#       Subcommand Protocol).
+#
+#       If `FORMAT [ARGUMENTS]` is specified then it overrides the default
+#       error message.  The syntax is the same as for `printf` command.
+#
+# Usage:
+#
+#    ```Bash
+#    # ...
+#    if haveConfiguration then
+#        # Use `dhall-to-bash` to access configuration.
+#        :
+#    else
+#        # Use default values instead.
+#        :
+#    fi
+#    ```
+#
+#    ```Bash
+#    haveConfiguration --or-die "%s %s" \
+#      "Configuration file is required and it's missing." \
+#      "Use --init-config to create initial configuration file."
+#    ```
+function haveConfiguration() {
+    local die=0
+    local -a arguments=()
+
+    local arg
+    while (( $# )); do
+        arg="$1"; shift
+
+        case "${arg}" in
+            --or-die)
+                die=1
+                arguments=("$@")
+                break;
+                ;;
+            *)
+                # Explicitly itnored.
+                break;
+                ;;
+        esac
+    done
+
+    # Subcommand Protocol dictates taht `COMMAND_WRAPPER_CONFIG` environment
+    # variable must be set, but it may be empty.  When it's empty it indicates
+    # that Command Wrapper failed to find a configuration file for the
+    # subcommand.
+    if [[ -n "${COMMAND_WRAPPER_CONFIG}" ]]; then
+        return 0
+    elif (( die )); then
+        # Be aware that exit status `1` is required by Subcommand Protocol.
+        if (( ${#arguments[@]} )); then
+            die 1 "${arguments[@]}"
+        else
+            die 1 "Configuration file required and it's missing."
+        fi
+    else
+        return 1
     fi
 }

@@ -21,14 +21,21 @@ import CommandWrapper.Prelude
     , stdout
     , subcommandParams
     )
+import qualified Data.Text as Text (null)
 import Dhall (FromDhall)
-import qualified Dhall (auto, inputFile)
+import qualified Dhall (auto, input)
 import qualified Turtle
 
 
 data Config = Config
+    {
+    }
   deriving stock (Generic, Show)
   deriving anyclass (FromDhall)
+
+-- | Default 'Config' value used if there is no configuration given to us.
+defConfig :: Config
+defConfig = Config
 
 data Mode
     = DefaultMode
@@ -40,9 +47,67 @@ instance HaveCompletionInfo Mode where
 
 main :: IO ()
 main = do
-    params@Params{config = configFile} <- subcommandParams
+    -- Function `subcommandParams` makes sure that this subcommand was executed
+    -- using expected calling convention.  If it wasn't it will terminate this
+    -- script with appropriate error message and exit status.  It is hard to
+    -- guarantee anything in case of it being executed in any other way.
+    -- Mentioned calling convention is described in a dedicated manual page
+    -- `command-wrapper-subcommand-protocol(7)`.
+    params@Params{config = configExpr} <- subcommandParams
+
+    -- It is up to subcommand to decide what command line options should be
+    -- supported, and how they should be parsed, but each subcommand has to
+    -- support following:
+    --
+    -- *   `--help`, `-h`
+    -- *   `--completion-info` -- Command Wrapper library provides basic
+    --     building block for this in the form of `completionInfoFlag` and
+    --     `HaveCompletionInfo`.  See their respective documentation for more
+    --     details.
+    --
+    -- In addition to the above following command line options are reserved for
+    -- future use by the Subcommand Protocol:
+    --
+    -- *   `--completion-info-hash`
+    -- *   `--config-constructor`
+    -- *   `--config-constructor-hash`
+    --
+    -- Subcommands are encouraged to also support:
+    --
+    -- *   `--init-config` -- It's name is not mandated either.  Purpose of
+    --     this option is to print initial configuration file to standard
+    --     output.
+    --
+    -- See Command Wrapper's Subcommand Protocol for more information.  It is
+    -- available in the form of command-wrapper-subcommand-protocol(7) manual
+    -- page.
     mode <- Turtle.options description (completionInfoFlag <*> parseOptions)
-    config <- Dhall.inputFile Dhall.auto configFile
+
+    -- Subcommands aren't required to use configuration files.  If you don't
+    -- need it then just delete or comment-out configuration related code.
+    --
+    -- When subcommand is using configuration file and that doesn't exist it is
+    -- allowed to do one of the following:
+    --
+    -- 1. Use hardcoded defaults.
+    -- 2. Fail with error message indicating that the configuration file is
+    --    missing.
+    --
+    -- See command-wrapper-subcommand-protocol(7) manual page for more
+    -- information.
+    --
+    -- Following code assumes that the subcommand uses the former option (the
+    -- one marked as 1.).  Code that doesn't allow subcommand to work without a
+    -- configuration file is commented out.
+    config <- if Text.null configExpr
+        then
+            pure defConfig
+            -- Alternatively we may want to die if there is no sensible value
+            -- of 'defConfig' and we require there to be a configuration.
+            --dieWith params stderr 1
+            --    "Configuration file is required and it's missing."
+        else
+            Dhall.input Dhall.auto configExpr
     realMain params config mode
   where
     description = "TODO: Hereby I promise to describe this subcommand one day."
@@ -52,6 +117,17 @@ parseOptions = pure DefaultMode
 
 realMain :: Params -> Config -> Mode -> IO ()
 realMain params _config = \case
-    DefaultMode -> dieWith params stderr 125 "Not yet implemented!"
-    CompletionInfo -> printOptparseCompletionInfoExpression stdout
+    DefaultMode ->
+        -- TODO: Implement me!  Here is the place where the real functionality
+        -- should be.
+        dieWith params stderr 125 "Not yet implemented!"
+    CompletionInfo ->
+        -- Function `printOptparseCompletionInfoExpression` produces Dhall
+        -- expression that describes how `optparse-applicative` completion
+        -- can be called.  If you are using different library then you may need
+        -- to describe the calling convention yourself.  Command line
+        -- completion is considered mandatory feature, therefore, if the
+        -- command line parsing library doesn't support it then it will also
+        -- have to be implemented manually.
+        printOptparseCompletionInfoExpression stdout
 ''

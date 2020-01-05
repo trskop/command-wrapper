@@ -132,22 +132,20 @@ are available to it:
 
 `COMMAND_WRAPPER_CONFIG`
 
-:   Contains a file path to subcommand configuration file. Subcommand may
-    ignore it entirely, but if subcommand is using it then it has to correctly
-    handle the case when the configuration file doesn't exist.  It's up to
-    individual subcommand to decide which of these scenarios it will use if the
-    configuration doesn't exist:
+:   Contains a Dhall expression representing subcommand configuration.
+    Variable is always defined, but it may be empty.  If it's empty then
+    Command Wrapper was unable to find configuration for the subcommand.
+    Subcommand may ignore it entirely, but if subcommand is using it then it
+    has to correctly handle the case when the configuration is not present
+    (environment variable is empty).  It's up to individual subcommand to
+    decide which of these scenarios it will use if the configuration doesn't
+    exist:
 
-    1.  Use hard-coded defaults.  Subcommand may generate the configuration
-        file with these defaults.  If it does so then the user must be notified
-        by a message that it was done so. Such message is subject to verbosity
-        setting (see `COMMAND_WRAPPER_VERBOSITY`), i.e. if verbosity is set to
-        `silent` then the message is not actually printed.
-
+    1.  Use hard-coded defaults.
     2.  Fail with error message indicating that the configuration file is
         missing.
 
-    See also **CONFIGURATION FILE** section.
+    See also **CONFIGURATION** section.
 
 `COMMAND_WRAPPER_VERBOSITY`
 :   Contains one of:
@@ -178,34 +176,65 @@ are available to it:
     then they have to respect this environment variable.
 
 
-# CONFIGURATION FILE
+# CONFIGURATION
 
 Subcommand may require a configuration file. If it does require one then it
-must use the one provided in `COMMAND_WRAPPER_CONFIG`, which is always in
-[Dhall](https://github.com/dhall-lang/dhall-lang#readme) format. Subcommand
-must not use any other configuration file, with the notable exception of it's
-dependencies, e.g. DNS resolution uses `/etc/resolv.conf`.  However, if it's
-possible then temporary configuration file should be generated and passed to
-the dependency explicitly.
+must use the [Dhall](https://dhall-lang.org/) expression stored in
+`COMMAND_WRAPPER_CONFIG` environment variable.  Command Wrapper sets the value
+of `COMMAND_WRAPPER_CONFIG` to the contents of subcommand configuration file.
+This allows subcommand to be independent of the location of configuration
+file(s) while avoiding creation of temporary files.
 
-Subcommand should never make assumptions about the location of
-`COMMAND_WRAPPER_CONFIG` or in any way analyse the path passed via
-`COMMAND_WRAPPER_CONFIG`.  Preventing subcommands from understanding the
-localtion of configuration file allows Command Wrapper to do config file
-resolution as it sees fit, as well as generating temporary configuration file
-when calling a subcommand.
+Subcommand should never make assumptions about the location of its
+configuration file.  Preventing subcommands from understanding the localtion of
+their configuration file(s) allows Command Wrapper to do config file resolution
+as it sees fit, as well as generating the configuration on the fly if
+necessary.
 
-When this is respected, by the subcommand, then Command Wrapper has full
+Subcommand must not use any other configuration file, with the notable
+exception of its dependencies, e.g. DNS resolution uses `/etc/resolv.conf`.
+However, if it's possible then temporary configuration file should be generated
+and passed to the dependency explicitly.
+
+When the above is respected, by the subcommand, then Command Wrapper has full
 control over subcommand configuration and command line arguments that are
 passed to it.  This way it can guarantee consistent UI.
 
-For purpose of reading Dhall configuration files in Bash, Command Wrapper
-provides bunch of Dhall-related commands as part of its internal subcommand
-`config`.  For more information see `command-wrapper-config(1)` manual page or:
+Dhall supports importing expressions directly from environment variables.
+Importing `COMMAND_WRAPPER_CONFIG` is therefore easy:
+
+```Dhall
+env:COMMAND_WRAPPER_CONFIG
+```
+
+We can also use alternative syntax for cases when the value of
+`COMMAND_WRAPPER_CONFIG` is not a valid Dhall expression (like when it's
+empty):
+
+```Dhall
+env:COMMAND_WRAPPER_CONFIG ? { default = "config" }
+```
+
+For purpose of using Dhall configuration in Bash, Command Wrapper provides
+bunch of Dhall-related commands as part of its internal subcommand `config`.
+For more information see `command-wrapper-config(1)` manual page or:
 
 ```
 TOOLSET_COMMAND help [--man] config
 ```
+
+It is highly advised for the subcommand to provide a command line option to
+generate configuration file, if one is required.  If it's possible then the
+command line option should be called `--init-config`, reason for it is
+consistency.  If subcommands call it the same way it's easier for the user to
+pick a new subcommand. Since subcommands are not aware of the location of
+configuration file, they are given only the resulting Dhall expression, it can
+only print the configuration to standard output.
+
+Where Command Wrapper looks for subcommand configuration files is intentionally
+not part of Subcommand Protocol and is documented in `command-wrapper(1)`
+manual page.  This allows changes to the algorithm for finding subcommand
+configuration files without having to modify subcommands.
 
 
 # EXIT STATUS

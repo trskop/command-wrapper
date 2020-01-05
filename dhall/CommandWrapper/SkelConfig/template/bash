@@ -15,8 +15,11 @@
 #
 # Somewhat useful documentation can be found in `nix-shell(1)` documentation
 # (https://nixos.org/nix/manual/#sec-nix-shell).
+#
+# Some usage examples can be found on:
+# https://trskop.github.io/articles/2019-12-05-nix-shell-shebang.html
 
-# So called Bash strict mode.  See `bash(1)` documentation  for more details.
+# So called Bash strict mode.  See `bash(1)` documentation for more details.
 set -eo pipefail
 
 if (( BASH_VERSINFO[0] > 4 || ( BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4 ) )); then
@@ -53,7 +56,7 @@ source <(
 #   printHelp
 #   printHelp 1>&2
 #
-# When subcommand is invoked with `-h|--help` option then help information
+# When subcommand is invoked with `--help|-h` option then help information
 # needs to be printed to standard output.  If help message is printed as part
 # of error message, then it needs to be printed to standard error output.  This
 # means that redirection will work the way user expects.  For example:
@@ -107,8 +110,27 @@ EOF
 # Print Dhall expression that describes how this subcommand should be invoked
 # when performing command line completion.  See
 # `command-wrapper-subcommand-protocol(7)` for more details on how this works.
+#
+# Usage:
+#
+#   completionInfo [--hash]
+#
+# Options:
+#
+#   --hash
+#       Print semantic hash of Dhall expressions instead of the Dhall
+#       expression itself.
 function completionInfo() {
-    stdCompletionInfo
+    # Function stdCompletionInfo is provided by Command Wrapper Bash library
+    # and it prints Dhall expression that corresponds to standard Command
+    # Wrapper completion calling convention:
+    #
+    # COMMAND --completion --index=INDEX --shell=SHELL -- [WORD ...]
+    #
+    # Calling convention has to be in sync with what `completion` function
+    # accepts.  You may need to specify your own Dhall expression if there's a
+    # mismatch.
+    stdCompletionInfo "$@"
 }
 
 # Perform command line completion.
@@ -120,6 +142,9 @@ function completionInfo() {
 # Bash itself provides `compgen` builtin command that can do a lot of standard
 # command line completion functions.  See `bash(1)` or `help compgen` for more
 # details.
+#
+# Make sure that Dhall expression provided by `completionInfo` is compatible
+# with this function.
 function completion() {
     local index=-1
     local -a words=
@@ -169,6 +194,7 @@ function completion() {
 
     local -r -a options=(
         --help -h
+        #--init-config
     )
 
     if (( ! hadDashDash )) && [[ "''${currentWord}" == -* ]]; then
@@ -195,29 +221,29 @@ function completion() {
 # 'main' function.
 #
 # This function is very simple example of how configuration can be read.  It
-# expects configuration file to be a record where individual fields are
-# primitive values in Bash sense.  See documentation of Command Wrapper's
-# `config` command, specifically `--dhall-bash` functionality.
+# expects configuration to be a record where individual fields are primitive
+# values in Bash sense.  See documentation of Command Wrapper's `config`
+# command, specifically `--dhall-bash` functionality.
 #
 # Usage:
 #
-#   declareCfg CONFIG_FILE ATTRIBUTE_NAME
+#   declareCfg ATTRIBUTE_NAME
 #
-# Most commonly `CONFIG_FILE` will be `"''${COMMAND_WRAPPER_CONFIG}"`.
+# This function uses Dhall expression in `''${COMMAND_WRAPPER_CONFIG}`
+# environment variable to access `ATTRIBUTE_NAME` and delcare it.
 function declareCfg() {
-    local -r configFile="$1"; shift
     local -r name="$1"; shift
 
-    dhall-to-bash \
+     dhall-to-bash \
         --declare="''${name}" \
-        --expression="(''${configFile}).''${name}"
+        --expression="(env:COMMAND_WRAPPER_CONFIG).\`''${name}\`"
 }
 
 # Main entry point.
 #
 # Usage:
 #   main {-h|--help}
-#   main --completion-info
+#   main --completion-info[-hash]
 #   main --completion [--index=INDEX] [--shell=SHELL] [[--] WORD [...]]
 #   main [OPTION [...]] [ARGUMENT [...]]
 function main() {
@@ -230,12 +256,24 @@ function main() {
     #   command-wrapper-subcommand-protocol(7)
     dieIfExecutedOutsideOfCommandWrapperEnvironment
 
-    # It is upto subcommand to decide what command linen options should be
+    # It is up to subcommand to decide what command line options should be
     # supported, and how they should be parsed, but each subcommand has to
     # support following:
     #
-    # * --help, -h
-    # * --completion-info
+    # * `--help`, `-h`
+    # * `--completion-info`
+    #
+    # In addition to the above following command line options are reserved for
+    # future use by the Subcommand Protocol:
+    #
+    # *   `--completion-info-hash`
+    # *   `--config-constructor`
+    # *   `--config-constructor-hash`
+    #
+    # Subcommands are encouraged to also support:
+    #
+    # *   `--init-config` -- It's name is not mandated either.  Purpose of this
+    #     option is to print initial configuration file to standard output.
     #
     # See Command Wrapper's Subcommand Protocol for more information.  It is
     # available in the form of command-wrapper-subcommand-protocol(7) manual
@@ -245,7 +283,7 @@ function main() {
         arg="$1"; shift
         case "''${arg}" in
             # Supporting '--help' is required by the Subcommand Protocol.
-            -h|--help)
+            --help|-h)
                 # Printing help to standard output and using exit code 0 is
                 # required by Subcommand Protocol.
                 printHelp
@@ -259,14 +297,59 @@ function main() {
                 exit 0
                 ;;
 
+            # Option reserved by Subcommand Protocol for future use.
+            --completion-info-hash)
+                completionInfo --hash
+                exit 0
+                ;;
+
+            # Option reserved by Subcommand Protocol for future use.
+            --config-constructor)
+                die 1 "'%s': Unknown option." "''${arg}"
+                #configConstructor
+                #exit 0
+                ;;
+
+            # Option reserved by Subcommand Protocol for future use.
+            --config-constructor-hash)
+                die 1 "'%s': Unknown option." "''${arg}"
+                #configConstructor --hash
+                #exit 0
+                ;;
+
             # Implementation of command line completion.  It is up to
             # individual subcommands to decide how this should be implemented,
             # however the implementation of '--completion-info' has to print
             # Dhall expression that is consistent with the chosen approach.
+            #
+            # Please make sure that `completionInfo` and `completion` functions
+            # are defined in compatible way.  See
+            # `command-wrapper-subcommand-protocol(1)` for more details on how
+            # completion works.
             --completion)
                 completion "$@"
                 exit 0
                 ;;
+
+            # Following is not mandated by subcommand protocol, but it's a good
+            # idea to have it if the subcommand cannot work without a
+            # configuration file.  Subcommands are not aware of the location of
+            # their configuration file, therefore, it is best to just print it
+            # to standard output and point user to `command-wrapper(1)`
+            # documentation.
+            #
+            # This option, or something similar, can be useful even if
+            # subcommand can operate without configuration file.  Notably, when
+            # subcommand is installed using Nix, option like this can be used
+            # to generate configuration file during installation.
+            #
+            # Be aware that there is no skeleton provided for
+            # `constructInitialConfiguration`.  It has to be written from
+            # scratch.
+            #--init-config)
+            #    constructInitialConfiguration
+            #    exit 0
+            #    ;;
 
             # TODO: Define additional options here.
             -*)
@@ -283,7 +366,7 @@ function main() {
     done
 
     # Subcommands aren't required to use configuration files.  If you don't
-    # need it then just delete or commend-out config file related code.
+    # need it then just delete or comment-out configuration related code.
     #
     # When subcommand is using configuration file and that doesn't exist it
     # is allowed to do one of the following:
@@ -292,29 +375,26 @@ function main() {
     # 2. Fail with error message indicating that the configuration file is
     #    missing.
     #
-    # In case of first option subcommand is allowed to generate default
-    # configuration file.
-    #
     # See command-wrapper-subcommand-protocol(7) manual page for more
     # information.
-    if [[ ! -e "''${COMMAND_WRAPPER_CONFIG}" ]]; then
-        notice "'%s': Generating default configuration file." \
-            "''${COMMAND_WRAPPER_CONFIG}"
-
-        cat > "''${COMMAND_WRAPPER_CONFIG}" <<< '{=}'
-
-        # Alternative would be to use 'dhall format', however, it doesn't
-        # preserve comments at the moment.
-        #dhall format > "''${COMMAND_WRAPPER_CONFIG}" <<< '{=}'
-
-        # In case of choosing option 2.
-        #die 1 "'%s': Configuration file is missing." \
-        #    "''${COMMAND_WRAPPER_CONFIG}"
+    #
+    # Following code assumes that the subcommand uses the former option (the
+    # one marked as 1.).  Code that doesn't allow subcommand to work without a
+    # configuration file is commented out further down.
+    if haveConfguration; then
+        eval "$(declareCfg 'someValue')"
+    else
+        declare -r someValue="this is the hardcoded default"
     fi
 
-    out "'%s': Loading configuration file." "''${COMMAND_WRAPPER_CONFIG}"
-    eval "$(declareCfg "''${COMMAND_WRAPPER_CONFIG}" 'config')"
-    out "'%s': Configuration file loaded." "''${COMMAND_WRAPPER_CONFIG}"
+    # Following code assumes that subcommand requires configuration file to
+    # exist.
+    #haveConfguration --or-die
+
+    # An alternative to the above with custom error message:
+    #haveConfguration --or-die '%s %s' \
+    #    "Configuration file is required and it's missing." \
+    #    "Use --init-config to create initial configuration file."
 
     # TODO: Implement me!  Here is the place where the real functionality
     # should be.
