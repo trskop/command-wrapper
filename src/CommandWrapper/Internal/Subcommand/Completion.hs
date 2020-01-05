@@ -144,8 +144,10 @@ import qualified CommandWrapper.Options.Shell as Options
 import CommandWrapper.Internal.Subcommand.Completion.FileSystem
     ( EntryType(Directory)
     , FileSystemOptions
-        ( appendSlashToSingleDirectoryResult
+        ( allowTilde
+        , appendSlashToSingleDirectoryResult
         , entryType
+        , expandTilde
         , output
         , prefix
         , suffix
@@ -209,6 +211,9 @@ data Query = Query
 
     , prefix :: String
     , suffix :: String
+
+    , enableTildeExpansion :: Bool
+    , substituteTilde :: Bool
     }
   deriving stock (Generic, Show)
     -- TODO: Extend this data type to be able to list various combinations of
@@ -244,6 +249,10 @@ defQueryOptions = Query
     , output = OutputStdoutOnly
     , prefix = ""
     , suffix = ""
+
+    -- Thses values mimic default `compgen` behaviour:
+    , enableTildeExpansion = True
+    , substituteTilde = True
     }
 
 data CompletionMode a
@@ -474,6 +483,8 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                     , prefix
                     , suffix
                     , word = patternToMatch
+                    , allowTilde = enableTildeExpansion
+                    , expandTilde = substituteTilde
                     }
 
             QueryWords words
@@ -793,7 +804,13 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         pure $ List.filter (pat `List.isPrefixOf`) completionOptions
 
   | had "--query" =
-        pure $ List.filter (pat `List.isPrefixOf`) queryOptions
+        pure $ List.filter (pat `List.isPrefixOf`) if
+          | hadFileSystemOption ->
+                (subsequentQueryOptions <> queryFileSystemSpecificOptions)
+          | hadOneOf whatToQueryOptions ->
+                subsequentQueryOptions
+          | otherwise ->
+                whatToQueryOptions <> queryFileSystemOptions
 
   | had "--library" =
         pure $ List.filter (pat `List.isPrefixOf`) libraryOptions
@@ -816,16 +833,28 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
 
     outputOptions = ["--output=", "-o"]
 
-    queryOptions =
+    whatToQueryOptions =
         ["--subcommands", "--subcommand-aliases", "--supported-shells"
         , "--verbosity-values", "--colour-values", "--color-values"
-        , "--pattern=", "--internal-subcommands", "--words"
-        , "--prefix=", "--suffix="
-        ] <> outputOptions <> algorithmOptions <> queryFileSystemOptions
+        , "--internal-subcommands", "--words"
+        ]
 
     queryFileSystemOptions =
         [minBound..maxBound] <&> \s ->
             "--file-system=" <> showEntryType s
+
+    hadFileSystemOption =
+        any ("--file-system=" `List.isPrefixOf`) wordsBeforePattern
+
+    subsequentQueryOptions =
+        ["--pattern=", "--prefix=", "--suffix="]
+        <> outputOptions
+        <> algorithmOptions
+
+    queryFileSystemSpecificOptions =
+        [ "--substitute-tilde", "--no-substitute-tilde"
+        , "--tilde-expansion", "--no-tilde-expansion"
+        ]
 
     -- At the moment we have library only for Bash.
     libraryOptions = ["--shell=bash" , "--import" , "--content", "--dhall="]
@@ -925,7 +954,13 @@ parseOptions appNames config arguments = do
                     <|> verbosityValuesFlag
                     <|> colourValuesFlag
                     <|> wordsFlag words
-                    <|> fileSystemOption
+                    <|> ( dualFoldEndo
+                            <$> fileSystemOption
+                            <*> many tildeExpansionFlag
+                            <*> many noTildeExpansionFlag
+                            <*> many substituteTildeFlag
+                            <*> many noSubstituteTildeFlag
+                        )
                     )
                 )
             <*> optional (updateQueryOptions patternOption)
@@ -1100,6 +1135,29 @@ parseOptions appNames config arguments = do
                 Nothing ->
                     Left "Unknown file system entry type"
 
+    tildeExpansionFlag :: Options.Parser (Endo Query)
+    tildeExpansionFlag =
+        Options.flag' f (Options.long "tilde-expansion")
+      where
+        f = Endo \q -> q{enableTildeExpansion = True}
+
+    noTildeExpansionFlag :: Options.Parser (Endo Query)
+    noTildeExpansionFlag =
+        Options.flag' f (Options.long "no-tilde-expansion")
+      where
+        f = Endo \q -> q{enableTildeExpansion = False}
+
+    substituteTildeFlag :: Options.Parser (Endo Query)
+    substituteTildeFlag = Options.flag' f (Options.long "substitute-tilde")
+      where
+        f = Endo \q -> q{substituteTilde = True}
+
+    noSubstituteTildeFlag :: Options.Parser (Endo Query)
+    noSubstituteTildeFlag =
+        Options.flag' f (Options.long "no-substitute-tilde")
+      where
+        f = Endo \q -> q{substituteTilde = False}
+
     subcommandOption :: HasSubcommand a => Options.Parser (Endo a)
     subcommandOption =
         Options.strOption (Options.long "subcommand") <&> \subcommand ->
@@ -1248,22 +1306,32 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 <> "|" <> longOption "verbosity-values"
                 <> "|" <> longOption "colo[u]r-values"
                 )
+            <+> Pretty.brackets (longOptionWithArgument "algorithm" "ALGORITHM")
             <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
+            <+> Pretty.brackets (longOptionWithArgument "prefix" "STRING")
+            <+> Pretty.brackets (longOptionWithArgument "suffix" "STRING")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "completion"
             <+> longOption "query"
             <+> longOptionWithArgument "file-system" "TYPE"
-            <+> Pretty.brackets
-                ( longOptionWithArgument "pattern" "PATTERN"
-                )
+            <+> Pretty.brackets (longOptionWithArgument "algorithm" "ALGORITHM")
             <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
+            <+> Pretty.brackets
+                ( longOption "[no-]tilde-expansion"
+                <+> Pretty.brackets (longOption "[no-]substitute-tilde")
+                )
+            <+> Pretty.brackets (longOptionWithArgument "prefix" "STRING")
+            <+> Pretty.brackets (longOptionWithArgument "suffix" "STRING")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
 
         , "completion"
             <+> longOption "query"
             <+> longOption "words"
+            <+> Pretty.brackets (longOptionWithArgument "algorithm" "ALGORITHM")
             <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
+            <+> Pretty.brackets (longOptionWithArgument "prefix" "STRING")
+            <+> Pretty.brackets (longOptionWithArgument "suffix" "STRING")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
             <+> Pretty.brackets "--"
             <+> Pretty.brackets (metavar "WORD" <+> "...")
@@ -1435,6 +1503,18 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , "is one of:"
             , Pretty.encloseSep mempty mempty ("," <> Pretty.softline)
                 (value . showEntryType <$> [minBound..maxBound])
+            ]
+
+        , optionDescription ["--[no-]tilde-expansion"]
+            [ Pretty.reflow "Interpret prefix" , value "~" , "in"
+            , metavar "PATTERN"
+            , Pretty.reflow "as current user's home directory."
+            ]
+
+        , optionDescription ["--[no-]substitute-tilde"]
+            [ Pretty.reflow "Substitute prefix", value "~"
+            , Pretty.reflow "in completions for full path to current user's\
+                \ home directory."
             ]
         ]
 

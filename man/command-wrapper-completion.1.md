@@ -32,6 +32,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \--file-system=*TYPE*
 \[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*]
+\[\--\[no-]tilde-expansion \[\--\[no-]substitute-tilde]]
 \[\--prefix=*STRING*] \[\--suffix=*STRING*]
 \[\--output=*FILE*]
 
@@ -245,6 +246,13 @@ interface for querying Command Wrapper's command line interface (CLI).
     In this mode `--algorithm=`*ALGORITHM* option is ignored, and it always
     behaves as if `--algorithm=prefix` was specified.  This may change in the
     future.
+
+\--\[no-]tilde-expansion
+:   Interpret prefix `~` in *PATTERN* as current user's home directory.
+
+\--\[no-]substitute-tilde
+:   Substitute prefix `~` in completions for full path to current user's home
+    directory.
 
 
 # QUERY WORDS OPTIONS
