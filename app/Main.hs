@@ -130,10 +130,13 @@ main :: IO ()
 main = do
     appNames@AppNames{exeName, usedName} <- getAppNames'
     -- TODO: It would be great to have debugging message with 'appNames' in it.
-    (defaultConfig, configPaths) <- parseEnv
+    defaultConfig <- parseEnv
 
     config <- (`appEndo` defaultConfig) <$> do
-        let Global.ConfigPaths{system, user, local} = configPaths
+        let Global.Config
+                { configPaths = Global.ConfigPaths{system, user, local}
+                }
+                = defaultConfig
 
             -- Will always be non-empty directory, but the ordering makes it
             -- cumbersome to use NonEmpty list.
@@ -158,7 +161,8 @@ main = do
 --      print (if configExists then "Reading" else "No such file", configFile)
         if configExists
             then
-                Config.File.read configFile >>= either die (pure . Config.File.apply)
+                Config.File.read configFile
+                    >>= either die (pure . Config.File.apply)
             else
                 pure id
 
@@ -185,20 +189,19 @@ getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version)
 
 -- | Parse environment variables and produce default configuration that can be
 -- later updated by configuration file and command line options.
-parseEnv :: IO (Global.Config, Global.ConfigPaths)
+parseEnv :: IO Global.Config
 parseEnv = parseEnvIO (die . show) do
     defColour <- fromMaybe ColourOutput.Auto <$> ColourOutput.noColorEnvVar
 
     searchPath <- searchPathVar Global.Config.SearchPath CommandWrapperPath
     manPath    <- searchPathVar Global.Config.ManPath    CommandWrapperManPath
 
-    user <- lookupUserConfigDir
-    local <- lookupLocalConfigDir
+    configPaths <- do
+        user <- lookupUserConfigDir
+        local <- lookupLocalConfigDir
+        pure (Global.defConfigPaths user){Global.Config.local}
 
-    pure
-        ( Global.Config.def defColour searchPath manPath
-        , (Global.defConfigPaths user){Global.Config.local}
-        )
+    pure (Global.Config.def defColour searchPath manPath configPaths)
   where
     searchPathVar
         :: ([FilePath] -> a)

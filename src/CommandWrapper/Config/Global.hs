@@ -106,6 +106,10 @@ data Config = Config
     , changeDirectory :: Maybe FilePath
     -- ^ Change directory before current working directory, if specified,
     -- before doing anything.
+
+    , configPaths :: ConfigPaths
+    -- ^ Set of directories that are used to search for configuration files.
+    -- See 'ConfigPaths' for more details.
     }
   deriving stock (Generic, Show)
   deriving anyclass (FromDhall, HasVerbosity)
@@ -137,8 +141,9 @@ def :: ColourOutput
     -- e.g. @NO_COLOR@.
     -> SearchPath
     -> ManPath
+    -> ConfigPaths
     -> Config
-def colourOutput (SearchPath searchPath) (ManPath manPath) = Config
+def colourOutput (SearchPath searchPath) (ManPath manPath) configPaths = Config
     { aliases = []
     , changeDirectory = Nothing
     , colourOutput
@@ -148,6 +153,7 @@ def colourOutput (SearchPath searchPath) (ManPath manPath) = Config
     , manPath
     , searchPath
     , verbosity = Verbosity.Normal
+    , configPaths
     }
 
 -- | Lookup aliases from 'Config', respects 'ignoreAliases' option.  Use this

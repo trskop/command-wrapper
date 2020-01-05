@@ -218,8 +218,23 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 
     Configuration file itself is described in the *CONFIGURATION FILE* section.
 
-    See also `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better
-    understand how the location of the configuration file is determined.
+    See also `COMMAND_WRAPPER_USER_CONFIG_DIR` and `XDG_CONFIG_HOME` in
+    *ENVIRONMENT VARIABLES* section to better understand how the location of
+    the configuration file is determined.
+
+`${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/command-wrapper/default.dhall`
+:   If `COMMAND_WRAPPER_LOCAL_CONFIG_DIR` is defined and the
+    `${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/command-wrapper/default.dhall` file
+    exists then it is used in addition to
+    `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/command-wrapper/default.dhall`
+    as a more specific configuration file.
+
+    Configuration file and how configuration files are composed is described in
+    the *CONFIGURATION FILE* section.
+
+    See also `COMMAND_WRAPPER_LOCAL_CONFIG_DIR` in *ENVIRONMENT VARIABLES*
+    section to better understand how the location of the configuration file is
+    determined.
 
 `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/default.dhall`
 :   Same as already mentioned `.../command-wrapper/default.dhall`.  However
@@ -228,23 +243,56 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     `.../command-wrapper/default.dhall` unless it is overriden in
     `.../${toolset}/default.dhall`.
 
-    Configuration file itself is described in the *CONFIGURATION FILE* section.
+    Configuration file and how configuration files are composed is described in
+    the *CONFIGURATION FILE* section.
 
-    See also `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better
-    understand how the location of the configuration file is determined.
+    See also `COMMAND_WRAPPER_USER_CONFIG_DIR` `XDG_CONFIG_HOME` in
+    *ENVIRONMENT VARIABLES* section to better understand how the location of
+    the configuration file is determined.
 
-`${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/${toolset}-${subcommand}.dhall`
+`${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/${toolset}/default.dhall`
+:   If `COMMAND_WRAPPER_LOCAL_CONFIG_DIR` is defined and the
+    `${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/${toolset}/default.dhall` file
+    exists then it is used in addition to
+    `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/default.dhall`
+    as a more specific configuration file.
+
+    Configuration file and how configuration files are composed is described in
+    the *CONFIGURATION FILE* section.
+
+    See also `COMMAND_WRAPPER_LOCAL_CONFIG_DIR` in *ENVIRONMENT VARIABLES*
+    section to better understand how the location of the configuration file is
+    determined.
+
+`${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/${toolset}-${subcommand}.dhall`
 :   Subcommand specific configuration file.  There is not much we can say about
     them, since every subcommand can have its own definition.
 
     See also:
 
-    * `command-wrapper-subcommand-protocol(7)` for more details on how
-      subcommands use their configuration files.
-    * `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better understand
-      how the location of the configuration file is determined.
+    *   `command-wrapper-subcommand-protocol(7)` for more details on how
+        subcommands use their configuration files.
+    *   `COMMAND_WRAPPER_USER_CONFIG_DIR` and `XDG_CONFIG_HOME` in
+        *ENVIRONMENT VARIABLES* section to better understand
+        how the location of the configuration file is determined.
 
-`${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/command-wrapper-${subcommand}.dhall`
+`${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/${toolset}/${toolset}-${subcommand}.dhall`
+:   Subcommand specific configuration file. Same as
+    `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/${toolset}-${subcommand}.dhall`,
+    but it has higher priority. In other words
+    `${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/${toolset}/${toolset}-${subcommand}.dhall`
+    is used when it exists instead of
+    `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/${toolset}-${subcommand}.dhall`.
+
+    See also:
+
+    *   `command-wrapper-subcommand-protocol(7)` for more details on how
+        subcommands use their configuration files.
+    *   `COMMAND_WRAPPER_LOCAL_CONFIG_DIR` in *ENVIRONMENT VARIABLES* section to
+        better understand how the location of the configuration file is
+        determined.
+
+`${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/command-wrapper-${subcommand}.dhall`
 :   Subcommand specific configuration file for a *subcommand* that is part of the
     Command Wrapper distribution.  This allows each *toolset* to provide
     its own configuration for these subcommands.
@@ -255,7 +303,7 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 
     ```
     -- This file has following file path:
-    -- ${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/command-wrapper-exec.dhall
+    -- ${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/command-wrapper-exec.dhall
 
     let global = ../command-wrapper/command-wrapper-exec.dhall
 
@@ -270,6 +318,14 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     configuration file name makes it explicit from where the subcommand came
     from.  Toolsets may define subcommands with the same name, but the prefix
     will be different.
+
+`${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/${toolset}/command-wrapper-${subcommand}.dhall`
+:   Subcommand specific configuration file. Same as
+    `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/command-wrapper-${subcommand}.dhall`,
+    but it has higher priority. In other words
+    `${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/${toolset}/command-wrapper-${subcommand}.dhall`
+    is used when it exists instead of
+    `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/command-wrapper-${subcommand}.dhall`.
 
 `${XDG_DATA_HOME:-$HOME/.local/share}/man/`
 :   Command Wrapper manual pages are installed into this directory so that

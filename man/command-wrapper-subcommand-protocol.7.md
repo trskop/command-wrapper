@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SUBCOMMAND-PROTOCOL(7) Subcommand Protocol | v1.0.0
 % Peter Trsko
-% 15th December 2019
+% 5th January 2020
 
 
 # NAME
@@ -144,9 +144,16 @@ dependencies, e.g. DNS resolution uses `/etc/resolv.conf`.  However, if it's
 possible then temporary configuration file should be generated and passed to
 the dependency explicitly.
 
-When this is respected by the subcommand then Command Wrapper has full control
-over subcommand configuration and command line arguments that are passed to it.
-This way it can guarantee consistent UI.
+Subcommand should never make assumptions about the location of
+`COMMAND_WRAPPER_CONFIG` or in any way analyse the path passed via
+`COMMAND_WRAPPER_CONFIG`.  Preventing subcommands from understanding the
+localtion of configuration file allows Command Wrapper to do config file
+resolution as it sees fit, as well as generating temporary configuration file
+when calling a subcommand.
+
+When this is respected, by the subcommand, then Command Wrapper has full
+control over subcommand configuration and command line arguments that are
+passed to it.  This way it can guarantee consistent UI.
 
 For purpose of reading Dhall configuration files in Bash, Command Wrapper
 provides bunch of Dhall-related commands as part of its internal subcommand
