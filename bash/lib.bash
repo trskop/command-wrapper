@@ -608,8 +608,8 @@ function completion-query() {
 # Options:
 #
 #   --hash
-#       Print semantic hashe of Dhall expressions instead of the Dhall
-#       expression.
+#       Print semantic hash of Dhall expressions instead of the Dhall
+#       expression itself.
 #
 # See `command-wrapper-subcommand-protocol(7)` for more details on how this
 # works.
