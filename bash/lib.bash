@@ -2,7 +2,7 @@
 
 # Library for writing CommandWrapper subcommands in Bash.
 #
-# Copyright (c) 2018-2019, Peter Trsko
+# Copyright (c) 2018-2020, Peter Trsko
 #
 # All rights reserved.
 #
@@ -183,9 +183,9 @@ function msgf() {
 #
 #   info FORMAT [ARGUMENTS]
 #
-# Message is by default printed to stdout.
+# Message is by default printed to stderr.
 function info() {
-    msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'info' "$@"
+    msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'info' "$@" 1>&2
 }
 
 # Print notice-level message.  Printed only if verbosity is 'verbose' or higher.
@@ -194,9 +194,9 @@ function info() {
 #
 #   notice FORMAT [ARGUMENTS]
 #
-# Message is by default printed to stdout.
+# Message is by default printed to stderr.
 function notice() {
-    msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'notice' "$@"
+    msgf "${COMMAND_WRAPPER_VERBOSITY:-normal}" 'notice' "$@" 1>&2
 }
 
 # Print normal output message.  Supressed when verbosity is set to 'silent'.
@@ -536,9 +536,11 @@ function edit-file() {
     # Reason for using '--no-aliases' is to prevent aliases interfering with
     # what subcommand script expects.
     #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --edit "$@"
+    # In the future edit functionality may become configurable, which would
+    # make it depend on which toolset it is invoked via, hence setting the
+    # value of `COMMAND_WRAPPER_INVOKE_AS`.
+    COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" \
+        "${COMMAND_WRAPPER_EXE}" --no-aliases config --edit "$@"
 }
 
 # Display selection menu.  Selected value is printed to standard output.
@@ -552,9 +554,45 @@ function select-menu() {
     # Reason for using '--no-aliases' is to prevent aliases interfering with
     # what subcommand script expects.
     #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --menu "$@"
+    # In the future menu functionality may become configurable, which would
+    # make it depend on which toolset it is invoked via, hence setting the
+    # value of `COMMAND_WRAPPER_INVOKE_AS`.
+    COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" \
+        "${COMMAND_WRAPPER_EXE}" --no-aliases config --menu "$@"
+}
+
+# Primitive completion queries for when we don't want to use Bash's `compgen`,
+# but Command Wrapper's `completion --query` functionality.
+#
+# Usage:
+#
+#   completion-query {--subcommands|--subcommand-aliases}
+#     [--algorithm=ALGORITHM] [--pattern=PATTERN] [--prefix=STRING]
+#     [--suffix=STRING] [--output=FILE]
+#
+#   completion-query {--supported-shells|--verbosity-values|--colo[u]r-values}
+#     [--algorithm=ALGORITHM] [--pattern=PATTERN] [--prefix=STRING]
+#     [--suffix=STRING] [--output=FILE]
+#
+#   completion-query --file-system=TYPE
+#     [--[no-]tilde-expansion] [--[no-]substitute-tilde]
+#     [--algorithm=ALGORITHM] [--pattern=PATTERN] [--prefix=STRING]
+#     [--suffix=STRING] [--output=FILE]
+#
+#   completion-query --words
+#     [--algorithm=ALGORITHM] [--pattern=PATTERN] [--prefix=STRING]
+#     [--suffix=STRING] [--output=FILE]
+#     [--] [WORD ...]
+#
+# See `TOOLSET help [--man] completion` for more details.
+function completion-query() {
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    #
+    # Some of the completed values may depend on what toolset is used, hence
+    # setting the value of `COMMAND_WRAPPER_INVOKE_AS`.
+    COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" \
+        "${COMMAND_WRAPPER_EXE}" --no-aliases completion --query "$@"
 }
 
 # Print Dhall expression that describes how this subcommand should be invoked

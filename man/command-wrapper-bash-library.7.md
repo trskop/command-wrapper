@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-BASH-LIBRARY(7) Bash Library | v1.0.0
 % Peter Trsko
-% 15th December 2019
+% 4th January 2020
 
 
 # NAME
@@ -13,6 +13,31 @@ Bash library for Command Wrapper subcommands written as Bash scripts.
 Library that provides basic functions to build a Command Wrapper subcommand, in
 Bash, that respects Command Wrapper Subcommand Protocol (see
 `command-wrapper-subcommand-protocol(7)` manual page for details).
+
+Some of the functions provided by the library are documented in this manual
+page, however, it is not in any way comprehensive documentation.   See
+*LIBRARY DOCUMENTATION* section on how to access documentation embedded in the
+library.
+
+
+# IMPORTING THE LIBRARY
+
+Command Wrapper provides snippet of code that describes the best way to import
+its Bash library:
+
+```
+TOOLSET_COMMAND completion --library --shell=bash --import
+```
+
+For more information see `command-wrapper-completion(1)` manual page.
+When subcommand is created via `skel` template, like:
+
+```
+TOOLSET_COMMAND skel --language=bash SUBCOMMAND
+```
+
+Then the created Bash script already handles the library import correctly.
+For more information see `command-wrapper-skel(1)` manual page.
 
 
 # LIBRARY DOCUMENTATION
@@ -41,22 +66,160 @@ highlighting for Bash.
 For more information see `command-wrapper-completion(1)` manual page.
 
 
-# IMPORTING THE LIBRARY
+# INFO, NOTICE, WARN, and ERROR MESSAGES
 
-Command Wrapper provides snippet of code that describes the best way to import
-its Bash library:
+Print info/notice/warn/error messages to stderr.  Verbosity level (see
+`COMMAND_WRAPPER_VERBOSITY` in `command-wrapper-subcommand-protocol(7)` for
+details) affects if the message will actually be printed or not.
 
-```
-TOOLSET_COMMAND completion --library --shell=bash --import
-```
+info *FORMAT* \[*ARGUMENTS*]
 
-For more information see `command-wrapper-completion(1)` manual page.
+notice *FORMAT* \[*ARGUMENTS*]
+
+warn *FORMAT* \[*ARGUMENTS*]
+
+error *FORMAT* \[*ARGUMENTS*]
+
+
+# OUTPUT MESSAGES
+
+Output messages are slightly different from the info/notice/warn/error
+messages. They are printed to stdout, without any extra formatting or colours,
+but they are suppressed if verbosity is set to *silent*.
+
+out *FORMAT* \[*ARGUMENTS*]
+
+
+# ERROR HANDLING
+
+Common thing is to print an error and exit wit a specific exit status.  For
+this purpose we provide `die` function:
+
+die *EXIT_CODE* *FORMAT* \[*ARGUMENTS*]
+
+Check that the subcommand was called via Commnad Wrapper Subcommand Protocol or
+die with correct error message and exit status:
+
+dieIfExecutedOutsideOfCommandWrapperEnvironment
+
+
+# CALL CURRENT COMMAND WRAPPER TOOLSET
+
+In here `toolset` is literally name of the function that is provided by the
+Bash library.  This way subcommand does not need to know what toolset it
+belongs to.
+
+toolset \[*GLOBAL_OPTIONS*] *SUBCOMMAND* \[\--] \[*SUBCOMMAND_ARGUMENTS*]
+
+toolset {\--help|-h}
+
+toolset {\--version|-V}
+
+
+# DHALL
+
+Command Wrapper's embedded Dhall functionality is also exposed via functions.
+For more information see `command-wrapper-config(1)`.  Provided Dhall functions
+are:
+
+dhall
+  \[\--\[no-]allow-imports] \[\--\[no-]cache]
+  \[\--\[no-]annotate] \[\--\[no-]alpha] \[\--\[no-]type]
+  \[\--let=NAME=*EXPRESSION*]
+  \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+  \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
+dhall-filter
+  \[\--\[no-]allow-imports] \[\--\[no-]cache]
+  \[\--let=NAME=*EXPRESSION*]
+  \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+  \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+  *EXPRESSION*
+
+dhall-format
+  \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+  \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
+dhall-freeze
+  \[\--\[no-]remote-only]
+  \[\--for-security|\--for-caching]
+  \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+  \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
+dhall-hash
+  \[\--\[no-]cache]
+  \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+  \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
+dhall-to-bash
+  \[\--\[no-]allow-imports] \[\--\[no-]cache]
+  \[\--declare=NAME]
+  \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+  \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
+dhall-to-text
+  \[\--\[no-]allow-imports] \[\--\[no-]cache]
+  \[\--list]
+  \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+  \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
+
+dhall-exec
+  \[\--expression=*EXPRESSION*|\--expression *EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
+  \[\--interpreter=*COMMAND* \[\--interpreter-argument=*ARGUMENT* ...]]
+  \[*ARGUMENT* ...]
+
+
+# EDIT FILE IN EDITOR
+
+Calling user-preferred editor is something that Command Wrapper provides to
+subcommands.  This functionality is documented in `command-wrapper-config(1)`
+and is exposed as:
+
+edit-file \[*FILE*|\--subcommand-config *SUBCOMMAND*]
+
+
+# SELECTION MENU
+
+When we need user to select a value using some kind of menu then we can once
+again use functionality of Command Wrapper that is documented in
+`command-wrapper-config(1)`.  To subcommand it is made available as:
+
+select-menu \[\--input=*FILE*|\--arguments \[*STRING* ...]]
+
+
+# COMPLETION QUERIES
+
+Huge part of Command Wrapper functionality is command line completion.  It is
+documented in its own `command-wrapper-completion(1)` manual page.
+Most important functionality for subcommands is exposed as:
+
+completion-query {\--subcommands|\--subcommand-aliases}
+  \[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*] \[\--prefix=*STRING*]
+  \[\--suffix=*STRING*] \[\--output=*FILE*]
+
+completion-query {\--supported-shells|\--verbosity-values|\--colo\[u]r-values}
+  \[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*] \[\--prefix=*STRING*]
+  \[\--suffix=*STRING*] \[\--output=*FILE*]
+
+completion-query \--file-system=TYPE
+  \[\--\[no-]tilde-expansion] \[\--\[no-]substitute-tilde]
+  \[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*] \[\--prefix=*STRING*]
+  \[\--suffix=*STRING*] \[\--output=*FILE*]
+
+completion-query \--words
+  \[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*] \[\--prefix=*STRING*]
+  \[\--suffix=*STRING*] \[\--output=*FILE*]
+  \[\--] \[*WORD* ...]
+
+If speed of completion is of an essence then Bash's `comgpgen`/`complete`
+builtins should be preferred, however, some of the above cannot be reliably
+emulated using Bash builtins.
 
 
 # SEE ALSO
 
-command-wrapper(1), command-wrapper-completion(1),
-command-wrapper-subcommand-protocol(7)
+command-wrapper(1), command-wrapper-completion(1), command-wrapper-config(1),
+command-wrapper-skel(1), command-wrapper-subcommand-protocol(7)
 
 bat(1), less(1)
 
