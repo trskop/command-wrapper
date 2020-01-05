@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 4th January 2020
+% 5th January 2020
 
 
 # NAME
@@ -211,7 +211,7 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 
 # FILES AND DIRECTORIES
 
-`${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/default.dhall`
+`${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/command-wrapper/default.dhall`
 :   Top-level command wrapper configuration file.  It mostly provides defaults
     that can be overriden by `GLOBAL_OPTIONS`, additional help messages, and
     alias definitions.
@@ -221,7 +221,7 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     See also `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section to better
     understand how the location of the configuration file is determined.
 
-`${XDG_CONFIG_HOME:-$HOME/.config}/${toolset}/default.dhall`
+`${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/${toolset}/default.dhall`
 :   Same as already mentioned `.../command-wrapper/default.dhall`.  However
     this one is used by a specific `toolset`, and it is applied on top of the
     `command-wrapper` one.  Configuration for a specific *toolset* is
@@ -271,7 +271,7 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
     from.  Toolsets may define subcommands with the same name, but the prefix
     will be different.
 
-`${XDG_CONFIG_HOME:-$HOME/.local}/share/man/`
+`${XDG_DATA_HOME:-$HOME/.local/share}/man/`
 :   Command Wrapper manual pages are installed into this directory so that
     standard `man` command is able to find them.
 
