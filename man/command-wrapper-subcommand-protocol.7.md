@@ -39,6 +39,50 @@ Each subcommand must support following options:
     hiding it allows us to evolve Subcommand Protocol without affecting
     user-facing UI.
 
+Reserved for future use:
+
+`--completion-info-hash`
+
+:   Print semantic hash of Dhall expression that is printed by
+    `--completion-info`.  Dhall expression describing completion calling
+    convention doesn't change that often.  Providing hash instead of the whole
+    expression can speed up completion.
+
+`--config-constructor`
+:   Prints a Dhall expression that provides context and a constructor for
+    subcommand configuration.  The shape of the expression would be:
+
+    ```Dhall
+    {
+    -- Record of libraries that should be in scope, i.e. context.  Each record
+    -- field would be as if:
+    --
+    -- ```
+    -- let fieldName0 = fieldValue0
+    --
+    -- let fieldName1 = fieldValue1
+    --
+    -- in  expression
+    -- ```
+    , let = {=}
+
+    -- Constructor for subcommand configuration.
+    , Configuration =
+        { Type = {}
+        -- ^ Type of the configuration expression, i.e. configuration file.
+        , default = {=}
+        -- ^ Default configuration values.
+        }
+    }
+    ```
+
+`--config-constructor-hash`
+:   Print semantic hash of Dhall expression that is printed by
+    `--config-constructor`.  Dhall expression describing configuration file and
+    its expression doesn't change that often.  Providing hash instead of the
+    whole expression can speed up the process of composing configuration
+    expression.
+
 
 # ENVIRONMENT VARIABLES
 

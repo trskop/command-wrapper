@@ -363,3 +363,22 @@
 *   `askpass` -- Something that allows us to abstract away from `ssh-askpass`
     variants and maybe provides a sensible (minimalistinc) default.  It should
     have the capability of working on terminal as well.
+
+
+## Command Wrapper as a Haskell Library
+
+*   Rename `CommandWrapper.Internal.Subcommand` to
+    CommandWrapper.InternalSubcommand` and `CommandWrapper.External` to
+    `CommandWrapper.ExternalSubcommand`.  The former is important to make it
+    distinct from `Internal` modules pattern.
+
+*   Split the library into at least two:
+
+    -   Subcommand library (for building subcommands)
+    -   Toolset library (for building toolsets)
+
+    Another option would be to have three libraries:
+
+    -   Core library
+    -   Subcommand library (for building subcommands)
+    -   Toolset library (for building toolsets)
