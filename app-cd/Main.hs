@@ -2,7 +2,7 @@
 -- Module:      Main
 -- Description: CommandWrapper subcommand for changing directory by selecting
 --              one from preselected list
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -33,9 +33,9 @@ import System.Environment (getArgs)
 
 import Data.CaseInsensitive as CI (mk)
 import Data.Text (Text, isPrefixOf)
-import qualified Data.Text as Text (unpack)
+import qualified Data.Text as Text (null, unpack)
 import Dhall (FromDhall, ToDhall)
-import qualified Dhall (auto, inputFile)
+import qualified Dhall (auto, input)
 import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
@@ -110,6 +110,15 @@ data Config = Config
   deriving stock (Generic)
   deriving anyclass (Dhall.FromDhall)
 
+-- | Empty 'Config' used when there is no configuration file available.
+defConfig :: Config
+defConfig = Config
+    { directories = []
+    , menuTool = Nothing
+    , shell = Nothing
+    , terminalEmulator = Nothing
+    }
+
 data ShellCommand = ShellCommand
     { command :: Text
     , arguments :: [Text]
@@ -162,10 +171,12 @@ main = do
             let Params{params = params'} = params
              in out params' stdout (helpMsg params')
 
-mainAction :: Params FilePath -> Strategy -> Maybe Text -> Maybe Text -> IO ()
-mainAction ps@Params{config = configFile, params} strategy query directory =
-  do
-    config@Config{..} <- Dhall.inputFile Dhall.auto configFile
+mainAction :: Params Text -> Strategy -> Maybe Text -> Maybe Text -> IO ()
+mainAction ps@Params{config = configExpr, params} strategy query directory = do
+    config@Config{..} <- if Text.null configExpr
+        then pure defConfig
+        else Dhall.input Dhall.auto configExpr
+
     action <- evalStrategy (config <$ ps) strategy
 
     sh do
@@ -207,7 +218,7 @@ runMenuTool SimpleCommand{..} input = do
 
     pure r
 
-getEnvironment :: IO (Params FilePath)
+getEnvironment :: IO (Params Text)
 getEnvironment = do
     params <- subcommandParams
     Environment.parseEnvIO (dieWith params stderr 1 . fromString . show) $ Params

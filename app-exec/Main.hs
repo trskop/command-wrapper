@@ -2,7 +2,7 @@
 -- Module:      Main
 -- Description: CommandWrapper subcommand for executing commands with a
 --              predefined environment.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -42,7 +42,7 @@ import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import qualified Data.CaseInsensitive as CaseInsensitive (mk)
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
-import qualified Data.Text as Text (split, unpack)
+import qualified Data.Text as Text (null, split, unpack)
 import Data.Text.Prettyprint.Doc (Doc, (<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
@@ -54,7 +54,7 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Tree (Forest, Tree(Node), unfoldForest)
 import Dhall (FromDhall, ToDhall)
-import qualified Dhall (auto, inject, input, inputFile)
+import qualified Dhall (auto, inject, input)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
     ( Parser
@@ -121,6 +121,12 @@ newtype Config = Config
   deriving stock (Generic)
   deriving anyclass (Dhall.FromDhall)
 
+-- | Empty 'Config' used when there is no configuration file available.
+defConfig :: Config
+defConfig = Config
+    { commands = []
+    }
+
 data Action
     = List
     | Tree
@@ -137,11 +143,14 @@ instance HaveCompletionInfo Action where
 
 main :: IO ()
 main = do
-    params@Params{config = configFile} <- subcommandParams
+    params@Params{config = configExpr} <- subcommandParams
 
     (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
 
-    config <- Dhall.inputFile Dhall.auto configFile
+    config <- if Text.null configExpr
+        then pure defConfig
+        else Dhall.input Dhall.auto configExpr
+
     action <- fmap ($ Run False) . Options.handleParseResult
         -- TODO: Switch to custom parser so that errors are printed correctly.
         $ Options.execParserPure

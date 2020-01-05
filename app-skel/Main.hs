@@ -1,7 +1,7 @@
 -- |
 -- Module:      Main
 -- Description: CommandWrapper subcommand for generating subcommand skeletons
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -34,8 +34,9 @@ import Data.CaseInsensitive as CI (mk)
 import Data.Monoid.Endo (Endo(appEndo))
 import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
+import qualified Data.Text as Text (null)
 import Dhall (FromDhall, ToDhall)
-import qualified Dhall (auto, inputFile)
+import qualified Dhall (auto, input)
 import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
@@ -163,7 +164,7 @@ mainAction :: Params -> DefaultModeOptions -> IO ()
 mainAction
   params@Params
     { name = wrapperName
-    , config = configFile
+    , config = configExpr
     }
   DefaultModeOptions
     { subcommandName
@@ -172,7 +173,12 @@ mainAction
     , createParents
     }
   = do
-        mkConfig <- Dhall.inputFile Dhall.auto configFile
+        mkConfig <- if Text.null configExpr
+            then
+                dieWith params stderr 1
+                    "Configuration file is required and it's missing."
+            else
+                Dhall.input Dhall.auto configExpr
 
         let subcommand = wrapperName <> "-" <> subcommandName
             Config{template, defaultLanguage, editAfterwards, editor} =

@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Config.Edit
 -- Description: Invoke editor.
--- Copyright:   (c) 2019 Peter Trško
+-- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -44,7 +44,7 @@ import System.Editor
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
-import CommandWrapper.External (getSubcommandConfigPath)
+import CommandWrapper.External (getSubcommandConfigPathToEdit)
 import CommandWrapper.Message (errorMsg)
 
 
@@ -96,7 +96,7 @@ getFilePath appNames config = \case
         pure (Just fp)
 
     Just (EditSubcommandConfig subcommand) ->
-        Just <$> getSubcommandConfigPath appNames config subcommand
+        Just <$> getSubcommandConfigPathToEdit appNames config subcommand
 
     Nothing ->
         pure Nothing

@@ -1323,6 +1323,12 @@ configSubcommandCompleter appNames cfg _shell index words
   | Just w <- lastMay wordsBeforePattern, isBashRedirection w =
         fileCompleter ""
 
+  | Just "--edit" <- lastMay wordsBeforePattern, '-' : _ <- pat =
+        pure
+            ( List.filter (fmap Char.toLower pat `List.isPrefixOf`)
+                ["--subcommand-config"]
+            )
+
   | Just "--edit" <- lastMay wordsBeforePattern =
         fileCompleter ""
 
