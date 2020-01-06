@@ -58,14 +58,14 @@ preludeV12_0_0Import =
 -- {{{ Command Wrapper and Exec Libraries -------------------------------------
 
 commit :: IsString s => s
-commit = "728a334be750c129603ed35a9a22447576adefe9"
+commit = "f928e1502b808dd6e045d66b08976b6c01f290e3"
 
 urlBase :: IsString s => s
 urlBase = "https://raw.githubusercontent.com/trskop/command-wrapper/"
 
 commandWrapperHash :: IsString s => s
 commandWrapperHash =
-    "sha256:f5d82869a56a5f01f2b2e6c28fe89202938db14e9770484633d014761e438aba"
+    "sha256:9f13d126c9f86ac2dc9bfbc52f6343711b3dff6f75276389cc7b333d493bbccb"
 
 commandWrapperContent :: (IsString s, Monoid s) => s
 commandWrapperContent =
