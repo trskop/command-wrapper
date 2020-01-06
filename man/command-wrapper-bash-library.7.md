@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-BASH-LIBRARY(7) Bash Library | v1.0.0
 % Peter Trsko
-% 5th January 2020
+% 6th January 2020
 
 
 # NAME
@@ -233,6 +233,10 @@ environment then these are passed to that command as well.  Following helper
 removes Subcommand Protocol environment variables before executing a command:
 
 exec\_ \[-cl] \[-a *NAME*] \[*COMMAND* \[*ARGUMENTS* ...]] \[*REDIRECTION* ...]
+
+Helper function that tests if configuration is available or not:
+
+haveConfiguration \[\--or-die \[*FORMAT* \[*ARGUMENTS*]]]
 
 
 # SEE ALSO
