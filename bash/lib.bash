@@ -671,9 +671,9 @@ function stdCompletionInfo() {
 #    ```
 #
 #    ```Bash
-#    haveConfiguration --or-die "%s %s" \
+#    haveConfiguration --or-die '%s %s' \
 #      "Configuration file is required and it's missing." \
-#      "Use --init-config to create initial configuration file."
+#      "Use '--init-config' to create initial configuration file."
 #    ```
 function haveConfiguration() {
     local die=0

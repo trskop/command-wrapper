@@ -381,20 +381,26 @@ function main() {
     # Following code assumes that the subcommand uses the former option (the
     # one marked as 1.).  Code that doesn't allow subcommand to work without a
     # configuration file is commented out further down.
-    if haveConfguration; then
+    if haveConfiguration; then
         eval "$(declareCfg 'someValue')"
     else
+        # Provide default configuration values here.
+        #
+        # At the moment the variable is not used, this will disable shellcheck
+        # warning for it:
+        #
+        # shellcheck disable=2034
         declare -r someValue="this is the hardcoded default"
     fi
 
     # Following code assumes that subcommand requires configuration file to
     # exist.
-    #haveConfguration --or-die
+    #haveConfiguration --or-die
 
     # An alternative to the above with custom error message:
-    #haveConfguration --or-die '%s %s' \
+    #haveConfiguration --or-die '%s %s' \
     #    "Configuration file is required and it's missing." \
-    #    "Use --init-config to create initial configuration file."
+    #    "Use '--init-config' to create initial configuration file."
 
     # TODO: Implement me!  Here is the place where the real functionality
     # should be.
