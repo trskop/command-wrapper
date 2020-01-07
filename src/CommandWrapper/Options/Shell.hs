@@ -46,7 +46,7 @@ data Shell
     = Bash
     | Fish
     | Zsh
-  deriving stock (Generic, Show)
+  deriving stock (Eq, Generic, Show)
   deriving anyclass (FromDhall, ToDhall)
 
 parse :: (Eq s, IsString s) => s -> Maybe Shell

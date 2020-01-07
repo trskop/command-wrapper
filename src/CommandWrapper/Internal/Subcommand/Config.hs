@@ -124,7 +124,9 @@ import qualified CommandWrapper.Options.Optparse as Options
 --  , splitArguments
 --  , splitArguments'
     )
-import qualified CommandWrapper.Options.Shell as Options (Shell)
+import qualified CommandWrapper.Options.Shell as Options
+    ( Shell(Bash, Fish, Zsh)
+    )
 import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput, parseInput)
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Bash(..)
@@ -1319,7 +1321,7 @@ configSubcommandCompleter
     -> Word
     -> [String]
     -> IO [String]
-configSubcommandCompleter appNames cfg _shell index words
+configSubcommandCompleter appNames cfg shell index words
   | Just "-o" <- lastMay wordsBeforePattern =
         fileCompleter ""
 
@@ -1335,8 +1337,26 @@ configSubcommandCompleter appNames cfg _shell index words
   | Just "--interpreter" <- lastMay wordsBeforePattern =
         Options.bashCompleter "command" "" pat
 
-  -- TODO: This may be Bash-scpecific.  We need to investigate other shells.
-  | Just w <- lastMay wordsBeforePattern, isBashRedirection w =
+  | Options.Bash <- shell
+  , Just w <- lastMay wordsBeforePattern
+  , isBashRedirection w =
+        fileCompleter ""
+
+  | Options.Zsh <- shell
+  , Just w <- lastMay wordsBeforePattern
+  , isZshRedirection w =
+        fileCompleter ""
+
+  | Options.Fish <- shell
+  , Just w <- lastMay wordsBeforePattern
+  , isFishRedirection w =
+        fileCompleter ""
+
+  | shell == Options.Bash || shell == Options.Zsh
+  , Just w <- lastMay wordsBeforePattern
+  , hadSomeDhall
+  , isBashAndZshStdinExpansion w =
+        -- File paths, even `~/some/path`, are valid Dhall expressions.
         fileCompleter ""
 
   | Just "--edit" <- lastMay wordsBeforePattern, '-' : _ <- pat =
@@ -1873,7 +1893,31 @@ configSubcommandCompleter appNames cfg _shell index words
         , ">"
         , ">&"
         , ">>"
+        ]
+
+    -- See <http://zsh.sourceforge.net/Doc/Release/Redirection.html>.
+    isZshRedirection s = List.dropWhile Char.isDigit s `List.elem`
+        [ "<"
         , "<<<"
+        , "<>"
+        , ">!"
+        , ">"
+        , ">&"
+        , ">>"
+        , ">>&"
+        , ">|"
+        ]
+
+    -- This expansion is available in both Bash and Zsh.
+    isBashAndZshStdinExpansion s = List.dropWhile Char.isDigit s == "<<<"
+
+    -- There's probably more than this. Following list is based on:
+    -- <https://fishshell.com/docs/current/index.html#syntax>
+    isFishRedirection s = List.dropWhile Char.isDigit s `List.elem`
+        [ "<"
+        , ">"
+        , ">>"
+        , ">?"
         ]
 
     fileCompleter prefix =
