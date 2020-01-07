@@ -27,7 +27,7 @@ import Prelude ((+), (-), fromIntegral, maxBound, minBound)
 
 import Control.Applicative ((<*), (<*>), (<|>), many, optional, pure, some)
 import Control.Monad ((=<<), (>>=), join, when)
-import Data.Bool (Bool(False, True), otherwise)
+import Data.Bool (Bool(False, True), not, otherwise)
 import qualified Data.Char as Char (isDigit, toLower)
 import Data.Either (Either(Left, Right))
 import Data.Eq (Eq, (/=), (==))
@@ -706,6 +706,7 @@ getCompletions CompletionConfig{..} appNames config CompletionOptions{..} =
                         in  fileSystemCompleter defFileSystemOptions
                                 { appendSlashToSingleDirectoryResult = True
                                 , entryType = Just Directory
+                                , expandTilde = True
                                 , prefix
                                 , word = List.drop (length prefix) pat
                                 }
@@ -884,6 +885,7 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
     fsCompleter prefix =
         fileSystemCompleter defFileSystemOptions
             { appendSlashToSingleDirectoryResult = True
+            , expandTilde = not (null prefix)
             , prefix
             , word = List.drop (length prefix) pat
             }

@@ -72,6 +72,9 @@ let bashTemplate =
                 (λ(alias : Text) → λ(t : Text) → complete alias ++ "\n" ++ t)
                 ""
 
+        -- The complexity related to `compopt -o nospace` is so that we do not
+        -- insert space when the only completion is in the form of `--option=`
+        -- or `/some/path/`.
         in  ''
             function _${name}()
             {
@@ -82,7 +85,16 @@ let bashTemplate =
                         --shell=bash \
                         -- "''${COMP_WORDS[@]}"
                 )
-                [[ "''${COMPREPLY[0]}" == "''${COMPREPLY[0]%=}=" ]] && compopt -o nospace
+                if (( ''${#COMPREPLY[@]} == 1 )); then
+                    if [[ "''${COMPREPLY[0]}" == "''${COMPREPLY[0]%=}=" \
+                       || "''${COMPREPLY[0]}" == */ \
+                       ]]
+                    then
+                        compopt -o nospace
+                    fi
+                else
+                    compopt -o nospace
+                fi
             }
 
             ${completeNames}

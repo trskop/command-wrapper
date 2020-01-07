@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Internal.Version
 -- Description: Implementation of internal command named version
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -71,7 +71,12 @@ import CommandWrapper.Environment (AppNames(AppNames, usedName))
 --import qualified CommandWrapper.External as External (executeCommand)
 import CommandWrapper.Internal.Dhall as Dhall (hPut)
 import CommandWrapper.Internal.Subcommand.Completion.FileSystem
-    ( FileSystemOptions(appendSlashToSingleDirectoryResult, prefix, word)
+    ( FileSystemOptions
+        ( appendSlashToSingleDirectoryResult
+        , expandTilde
+        , prefix
+        , word
+        )
     , defFileSystemOptions
     , fileSystemCompleter
     )
@@ -339,6 +344,7 @@ versionSubcommandCompleter _appNames _config _shell index words
     fsCompleter prefix =
         fileSystemCompleter defFileSystemOptions
             { appendSlashToSingleDirectoryResult = True
+            , expandTilde = not (null prefix)
             , prefix
             , word = List.drop (length prefix) pat
             }

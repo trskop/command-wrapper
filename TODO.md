@@ -60,6 +60,10 @@
     -   Support `--algorithm=ALGORITHM` option.  At the moment only prefix
         equivalence is used.
 
+    -   Consider switching from `--file-system=TYPE` to
+        `--file-system [--type=TYPE]`.  When `--type=TYPE` is omitted then
+        entry type is completely ignored.
+
 *   Hosts completion:
 
     ```

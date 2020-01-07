@@ -89,7 +89,12 @@ import Safe (atMay, lastMay)
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Internal.Subcommand.Completion.FileSystem
-    ( FileSystemOptions(appendSlashToSingleDirectoryResult, prefix, word)
+    ( FileSystemOptions
+        ( appendSlashToSingleDirectoryResult
+        , expandTilde
+        , prefix
+        , word
+        )
     , defFileSystemOptions
     , fileSystemCompleter
     )
@@ -1863,6 +1868,7 @@ configSubcommandCompleter appNames cfg _shell index words
     fileCompleter prefix =
         fileSystemCompleter defFileSystemOptions
             { appendSlashToSingleDirectoryResult = True
+            , expandTilde = not (null prefix)
             , prefix
             , word = List.drop (length prefix) pat
             }

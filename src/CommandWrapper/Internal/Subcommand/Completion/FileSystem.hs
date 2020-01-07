@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion.FileSystem
 -- Description: File system entry completion.
--- Copyright:   (c) 2019 Peter Trško
+-- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -27,12 +27,12 @@ module CommandWrapper.Internal.Subcommand.Completion.FileSystem
     )
   where
 
-import Prelude (Bounded, Enum)
+import Prelude (Bounded, Enum, (-))
 
 import Control.Applicative (pure)
 import Control.Monad ((>>=), filterM, mapM_)
-import Data.Bool (Bool(False, True), (&&), not, otherwise)
-import Data.Eq (Eq)
+import Data.Bool (Bool(False, True), (&&), (||), not, otherwise)
+import Data.Eq (Eq, (==))
 import Data.Function ((.), id)
 import Data.Functor ((<$>), (<&>), fmap)
 import qualified Data.List as List
@@ -41,11 +41,14 @@ import qualified Data.List as List
     , filter
     , isPrefixOf
     , length
+    , null
+    , uncons
     , unlines
     )
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid ((<>))
 import Data.String (IsString, String)
+import Data.Word (Word)
 import GHC.Generics (Generic)
 import System.IO (FilePath, IO, putStrLn)
 import Text.Show (Show)
@@ -67,7 +70,9 @@ import System.Directory
     , getDirectoryContents
     , getHomeDirectory
     , getPermissions
+    , listDirectory
     , pathIsSymbolicLink
+    , readable
     )
 import System.FilePath ((</>), isPathSeparator, splitFileName)
 
@@ -130,6 +135,7 @@ data EntryPattern
   deriving stock (Generic, Show)
 
 data EntryType
+--  = Command   -- TODO: Last missing piece to get rid of Bash calls.
     = Directory
     | File
     | Executable
@@ -138,6 +144,7 @@ data EntryType
 
 parseEntryType :: (Eq s, IsString s) => s -> Maybe EntryType
 parseEntryType = \case
+--  "command"    -> Just Command
     "directory"  -> Just Directory
     "file"       -> Just File
     "executable" -> Just Executable
@@ -146,6 +153,7 @@ parseEntryType = \case
 
 showEntryType :: IsString s => EntryType -> s
 showEntryType = \case
+--  Command    -> "command"
     Directory  -> "directory"
     File       -> "file"
     Executable -> "executable"
@@ -162,25 +170,35 @@ fileSystemCompleter FileSystemOptions{..} = do
     let ((wordDirectory, wordPrefix), wordPattern) =
             splitWord home word SplitWordsOptions{allowTilde, expandTilde}
 
-    entries <- listEntries wordDirectory wordPrefix wordPattern >>= \case
-        -- If there is only one completion option, and it is a directory, by
-        -- appending '/' we'll force completion to descend into that directory.
-        es@[(path, completion)]
-          | appendSlashToSingleDirectoryResult -> do
-                isDir <- doesDirectoryExist path
-                pure if isDir
-                    then [(path <> "/", completion <> "/")]
-                    else es
+    entries <- listEntries wordDirectory wordPrefix wordPattern
+        >>= \case
+            -- If there is only one completion option, and it is a directory,
+            -- by appending '/' we'll force completion to descend into that
+            -- directory.
+            --
+            -- TODO: There are probably some corner cases that aren't handled
+            -- properly, like when we don't want to go deeper into it.
+            es@[(path, completion)]
+              | appendSlashToSingleDirectoryResult -> do
+                    isDir <- doesDirectoryExist path
+                    pure if isDir
+                        then [(path <> "/", completion <> "/")]
+                        else es
 
-          | otherwise ->
+              | otherwise ->
+                    pure es
+
+            es ->
                 pure es
 
-        es ->
-            pure es
-
     fmap updateEntry <$> case entryType of
-        Just et -> filterM (\(p, _) -> isEntryType et p) entries
-        Nothing -> pure entries
+        Just et -> filterM (\(p, _) ->
+            -- The value 3 limits the look ahead to 3 directory levels.  The
+            -- value was choosen arbitrarily.
+            isEntryType 3 et p) entries
+
+        Nothing ->
+            pure entries
   where
     updateEntry = \(_, s) -> prefix <> s <> suffix
 
@@ -271,21 +289,80 @@ splitWord home word SplitWordsOptions{..} =
 --
 -- @
 -- \\dir pat entryType ->
---     'listEntries' dir pat '>>=' filterM ('isEntryType' et)
+--     'listEntries' 3 dir pat '>>=' filterM ('isEntryType' et)
 -- @
-isEntryType :: EntryType -> FilePath -> IO Bool
-isEntryType = \case
+isEntryType
+    :: Word
+    -- ^ For the predicate to be more reliable we may need to recursively
+    -- search directories.  This limits how deeply we search.
+    -> EntryType
+    -> FilePath
+    -> IO Bool
+isEntryType searchAheadDepth = \case
     Directory ->
         doesDirectoryExist
-    File ->
-        doesFileExist
+
+    File -> \fp -> do
+        isDirectory <- doesDirectoryExist fp
+        if isDirectory
+            then isNotEmptyDirectory fp
+            else doesFileExist fp
+
     Executable -> \fp -> do
+        isDirectory <- doesDirectoryExist fp
+        if isDirectory
+            then doesDirectoryContainExecutables searchAheadDepth fp
+            else doesExecutableExist fp
+
+    Symlink -> \fp -> do
+        isDirectory <- doesDirectoryExist fp
+        if isDirectory
+            then doesDirectoryContainSymlinks searchAheadDepth fp
+            else pathIsSymbolicLink fp
+  where
+    isNotEmptyDirectory fp = do
+        isReadable <- readable <$> getPermissions fp
+        if isReadable
+            then not . List.null <$> listDirectory fp
+            else pure True -- We don't know.
+
+    doesExecutableExist fp = do
         fileExists <- doesFileExist fp
         if fileExists
             then executable <$> getPermissions fp
-            else pure fileExists
-    Symlink ->
-        pathIsSymbolicLink
+            else pure True -- We don't know.
+
+    doesDirectoryContainExecutables 0 _  = pure True -- We don't know.
+    doesDirectoryContainExecutables n fp = do
+        isReadable <- readable <$> getPermissions fp
+        if isReadable
+            then do
+                listDirectory fp >>= anyM \name -> do
+                    let fp' = fp </> name
+                    isDirectory <- doesDirectoryExist fp'
+                    if isDirectory
+                        then doesDirectoryContainExecutables (n - 1) fp'
+                        else doesExecutableExist fp'
+            else
+                pure True -- We don't know.
+
+    doesDirectoryContainSymlinks 0 _  = pure True  -- We don't know.
+    doesDirectoryContainSymlinks n fp = do
+        isReadable <- readable <$> getPermissions fp
+        if isReadable
+            then do
+                listDirectory fp >>= anyM \name -> do
+                    let fp' = fp </> name
+                    isDirectory <- doesDirectoryExist fp'
+                    if isDirectory
+                        then doesDirectoryContainSymlinks (n - 1) fp'
+                        else pathIsSymbolicLink fp'
+            else
+                pure True -- We don't know.
+
+    anyM p = \case
+        [] -> pure False
+        x : xs -> p x >>= \c -> if c then pure c else anyM p xs
 
 -- | List file system entries in a specified directory starting with a prefix.
 listEntries
@@ -299,17 +376,44 @@ listEntries
     -- final entry name.
     -> IO [(FilePath, String)]
 listEntries directory prefix pat = do
-    directoryExists <- doesDirectoryExist directory
-    if directoryExists
-        then
-            getDirectoryContents directory <&> \entries ->
-                filterMatches entries <&> \entry ->
-                    (directory </> entry, prefix </> entry)
+    isReadable <- readable <$> getPermissions directory
+    if isReadable
+        then do
+            directoryExists <- doesDirectoryExist directory
+            if directoryExists
+                then
+                    listDirectory' <&> \entries ->
+                        filterMatches entries <&> \entry ->
+                            (directory </> entry, prefix </> entry)
+                else
+                    pure []
         else
             pure []
   where
     filterMatches =
         List.filter (pat `List.isPrefixOf`)
+
+    noHiddenFiles = List.filter \s ->
+        s == "." || s == ".." || not ("." `List.isPrefixOf` s)
+
+    -- We are trying to be smart about completing hidden files.  When pattern
+    -- starts with "." we try to allow special directories like "." and ".." as
+    -- well as hidden files.  What we try to avoid are cases like "/./" and
+    -- "/../", i.e. when user tries to complete absolute path.
+    --
+    -- TODO: We may want to make this functionality configurable in the future.
+    listDirectory'
+      | directory == "/", Just ('.', _) <- List.uncons pat =
+            listDirectory directory
+
+      | List.null pat =
+            noHiddenFiles <$> listDirectory directory
+
+      | Just ('.', _) <- List.uncons pat =
+            getDirectoryContents directory
+
+      | otherwise =
+            noHiddenFiles <$> listDirectory directory
 
 -- | Print completion output.
 --
