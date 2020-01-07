@@ -99,6 +99,21 @@
       [--output=FILE]
     ```
 
+*   If we start thinking of command line completion as a finite-state machine,
+    and we are able to encode states and transition function in Dhall, then
+    following tool could get such description as an input:
+
+    ```
+    TOOLSET completion --compgen
+        [--input=FILE|--expression=EXPRESSION]
+        [--index=NUM]
+        [--shell=SHELL]
+        -- [WORD ...]
+    ```
+
+    Most of the ideas above this one would become primitives in the completion
+    description DSL.
+
 
 ### Config
 
@@ -210,6 +225,17 @@
 
     ```
     TOOLSET config --pager [--ansi] [--input=FILE]
+    ```
+
+*   Provide `--plain` option for Dhall interpreter:
+
+    ```
+    \--plain, -p
+    :   Plain output, final Dhall expression must result in one of:
+
+        * `Text`, `Natural`, or `Integer`
+        * `List Text`, `List Natural`, or `List Integer`
+        * `Optional Text`, or `Optional Natural`, or `Optional Integer`
     ```
 
 

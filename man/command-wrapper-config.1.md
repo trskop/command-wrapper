@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 27th December 2019
+% 7th January 2020
 
 
 # NAME
@@ -117,7 +117,6 @@ We can organise `config` subcommand abilities into following categories:
     *   [dhall](http://hackage.haskell.org/package/dhall) (**close to full
         support**)
     *   [dhall-bash](http://hackage.haskell.org/package/dhall-bash)
-    *   [dhall-json](http://hackage.haskell.org/package/dhall-json) (**TODO**)
     *   [dhall-text](http://hackage.haskell.org/package/dhall-text)
 
     Which is integrated with Command Wrapper and with a nicer command line UX.
@@ -157,12 +156,18 @@ We can organise `config` subcommand abilities into following categories:
         Hello World
         ```
 
+    Functionality that will be added in the future:
+
+    *   [dhall-json](http://hackage.haskell.org/package/dhall-json)
+
 **Selection Menu** (`--menu`)
 :   Display input in a menu to select an item.  Usage examples:
 
     ```Bash
     fd --type file | TOOLSET_COMMAND config --menu
     ```
+
+    (See also `fd(1)` or `fdfind(1)` on Debian-based systems).
 
     ```Bash
     # This example uses Bash-specific syntax.
@@ -205,6 +210,10 @@ We can organise `config` subcommand abilities into following categories:
     subcommands to respect user editor preferences without needing to
     reimplement editor lookup strategy, or depending on distribution-specific
     tools.
+
+**Selection Menu** (`--menu`)
+:   Provides a nice menu where user can select a specific value.  Very useful
+    when we need to ask user for a value out of a list.
 
 **Initialisation** (`--init`)
 :   Initialise toolset configuration.  This action tries to be as safe as
@@ -288,7 +297,7 @@ We can organise `config` subcommand abilities into following categories:
     and `command-wrapper-skel(1)`.
 
 
-# OPTIONS
+# DHALL OPTIONS
 
 \--dhall
 :   Run as interpreter for the Dhall language.
@@ -305,6 +314,10 @@ We can organise `config` subcommand abilities into following categories:
 \--\[no-]annotate
 :   Add a type annotation to the output.  Type annotations aren't included by
     default.  Can be specified multiple times, later instance is applied.
+
+\--type, -t
+:   Print type of final Dhall expression instead of its value. Can be specified
+    multiple times, later instance is applied.
 
 \--expression=*EXPRESSION*, **\--expression=***EXPRESSION*
 :   Use Dhall *EXPRESSION*, as an input instead of reading it from standard input
@@ -380,34 +393,6 @@ We can organise `config` subcommand abilities into following categories:
 \--dhall-repl
 :   Interpret Dhall expressions in a REPL.
 
-\--init
-:   Initialise configuration of a toolset.  This includes symlinking command
-    wrapper under the toolset's name.  See also `--toolset=`*NAME* option.
-
-\--toolset=*NAME*
-:   When specified allong with `--init` then configuration for toolset *NAME*
-    is initialised.  Alternatively `COMMAND_WRAPPER_INVOKE_AS=`*NAME* can be
-    used.  See `command-wrapper(1) section *ENVIRONMENT VARIABLES* for details.
-
-\--bin-dir\[ectory]=*DIRECTORY*
-:   When specified allong with `--init` then symbolic link for toolset *NAME*
-    is created in *DIRECTORY* instead of trying to create it in `~/.local/bin`,
-    or `~/bin` (directories are tried in that order).
-
-\--config-dir\[ectory]=*DIRECTORY*
-:   When specified allong with --init then configuration for toolset *NAME* is
-    initialised in `DIRECTORY/NAME` instead of following [XDG Base Directory
-    Specification
-    ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
-
-\--libexec-dir\[ectory]=*DIRECTORY*
-:   When specified allong with `--init` then it is assumed that subcommand
-    executables will be stored in *DIRECTORY*.
-
-\--man-dir\[ectory]=*DIRECTORY*
-:   When specified allong with `--init` then it is assumed that manual pages
-    will be stored in *DIRECTORY*.
-
 \--dhall-bash
 :   Compile Dhall expression into Bash expression or statement.
 
@@ -461,12 +446,55 @@ We can organise `config` subcommand abilities into following categories:
 \--interpreter-argument=*ARGUMENT*, **\--interpreter-argument** *ARGUMENT*
 :   Pass *ARGUMENT* to interpreter *COMMAND*.
 
+*EXPRESSION*
+:   Dhall expression.
+
+*ARGUMENT*
+:   Command line argument passed to executed script in `--dhall-exec` mode.
+
+
+# INITIALISE TOOLSET CONFIGURATION OPTIONS
+
+\--init
+:   Initialise configuration of a toolset.  This includes symlinking command
+    wrapper under the toolset's name.  See also `--toolset=`*NAME* option.
+
+\--toolset=*NAME*
+:   When specified allong with `--init` then configuration for toolset *NAME*
+    is initialised.  Alternatively `COMMAND_WRAPPER_INVOKE_AS=`*NAME* can be
+    used.  See `command-wrapper(1) section *ENVIRONMENT VARIABLES* for details.
+
+\--bin-dir\[ectory]=*DIRECTORY*
+:   When specified allong with `--init` then symbolic link for toolset *NAME*
+    is created in *DIRECTORY* instead of trying to create it in `~/.local/bin`,
+    or `~/bin` (directories are tried in that order).
+
+\--config-dir\[ectory]=*DIRECTORY*
+:   When specified allong with --init then configuration for toolset *NAME* is
+    initialised in `DIRECTORY/NAME` instead of following [XDG Base Directory
+    Specification
+    ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
+
+\--libexec-dir\[ectory]=*DIRECTORY*
+:   When specified allong with `--init` then it is assumed that subcommand
+    executables will be stored in *DIRECTORY*.
+
+\--man-dir\[ectory]=*DIRECTORY*
+:   When specified allong with `--init` then it is assumed that manual pages
+    will be stored in *DIRECTORY*.
+
+
+# EDIT OPTIONS
+
 \--edit, -e
 :   Start editor to edit *FILE* or *SUBCOMMAND* when `--subcommand-config` is
     passed.
 
 \--subcommand-config
 :   Open subcommand config when invoked with `--edit`.
+
+
+# SELECTION MENU OPTIONS
 
 \--menu
 :   Display selection menu.  Selected value is printed to standard output.
@@ -477,36 +505,14 @@ We can organise `config` subcommand abilities into following categories:
 \--nul\[l], -0, -z
 :   Use NUL ('\0') character as a separator.
 
+
+# OTHER OPTIONS
+
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help config`.
 
-*EXPRESSION*
-:   Dhall expression.
-
-*ARGUMENT*
-:   Command line argument passed to executed script in `--dhall-exec` mode.
-
-**TODO: Following options aren't currently implemented!**
-
-\--type, -t
-:   Print type of final Dhall expression instead of its value.
-
-\--plain, -p
-:   Plain output, final Dhall expression must result in one of:
-
-    * `Text`, `Natural`, or `Integer`
-    * `List Text`, `List Natural`, or `List Integer`
-    * `Optional Text`, or `Optional Natural`, or `Optional Integer`
-
-\--fail-when-none
-:   If result expression is an `Optional` value then it has to be `Some`.
-
-\--fail-when-empty
-:   If result expression is a `List` value then it has to be non-empty.
-
-*EXPRESSION*
-:   Dhall expression that either queries or updates configuration, depending
-    if the `--update` option is present.
+GLOBAL\_OPTIONS
+:   See `command-wrapper(1)` for more information.
 
 
 # EXIT STATUS
@@ -532,48 +538,13 @@ subcommand will be listed below.
 
 # FILES AND DIRECTORIES
 
-See also `XDG_CONFIG_HOME` in *ENVIRONMENT VARIABLES* section for more
-information on how Command Wrapper figures out where to look for this
-configuration file.
-
-`${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/user-config/index.dhall`
-:   **TODO**
-
-`${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/user-config/`
-:   **TODO**
+See also `command-wrapper(1)` for more information on files and directories
+that are being used.
 
 `${XDG_CACHE_HOME:-${HOME}/.cache}/${toolset}-dhall-exec/${hash}`
 :   Scripts rendered as part of `TOOLSET_COMMAND config --dhall-exec`
     invocation are cached under this paths.  The value of `${hash}` is the
     SHA256 of generated script.
-
-
-# ENVIRONMENT VARIABLES
-
-See also `command-wrapper(1)` *ENVIRONMENT VARIABLES* section.  Everything
-mentioned there applies to this subcommand as well.
-
-`XDG_CONFIG_HOME`
-:   Overrides where this subcommand expects its configuration file.  It follows
-    this simple logic:
-
-    * If `XDG_CONFIG_HOME` environment variable is set then the configuration
-      file has path:
-
-        ```
-        ${XDG_CONFIG_HOME}/command-wrapper/user-config/index.dhall
-        ```
-
-    * If `XDG_CONFIG_HOME` environment variable is not set then default value
-      is used instead:
-
-        ```
-        ${HOME}/.config/command-wrapper/user-config/index.dhall
-        ```
-
-    See [XDG Base Directory Specification
-    ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
-    for more information on rationale behind this.
 
 
 # SEE ALSO

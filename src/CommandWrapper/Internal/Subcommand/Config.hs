@@ -868,8 +868,6 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
     , ""
 
     , usageSection usedName
---      [ "config" <+> optionalMetavar "EXPRESSION"
---
         [ "config"
             <+> longOption "dhall"
             <+> Pretty.brackets (longOption "[no-]allow-imports")
@@ -1052,7 +1050,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "help config"
         ]
 
-    , section "Options:"
+    , section "Dhall Options:"
         [ optionDescription ["--dhall"]
             [ Pretty.reflow "Run as interpreter for the Dhall language."
             ]
@@ -1070,6 +1068,11 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , optionDescription ["--[no-]annotate"]
             [ Pretty.reflow "Add a type annotation to the output. Type\
                 \ annotations aren't included by default."
+            ]
+
+        , optionDescription ["--[no-]type"]
+            [ Pretty.reflow "Print type of final Dhall expression instead of\
+                \ its value."
             ]
 
         , optionDescription
@@ -1212,7 +1215,18 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , metavar "COMMAND" <> "."
             ]
 
-        , optionDescription ["--init"]
+        , optionDescription ["EPRESSION"]
+            [ "Dhall", metavar "EXPRESSION" <> "."
+            ]
+
+        , optionDescription ["ARGUMENT"]
+            [ Pretty.reflow "Command line argument passed to executed script in"
+            , longOption "dhall-exec", "mode."
+            ]
+        ]
+
+    , section "Initialise toolset configuation options:"
+        [ optionDescription ["--init"]
             [ Pretty.reflow "Initialise configuration of a toolset."
             ]
 
@@ -1254,8 +1268,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 "then it is assumed that manual pages will be stored in"
             , metavar "DIRECTORY" <> "."
             ]
+        ]
 
-        , optionDescription ["--edit", "-e"]
+    , section "Edit options:"
+        [ optionDescription ["--edit", "-e"]
             [ Pretty.reflow "Start editor to edit", metavar "FILE", "or"
             , metavar "SUBCOMMAND", "when", longOption "subcommand-config"
             , Pretty.reflow "is passed."
@@ -1265,8 +1281,10 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ Pretty.reflow "Open subcommand config when invoked with"
             , longOption "edit" <> "."
             ]
+        ]
 
-        , optionDescription ["--menu"]
+    , section "Selection menu options:"
+        [ optionDescription ["--menu"]
             [ Pretty.reflow "Display selection menu. Selected value is printed\
                 \ to standard output."
             ]
@@ -1280,19 +1298,12 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ "Use", value "NUL", "('" <> value "\\0" <> "')"
             , Pretty.reflow "character as a separator."
             ]
+        ]
 
-        , optionDescription ["--help", "-h"]
+    , section "Other options:"
+        [ optionDescription ["--help", "-h"]
             [ Pretty.reflow "Print this help and exit. Same as"
             , Pretty.squotes (toolsetCommand usedName "help config") <> "."
-            ]
-
-        , optionDescription ["EPRESSION"]
-            [ "Dhall", metavar "EXPRESSION" <> "."
-            ]
-
-        , optionDescription ["ARGUMENT"]
-            [ Pretty.reflow "Command line argument passed to executed script in"
-            , longOption "dhall-exec", "mode."
             ]
 
         , globalOptionsHelp usedName
