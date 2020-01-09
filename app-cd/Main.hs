@@ -17,21 +17,21 @@
 module Main (main)
   where
 
-import Control.Applicative (optional, many)
+import Control.Applicative (optional)
 import Control.Exception (onException)
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Foldable (asum, for_)
+import Data.Foldable (for_)
 import Data.Functor ((<&>))
 import qualified Data.List as List (filter, nub, isPrefixOf)
 import Data.Maybe (fromMaybe, isJust)
+import Data.Monoid (Endo(Endo))
 import Data.Semigroup (Semigroup(..))
 import Data.String (fromString)
 import GHC.Generics (Generic)
-import Text.Read (readMaybe)
 import System.Environment (getArgs)
+import Text.Read (readMaybe)
 
-import Data.CaseInsensitive as CI (mk)
 import Data.Text (Text, isPrefixOf)
 import qualified Data.Text as Text (null, unpack)
 import Dhall (FromDhall, ToDhall)
@@ -42,17 +42,8 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Options.Applicative as Options
     ( Parser
-    , auto
-    , defaultPrefs
-    , execParserPure
-    , flag'
-    , handleParseResult
-    , info
-    , internal
     , long
-    , maybeReader
     , metavar
-    , option
     , short
     , strArgument
     , strOption
@@ -87,16 +78,16 @@ import qualified CommandWrapper.Environment as Environment
 import qualified CommandWrapper.Internal.Subcommand.Help as Help
 import CommandWrapper.Message (Result)
 import CommandWrapper.Options.Optparse (bashCompleter)
-import qualified CommandWrapper.Options.Shell as Options (Shell)
-import qualified CommandWrapper.Options.Shell as Options.Shell (parse)
-import CommandWrapper.Prelude
-    ( HaveCompletionInfo(completionInfoMode)
-    , completionInfoFlag
+import qualified CommandWrapper.Subcommand.Prelude as CommandWrapper
+    ( Shell
+    , SubcommandProps(..)
+    )
+import CommandWrapper.Subcommand.Prelude
+    ( SubcommandProps(SubcommandProps)
     , dieWith
-    , out
-    , printCommandWrapperStyleCompletionInfoExpression
+    , noPreprocessing
+    , runSubcommand
     , stderr
-    , stdout
     , subcommandParams
     )
 
@@ -136,43 +127,38 @@ data Params config = Params
     , inTmux :: Bool
     , inKitty :: Bool
     }
-  deriving stock (Functor)
-
-data Mode
-    = DefaultMode Strategy (Maybe Text) (Maybe Text)
-    | CompletionInfo
-    | Completion Word Options.Shell [String]
-    | Help
-
-instance HaveCompletionInfo Mode where
-  completionInfoMode = const CompletionInfo
+  deriving stock (Functor, Generic)
 
 main :: IO ()
 main = do
     params <- getEnvironment
-    options <- getArgs
+    arguments <- getArgs
+    runSubcommand SubcommandProps
+        { preprocess = noPreprocessing
+        , doCompletion
+        , helpMsg
+        , actionOptions = parseOptions
+        , defaultAction = Just defMode
+        , params
+        , arguments
+        }
+        mainAction
 
-    -- TODO: Switch to custom parser so that errors are printed correctly.
-    mode <- Options.handleParseResult
-        $ Options.execParserPure Options.defaultPrefs
-            (Options.info (completionInfoFlag <*> parseOptions) mempty) options
+data Mode = Mode
+    { strategy :: Strategy
+    , query :: Maybe Text
+    , directory :: Maybe Text
+    }
 
-    case mode of
-        DefaultMode strategy query directory ->
-            mainAction params strategy query directory
+defMode :: Mode
+defMode = Mode
+    { strategy = Auto
+    , query = Nothing
+    , directory = Nothing
+    }
 
-        CompletionInfo ->
-            printCommandWrapperStyleCompletionInfoExpression stdout
-
-        Completion index _shell words' ->
-            doCompletion params index words'
-
-        Help ->
-            let Params{params = params'} = params
-             in out params' stdout (helpMsg params')
-
-mainAction :: Params Text -> Strategy -> Maybe Text -> Maybe Text -> IO ()
-mainAction ps@Params{config = configExpr, params} strategy query directory = do
+mainAction :: Params Text -> Mode -> IO ()
+mainAction ps@Params{config = configExpr, params} Mode{..} = do
     config@Config{..} <- if Text.null configExpr
         then pure defConfig
         else Dhall.input Dhall.auto configExpr
@@ -272,20 +258,16 @@ evalStrategy params@Params{config, inTmux, inKitty} = \case
   where
     Config{shell, terminalEmulator} = config
 
-parseOptions :: Options.Parser Mode
-parseOptions = asum
-    [ Options.flag' Help (Options.long "help" <> Options.short 'h')
-    , go
-        <$> shellSwitch
-        <*> tmuxSwitch
-        <*> kittySwitch
-        <*> terminalEmulator
-        <*> optional queryOption
-        <*> optional dirArgument
-    , completionOptions
-    ]
+parseOptions :: Options.Parser (Endo (Maybe Mode))
+parseOptions = fmap (Endo . const . Just) $ go
+    <$> shellSwitch
+    <*> tmuxSwitch
+    <*> kittySwitch
+    <*> terminalEmulator
+    <*> optional queryOption
+    <*> optional dirArgument
   where
-    go runShell runTmux runKitty runTerminalEmulator query dir = DefaultMode
+    go runShell runTmux runKitty runTerminalEmulator query dir = Mode
         (   (if runShell then ShellOnly else Auto)
             <> (if runTmux then TmuxOnly else Auto)
             <> (if runKitty then KittyOnly else Auto)
@@ -307,14 +289,6 @@ parseOptions = asum
         (Options.long "query" <> Options.short 'q' <> Options.metavar "QUERY")
 
     dirArgument = Options.strArgument (Options.metavar "DIRECTORY")
-
-completionOptions :: Options.Parser Mode
-completionOptions =
-    Options.flag' Completion (Options.long "completion" <> Options.internal)
-    <*> Options.option Options.auto (Options.long "index" <> Options.internal)
-    <*> Options.option (Options.maybeReader $ Options.Shell.parse . CI.mk)
-            (Options.long "shell" <> Options.internal)
-    <*> many (Options.strArgument (Options.metavar "WORD" <> Options.internal))
 
 data Action
     = RunShell (Maybe Text)
@@ -448,8 +422,8 @@ executeAction params directory = \case
 die :: MonadIO io => Params void -> Int -> Text -> io a
 die Params{params} n m = liftIO (dieWith params stderr n m)
 
-doCompletion :: Params a -> Word -> [String] -> IO ()
-doCompletion Params{} index words' = do
+doCompletion :: Params a -> Word -> CommandWrapper.Shell -> [String] -> IO ()
+doCompletion Params{} index _shell words' = do
     mapM_ putStrLn (List.filter (pat `List.isPrefixOf`) allOptions)
     bashCompleter "directory" "" pat >>= mapM_ putStrLn
   where
@@ -464,8 +438,8 @@ doCompletion Params{} index words' = do
         , "-q", "--query="
         ]
 
-helpMsg :: Environment.Params -> Pretty.Doc (Result Pretty.AnsiStyle)
-helpMsg Environment.Params{name, subcommand} = Pretty.vsep
+helpMsg :: Params a -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpMsg Params{params = Environment.Params{name, subcommand}} = Pretty.vsep
     [ Pretty.reflow "Change directory by selecting one from preselected list."
     , ""
 

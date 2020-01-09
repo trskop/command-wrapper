@@ -18,9 +18,8 @@ module Main (main)
 
 import Prelude hiding (words)
 
-import Control.Applicative (many, optional)
+import Control.Applicative (optional)
 import Control.Monad (unless, when)
-import Data.Foldable (asum)
 import Data.Function (on)
 import Data.Functor ((<&>))
 import qualified Data.List as List (filter, isPrefixOf, take)
@@ -31,12 +30,11 @@ import GHC.Generics (Generic)
 import System.Environment (getArgs)
 
 import Data.CaseInsensitive as CI (mk)
-import Data.Monoid.Endo (Endo(appEndo))
+import Data.Monoid.Endo (Endo)
 import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
-import qualified Data.Text as Text (null)
 import Dhall (FromDhall, ToDhall)
-import qualified Dhall (auto, input)
+import qualified Dhall (auto)
 import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
@@ -44,20 +42,13 @@ import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Options.Applicative as Options
     ( Parser
     , argument
-    , auto
-    , defaultPrefs
-    , execParserPure
     , flag'
-    , handleParseResult
     , help
-    , info
-    , internal
     , long
     , maybeReader
     , metavar
     , option
     , short
-    , strArgument
     , switch
     )
 import qualified System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
@@ -83,18 +74,18 @@ import System.FilePath (takeDirectory)
 
 import qualified CommandWrapper.Internal.Subcommand.Help as Help
 import CommandWrapper.Message (Result)
-import CommandWrapper.Options.Shell (Shell)
-import CommandWrapper.Options.Shell as Shell (parse)
-import CommandWrapper.Prelude
-    ( HaveCompletionInfo(completionInfoMode)
-    , Params(Params, config, name, subcommand)
-    , completionInfoFlag
+import qualified CommandWrapper.Subcommand.Prelude (SubcommandProps(..))
+import CommandWrapper.Subcommand.Prelude
+    ( Params(Params, name, subcommand)
+    , Shell
+    , SubcommandProps(SubcommandProps)
     , dieWith
-    , out
-    , printCommandWrapperStyleCompletionInfoExpression
+    , dieMissingConfiguration
     , stderr
-    , stdout
     , subcommandParams
+    , runSubcommand
+    , noPreprocessing
+    , inputConfig
     )
 
 
@@ -122,63 +113,53 @@ data Template = Template
   deriving stock (Generic, Show)
   deriving anyclass (Dhall.FromDhall)
 
-data DefaultModeOptions = DefaultModeOptions
+data Action = Action
     { subcommandName :: String
     , language :: Maybe Language
     , editAfterwards :: Maybe Bool
     , createParents :: Bool
     }
 
-data Mode
-    = DefaultMode DefaultModeOptions
-    | CompletionInfo
-    | Completion Word Shell [String]
-    | Help
-
-instance HaveCompletionInfo Mode where
-    completionInfoMode = const CompletionInfo
+data SkelParams = SkelParams
+    { protocol :: Params
+    }
+  deriving stock (Generic)
 
 main :: IO ()
 main = do
-    params <- subcommandParams
-    options <- getArgs
+    props <- subcommandProps
+    runSubcommand props \SkelParams{protocol} ->
+        mainAction protocol
+  where
+    subcommandProps :: IO (SubcommandProps SkelParams Action)
+    subcommandProps = do
+        protocol <- subcommandParams
+        arguments <- getArgs
+        pure SubcommandProps
+            { preprocess = noPreprocessing
+            , doCompletion
+            , helpMsg
+            , actionOptions = parseOptions
+            , defaultAction = Nothing
+            , params = SkelParams{protocol}
+            , arguments
+            }
 
-    -- TODO: Switch to custom parser so that errors are printed correctly.
-    mode <- Options.handleParseResult
-        $ Options.execParserPure Options.defaultPrefs
-            (Options.info parseOptions mempty) options
-    case mode of
-        DefaultMode opts ->
-            mainAction params opts
-
-        CompletionInfo ->
-            printCommandWrapperStyleCompletionInfoExpression stdout
-
-        Completion index shell words ->
-            doCompletion params shell index words
-
-        Help ->
-             out params stdout (helpMsg params)
-
-mainAction :: Params -> DefaultModeOptions -> IO ()
+mainAction :: Params -> Action -> IO ()
 mainAction
   params@Params
     { name = wrapperName
-    , config = configExpr
     }
-  DefaultModeOptions
+  Action
     { subcommandName
     , language = possiblyLanguage
     , editAfterwards = possiblyEditAfterwards
     , createParents
     }
   = do
-        mkConfig <- if Text.null configExpr
-            then
-                dieWith params stderr 1
-                    "Configuration file is required and it's missing."
-            else
-                Dhall.input Dhall.auto configExpr
+        mkConfig <- inputConfig Dhall.auto params >>= \case
+            Just config -> pure config
+            Nothing     -> dieMissingConfiguration params stderr Nothing
 
         let subcommand = wrapperName <> "-" <> subcommandName
             Config{template, defaultLanguage, editAfterwards, editor} =
@@ -236,72 +217,56 @@ startEditor defaultEditor file = do
         ( Just File{file = fromString file, line = 0}
         )
 
-parseOptions :: Options.Parser Mode
-parseOptions = asum
-    [ completionInfoFlag <*> pure Help
-    , Options.flag' Help (Options.short 'h' <> Options.long "help")
-    , completionOptions
+parseOptions :: Options.Parser (Endo (Maybe Action))
+parseOptions = foldEndo
+    <$> ( Options.argument (Options.maybeReader parseSubcommandName)
+            (Options.metavar "SUBCOMMAND")
+            <&> \subcommandName (_ :: Maybe Action) -> Just Action
+                    { subcommandName
+                    , language = Nothing
+                    , editAfterwards = Nothing
+                    , createParents = False
+                    }
+        )
 
-    , go
-        <$> ( Options.argument (Options.maybeReader parseSubcommandName)
-                (Options.metavar "SUBCOMMAND")
-                <&> \subcommandName -> DefaultModeOptions
-                        { subcommandName
-                        , language = Nothing
-                        , editAfterwards = Nothing
-                        , createParents = False
-                        }
-            )
-
-        <*> ( optional
-                ( Options.option (Options.maybeReader parseLanguage)
-                    ( Options.long "language"
-                    <> Options.short 'l'
-                    )
+    <*> ( optional
+            ( Options.option (Options.maybeReader parseLanguage)
+                ( Options.long "language"
+                <> Options.short 'l'
                 )
-                <&> \language mode -> mode{language}
             )
+            <&> \language -> fmap \mode -> mode{language}
+        )
 
-        <*> ( optional
-                (Options.switch (Options.long "parents" <> Options.short 'p'))
-                <&> maybe id \createParents opts ->
-                        (opts :: DefaultModeOptions){createParents}
+    <*> ( optional
+            (Options.switch (Options.long "parents" <> Options.short 'p'))
+            <&> maybe id \createParents -> fmap \opts ->
+                    (opts :: Action){createParents}
+        )
+
+    <*> ( optional
+            ( Options.flag' True $ mconcat
+                [ Options.long "edit"
+                , Options.short 'e'
+                , Options.help
+                    "Open the created file in an editor afterwards"
+                ]
             )
+            <&> \editAfterwards -> fmap \opts ->
+                    (opts :: Action){editAfterwards}
+        )
 
-        <*> ( optional
-                ( Options.flag' True $ mconcat
-                    [ Options.long "edit"
-                    , Options.short 'e'
-                    , Options.help
-                        "Open the created file in an editor afterwards"
-                    ]
-                )
-                <&> \editAfterwards opts ->
-                        (opts :: DefaultModeOptions){editAfterwards}
+    <*> ( optional
+            ( Options.flag' False $ mconcat
+                [ Options.long "no-edit"
+                , Options.short 'E'
+                , Options.help
+                    "Don't open the created file in an editor afterwards"
+                ]
             )
-
-        <*> ( optional
-                ( Options.flag' False $ mconcat
-                    [ Options.long "no-edit"
-                    , Options.short 'E'
-                    , Options.help
-                        "Don't open the created file in an editor afterwards"
-                    ]
-                )
-                <&> \editAfterwards opts ->
-                        (opts :: DefaultModeOptions){editAfterwards}
-            )
-    ]
-  where
-    go m f g h i = DefaultMode $ foldEndo f g h i `appEndo` m
-
-completionOptions :: Options.Parser Mode
-completionOptions =
-    Options.flag' Completion (Options.long "completion" <> Options.internal)
-    <*> Options.option Options.auto (Options.long "index" <> Options.internal)
-    <*> Options.option (Options.maybeReader $ Shell.parse . CI.mk)
-            (Options.long "shell" <> Options.internal)
-    <*> many (Options.strArgument (Options.metavar "WORD" <> Options.internal))
+            <&> \editAfterwards -> fmap \opts ->
+                    (opts :: Action){editAfterwards}
+        )
 
 parseSubcommandName :: String -> Maybe String
 parseSubcommandName = \case
@@ -318,8 +283,8 @@ parseLanguage t = case CI.mk t of
     "dhall" -> Just Dhall
     _ -> Nothing
 
-doCompletion :: Params -> Shell -> Word -> [String] -> IO ()
-doCompletion Params{} _shell index words =
+doCompletion :: SkelParams -> Word -> Shell -> [String] -> IO ()
+doCompletion SkelParams{} index _shell words =
     mapM_ putStrLn $ List.filter (pat `List.isPrefixOf`) if
       | null wordsBeforePattern ->
             mconcat [helpOptions, parentsOptions, languageOptions, editOptions]
@@ -357,8 +322,8 @@ doCompletion Params{} _shell index words =
 
     languages = ["bash", "dhall", "haskell"]
 
-helpMsg :: Params -> Pretty.Doc (Result Pretty.AnsiStyle)
-helpMsg Params{name, subcommand} = Pretty.vsep
+helpMsg :: SkelParams -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpMsg SkelParams{protocol = Params{name, subcommand}} = Pretty.vsep
     [ Pretty.reflow "Generate subcommand skeleton for specific command-wrapper\
         \ environment."
     , ""

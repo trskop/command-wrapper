@@ -42,7 +42,7 @@ import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import qualified Data.CaseInsensitive as CaseInsensitive (mk)
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
 import Data.Text (Text)
-import qualified Data.Text as Text (null, split, unpack)
+import qualified Data.Text as Text (split, unpack)
 import Data.Text.Prettyprint.Doc (Doc, (<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
@@ -59,12 +59,7 @@ import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
     ( Parser
     , auto
-    , defaultPrefs
-    , execParserPure
     , flag'
-    , handleParseResult
-    , info
-    , internal
     , long
     , option
     , short
@@ -99,16 +94,17 @@ import qualified CommandWrapper.Options as Options
     )
 import qualified CommandWrapper.Options.Shell as Options (Shell)
 import qualified CommandWrapper.Options.Shell as Options.Shell (parse)
-import CommandWrapper.Prelude
-    ( HaveCompletionInfo(completionInfoMode)
-    , Params(Params, colour, config, name, subcommand, verbosity)
-    , completionInfoFlag
+import qualified CommandWrapper.Subcommand.Prelude (SubcommandProps(..))
+import CommandWrapper.Subcommand.Prelude
+    ( Params(Params, colour, name, subcommand, verbosity)
+    , SubcommandProps(SubcommandProps)
     , dieWith
+    , inputConfig
     , out
-    , printCommandWrapperStyleCompletionInfoExpression
     , stderr
     , stdout
     , subcommandParams
+    , runSubcommand
     )
 
 
@@ -119,7 +115,7 @@ newtype Config = Config
     -- - Command line completion defaults
     }
   deriving stock (Generic)
-  deriving anyclass (Dhall.FromDhall)
+  deriving anyclass (FromDhall)
 
 -- | Empty 'Config' used when there is no configuration file available.
 defConfig :: Config
@@ -134,48 +130,38 @@ data Action
     | DryRunCompletion Word Options.Shell
     | Run Bool
     | RunDhall Bool Text
-    | CompletionInfo
-    | Completion Word Options.Shell
-    | Help
 
-instance HaveCompletionInfo Action where
-    completionInfoMode = const CompletionInfo
+defAction :: Action
+defAction = Run False
+
+data ExecParams = ExecParams
+    { protocol :: Params
+    , config :: Config
+    , commandAndItsArguments :: [String]
+    }
+  deriving stock (Generic)
 
 main :: IO ()
 main = do
-    params@Params{config = configExpr} <- subcommandParams
-
-    (options, commandAndItsArguments) <- Options.splitArguments <$> getArgs
-
-    config <- if Text.null configExpr
-        then pure defConfig
-        else Dhall.input Dhall.auto configExpr
-
-    action <- fmap ($ Run False) . Options.handleParseResult
-        -- TODO: Switch to custom parser so that errors are printed correctly.
-        $ Options.execParserPure
-            Options.defaultPrefs
-            (Options.info parseOptions mempty)
-            options
-
-    case action of
+    props <- subcommandProps
+    runSubcommand props \ExecParams{..} -> \case
         List ->
-            listCommands params config ListOptions{showDescription = True}
+            listCommands protocol config ListOptions{showDescription = True}
 
         Tree ->
-            showCommandTree params config TreeOptions{}
+            showCommandTree protocol config TreeOptions{}
 
         DryRun ->
-            getExecutableCommand params config commandAndItsArguments
-                >>= printAsDhall params
+            getExecutableCommand protocol config commandAndItsArguments
+                >>= printAsDhall protocol
 
         DryRunCompletion idx shell -> do
-            getCompletionCommand params config shell idx commandAndItsArguments
-                >>= printAsDhall params
+            getCompletionCommand protocol config shell idx commandAndItsArguments
+                >>= printAsDhall protocol
 
         Run monitor ->
-            getExecutableCommand params config commandAndItsArguments
-                >>= executeAndMonitorCommand params MonitorOptions
+            getExecutableCommand protocol config commandAndItsArguments
+                >>= executeAndMonitorCommand protocol MonitorOptions
                         { monitor
                         , notificationMessage = "Action "
                             <> maybe "" (\s -> "'" <> fromString s <> "'")
@@ -183,7 +169,7 @@ main = do
                         }
 
         RunDhall monitor expression ->
-            runDhall params config
+            runDhall protocol config
                 MonitorOptions
                     { monitor
                     , notificationMessage = "Action "
@@ -194,16 +180,29 @@ main = do
                     -- There is no command name, only arguments.
                     , arguments = fromString <$> commandAndItsArguments
                     }
-
-        CompletionInfo ->
-            printCommandWrapperStyleCompletionInfoExpression stdout
-
-        Completion index shell ->
-            doCompletion params config shell index commandAndItsArguments
-
-        Help ->
-            out params stdout (helpMsg params)
   where
+    subcommandProps :: IO (SubcommandProps ExecParams Action)
+    subcommandProps = do
+        protocol <- subcommandParams
+        arguments <- getArgs
+        possiblyConfig <- inputConfig Dhall.auto protocol
+
+        pure SubcommandProps
+            { preprocess = \ep args ->
+                let (opts, commandAndItsArguments) = Options.splitArguments args
+                in (ep{commandAndItsArguments}, opts)
+            , doCompletion
+            , helpMsg
+            , actionOptions = Endo . fmap <$> parseOptions
+            , defaultAction = Just defAction
+            , params = ExecParams
+                { protocol
+                , config = fromMaybe defConfig possiblyConfig
+                , commandAndItsArguments = []
+                }
+            , arguments
+            }
+
     getExecutableCommand :: Params -> Config -> [String] -> IO Command
     getExecutableCommand params Config{commands} commandAndItsArguments =
         case fromString <$> commandAndItsArguments of
@@ -473,8 +472,7 @@ showCommandTree Params{colour} Config{commands} TreeOptions{} =
 
 parseOptions :: Options.Parser (Action -> Action)
 parseOptions = asum
-    [ completionInfoFlag
-    , Options.flag' (const (Run True)) (Options.long "notify")
+    [ Options.flag' (const (Run True)) (Options.long "notify")
     , expressionOption <*> Options.switch (Options.long "notify")
     , Options.flag' (const List) $ mconcat
         [ Options.short 'l'
@@ -487,16 +485,6 @@ parseOptions = asum
         <*> shellOption
     , Options.flag' (const DryRun) (Options.long "print")
 
-    , Options.flag' (const Help) (Options.short 'h' <> Options.long "help")
-
-    -- Command line completion:
-    , const
-        <$> ( Options.flag' Completion
-                (Options.long "completion" <> Options.internal)
-            <*> indexOption
-            <*> shellOption
-            )
-
     , pure id
     ]
   where
@@ -505,16 +493,15 @@ parseOptions = asum
             RunDhall m expr
 
     indexOption :: Options.Parser Word
-    indexOption =
-        Options.option Options.auto (Options.long "index" <> Options.internal)
+    indexOption = Options.option Options.auto (Options.long "index")
 
     shellOption :: Options.Parser Options.Shell
     shellOption = Options.option
         (Options.maybeReader (Options.Shell.parse . CaseInsensitive.mk))
-        (Options.long "shell" <> Options.internal)
+        (Options.long "shell")
 
-doCompletion :: Params -> Config -> Options.Shell -> Word -> [String] -> IO ()
-doCompletion params config@Config{commands} shell index words =
+doCompletion :: ExecParams -> Word -> Options.Shell -> [String] -> IO ()
+doCompletion execParams index shell _ =
     case Options.splitArguments' words of
         (_, _, []) ->
             completeExecSubcommand
@@ -523,9 +510,15 @@ doCompletion params config@Config{commands} shell index words =
           | not canCompleteCommand || index <= indexBound ->
                 completeExecSubcommand
           | otherwise ->
-                doCommandCompletion params config shell commandName
+                doCommandCompletion protocol config shell commandName
                     (index - indexBound) commandArguments
   where
+    ExecParams
+        { protocol
+        , config = config@Config{commands}
+        , commandAndItsArguments = words
+        } = execParams
+
     completeExecSubcommand
       | hadListOrTreeOrHelp =
             pure ()
@@ -625,8 +618,8 @@ executeCommandCompletion
 executeCommandCompletion mkCommand shell index words =
     executeCommand (mkCommand shell (fromIntegral index) (fromString <$> words))
 
-helpMsg :: Params -> Pretty.Doc (Result Pretty.AnsiStyle)
-helpMsg Params{name, subcommand} = Pretty.vsep
+helpMsg :: ExecParams -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpMsg ExecParams{protocol = Params{name, subcommand}} = Pretty.vsep
     [ Pretty.reflow "Execute a command with predefined environment and command\
         \ line options."
     , ""
