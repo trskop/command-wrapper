@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Prelude
+-- Module:      CommandWrapper.Subcommand.Prelude
 -- Description: Give subcommands everything they need to seamlessly integrate.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

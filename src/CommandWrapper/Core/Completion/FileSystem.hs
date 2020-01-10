@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Completion.FileSystem
+-- Module:      CommandWrapper.Core.Completion.FileSystem
 -- Description: File system entry completion.
 -- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- File system entry completion.
-module CommandWrapper.Internal.Subcommand.Completion.FileSystem
+module CommandWrapper.Core.Completion.FileSystem
     ( FileSystemOptions(..)
     , EntryPattern(..)
     , EntryType(..)

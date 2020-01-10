@@ -107,6 +107,25 @@ import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..), getAliases)
+import CommandWrapper.Core.Completion.FileSystem
+    ( EntryType(Directory)
+    , FileSystemOptions
+        ( allowTilde
+        , appendSlashToSingleDirectoryResult
+        , entryType
+        , expandTilde
+        , output
+        , prefix
+        , suffix
+        , word
+        )
+    , defFileSystemOptions
+    , fileSystemCompleter
+    , outputLines
+    , parseEntryType
+    , queryFileSystem
+    , showEntryType
+    )
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External
     ( executeCommand
@@ -141,25 +160,6 @@ import qualified CommandWrapper.Options.Optparse as Options
     , splitArguments'
     )
 import qualified CommandWrapper.Options.Shell as Options
-import CommandWrapper.Internal.Subcommand.Completion.FileSystem
-    ( EntryType(Directory)
-    , FileSystemOptions
-        ( allowTilde
-        , appendSlashToSingleDirectoryResult
-        , entryType
-        , expandTilde
-        , output
-        , prefix
-        , suffix
-        , word
-        )
-    , defFileSystemOptions
-    , fileSystemCompleter
-    , outputLines
-    , parseEntryType
-    , queryFileSystem
-    , showEntryType
-    )
 import CommandWrapper.Internal.Subcommand.Completion.Libraries
     ( ImportOrContent(Content, Import)
     , Library(..)

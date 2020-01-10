@@ -87,8 +87,7 @@ import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, lastMay)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
-import CommandWrapper.Internal.Subcommand.Completion.FileSystem
+import CommandWrapper.Core.Completion.FileSystem
     ( FileSystemOptions
         ( appendSlashToSingleDirectoryResult
         , expandTilde
@@ -98,6 +97,7 @@ import CommandWrapper.Internal.Subcommand.Completion.FileSystem
     , defFileSystemOptions
     , fileSystemCompleter
     )
+import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Internal.Subcommand.Help
     ( globalOptionsHelp
     , helpOptions
