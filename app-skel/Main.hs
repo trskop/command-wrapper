@@ -31,7 +31,7 @@ import System.Environment (getArgs)
 
 import Data.CaseInsensitive as CI (mk)
 import Data.Monoid.Endo (Endo)
-import Data.Monoid.Endo.Fold (foldEndo)
+import Data.Monoid.Endo.Fold (dualFoldEndo)
 import Data.Text (Text)
 import Dhall (FromDhall, ToDhall)
 import qualified Dhall (auto)
@@ -218,7 +218,7 @@ startEditor defaultEditor file = do
         )
 
 parseOptions :: Options.Parser (Endo (Maybe Action))
-parseOptions = foldEndo
+parseOptions = dualFoldEndo
     <$> ( Options.argument (Options.maybeReader parseSubcommandName)
             (Options.metavar "SUBCOMMAND")
             <&> \subcommandName (_ :: Maybe Action) -> Just Action

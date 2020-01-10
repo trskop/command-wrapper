@@ -143,7 +143,7 @@ subcommandParams = parseEnvIO protocolError askParams
         name <- getProgName
         Message.errorMsg (pretty name) Normal Auto stderr (mkMessage err)
 
-        -- See `command-wrapper-subcommand-protocol(1)` manual page section
+        -- See `command-wrapper-subcommand-protocol(7)` manual page section
         -- /EXIT STATUS/.
         exitWith (ExitFailure 1)
 
@@ -151,7 +151,7 @@ subcommandParams = parseEnvIO protocolError askParams
         Pretty.reflow "This command must be executed inside Command Wrapper\
             \ environment: Failed to parse environment variables:"
         <+> Pretty.viaShow err <> Pretty.colon
-        <+> Pretty.reflow "See command-wrapper-subcommand-protocol(1) manual\
+        <+> Pretty.reflow "See command-wrapper-subcommand-protocol(7) manual\
             \ page for more details."
 
 errorMsg :: Params -> Handle -> Text -> IO ()

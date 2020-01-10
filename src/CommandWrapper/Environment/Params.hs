@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Subcommand parameters as defined by Subcommand Protocol.  See
--- @command-wrapper-subcommand-protocol(1)@ manual page for its definition.
+-- @command-wrapper-subcommand-protocol(7)@ manual page for its definition.
 module CommandWrapper.Environment.Params
     (
       Params(..)
@@ -83,7 +83,7 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput (parse)
 -- | Subcommand parameters.  They are used to populate environment variables
 -- used in Subcommand Protocol.
 --
--- See also 'mkEnvVars' and @command-wrapper-subcommand-protocol(1)@ manual
+-- See also 'mkEnvVars' and @command-wrapper-subcommand-protocol(7)@ manual
 -- page for more details.
 data Params = Params
     { exePath :: FilePath
@@ -175,7 +175,7 @@ subcommandProtocolVersion = makeVersion [1, 0, 0]
 -- | Build environment as defined by Subcommand Protocol.  This has to be used
 -- when calling a Command Wrapper subcommand.
 --
--- See also 'Params' and @command-wrapper-subcommand-protocol(1)@ manual page
+-- See also 'Params' and @command-wrapper-subcommand-protocol(7)@ manual page
 -- for more details.
 mkEnvVars :: Params -> EnvBuilder CommandWrapperPrefix
 mkEnvVars Params{..} = EnvBuilder $ \prefix ->
@@ -212,7 +212,7 @@ commandWrapperEnv AppNames{commandWrapperPrefix} (EnvBuilder mkEnv) =
 -- | Parse Command Wrapper environment variables that are part of subcommand
 -- protocol.
 --
--- See also 'Params' and @command-wrapper-subcommand-protocol(1)@ manual page
+-- See also 'Params' and @command-wrapper-subcommand-protocol(7)@ manual page
 -- for more details.
 askParams :: ParseEnv CommandWrapperPrefix Params
 askParams = Params
