@@ -75,8 +75,8 @@ import Turtle
 
 import CommandWrapper.Config.Command (SimpleCommand(..))
 import CommandWrapper.Config.Environment (EnvironmentVariable(..))
+import qualified CommandWrapper.Core.Help.Pretty as Help
 import qualified CommandWrapper.Environment as Environment
-import qualified CommandWrapper.Internal.Subcommand.Help as Help
 import CommandWrapper.Message (Result)
 import CommandWrapper.Options.Optparse (bashCompleter)
 import qualified CommandWrapper.Subcommand.Prelude as CommandWrapper

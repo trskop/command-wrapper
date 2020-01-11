@@ -3,7 +3,7 @@
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Config.Init
 -- Description: Initialisation capabilities of config subcommand.
--- Copyright:   (c) 2019 Peter Trško
+-- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -70,6 +70,7 @@ import System.FilePath ((</>))
 import System.Posix.Files (createSymbolicLink)
 
 import CommandWrapper.Config.Global (Config(..))
+import CommandWrapper.Core.Help.Pretty (command)
 import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Freeze(input, output)
@@ -78,7 +79,6 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defFreeze
     , freeze
     )
-import CommandWrapper.Internal.Subcommand.Help (command)
 import CommandWrapper.Message (errorMsg, out)
 
 

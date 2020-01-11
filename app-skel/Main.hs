@@ -72,7 +72,7 @@ import System.Editor
 import qualified System.Editor as Editor (editor)
 import System.FilePath (takeDirectory)
 
-import qualified CommandWrapper.Internal.Subcommand.Help as Help
+import qualified CommandWrapper.Core.Help.Pretty as Help
 import CommandWrapper.Message (Result)
 import qualified CommandWrapper.Subcommand.Prelude (SubcommandProps(..))
 import CommandWrapper.Subcommand.Prelude

@@ -70,6 +70,20 @@ import qualified CommandWrapper.Config.Global as Global.Config
     , getAliases
     )
 import qualified CommandWrapper.Config.File as Config.File (apply, read)
+import qualified CommandWrapper.Core.Help.Pretty as Help
+    ( dullGreen
+    , helpOptions
+    , longOption
+    , metavar
+    , optionDescription
+    , optionalMetavar
+    , optionalSubcommand
+    , section
+    , shortOption
+    , subcommand
+    , usageSection
+    , value
+    )
 import CommandWrapper.Environment
     ( AppNames(..)
     , CommandWrapperPrefix
@@ -98,20 +112,6 @@ import qualified CommandWrapper.Options.ColourOutput as ColourOutput
     , noColorEnvVar
     )
 import qualified CommandWrapper.Options.GlobalMode as Options
-import qualified CommandWrapper.Internal.Subcommand.Help as Help
-    ( dullGreen
-    , helpOptions
-    , longOption
-    , metavar
-    , optionDescription
-    , optionalMetavar
-    , optionalSubcommand
-    , section
-    , shortOption
-    , subcommand
-    , usageSection
-    , value
-    )
 
 import Paths_command_wrapper (version)
 

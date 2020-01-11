@@ -85,8 +85,8 @@ import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Config.Environment as EnvironmentVariable
     ( toTuple
     )
+import qualified CommandWrapper.Core.Help.Pretty as Help
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPut)
-import qualified CommandWrapper.Internal.Subcommand.Help as Help
 import CommandWrapper.Message (Result, defaultLayoutOptions, hPutDoc)
 import qualified CommandWrapper.Options as Options
     ( splitArguments

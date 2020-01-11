@@ -126,6 +126,18 @@ import CommandWrapper.Core.Completion.FileSystem
     , queryFileSystem
     , showEntryType
     )
+import CommandWrapper.Core.Help.Pretty
+    ( globalOptionsHelp
+    , helpOptions
+    , longOption
+    , longOptionWithArgument
+    , metavar
+    , optionDescription
+    , section
+    , toolsetCommand
+    , usageSection
+    , value
+    )
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External
     ( executeCommand
@@ -137,18 +149,6 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , Input(..)
     , defExec
     , exec
-    )
-import CommandWrapper.Internal.Subcommand.Help
-    ( globalOptionsHelp
-    , helpOptions
-    , longOption
-    , longOptionWithArgument
-    , metavar
-    , optionDescription
-    , section
-    , toolsetCommand
-    , usageSection
-    , value
     )
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message (Result, errorMsg, out)

@@ -97,8 +97,7 @@ import CommandWrapper.Core.Completion.FileSystem
     , defFileSystemOptions
     , fileSystemCompleter
     )
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
-import CommandWrapper.Internal.Subcommand.Help
+import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
     , helpOptions
     , longOption
@@ -111,6 +110,7 @@ import CommandWrapper.Internal.Subcommand.Help
     , usageSection
     , value
     )
+import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External (findSubcommands)
 import CommandWrapper.Internal.Utils (runMain)
 import CommandWrapper.Message
