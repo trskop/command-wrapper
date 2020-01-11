@@ -22,7 +22,6 @@ import Prelude (fromIntegral)
 import Control.Applicative ((<*>), (<|>), optional, pure)
 import Control.Monad ((>>=))
 import Data.Bool (Bool(False, True), otherwise)
-import Data.Char (Char)
 import qualified Data.Char as Char (toLower)
 import Data.Eq ((==))
 import Data.Foldable (any, null, traverse_)
@@ -50,12 +49,11 @@ import System.IO (IO, putStrLn, stderr, stdout)
 import Text.Show (Show, show)
 
 import Data.Monoid.Endo.Fold (foldEndo)
-import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Doc, Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     ( AnsiStyle
-    , Color(Green, Magenta, White)
+    , Color(Magenta, White)
     , color
     , colorDull
     )
