@@ -34,89 +34,23 @@ module CommandWrapper.Core.Help.Pretty
     )
   where
 
-import Prelude (fromIntegral)
-
-import Control.Applicative ((<*>), (<|>), optional, pure)
-import Control.Monad ((>>=))
-import Data.Bool (Bool(False, True), otherwise)
 import Data.Char (Char)
-import qualified Data.Char as Char (toLower)
-import Data.Eq ((==))
-import Data.Foldable (any, null, traverse_)
-import Data.Function (($), (.), on)
-import Data.Functor (Functor, (<$>), (<&>), fmap)
-import qualified Data.List as List
-    ( deleteBy
-    , elem
-    , filter
-    , intercalate
-    , isPrefixOf
-    , nub
-    , take
-    )
-import qualified Data.List.NonEmpty as NonEmpty (toList)
-import Data.Maybe (Maybe(Just, Nothing), fromMaybe, listToMaybe)
-import Data.Monoid (Endo(Endo), mempty)
+import Data.Function (($), (.))
+import Data.Functor ((<&>), fmap)
 import Data.Semigroup ((<>))
-import Data.String (String, fromString)
-import Data.Tuple (fst)
-import Data.Word (Word)
-import GHC.Generics (Generic)
-import System.Environment (getEnvironment)
-import System.IO (IO, putStrLn, stderr, stdout)
-import Text.Show (Show, show)
 
-import Data.Monoid.Endo.Fold (foldEndo)
 import Data.Text (Text)
-import Data.Text.Prettyprint.Doc (Doc, Pretty(pretty), (<+>))
+import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     ( AnsiStyle
-    , Color(Green, Magenta, White)
+    , Color(Green, Magenta)
     , color
     , colorDull
     )
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
-import qualified Mainplate (applySimpleDefaults)
-import qualified Options.Applicative as Options
-    ( Parser
-    , defaultPrefs
-    , flag
-    , flag'
-    , help
-    , info
-    , long
-    , metavar
-    , short
-    , strArgument
-    )
-import Safe (atMay, headMay, lastMay)
-import System.Directory (findExecutablesInDirectories)
-import System.Posix.Process (executeFile)
 
-import CommandWrapper.Config.Global (Config(..), getAliases)
-import CommandWrapper.Environment (AppNames(AppNames, usedName, names))
-import qualified CommandWrapper.External as External
-    ( executeCommand
-    , findSubcommands
-    , getSearchPath
-    )
-import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message
-    ( Result(..)
-    , debugMsg
-    , defaultLayoutOptions
-    , hPutDoc
-    , out
-    )
-import CommandWrapper.Options.Alias
-    ( Alias(Alias, alias, description)
-    , applyAlias
-    )
-import qualified CommandWrapper.Options.Optparse as Options
-    ( internalSubcommandParse
-    )
-import qualified CommandWrapper.Options.Shell as Options (Shell)
+import CommandWrapper.Message (Result(Result))
 
 
 helpOptions :: Pretty.Doc (Result Pretty.AnsiStyle)
