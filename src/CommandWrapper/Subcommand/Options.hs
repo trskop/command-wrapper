@@ -130,10 +130,19 @@ data SubcommandProps params action = SubcommandProps
     , doCompletion :: params -> Word -> Options.Shell -> [String] -> IO ()
     -- ^ Perform command line completion using this action.
     , helpMsg :: params -> Pretty.Doc (Result Pretty.AnsiStyle)
-    -- ^ Help message to be printed.
+    -- ^ Help message to be printed if @--help|-h@ is invoked.
     , actionOptions :: Options.Parser (Endo (Maybe action))
-    -- ^ Options parser.
+    -- ^ Subcommand options parser.  It will be integrated into bigger parser
+    -- that handles options mandated by Subcommand Protocol as well.
     , defaultAction :: Maybe action
+    -- ^ Default action to be used when `actionOptions` is either not invoked
+    -- or returns `Nothing`.
+    --
+    -- If this value is set to `Nothing` and `actionOptions` doesn't change it
+    -- we'll print `Help` information.  This is usually the case when there
+    -- were no options passed to our application.  If you want to provide
+    -- custom error message for this then define an action for this purpose and
+    -- set it as 'defaultAction'.
     , params :: params
     -- ^ Subcommand parameters, usually just parsed environment variables.  It
     -- has to contain a field of type 'Params'.  Those are values passed by
@@ -206,7 +215,7 @@ runSubcommand SubcommandProps{..} doAction = do
             maybe DefaultAction Action (f (Just action))
 
         DefaultAction ->
-            maybe DefaultAction Action (f Nothing)
+            maybe DefaultAction Action (f defaultAction)
 
         mode ->
             mode
