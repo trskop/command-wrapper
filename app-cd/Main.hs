@@ -28,14 +28,15 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Monoid (Endo(Endo))
 import Data.Semigroup (Semigroup(..))
 import Data.String (fromString)
+import Data.Void (Void)
 import GHC.Generics (Generic)
 import System.Environment (getArgs)
 import Text.Read (readMaybe)
 
 import Data.Text (Text, isPrefixOf)
-import qualified Data.Text as Text (null, unpack)
+import qualified Data.Text as Text (unpack)
 import Dhall (FromDhall, ToDhall)
-import qualified Dhall (auto, input)
+import qualified Dhall (auto)
 import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
@@ -85,6 +86,7 @@ import qualified CommandWrapper.Subcommand.Prelude as CommandWrapper
 import CommandWrapper.Subcommand.Prelude
     ( SubcommandProps(SubcommandProps)
     , dieWith
+    , inputConfig
     , noPreprocessing
     , runSubcommand
     , stderr
@@ -157,12 +159,9 @@ defMode = Mode
     , directory = Nothing
     }
 
-mainAction :: Params Text -> Mode -> IO ()
-mainAction ps@Params{config = configExpr, params} Mode{..} = do
-    config@Config{..} <- if Text.null configExpr
-        then pure defConfig
-        else Dhall.input Dhall.auto configExpr
-
+mainAction :: Params void -> Mode -> IO ()
+mainAction ps@Params{params} Mode{..} = do
+    config@Config{..} <- fromMaybe defConfig <$> inputConfig Dhall.auto params
     action <- evalStrategy (config <$ ps) strategy
 
     sh do
@@ -204,14 +203,14 @@ runMenuTool SimpleCommand{..} input = do
 
     pure r
 
-getEnvironment :: IO (Params Text)
+getEnvironment :: IO (Params Void)
 getEnvironment = do
     params <- subcommandParams
-    Environment.parseEnvIO (dieWith params stderr 1 . fromString . show) $ Params
-        <$> pure (Environment.config params)
-        <*> pure params
-        <*> (isJust <$> Environment.optionalVar "TMUX")
-        <*> (isJust <$> Environment.optionalVar "KITTY_WINDOW_ID")
+    Environment.parseEnvIO (dieWith params stderr 1 . fromString . show)
+        $ Params (error "This is probably a bug.")
+            <$> pure params
+            <*> (isJust <$> Environment.optionalVar "TMUX")
+            <*> (isJust <$> Environment.optionalVar "KITTY_WINDOW_ID")
 
 data Strategy
     = Auto
@@ -259,7 +258,7 @@ evalStrategy params@Params{config, inTmux, inKitty} = \case
     Config{shell, terminalEmulator} = config
 
 parseOptions :: Options.Parser (Endo (Maybe Mode))
-parseOptions = fmap (Endo . const . Just) $ go
+parseOptions = fmap (Endo . fmap . const) $ go
     <$> shellSwitch
     <*> tmuxSwitch
     <*> kittySwitch
