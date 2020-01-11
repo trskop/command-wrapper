@@ -20,6 +20,7 @@ module CommandWrapper.Subcommand.Options
 
     -- ** Help
     , helpFlag
+    , helpFlag'
     , helpFlagFields
 
     -- ** Completion
@@ -41,14 +42,16 @@ module CommandWrapper.Subcommand.Options
 import Control.Applicative ((<*>), many)
 import Data.Foldable (asum)
 import Data.Function (($), (.), const)
-import Data.Functor ((<$>), fmap)
+import Data.Functor (Functor, (<$>), fmap)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Monoid (Endo(Endo, appEndo), Monoid, mempty)
 import Data.Semigroup ((<>))
 import Data.String (String)
 import Data.Void (Void)
 import Data.Word (Word)
+import GHC.Generics (Generic)
 import System.IO (Handle, IO, stdout)
+import Text.Show (Show)
 
 import qualified Data.CaseInsensitive as CI (mk)
 import Data.Text (Text)
@@ -91,12 +94,33 @@ import qualified CommandWrapper.Options.Shell as Options (Shell)
 import qualified CommandWrapper.Options.Shell as Options.Shell (parse)
 
 
+-- | Mode of operation of a subcommand.  It can be either 'Action', which is
+-- the functionality of the subcommand or one of the modes expected by the
+-- Subcommand Protocol (see @command-wrapper-subcommand-protocol(7)@ manual
+-- page for more information).
 data Mode action
     = Action action
+    -- ^ Subcommand @action@, i.e. the functionality provided by the subcommand
+    -- itself.
+    | DefaultAction
+    -- ^ Invoke a default action based on what subcommand declared as one.
     | CompletionInfo
+    -- ^ Mode initiated by @--completion-info@ command line option that is
+    -- mandated by Subcommand Protocol.
+    --
+    -- In this mode we display a Dhall expressions that tells Command Wrapper
+    -- how to call command line completion on the subcommand.  This way
+    -- subcommand is free to implement completion as it wants.
     | CompletionInfoHash
+    -- ^ Mode initiated by @--completion-info-hash@ that prints semantic hash
+    -- of Dhall expressions printed by 'CompletionInfo' mode.
     | Completion Word Options.Shell [String]
+    -- ^ Command line completion mode initiated when subcommand is called using
+    -- convention described by 'CompletionInfo' mode.
     | Help
+    -- ^ Print help message mode initiated by @--help|-h@ options.  This mode
+    -- is also mandated by Subcommand Protocol.
+  deriving stock (Functor, Generic, Show)
 
 -- | Parameters of 'runSubcommand' function.
 data SubcommandProps params action = SubcommandProps
@@ -136,9 +160,17 @@ runSubcommand SubcommandProps{..} doAction = do
 
     updateMode
         <- subcommandParse protoParams Options.defaultPrefs info arguments'
-    case updateMode `appEndo` maybe Help Action defaultAction of
+    case updateMode `appEndo` DefaultAction of
         Action action ->
             doAction params' action
+
+        DefaultAction ->
+            case defaultAction of
+                Nothing ->
+                    doHelpMsg params' protoParams
+
+                Just action ->
+                    doAction params' action
 
         CompletionInfo ->
             printCommandWrapperStyleCompletionInfoExpression stdout
@@ -149,16 +181,15 @@ runSubcommand SubcommandProps{..} doAction = do
         Completion index shell words ->
             doCompletion params' index shell words
 
-        Help -> do
-            let Params{colour, verbosity} = protoParams
-            outWith defaultLayoutOptions verbosity colour stdout
-                (helpMsg params')
+        Help ->
+            doHelpMsg params' protoParams
   where
     info :: Options.ParserInfo (Endo (Mode action))
     info = (`Options.info` mempty) $ asum
-        [ dualFoldEndo
-            <$> helpFlag (constEndo Help)
-            <*> fmap (mapEndo mapActionMode) actionOptions
+        [ helpFlag' (constEndo Help)
+        , dualFoldEndo
+            <$> fmap (mapEndo mapActionMode) actionOptions
+            <*> helpFlag (constEndo Help)
         , completionOptions (\i s as -> constEndo (Completion i s as))
         , completionInfoFlag (constEndo CompletionInfo)
         , completionInfoHashFlag (constEndo CompletionInfoHash)
@@ -172,14 +203,25 @@ runSubcommand SubcommandProps{..} doAction = do
         -> Mode action -> Mode action
     mapActionMode f = \case
         Action action ->
-            maybe Help Action (f (Just action))
+            maybe DefaultAction Action (f (Just action))
+
+        DefaultAction ->
+            maybe DefaultAction Action (f Nothing)
+
         mode ->
-            maybe mode Action (f Nothing)
+            mode
+
+    doHelpMsg params' protoParams = do
+        let Params{colour, verbosity} = protoParams
+        outWith defaultLayoutOptions verbosity colour stdout (helpMsg params')
 
 -- {{{ Help Options -----------------------------------------------------------
 
 helpFlag :: Monoid mode => mode -> Options.Parser mode
 helpFlag helpMode = Options.flag mempty helpMode helpFlagFields
+
+helpFlag' :: mode -> Options.Parser mode
+helpFlag' helpMode = Options.flag' helpMode helpFlagFields
 
 helpFlagFields :: Options.HasName f => Options.Mod f a
 helpFlagFields = Options.long "help" <> Options.short 'h'
