@@ -2,11 +2,27 @@
 
 ## Command Wrapper
 
-*   Support for installing via Nix:
+*   **Support for installing via Nix**:
 
-    -   Override for config dir? `COMMAND_WRAPPER_CONFIG_DIR`, or
-        `NIX_COMMAND_WRAPPER_ROOT` environment variable?  How can we mix this
-        with user configuration?
+    -   How to set system config directory in Nix?  (See also **Fallback
+        configuration files for subcommands.**)  There are few ideas:
+
+        *   Compile the value into the executable itself.
+
+        *   Introduce environment variable for this purpose.  There are few
+            ideas for this:
+
+            `COMMAND_WRAPPER_PREFIX` which mimics the standard configure
+            `PREFIX`.  This can be used as a default to resolve more than just
+            config.
+
+            `COMMAND_WRAPPER_SYSTEM_CONFIG` which resembles what we already
+            have for user and local configuration.
+
+            `COMMAND_WRAPPER_NIX_PREFIX` which is Nix-specific.  We could
+            compile Command Wrapper toolset with or without Nix support.  In
+            later case the environment variable would be simply ignored and we
+            could hardcode a value based on Cabal package setup phase.
 
     -   Variation of toolset initialisation for Nix:
 
@@ -20,36 +36,86 @@
         TOOLSET config --nix --toolset=NAME
         ```
 
-        Which would create a Nix expression to install the toolset.
+        Which would create a Nix expression to install the toolset.  It could
+        bootstrap the whole directory structure for the toolset as well.
 
-*   Config file control:
+*   **Config file control.**
+
+    Since configuration now has three levels (system, user, and local) we can
+    provide command line option to override the local one, which otherwise uses
+    `COMMAND_WRAPPER_LOCAL_CONFIG_DIR` environment variable.
 
     ```
     TOOLSET --local-config-dir[ectory]=DIRECTORY SUBCOMMAND [OPTIONS]
     ```
 
-*   Fallback configuration files for subcommands.  If there is no configuration
+*   **Fallback configuration files for subcommands.**  If there is no configuration
     file for a subcommand inside toolset-specific config directory, then these
     would be used.
 
-*   Pipe help message to pager if on terminal and the message is too long.
+    This is not as easy as it sounds.  First step in this direction was
+    changing Subcommand Protocol to specify that `COMMAND_WRAPPER_CONFIG`
+    contains Dhall expression and not a file path.  This way Command Wrapper
+    has full control over file resolution and potential composition of
+    configuration.  However, the ideas on how to do the resolution and
+    composition are not completely solid.
 
-*   Configuration for colours:
+    Initial step for changing the config file resolution (finding which config
+    file to use) has been made by supporting three levels of configuration for
+    toolset:
+
+    *   System level configuration.
+    *   User level configuration.
+    *   Local AKA project-level configuration.
+
+*   **Pipe help message to pager** if on terminal and the message is too long.
+
+*   **Configuration for colours**:
 
     -   Messages: warning, error, info, etc.
     -   Help message colours: option, metavariable, command, etc.
 
     This will require Subcommand Protocol to be extended.
 
-*   Restructure library into two, one for building subcommands, and another for
-    building toolsets.
+*   (**IN PROGRESS**) **Restructure library into three**:
+
+    -   `command-wrapper-core` that uses `CommandWrapper.Core` module prefix.
+    -   `command-wrapper-toolset` that uses `CommandWrapper.Toolset` module
+        prefix.
+    -   `command-wrapper-subcommand` that uses `CommandWrapper.Subcommand`
+        module prefix.
+
+    Steps:
+
+    1.  Reorganise modules so that they fit into the hierarchy mentioned above:
+
+        -   CommandWrapper.Core
+        -   CommandWrapper.Toolset
+        -   CommandWrapper.Subcommand
+
+    2.  Split them into following packages where
+
+        -   `command-wrapper-core` that contains all `CommandWrapper.Core`
+            modules.
+
+        -   `command-wrapper-toolset` that contains all `CommandWrapper.Toolset`
+            modules and `command-wrapper` executable (`app/Main.hs`).
+
+        -   `command-wrapper-subcommand` that contains all
+            `CommandWrapper.Subcommand` modules.
+
+    3.  Figure out where to put `cd`, `skel` and `exec` subcommands.
+
+        While they are very useful it may not make sense to put them into
+        `command-wrapper-toolset` or `command-wrapper-subcommand`.  They may
+        need a package each.  It may be the most modular apprach as well.
 
 
 ## Internal Subcommands
 
 ### Completion
 
-*   Extend file system completion to support:
+*   **Extend file system completion to support regular expresions and globs**:
 
     -   Regular expressions and glob patterns to filter vialble completions:
 
@@ -64,7 +130,7 @@
         `--file-system [--type=TYPE]`.  When `--type=TYPE` is omitted then
         entry type is completely ignored.
 
-*   Hosts completion:
+*   **Hosts completion**:
 
     ```
     TOOLSET completion --query --hosts --input=FORMAT:FILE [...] [PATTERN]
@@ -73,13 +139,13 @@
     Where `FORMAT` is one of `hosts`, `known_hosts`, or `ssh_config`.  By
     default it should behave as if executed as:
 
-*   Consider having:
+*   **Consider having variations of completion script**:
 
     ```
     TOOLSET completion --script [--standalone|--source] ...
     ```
 
-*   Support for custom libraries:
+*   **Support for custom libraries shell and Dhall libraries**:
 
     ```
     TOOLSET completion --library --custom=NAME [--import|--content] [--output=FILE]
