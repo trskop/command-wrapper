@@ -341,10 +341,10 @@
 -   Support directory specific commands.  For example we may want a specific
     shell for a certain directory.
 
--   Support Neovim remote.  See `yx jmp` for more information.
-
--   Make it aware of Vim/Neovim terminal, which can prevent us to create new
-    terminal window.
+-   Support Neovim remote to open a new terminal buffer.  In other words, if we
+    have `nvr` (neovim-remote) installed then we can open a terminal buffer
+    from within a Vim/Neovim terminal as well as any other terminal if we pass
+    Neovim listening socket/address to it.  See `yx jmp` for more information.
 
 
 ### Exec
