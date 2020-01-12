@@ -32,10 +32,10 @@ import GHC.Generics (Generic)
 import System.Environment (getArgs)
 
 import qualified CommandWrapper.Core.Help.Pretty as Help
-import CommandWrapper.Message (Result)
 import qualified CommandWrapper.Subcommand.Prelude (SubcommandProps(..))
 import CommandWrapper.Subcommand.Prelude
     ( Params(Params, name, subcommand)
+    , Result
     , Shell
     , SubcommandProps(SubcommandProps)
     , dieWith
@@ -54,6 +54,8 @@ import Dhall (FromDhall)
 import qualified Dhall (auto)
 import Safe (atMay, lastDef)
 import qualified Turtle
+  ( Parser
+  )
 
 -- If you have multiple Haskell commands that are build as part of a Haskell
 -- package then they can share a common library.
