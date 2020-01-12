@@ -75,10 +75,15 @@ let bashTemplate =
         -- The complexity related to `compopt -o nospace` is so that we do not
         -- insert space when the only completion is in the form of `--option=`
         -- or `/some/path/`.
+        --
+        -- The stuff with `${COMP_WORDBREAKS//:}` and `compopt +o filenames` is
+        -- to be able to complete URLs, e.g. `--url=http://localhost`, without
+        -- Bash interpreting it differently.
         in  ''
             function _${name}()
             {
                 COMP_WORDBREAKS="''${COMP_WORDBREAKS//=}"
+                COMP_WORDBREAKS="''${COMP_WORDBREAKS//:}"
                 local IFS=$'\n'
                 mapfile -t COMPREPLY < <(
                     COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion \
@@ -86,6 +91,7 @@ let bashTemplate =
                         --shell=bash \
                         -- "''${COMP_WORDS[@]}"
                 )
+                compopt +o filenames
                 if (( ''${#COMPREPLY[@]} == 1 )); then
                     if [[ "''${COMPREPLY[0]}" == "''${COMPREPLY[0]%=}=" \
                        || "''${COMPREPLY[0]}" == */ \
