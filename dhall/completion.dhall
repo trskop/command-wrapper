@@ -79,6 +79,7 @@ let bashTemplate =
             function _${name}()
             {
                 COMP_WORDBREAKS="''${COMP_WORDBREAKS//=}"
+                local IFS=$'\n'
                 mapfile -t COMPREPLY < <(
                     COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion \
                         --index="''${COMP_CWORD}" ${subcommandOption}\
