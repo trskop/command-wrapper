@@ -245,11 +245,6 @@ data Strategy
     | ShCommand
     | BashCommand
 
-instance Semigroup Strategy where
-    Auto <> x    = x
-    x    <> Auto = x
-    _    <> x    = x
-
 evalStrategy
     :: Env Config
     -> Strategy
