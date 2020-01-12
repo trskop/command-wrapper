@@ -61,3 +61,43 @@
     of new Dhall Prelude library behaves correctly.
 
 5.  Commit&push
+
+
+# Debugging Bash Completion
+
+1.  Lets say that `TOOLSET` variable contains name of our toolset, then we can
+    get a completion function for it from currently running bash by calling:
+
+    ```Bash
+    type _${TOOLSET}
+    ```
+
+    Which will print out the completion function with some extra information on
+    top.
+
+2.  Store the function definition returned by `type _${TOOLSET}` into a file.
+
+3.  Modify Bash completion function in the stored file by adding two lines at
+    the end:
+
+    ```Bash
+    # ... Function definition
+
+        echo "${COMP_CWORD}" "${COMP_WORDS[@]}" >> ~/tmp/completion-debug
+        echo "${COMPREPLY[@]}" >> ~/tmp/completion-debug
+    }
+    ```
+
+4.  Open another terminal to besides the current one so that both can be seen.
+    Run following in that new terminal:
+
+    ```Bash
+    touch ~/tmp/completion-debug
+    tail -f ~/tmp/completion-debug
+    ```
+
+5.  Go back to previous terminal and source the file with the modified
+    completion function.
+
+6.  Start experimenting with completion and you should be able to see the
+    values in the other terminal where the `tail -f` command is running.
