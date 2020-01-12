@@ -68,11 +68,11 @@ import qualified Options.Applicative.Types as Options (Completer(runCompleter))
 import System.Directory (doesDirectoryExist)
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
-import CommandWrapper.Core.Message (dieFailedToParseOptions)
-import CommandWrapper.Environment.AppNames (AppNames(AppNames, usedName))
-import CommandWrapper.Environment.Params
+import CommandWrapper.Core.Environment.AppNames (AppNames(AppNames, usedName))
+import CommandWrapper.Core.Environment.Params
     ( Params(Params, colour, name, subcommand, verbosity)
     )
+import CommandWrapper.Core.Message (dieFailedToParseOptions)
 
 
 parse

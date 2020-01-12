@@ -44,7 +44,7 @@ import System.Editor
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Core.Message (errorMsg)
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
+import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.External (getSubcommandConfigPathToEdit)
 
 

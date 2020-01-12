@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.External
--- Description: TODO: Module synopsis
+-- Description: Find and execute external subcommands.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
@@ -9,7 +9,7 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
+-- Find and execute external subcommands.
 module CommandWrapper.External
     ( Command
     , run
@@ -61,13 +61,7 @@ import qualified CommandWrapper.Config.Global as Global
     ( Config(Config, colourOutput, configPaths, searchPath, verbosity)
     , ConfigPaths(ConfigPaths, local, system, user)
     )
-import CommandWrapper.Core.Message
-    ( debugMsg
-    , dieUnableToExecuteSubcommand
-    , dieUnableToFindSubcommandExecutable
-    , errorMsg
-    )
-import qualified CommandWrapper.Environment as Environment
+import qualified CommandWrapper.Core.Environment as Environment
     ( AppNames(AppNames, exePath, names, usedName)
     , Params
         ( Params
@@ -83,6 +77,12 @@ import qualified CommandWrapper.Environment as Environment
     , getEnv
     , mkEnvVars
     , subcommandProtocolVersion
+    )
+import CommandWrapper.Core.Message
+    ( debugMsg
+    , dieUnableToExecuteSubcommand
+    , dieUnableToFindSubcommandExecutable
+    , errorMsg
     )
 
 

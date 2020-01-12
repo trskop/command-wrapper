@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Environment.Parser
+-- Module:      CommandWrapper.Core.Environment.Parser
 -- Description: Parser for environment variables.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Parser for environment variables.
-module CommandWrapper.Environment.Parser
+module CommandWrapper.Core.Environment.Parser
     (
     -- * Environment Parser
       ParseEnv(..)
@@ -49,7 +49,7 @@ import System.Environment.Parser
     )
 import qualified System.Environment.Parser as Parser (parseEnv)
 
-import CommandWrapper.Environment.Variable
+import CommandWrapper.Core.Environment.Variable
     ( CommandWrapperPrefix
     , CommandWrapperVarName
     , CommandWrapperToolsetVarName

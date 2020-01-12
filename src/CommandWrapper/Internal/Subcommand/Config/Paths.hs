@@ -24,7 +24,7 @@ import Data.String ({-IsString,-} fromString)
 import GHC.Generics (Generic)
 import System.Environment (lookupEnv)
 
-import CommandWrapper.Environment (Params(Params, exePath, name))
+import CommandWrapper.Core.Environment (Params(Params, exePath, name))
 import Data.Text (Text)
 import qualified Dhall (Inject)
 import System.Directory

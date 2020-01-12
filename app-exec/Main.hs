@@ -81,8 +81,8 @@ import qualified Turtle (procs) -- Get rid of dependency on turtle, use process.
 
 import CommandWrapper.Config.Command (Command(..), NamedCommand(..))
 import qualified CommandWrapper.Config.Command as NamedCommand (isNamed)
-import CommandWrapper.Config.Environment (EnvironmentVariable(..))
-import qualified CommandWrapper.Config.Environment as EnvironmentVariable
+import CommandWrapper.Core.Config.Environment (EnvironmentVariable(..))
+import qualified CommandWrapper.Core.Config.Environment as EnvironmentVariable
     ( toTuple
     )
 import qualified CommandWrapper.Core.Help.Pretty as Help

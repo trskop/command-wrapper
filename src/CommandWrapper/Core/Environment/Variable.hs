@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Environment.Variable
+-- Module:      CommandWrapper.Core.Environment.Variable
 -- Description: Environment variables as they are understood by Command Wrapper.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Environment variables as they are understood by Command Wrapper.
-module CommandWrapper.Environment.Variable
+module CommandWrapper.Core.Environment.Variable
     ( EnvVarName
     , EnvVarValue
 

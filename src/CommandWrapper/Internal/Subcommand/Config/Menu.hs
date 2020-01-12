@@ -49,8 +49,8 @@ import qualified Graphics.Vty as Vty
 import System.Posix (OpenMode(ReadWrite), closeFd, defaultFileFlags, openFd)
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput))
+import CommandWrapper.Core.Environment (AppNames(AppNames))
 import CommandWrapper.Core.Message (withTerminal)
-import CommandWrapper.Environment (AppNames(AppNames))
 import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput(..))
 import CommandWrapper.Options.ColourOutput (shouldUseColours)
 

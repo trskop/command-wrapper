@@ -77,6 +77,7 @@ import CommandWrapper.Core.Completion.FileSystem
     , defFileSystemOptions
     , fileSystemCompleter
     )
+import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
     , helpOptions
@@ -89,7 +90,6 @@ import CommandWrapper.Core.Help.Pretty
     , toolsetCommand
     , usageSection
     )
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
 --import qualified CommandWrapper.External as External (executeCommand)
 import CommandWrapper.Internal.Dhall as Dhall (hPut)
 import CommandWrapper.Internal.Subcommand.Version.Info

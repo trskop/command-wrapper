@@ -43,7 +43,7 @@ import Data.Monoid.Endo (E)
 import qualified Mainplate (Command(..), ExternalCommand(..))
 import qualified Options.Applicative as Options (ParserInfo, ParserPrefs)
 
-import CommandWrapper.Environment.AppNames (AppNames)
+import CommandWrapper.Core.Environment.AppNames (AppNames)
 import qualified CommandWrapper.External as External (Command)
 import qualified CommandWrapper.Internal as Internal (Command(..), command)
 import CommandWrapper.Options.Alias (Alias(..), applyAlias)

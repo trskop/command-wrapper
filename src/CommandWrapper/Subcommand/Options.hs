@@ -85,8 +85,8 @@ import qualified Options.Applicative as Options
     , short
     )
 
+import CommandWrapper.Core.Environment (Params(Params, colour, verbosity))
 import CommandWrapper.Core.Message (Result, defaultLayoutOptions, outWith)
-import CommandWrapper.Environment (Params(Params, colour, verbosity))
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
 import CommandWrapper.Options.ColourOutput (ColourOutput(Never))
 import CommandWrapper.Options.Optparse (subcommandParse)

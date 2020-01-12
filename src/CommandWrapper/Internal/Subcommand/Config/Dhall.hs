@@ -3,7 +3,7 @@
 -- Module:      $Header$
 -- Description: Dhall operations provided by the config command.
 -- Copyright:   (c) 2018-2019 Gabriel Gonzalez and contrubutors;
---              (c) 2019 Peter Trško
+--              (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -222,7 +222,7 @@ import qualified Dhall.TypeCheck
 --import qualified Text.Dot
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
+import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPutDoc, hPutExpr)
 import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput(..))
 import CommandWrapper.Options.ColourOutput (shouldUseColours)

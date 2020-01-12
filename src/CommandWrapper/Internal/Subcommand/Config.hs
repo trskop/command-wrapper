@@ -97,6 +97,7 @@ import CommandWrapper.Core.Completion.FileSystem
     , defFileSystemOptions
     , fileSystemCompleter
     )
+import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
     , helpOptions
@@ -115,7 +116,6 @@ import CommandWrapper.Core.Message
 --  , errorMsg
     , out
     )
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External (findSubcommands)
 import CommandWrapper.Internal.Utils (runMain)
 import qualified CommandWrapper.Options.Optparse as Options

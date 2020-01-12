@@ -1,9 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Environment.AppNames
+-- Module:      CommandWrapper.Core.Environment.AppNames
 -- Description: Representation of all the names and paths under wich Command
 --              Wrapper toolset is known.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -16,7 +16,7 @@
 --
 -- See also @command-wrapper(1)@ and @command-wrapper-subcommand-protocol(7)@
 -- manual pages.
-module CommandWrapper.Environment.AppNames
+module CommandWrapper.Core.Environment.AppNames
     (
     -- * Application Names
       AppNames(..)
@@ -49,7 +49,7 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
 import System.Environment.Executable (ScriptPath(..), getScriptPath)
 import System.FilePath (takeFileName)
 
-import CommandWrapper.Environment.Variable
+import CommandWrapper.Core.Environment.Variable
     ( CommandWrapperPrefix
     , CommandWrapperToolsetVarName(CommandWrapperInvokeAs)
     , getCommandWrapperToolsetVarName

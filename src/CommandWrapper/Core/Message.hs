@@ -97,7 +97,7 @@ import qualified System.Console.Terminal.Size as Terminal
     , hSize
     )
 
-import CommandWrapper.Environment.Parser (ParseEnvError)
+import CommandWrapper.Core.Environment.Parser (ParseEnvError)
 import CommandWrapper.Options.ColourOutput (ColourOutput(..), shouldUseColours)
 
 

@@ -126,6 +126,7 @@ import CommandWrapper.Core.Completion.FileSystem
     , queryFileSystem
     , showEntryType
     )
+import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
     , helpOptions
@@ -139,7 +140,6 @@ import CommandWrapper.Core.Help.Pretty
     , value
     )
 import CommandWrapper.Core.Message (Result, errorMsg, out)
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External
     ( executeCommand
     , executeCommandWith

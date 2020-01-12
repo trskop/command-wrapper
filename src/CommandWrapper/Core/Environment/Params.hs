@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Environment.Params
+-- Module:      CommandWrapper.Core.Environment.Params
 -- Description: Subcommand parameters as defined by Subcommand Protocol.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
@@ -11,7 +11,7 @@
 --
 -- Subcommand parameters as defined by Subcommand Protocol.  See
 -- @command-wrapper-subcommand-protocol(7)@ manual page for its definition.
-module CommandWrapper.Environment.Params
+module CommandWrapper.Core.Environment.Params
     (
       Params(..)
 
@@ -58,17 +58,17 @@ import qualified Data.Text.Prettyprint.Doc as Pretty (dquotes, viaShow, vsep)
 import Data.Verbosity (Verbosity)
 import qualified Data.Verbosity as Verbosity (parse)
 
-import CommandWrapper.Environment.Builder (EnvBuilder(EnvBuilder))
-import CommandWrapper.Environment.Parser
+import CommandWrapper.Core.Environment.Builder (EnvBuilder(EnvBuilder))
+import CommandWrapper.Core.Environment.Parser
     ( ParseEnv
     , ParseEnvError(ParseEnvError)
     , commandWrapperVar
     , commandWrapperVar'
     )
-import CommandWrapper.Environment.AppNames
+import CommandWrapper.Core.Environment.AppNames
     ( AppNames(AppNames, commandWrapperPrefix)
     )
-import CommandWrapper.Environment.Variable
+import CommandWrapper.Core.Environment.Variable
     ( CommandWrapperPrefix
     , CommandWrapperVarName(..)
     , EnvVarName

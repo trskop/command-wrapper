@@ -64,8 +64,8 @@ import qualified Data.Text.Prettyprint.Doc as Pretty (Doc)
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
+import CommandWrapper.Core.Environment (AppNames, subcommandProtocolVersion)
 import CommandWrapper.Core.Message (Result)
-import CommandWrapper.Environment (AppNames, subcommandProtocolVersion)
 import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
     ( Completer
     , CompletionConfig(..)

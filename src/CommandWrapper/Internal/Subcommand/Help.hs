@@ -76,6 +76,7 @@ import System.Directory (findExecutablesInDirectories)
 import System.Posix.Process (executeFile)
 
 import CommandWrapper.Config.Global (Config(..), getAliases)
+import CommandWrapper.Core.Environment (AppNames(AppNames, usedName, names))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
     , helpOptions
@@ -94,7 +95,6 @@ import CommandWrapper.Core.Message
     , hPutDoc
     , out
     )
-import CommandWrapper.Environment (AppNames(AppNames, usedName, names))
 import qualified CommandWrapper.External as External
     ( executeCommand
     , findSubcommands

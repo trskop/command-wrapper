@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Config.Command
 -- Description: Command description suitable for execution
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -41,7 +41,7 @@ import qualified Dhall
 import Data.Verbosity (Verbosity)
 import Numeric.Natural (Natural)
 
-import CommandWrapper.Config.Environment (EnvironmentVariable)
+import CommandWrapper.Core.Config.Environment (EnvironmentVariable)
 import CommandWrapper.Config.NotifyWhen (NotifyWhen)
 import CommandWrapper.Internal.Dhall as Dhall
 import CommandWrapper.Options.ColourOutput (ColourOutput)

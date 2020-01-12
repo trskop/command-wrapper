@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Config.Environment
+-- Module:      CommandWrapper.Core.Config.Environment
 -- Description: Environment variables
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Environment variables.
-module CommandWrapper.Config.Environment
+module CommandWrapper.Core.Config.Environment
     ( EnvironmentVariable(..)
     , toTuple
     )
@@ -21,7 +21,7 @@ import Text.Show (Show)
 
 import Dhall (FromDhall, ToDhall)
 
-import CommandWrapper.Environment.Variable (EnvVarName, EnvVarValue)
+import CommandWrapper.Core.Environment.Variable (EnvVarName, EnvVarValue)
 
 
 -- | Represents environment variable @name=value@.

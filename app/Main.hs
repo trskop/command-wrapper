@@ -70,22 +70,7 @@ import qualified CommandWrapper.Config.Global as Global.Config
     , getAliases
     )
 import qualified CommandWrapper.Config.File as Config.File (apply, read)
-import qualified CommandWrapper.Core.Help.Pretty as Help
-    ( dullGreen
-    , helpOptions
-    , longOption
-    , metavar
-    , optionDescription
-    , optionalMetavar
-    , optionalSubcommand
-    , section
-    , shortOption
-    , subcommand
-    , usageSection
-    , value
-    )
-import CommandWrapper.Core.Message (Result(..), errorMsg)
-import CommandWrapper.Environment
+import CommandWrapper.Core.Environment
     ( AppNames(..)
     , CommandWrapperPrefix
     , CommandWrapperToolsetVarName
@@ -102,6 +87,21 @@ import CommandWrapper.Environment
     , parseEnvIO
     , var
     )
+import qualified CommandWrapper.Core.Help.Pretty as Help
+    ( dullGreen
+    , helpOptions
+    , longOption
+    , metavar
+    , optionDescription
+    , optionalMetavar
+    , optionalSubcommand
+    , section
+    , shortOption
+    , subcommand
+    , usageSection
+    , value
+    )
+import CommandWrapper.Core.Message (Result(..), errorMsg)
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
 import qualified CommandWrapper.Options as Options

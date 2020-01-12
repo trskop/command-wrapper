@@ -78,7 +78,7 @@ import qualified System.AtomicWrite.Writer.ByteString as ByteString
 import qualified System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
-import CommandWrapper.Environment (AppNames(exePath, usedName))
+import CommandWrapper.Core.Environment (AppNames(exePath, usedName))
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( hPutExpr
     )
