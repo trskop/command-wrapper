@@ -86,7 +86,7 @@ import qualified CommandWrapper.Core.Config.Environment as EnvironmentVariable
     ( toTuple
     )
 import qualified CommandWrapper.Core.Help.Pretty as Help
-import CommandWrapper.Core.Message (Result, defaultLayoutOptions, hPutDoc)
+import CommandWrapper.Core.Message (defaultLayoutOptions, hPutDoc)
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPut)
 import qualified CommandWrapper.Options as Options
     ( splitArguments
@@ -97,6 +97,7 @@ import qualified CommandWrapper.Options.Shell as Options.Shell (parse)
 import qualified CommandWrapper.Subcommand.Prelude (SubcommandProps(..))
 import CommandWrapper.Subcommand.Prelude
     ( Params(Params, colour, name, subcommand, verbosity)
+    , Result
     , SubcommandProps(SubcommandProps)
     , dieWith
     , inputConfig

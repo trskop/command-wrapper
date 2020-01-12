@@ -78,7 +78,6 @@ import CommandWrapper.Config.Command (SimpleCommand(..))
 import CommandWrapper.Core.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Core.Environment as Environment
 import qualified CommandWrapper.Core.Help.Pretty as Help
-import CommandWrapper.Core.Message (Result)
 import CommandWrapper.Options.Optparse (bashCompleter)
 import qualified CommandWrapper.Subcommand.Prelude as CommandWrapper
     ( Shell
@@ -86,6 +85,7 @@ import qualified CommandWrapper.Subcommand.Prelude as CommandWrapper
     )
 import CommandWrapper.Subcommand.Prelude
     ( Params(Params, name, subcommand, verbosity)
+    , Result
     , SubcommandProps(SubcommandProps)
     , dieWith
     , inputConfig
