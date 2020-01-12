@@ -1,0 +1,6 @@
+# Configuration for hie-bios which is used by hie (Haskell IDE Engine) and
+# ghcide.
+#
+# Configuration file is documented on:
+# <https://github.com/mpickering/hie-bios#explicit-configuration>
+cradle: {stack: {component: "command-wrapper:lib"}}
