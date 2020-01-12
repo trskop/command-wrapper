@@ -368,13 +368,15 @@ helpMsg SkelParams{protocol = Params{name, subcommand}} = Pretty.vsep
             , Pretty.squotes
                 (Help.toolsetCommand name ("help" <+> subcommand')) <> "."
             ]
-        ]
 
-    , Help.section (Help.metavar "SUBCOMMAND")
-        [ Pretty.reflow "Name of the new subcommand. Where and how the source\
-            \ code or executable file will be named is configurable."
+        , Help.optionDescription ["SUBCOMMAND"]
+            [ Pretty.reflow "Name of the new subcommand. Where and how the\
+                \ source code or executable file will be named is\
+                \ configurable."
+            ]
+
+        , Help.globalOptionsHelp name
         ]
-    , ""
     ]
   where
     subcommand' = fromString subcommand

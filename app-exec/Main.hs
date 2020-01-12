@@ -718,18 +718,18 @@ helpMsg ExecParams{protocol = Params{name, subcommand}} = Pretty.vsep
             , Pretty.squotes
                 (Help.toolsetCommand name ("help" <+> subcommand')) <> "."
             ]
-        ]
 
-    , Help.section (Help.metavar "COMMAND")
-        [ Help.metavar "COMMAND" <+> Pretty.reflow "to execute."
-        ]
-    , ""
+        , Help.optionDescription ["COMMAND"]
+            [ Help.metavar "COMMAND" <+> Pretty.reflow "to execute."
+            ]
 
-    , Help.section (Help.metavar "COMMAND_ARGUMENTS")
-        [ Pretty.reflow "Additional arguments passed to"
-        <+> Help.metavar "COMMAND" <> "."
+        , Help.optionDescription ["COMMAND_ARGUMENTS"]
+            [ Pretty.reflow "Additional arguments passed to"
+            <+> Help.metavar "COMMAND" <> "."
+            ]
+
+        , Help.globalOptionsHelp name
         ]
-    , ""
     ]
   where
     subcommand' = fromString subcommand

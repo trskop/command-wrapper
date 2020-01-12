@@ -491,13 +491,13 @@ helpMsg Params{params = Environment.Params{name, subcommand}} = Pretty.vsep
             , Pretty.squotes
                 (Help.toolsetCommand name ("help" <+> subcommand')) <> "."
             ]
-        ]
 
-    , Help.section (Help.metavar "DIRECTORY")
-        [ Pretty.hsep
+        , Help.optionDescription ["DIRECTORY"]
             [ "Use", Help.metavar "DIRECTORY"
             , Pretty.reflow "instead of searching for one in a configured list."
             ]
+
+        , Help.globalOptionsHelp name
         ]
     , ""
     ]
