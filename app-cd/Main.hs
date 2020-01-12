@@ -137,6 +137,8 @@ data Env config = Env
     , params :: Params
     , inTmux :: Bool
     , inKitty :: Bool
+    , inVimTerminal :: Bool
+    -- ^ Inside Vim/Neovim terminal buffer.
     }
   deriving stock (Functor, Generic)
 
@@ -226,6 +228,13 @@ getEnvironment = do
             <$> pure params
             <*> (isJust <$> Environment.optionalVar "TMUX")
             <*> (isJust <$> Environment.optionalVar "KITTY_WINDOW_ID")
+            <*> inVimTerminal
+  where
+    inVimTerminal = do
+        haveVim <- isJust <$> Environment.optionalVar "VIM"
+        if haveVim
+            then isJust <$> Environment.optionalVar "VIMRUNTIME"
+            else pure False
 
 data Strategy
     = Auto
@@ -245,10 +254,14 @@ evalStrategy
     :: Env Config
     -> Strategy
     -> IO Action
-evalStrategy env@Env{config, inTmux, inKitty} = \case
+evalStrategy env@Env{config, inTmux, inKitty, inVimTerminal} = \case
     Auto
-      | inTmux    -> pure (RunTmux shell)
-      | inKitty   -> pure (RunKitty shell)
+      | inTmux && not inVimTerminal ->
+            pure (RunTmux shell)
+
+      | inKitty  && not inVimTerminal ->
+            pure (RunKitty shell)
+
       | otherwise -> do
             stdoutIsTerminal <- hIsTerminalDevice stdout
             if stdoutIsTerminal
