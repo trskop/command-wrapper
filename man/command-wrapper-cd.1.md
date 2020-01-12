@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 18th December 2019
+% 12th January 2020
 
 
 # NAME
@@ -12,8 +12,14 @@ in a selected directory.
 # USAGE
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd
-\[\--shell|-s|\--tmux|-t|\--kitty|-k|\--terminal|-e] \[\--query=QUERY|-q QUERY]
-\[\[\--] DIR]
+\[\--shell|-s|\--tmux|-t|\--kitty|-k|\--terminal|-e]
+\[\--query=QUERY|-q *QUERY*]
+\[\[\--] *DIRECTORY*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd
+{\--bash-command|\--sh-command}
+\[\--query=QUERY|-q *QUERY*]
+\[\[\--] *DIRECTORY*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd {\--help|-h}
 
@@ -67,6 +73,15 @@ For more information consult Command Wrapper Dhall library.
 \--terminal, -e
 :   Open a new terminal emulator window.
 
+\--bash-command
+:   Print a command to change directory.  If escaping is required then Bash
+    string literal is produced. Useful for Bash (obviously), Zsh, and other
+    shells that support string literals using `$'...'` syntax.
+
+\--sh-command
+:   Print a command to change directory. If escaping is required then Bourne
+    Shell escaping is used. Useful for shells like Dash.
+
 \--query=*QUERY*, \--query *QUERY*, -q *QUERY*
 :  Start the search for a directory with the given *QUERY*.  This option may be
    ignored if the underlying menu tool doesn't support this functionality.  FZF
@@ -75,9 +90,12 @@ For more information consult Command Wrapper Dhall library.
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help cd`.
 
-*DIR*
-:   Start a new shell, open Tmux window, or a new Kitty window in *DIR* instead
-    of requesting user to select one.  The value of *DIR* doesn't have to be a
+*DIRECTORY*
+:   Use *DIRECTORY* instead of asking user to select one from a list.
+
+    In other words, start a new shell, open a Tmux window, new Kitty window, or
+    print a command for changing directory to *DIRECTORY* instead of requesting
+    user to select one.  The value of *DIRECTORY* doesn't have to be a
     directory preconfigured in configuration file.
 
 
@@ -88,7 +106,7 @@ manual page section *EXIT STATUS*.  Specific *EXIT STATUS* codes to this subcomm
 are listed below.
 
 `3`
-:  Command was unable to find targed directory or it was unable to determine
+:  Command was unable to find target directory or it was unable to determine
    what shell to execute.  The later usually means that `SHELL` environment
    variable is not present in the current environment.
 

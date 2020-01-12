@@ -17,7 +17,7 @@
 module Main (main)
   where
 
-import Control.Applicative (optional)
+import Control.Applicative (many, optional)
 import Control.Exception (onException)
 import Control.Monad ((>=>), unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -33,8 +33,14 @@ import GHC.Generics (Generic)
 import System.Environment (getArgs)
 import Text.Read (readMaybe)
 
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as ByteString (putStrLn)
+import Data.ByteString.ShellEscape (bash, bytes, sh)
+import Data.Monoid.Endo (mapEndo)
+import Data.Monoid.Endo.Fold (dualFoldEndo)
 import Data.Text (Text, isPrefixOf)
 import qualified Data.Text as Text (unpack)
+import qualified Data.Text.Encoding as Text (encodeUtf8)
 import Dhall (FromDhall, ToDhall)
 import qualified Dhall (auto)
 import Data.Text.Prettyprint.Doc ((<+>))
@@ -44,12 +50,12 @@ import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Verbosity (Verbosity(Silent))
 import qualified Options.Applicative as Options
     ( Parser
+    , flag'
     , long
     , metavar
     , short
     , strArgument
     , strOption
-    , switch
     )
 import Safe (atMay, lastDef)
 import System.Directory (getCurrentDirectory)
@@ -142,7 +148,7 @@ main = do
             { preprocess = noPreprocessing
             , doCompletion
             , helpMsg
-            , actionOptions = parseOptions
+            , actionOptions = mapEndo fmap <$> parseOptions
             , defaultAction = Just defMode
             , params
             , arguments
@@ -226,6 +232,8 @@ data Strategy
     | TmuxOnly
     | KittyOnly
     | TerminalEmulatorOnly
+    | ShCommand
+    | BashCommand
 
 instance Semigroup Strategy where
     Auto <> x    = x
@@ -262,46 +270,85 @@ evalStrategy env@Env{config, inTmux, inKitty} = \case
 
             Just cmd ->
                 pure (RunTerminalEmulator (`cmd` fmap shellCommand shell))
+
+    ShCommand ->
+        pure $ PrintCdCommand \dir -> bytes (sh (Text.encodeUtf8 dir))
+
+    BashCommand ->
+        pure $ PrintCdCommand \dir -> bytes (bash (Text.encodeUtf8 dir))
+
   where
     Config{shell, terminalEmulator} = config
 
-parseOptions :: Options.Parser (Endo (Maybe Mode))
-parseOptions = fmap (Endo . fmap . const) $ go
-    <$> shellSwitch
-    <*> tmuxSwitch
-    <*> kittySwitch
-    <*> terminalEmulator
-    <*> optional queryOption
+parseOptions :: Options.Parser (Endo Mode)
+parseOptions = dualFoldEndo
+    <$> many shellSwitch
+    <*> many tmuxSwitch
+    <*> many kittySwitch
+    <*> many terminalEmulator
+    <*> many queryOption
+    <*> many shCommand
+    <*> many bashCommand
     <*> optional dirArgument
   where
-    go runShell runTmux runKitty runTerminalEmulator query dir = Mode
-        (   (if runShell then ShellOnly else Auto)
-            <> (if runTmux then TmuxOnly else Auto)
-            <> (if runKitty then KittyOnly else Auto)
-            <> (if runTerminalEmulator then TerminalEmulatorOnly else Auto)
-        )
-        query
-        dir
+    shellSwitch =
+        Options.flag' (setStrategy ShellOnly)
+            ( Options.long "shell"
+            <> Options.short 's'
+            )
 
-    shellSwitch = Options.switch (Options.long "shell" <> Options.short 's')
+    tmuxSwitch =
+        Options.flag' (setStrategy TmuxOnly)
+            ( Options.long "tmux"
+            <> Options.short 't'
+            )
 
-    tmuxSwitch = Options.switch (Options.long "tmux" <> Options.short 't')
-
-    kittySwitch = Options.switch (Options.long "kitty" <> Options.short 'k')
+    kittySwitch =
+        Options.flag' (setStrategy KittyOnly)
+            ( Options.long "kitty"
+            <> Options.short 'k'
+            )
 
     terminalEmulator =
-        Options.switch (Options.long "terminal" <> Options.short 'e')
+        Options.flag' (setStrategy TerminalEmulatorOnly)
+            ( Options.long "terminal"
+            <> Options.short 'e'
+            )
 
-    queryOption = Options.strOption
-        (Options.long "query" <> Options.short 'q' <> Options.metavar "QUERY")
+    shCommand =
+        Options.flag' (setStrategy ShCommand)
+            ( Options.long "sh-command"
+            )
 
-    dirArgument = Options.strArgument (Options.metavar "DIRECTORY")
+    bashCommand =
+        Options.flag' (setStrategy BashCommand)
+            ( Options.long "bash-command"
+            )
+
+    queryOption =
+        setQuery <$> Options.strOption
+            ( Options.long "query"
+            <> Options.short 'q'
+            <> Options.metavar "QUERY"
+            )
+      where
+        setQuery q = Endo \mode -> mode{query = Just q}
+
+    setStrategy strategy = Endo \mode -> mode{strategy}
+
+    dirArgument =
+        setDirectory <$> Options.strArgument
+            ( Options.metavar "DIRECTORY"
+            )
+      where
+        setDirectory directory = Endo \mode -> mode{directory = Just directory}
 
 data Action
     = RunShell (Maybe Text)
     | RunTmux (Maybe Text)
     | RunKitty (Maybe Text)
     | RunTerminalEmulator (Text -> SimpleCommand)
+    | PrintCdCommand (Text -> ByteString)
 
 -- TODO: These actions are very similar, especially 'RunTmux' and 'RunKitty'.
 -- We should consider generalising them so that the same code can be used in
@@ -315,7 +362,6 @@ data Action
 executeAction :: Env void -> Turtle.Line -> Action -> Turtle.Shell ()
 executeAction env@Env{params} directory = \case
     RunShell shellOverride -> do
-        dieIfDirectoryDoesNotExist
         dir <- resolveDirectory
 
         echo params (": cd " <> directory)
@@ -326,7 +372,6 @@ executeAction env@Env{params} directory = \case
         executeCommand (Text.unpack shell) [] []
 
     RunTmux shellOverride -> do
-        dieIfDirectoryDoesNotExist
         dir <- resolveDirectory
         shell <- resolveShell shellOverride
         let directoryStr = Text.unpack dir
@@ -342,7 +387,6 @@ executeAction env@Env{params} directory = \case
         executeCommand "tmux" tmuxOptions []
 
     RunKitty shellOverride -> do
-        dieIfDirectoryDoesNotExist
         dir <- resolveDirectory
         shell <- resolveShell shellOverride
         let directoryStr = Text.unpack dir
@@ -360,12 +404,15 @@ executeAction env@Env{params} directory = \case
         executeCommand "kitty" kittyOptions []
 
     RunTerminalEmulator term -> do
-        dieIfDirectoryDoesNotExist
         dir <- resolveDirectory
 
         let SimpleCommand{..} = term directoryText
         exportEnvVariables dir (pure "0")
         executeCommand command arguments environment
+
+    PrintCdCommand escape -> do
+        dir <- resolveDirectory
+        liftIO (ByteString.putStrLn ("cd " <> escape dir))
   where
     directoryPath = Turtle.fromText directoryText
     directoryText = Turtle.lineToText directory
@@ -386,12 +433,15 @@ executeAction env@Env{params} directory = \case
         Just shell ->
             pure shell
 
-    resolveDirectory
-      | Turtle.relative directoryPath =
-            liftIO getCurrentDirectory <&> \cwd ->
-                fromString $ normalise (cwd </> Text.unpack directoryText)
-      | otherwise =
-            pure directoryText
+    resolveDirectory :: MonadIO io => io Text
+    resolveDirectory = do
+        dieIfDirectoryDoesNotExist
+        if
+          | Turtle.relative directoryPath ->
+                liftIO getCurrentDirectory <&> \cwd ->
+                    fromString $ normalise (cwd </> Text.unpack directoryText)
+          | otherwise ->
+                pure directoryText
 
     executeCommand command arguments environment = do
         echo params (": " <> showCommand command arguments)
@@ -406,7 +456,8 @@ executeAction env@Env{params} directory = \case
 
     showCommand cmd args = fromString cmd <> " " <> fromString (show args)
 
-    dieIfDirectoryDoesNotExist =  do
+    dieIfDirectoryDoesNotExist :: MonadIO io => io ()
+    dieIfDirectoryDoesNotExist = do
         exists <- Turtle.testdir directoryPath
         unless exists $ die env 3
             ("'" <> directoryText <> "': Directory doesn't exist.")
@@ -443,6 +494,8 @@ doCompletion Env{} index _shell words' = do
         , "-e", "--terminal"
         , "-h", "--help"
         , "-q", "--query="
+        , "--bash-command"
+        , "--sh-command"
         ]
 
 helpMsg :: Env a -> Pretty.Doc (Result Pretty.AnsiStyle)
@@ -489,6 +542,19 @@ helpMsg Env{params = Params{name, subcommand}} = Pretty.vsep
             [ Pretty.reflow "Open a new terminal emulator window."
             ]
 
+        , Help.optionDescription ["--bash-command"]
+            [ Pretty.reflow "Print a command to change directory. If escaping\
+                \ is required then Bash string literal is produced. Useful for\
+                \ Bash (obviously), Zsh, and other shells that support string\
+                \ literals using", Help.value "$'...'", "syntax."
+            ]
+
+        , Help.optionDescription ["--sh-command"]
+            [ Pretty.reflow "Print a command to change directory. If escaping\
+                \ is required then Bourne Shell escaping is used. Useful for\
+                \ shells like Dash."
+            ]
+
         , Help.optionDescription ["--query=QUERY", "-q QUERY"]
             [ Pretty.reflow "Start the search for a directory with the given"
             , Help.metavar "QUERY" <> "."
@@ -502,7 +568,7 @@ helpMsg Env{params = Params{name, subcommand}} = Pretty.vsep
 
         , Help.optionDescription ["DIRECTORY"]
             [ "Use", Help.metavar "DIRECTORY"
-            , Pretty.reflow "instead of searching for one in a configured list."
+            , Pretty.reflow "instead of asking user to select one from a list."
             ]
 
         , Help.globalOptionsHelp name

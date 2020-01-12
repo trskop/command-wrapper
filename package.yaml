@@ -116,6 +116,7 @@ executables:
       - *this
 
       - turtle
+      - shell-escape
     ghc-options: ["-threaded"]
 
   command-wrapper-skel:
