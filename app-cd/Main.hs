@@ -31,11 +31,12 @@ import Data.String (fromString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import System.Environment (getArgs)
+import System.IO (hIsTerminalDevice, stdout)
 import Text.Read (readMaybe)
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as ByteString (putStrLn)
-import Data.ByteString.ShellEscape (bash, bytes, sh)
+import Data.ByteString.ShellEscape (Escape, bash, bytes, sh)
 import Data.Monoid.Endo (mapEndo)
 import Data.Monoid.Endo.Fold (dualFoldEndo)
 import Data.Text (Text, isPrefixOf)
@@ -59,7 +60,7 @@ import qualified Options.Applicative as Options
     )
 import Safe (atMay, lastDef)
 import System.Directory (getCurrentDirectory)
-import System.FilePath ((</>), normalise)
+import System.FilePath ((</>), normalise, takeFileName)
 import System.Posix.Process (executeFile)
 import qualified Turtle
     ( Line
@@ -248,7 +249,24 @@ evalStrategy env@Env{config, inTmux, inKitty} = \case
     Auto
       | inTmux    -> pure (RunTmux shell)
       | inKitty   -> pure (RunKitty shell)
-      | otherwise -> pure (RunShell shell)
+      | otherwise -> do
+            stdoutIsTerminal <- hIsTerminalDevice stdout
+            if stdoutIsTerminal
+                then
+                    pure (RunShell shell)
+                else do
+                    name <- takeFileName <$> resolveShell env shell
+                    pure if
+                      | name == "sh" ->
+                            printCdCommand sh
+                      | name == "dash" ->
+                            printCdCommand sh
+                      | name == "bash" ->
+                            printCdCommand bash
+                      | name == "zsh" ->
+                            printCdCommand bash
+                      | otherwise ->
+                            printCdCommand sh
 
     ShellOnly ->
         pure (RunShell shell)
@@ -272,13 +290,17 @@ evalStrategy env@Env{config, inTmux, inKitty} = \case
                 pure (RunTerminalEmulator (`cmd` fmap shellCommand shell))
 
     ShCommand ->
-        pure $ PrintCdCommand \dir -> bytes (sh (Text.encodeUtf8 dir))
+        pure (printCdCommand sh)
 
     BashCommand ->
-        pure $ PrintCdCommand \dir -> bytes (bash (Text.encodeUtf8 dir))
+        pure (printCdCommand bash)
 
   where
     Config{shell, terminalEmulator} = config
+
+    printCdCommand :: Escape t => (ByteString -> t) -> Action
+    printCdCommand f =
+        PrintCdCommand \dir -> bytes (f (Text.encodeUtf8 dir))
 
 parseOptions :: Options.Parser (Endo Mode)
 parseOptions = dualFoldEndo
@@ -367,13 +389,13 @@ executeAction env@Env{params} directory = \case
         echo params (": cd " <> directory)
         Turtle.cd directoryPath
 
-        shell <- resolveShell shellOverride
+        shell <- resolveShell env shellOverride
         exportEnvVariables dir (incrementLevel <$> Turtle.need "CD_LEVEL")
-        executeCommand (Text.unpack shell) [] []
+        executeCommand shell [] []
 
     RunTmux shellOverride -> do
         dir <- resolveDirectory
-        shell <- resolveShell shellOverride
+        shell <- resolveShell env shellOverride
         let directoryStr = Text.unpack dir
             tmuxOptions =
                 [ "new-window", "-c", directoryStr
@@ -381,14 +403,14 @@ executeAction env@Env{params} directory = \case
                 -- Hadn't found any other reliable way how to pass these
                 -- environment variables.
                 , "env" , "CD_LEVEL=0" , "CD_DIRECTORY=" <> directoryStr
-                , Text.unpack shell
+                , shell
                 ]
 
         executeCommand "tmux" tmuxOptions []
 
     RunKitty shellOverride -> do
         dir <- resolveDirectory
-        shell <- resolveShell shellOverride
+        shell <- resolveShell env shellOverride
         let directoryStr = Text.unpack dir
 
             -- https://sw.kovidgoyal.net/kitty/remote-control.html#kitty-new-window
@@ -398,7 +420,7 @@ executeAction env@Env{params} directory = \case
                 -- Hadn't found any other reliable way how to pass these
                 -- environment variables.
                 , "env" , "CD_LEVEL=0" , "CD_DIRECTORY=" <> directoryStr
-                , Text.unpack shell
+                , shell
                 ]
 
         executeCommand "kitty" kittyOptions []
@@ -418,20 +440,6 @@ executeAction env@Env{params} directory = \case
     directoryText = Turtle.lineToText directory
 
     echo Params{verbosity} msg = when (verbosity > Silent) (Turtle.echo msg)
-
---  resolveShell :: MonadIO io => Maybe Text -> io (Maybe Text)
-    resolveShell = maybe (Turtle.need "SHELL") (pure . Just) >=> \case
-        Nothing ->
-            -- TODO: We should probably make a lot more effort discovering
-            -- what shell to execute.  Normally something like
-            -- `getent passwd $LOGIN` works, however, that's not the best
-            -- idea when Kerberos/LDAP/etc. are used.
-            die env 3
-                "'SHELL': Environment variable is undefined, unable to\
-                \ determine what shell to execute."
-
-        Just shell ->
-            pure shell
 
     resolveDirectory :: MonadIO io => io Text
     resolveDirectory = do
@@ -476,6 +484,20 @@ executeAction env@Env{params} directory = \case
     incrementLevel =
         maybe "1" (fromString . show . (+1))
         . (>>= readMaybe @Word . Text.unpack)
+
+resolveShell :: MonadIO io => Env void -> Maybe Text -> io FilePath
+resolveShell env = maybe (Turtle.need "SHELL") (pure . Just) >=> \case
+    Nothing ->
+        -- TODO: We should probably make a lot more effort discovering
+        -- what shell to execute.  Normally something like
+        -- `getent passwd $LOGIN` works, however, that's not the best
+        -- idea when Kerberos/LDAP/etc. are used.
+        die env 3
+            "'SHELL': Environment variable is undefined, unable to\
+            \ determine what shell to execute."
+
+    Just shell ->
+        pure (Text.unpack shell)
 
 die :: MonadIO io => Env void -> Int -> Text -> io a
 die Env{params} n m = liftIO (dieWith params stderr n m)

@@ -336,7 +336,7 @@
     original process where `TOOLSET cd` was invoked won't kill the terminal.)
 
 -   Option to print a command that would be performed.  This is useful for
-    shell key-bindings.  Printing plain `cd ${dir}` would be nice as well.
+    shell key-bindings.
 
 -   Support directory specific commands.  For example we may want a specific
     shell for a certain directory.
