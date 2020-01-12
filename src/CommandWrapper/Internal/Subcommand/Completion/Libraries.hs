@@ -3,7 +3,7 @@
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion.DhallLibraries
 -- Description: Print requested library to stdout or write it into a file.
--- Copyright:   (c) 2019 Peter Trško
+-- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -93,7 +93,7 @@ import CommandWrapper.Internal.Subcommand.Completion.DhallExpressions
     , preludeV12_0_0Import
     , shellCompletionTemplate
     )
-import CommandWrapper.Message (errorMsg)
+import CommandWrapper.Core.Message (errorMsg)
 import qualified CommandWrapper.Options.Shell as Options
     ( HasShell(..)
     , Shell(..)

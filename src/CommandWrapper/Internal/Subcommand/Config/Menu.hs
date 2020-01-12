@@ -1,7 +1,7 @@
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Config.Menu
 -- Description: Simple terminal selection tool.
--- Copyright:   (c) 2019 Peter Trško
+-- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -49,9 +49,9 @@ import qualified Graphics.Vty as Vty
 import System.Posix (OpenMode(ReadWrite), closeFd, defaultFileFlags, openFd)
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput))
+import CommandWrapper.Core.Message (withTerminal)
 import CommandWrapper.Environment (AppNames(AppNames))
 import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput(..))
-import CommandWrapper.Message (withTerminal)
 import CommandWrapper.Options.ColourOutput (shouldUseColours)
 
 data MenuOptions = MenuOptions

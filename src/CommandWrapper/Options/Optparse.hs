@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Options.Optparse
 -- Description: Utilities for parsing command line options.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -68,11 +68,11 @@ import qualified Options.Applicative.Types as Options (Completer(runCompleter))
 import System.Directory (doesDirectoryExist)
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
+import CommandWrapper.Core.Message (dieFailedToParseOptions)
 import CommandWrapper.Environment.AppNames (AppNames(AppNames, usedName))
 import CommandWrapper.Environment.Params
     ( Params(Params, colour, name, subcommand, verbosity)
     )
-import CommandWrapper.Message (dieFailedToParseOptions)
 
 
 parse

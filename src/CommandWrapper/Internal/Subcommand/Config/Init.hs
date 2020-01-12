@@ -71,6 +71,7 @@ import System.Posix.Files (createSymbolicLink)
 
 import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Core.Help.Pretty (command)
+import CommandWrapper.Core.Message (errorMsg, out)
 import CommandWrapper.Environment (AppNames(AppNames, exePath, usedName))
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Freeze(input, output)
@@ -79,7 +80,6 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defFreeze
     , freeze
     )
-import CommandWrapper.Message (errorMsg, out)
 
 
 data InitOptions = InitOptions

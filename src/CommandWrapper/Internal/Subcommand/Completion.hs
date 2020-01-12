@@ -138,6 +138,7 @@ import CommandWrapper.Core.Help.Pretty
     , usageSection
     , value
     )
+import CommandWrapper.Core.Message (Result, errorMsg, out)
 import CommandWrapper.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.External as External
     ( executeCommand
@@ -151,7 +152,6 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , exec
     )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message (Result, errorMsg, out)
 import CommandWrapper.Options.Alias (Alias(alias))
 import qualified CommandWrapper.Options.Alias as Options (applyAliasCompletion)
 import qualified CommandWrapper.Options.Optparse as Options

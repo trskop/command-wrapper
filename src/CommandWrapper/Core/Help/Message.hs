@@ -1,16 +1,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.HelpMessage
--- Description: TODO: Module synopsis
--- Copyright:   (c) 2019 Peter Trško
+-- Module:      CommandWrapper.Core.Help.Message
+-- Description: Experiment to make help messages easier to create.
+-- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- TODO: Module description.
-module CommandWrapper.HelpMessage
+-- Experiment to make help messages easier to create.  Highly experimental!
+module CommandWrapper.Core.Help.Message
     ( Annotation(..)
     , Annotated(..)
     , HelpMessage(..)
@@ -77,8 +77,8 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import qualified System.Console.Terminal.Size as Terminal (Window)
 
+import CommandWrapper.Core.Message (hPutDoc)
 import CommandWrapper.Options.ColourOutput (ColourOutput)
-import CommandWrapper.Message (hPutDoc)
 
 
 data Annotation

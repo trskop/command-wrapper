@@ -50,7 +50,7 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 
-import CommandWrapper.Message (Result(Result))
+import CommandWrapper.Core.Message (Result(Result))
 
 
 helpOptions :: Pretty.Doc (Result Pretty.AnsiStyle)

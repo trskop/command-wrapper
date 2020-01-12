@@ -19,7 +19,7 @@ module Main (main)
 
 import Control.Applicative (optional)
 import Control.Exception (onException)
-import Control.Monad ((>=>), unless)
+import Control.Monad ((>=>), unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (for_)
 import Data.Functor ((<&>))
@@ -41,6 +41,7 @@ import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import Data.Verbosity (Verbosity(Silent))
 import qualified Options.Applicative as Options
     ( Parser
     , long
@@ -54,7 +55,7 @@ import Safe (atMay, lastDef)
 import System.Directory (getCurrentDirectory)
 import System.FilePath ((</>), normalise)
 import System.Posix.Process (executeFile)
-import Turtle
+import qualified Turtle
     ( Line
     , Shell
     , cd
@@ -76,15 +77,16 @@ import Turtle
 import CommandWrapper.Config.Command (SimpleCommand(..))
 import CommandWrapper.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Core.Help.Pretty as Help
+import CommandWrapper.Core.Message (Result)
 import qualified CommandWrapper.Environment as Environment
-import CommandWrapper.Message (Result)
 import CommandWrapper.Options.Optparse (bashCompleter)
 import qualified CommandWrapper.Subcommand.Prelude as CommandWrapper
     ( Shell
     , SubcommandProps(..)
     )
 import CommandWrapper.Subcommand.Prelude
-    ( SubcommandProps(SubcommandProps)
+    ( Params(Params, name, subcommand, verbosity)
+    , SubcommandProps(SubcommandProps)
     , dieWith
     , inputConfig
     , noPreprocessing
@@ -123,9 +125,9 @@ data ShellCommand = ShellCommand
 shellCommand :: Text -> ShellCommand
 shellCommand shell = ShellCommand shell []
 
-data Params config = Params
+data Env config = Env
     { config :: config
-    , params :: Environment.Params
+    , params :: Params
     , inTmux :: Bool
     , inKitty :: Bool
     }
@@ -133,18 +135,20 @@ data Params config = Params
 
 main :: IO ()
 main = do
-    params <- getEnvironment
-    arguments <- getArgs
-    runSubcommand SubcommandProps
-        { preprocess = noPreprocessing
-        , doCompletion
-        , helpMsg
-        , actionOptions = parseOptions
-        , defaultAction = Just defMode
-        , params
-        , arguments
-        }
-        mainAction
+    subcommandProps <- do
+        params <- getEnvironment
+        arguments <- getArgs
+        pure SubcommandProps
+            { preprocess = noPreprocessing
+            , doCompletion
+            , helpMsg
+            , actionOptions = parseOptions
+            , defaultAction = Just defMode
+            , params
+            , arguments
+            }
+
+    runSubcommand subcommandProps mainAction
 
 data Mode = Mode
     { strategy :: Strategy
@@ -159,55 +163,59 @@ defMode = Mode
     , directory = Nothing
     }
 
-mainAction :: Params void -> Mode -> IO ()
-mainAction ps@Params{params} Mode{..} = do
+mainAction :: Env void -> Mode -> IO ()
+mainAction ps@Env{params} Mode{..} = do
     config@Config{..} <- fromMaybe defConfig <$> inputConfig Dhall.auto params
     action <- evalStrategy (config <$ ps) strategy
 
-    sh do
+    Turtle.sh do
         dir <- case directory of
             Nothing -> do
                 let menuToolCommand = case menuTool of
                         Nothing -> defaultMenuTool params
                         Just f  -> f query
 
-                runMenuTool menuToolCommand
-                    $ select (unsafeTextToLine <$> List.nub directories)
+                runMenuTool menuToolCommand do
+                    Turtle.select
+                        (Turtle.unsafeTextToLine <$> List.nub directories)
 
             Just dir ->
-                pure (unsafeTextToLine dir)
+                pure (Turtle.unsafeTextToLine dir)
 
-        environment <- env
+        environment <- Turtle.env
         for_ environment $ \(name, _) ->
             if "COMMAND_WRAPPER_" `isPrefixOf` name
-                then unset name
+                then Turtle.unset name
                 else pure ()
 
         executeAction ps dir action
   where
-    defaultMenuTool Environment.Params{exePath} = SimpleCommand
+    defaultMenuTool Params{exePath} = SimpleCommand
         { command = exePath
         , arguments = ["--no-aliases", "config", "--menu"]
         , environment = []
         }
 
-runMenuTool :: SimpleCommand -> Shell Line -> Shell Line
+runMenuTool
+    :: SimpleCommand
+    -> Turtle.Shell Turtle.Line
+    -> Turtle.Shell Turtle.Line
 runMenuTool SimpleCommand{..} input = do
     for_ environment $ \EnvironmentVariable{name, value} ->
-        export name value
+        Turtle.export name value
 
-    r <- inproc (fromString command) (fromString <$> arguments) input
+    r <- Turtle.inproc (fromString command) (fromString <$> arguments) input
 
     for_ environment $ \EnvironmentVariable{name} ->
-        unset name
+        Turtle.unset name
 
     pure r
 
-getEnvironment :: IO (Params Void)
+getEnvironment :: IO (Env Void)
 getEnvironment = do
     params <- subcommandParams
     Environment.parseEnvIO (dieWith params stderr 1 . fromString . show)
-        $ Params (error "This is probably a bug.")
+        $ Env (error "This is probably a bug.")
             <$> pure params
             <*> (isJust <$> Environment.optionalVar "TMUX")
             <*> (isJust <$> Environment.optionalVar "KITTY_WINDOW_ID")
@@ -225,10 +233,10 @@ instance Semigroup Strategy where
     _    <> x    = x
 
 evalStrategy
-    :: Params Config
+    :: Env Config
     -> Strategy
     -> IO Action
-evalStrategy params@Params{config, inTmux, inKitty} = \case
+evalStrategy env@Env{config, inTmux, inKitty} = \case
     Auto
       | inTmux    -> pure (RunTmux shell)
       | inKitty   -> pure (RunKitty shell)
@@ -240,17 +248,17 @@ evalStrategy params@Params{config, inTmux, inKitty} = \case
     TmuxOnly
       | inTmux    -> pure (RunTmux shell)
       | otherwise ->
-        die params 3 "Not in a Tmux session and '--tmux' was specified."
+        die env 3 "Not in a Tmux session and '--tmux' was specified."
 
     KittyOnly
       | inKitty   -> pure (RunKitty shell)
       | otherwise ->
-        die params 3 "Not runing in Kitty terminal and '--kitty was specified."
+        die env 3 "Not runing in Kitty terminal and '--kitty was specified."
 
     TerminalEmulatorOnly ->
         case terminalEmulator of
             Nothing ->
-                die params 1 "Terminal emulator command is not configured."
+                die env 1 "Terminal emulator command is not configured."
 
             Just cmd ->
                 pure (RunTerminalEmulator (`cmd` fmap shellCommand shell))
@@ -304,18 +312,17 @@ data Action
 -- ```
 -- TOOLSET cd --new-window[{=| }{auto|tmux|kitty|…}]
 -- ```
-executeAction :: Params void -> Line -> Action -> Shell ()
-executeAction params directory = \case
+executeAction :: Env void -> Turtle.Line -> Action -> Turtle.Shell ()
+executeAction env@Env{params} directory = \case
     RunShell shellOverride -> do
         dieIfDirectoryDoesNotExist
         dir <- resolveDirectory
 
-        -- TODO: We should respect verbosity here.
-        echo (": cd " <> directory)
-        cd directoryPath
+        echo params (": cd " <> directory)
+        Turtle.cd directoryPath
 
         shell <- resolveShell shellOverride
-        exportEnvVariables dir (incrementLevel <$> need "CD_LEVEL")
+        exportEnvVariables dir (incrementLevel <$> Turtle.need "CD_LEVEL")
         executeCommand (Text.unpack shell) [] []
 
     RunTmux shellOverride -> do
@@ -360,17 +367,19 @@ executeAction params directory = \case
         exportEnvVariables dir (pure "0")
         executeCommand command arguments environment
   where
-    directoryPath = fromText directoryText
-    directoryText = lineToText directory
+    directoryPath = Turtle.fromText directoryText
+    directoryText = Turtle.lineToText directory
+
+    echo Params{verbosity} msg = when (verbosity > Silent) (Turtle.echo msg)
 
 --  resolveShell :: MonadIO io => Maybe Text -> io (Maybe Text)
-    resolveShell = maybe (need "SHELL") (pure . Just) >=> \case
+    resolveShell = maybe (Turtle.need "SHELL") (pure . Just) >=> \case
         Nothing ->
             -- TODO: We should probably make a lot more effort discovering
             -- what shell to execute.  Normally something like
             -- `getent passwd $LOGIN` works, however, that's not the best
             -- idea when Kerberos/LDAP/etc. are used.
-            die params 3
+            die env 3
                 "'SHELL': Environment variable is undefined, unable to\
                 \ determine what shell to execute."
 
@@ -385,22 +394,21 @@ executeAction params directory = \case
             pure directoryText
 
     executeCommand command arguments environment = do
-        -- TODO: We should respect verbosity here.
-        echo $ ": " <> showCommand command arguments
+        echo params (": " <> showCommand command arguments)
 
         for_ environment $ \EnvironmentVariable{name, value} ->
-            export name value
+            Turtle.export name value
 
         liftIO $ executeFile command True arguments Nothing
             `onException`
-                die params 126
+                die env 126
                     ("'" <> fromString command <> "': Failed to execute.")
 
     showCommand cmd args = fromString cmd <> " " <> fromString (show args)
 
     dieIfDirectoryDoesNotExist =  do
-        exists <- testdir directoryPath
-        unless exists $ die params 3
+        exists <- Turtle.testdir directoryPath
+        unless exists $ die env 3
             ("'" <> directoryText <> "': Directory doesn't exist.")
 
     -- TODO:
@@ -408,21 +416,21 @@ executeAction params directory = \case
     -- * Make names of these environment variables configurable.
     -- * Consider also having another variable that will contain a stack of
     --   directories for nested `TOOLSET cd` invocations.
-    exportEnvVariables :: Text -> Shell Text -> Shell ()
+    exportEnvVariables :: Text -> Turtle.Shell Text -> Turtle.Shell ()
     exportEnvVariables dir getCdLevel = do
-        getCdLevel >>= export "CD_LEVEL"
-        export "CD_DIRECTORY" dir
+        getCdLevel >>= Turtle.export "CD_LEVEL"
+        Turtle.export "CD_DIRECTORY" dir
 
     incrementLevel :: Maybe Text -> Text
     incrementLevel =
         maybe "1" (fromString . show . (+1))
         . (>>= readMaybe @Word . Text.unpack)
 
-die :: MonadIO io => Params void -> Int -> Text -> io a
-die Params{params} n m = liftIO (dieWith params stderr n m)
+die :: MonadIO io => Env void -> Int -> Text -> io a
+die Env{params} n m = liftIO (dieWith params stderr n m)
 
-doCompletion :: Params a -> Word -> CommandWrapper.Shell -> [String] -> IO ()
-doCompletion Params{} index _shell words' = do
+doCompletion :: Env a -> Word -> CommandWrapper.Shell -> [String] -> IO ()
+doCompletion Env{} index _shell words' = do
     mapM_ putStrLn (List.filter (pat `List.isPrefixOf`) allOptions)
     bashCompleter "directory" "" pat >>= mapM_ putStrLn
   where
@@ -437,8 +445,8 @@ doCompletion Params{} index _shell words' = do
         , "-q", "--query="
         ]
 
-helpMsg :: Params a -> Pretty.Doc (Result Pretty.AnsiStyle)
-helpMsg Params{params = Environment.Params{name, subcommand}} = Pretty.vsep
+helpMsg :: Env a -> Pretty.Doc (Result Pretty.AnsiStyle)
+helpMsg Env{params = Params{name, subcommand}} = Pretty.vsep
     [ Pretty.reflow "Change directory by selecting one from preselected list."
     , ""
 

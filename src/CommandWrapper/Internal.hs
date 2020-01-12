@@ -4,7 +4,7 @@
 -- |
 -- Module:      CommandWrapper.Internal
 -- Description: Internal commands supported by CommandWrapper
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -64,6 +64,7 @@ import qualified Data.Text.Prettyprint.Doc as Pretty (Doc)
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
+import CommandWrapper.Core.Message (Result)
 import CommandWrapper.Environment (AppNames, subcommandProtocolVersion)
 import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
     ( Completer
@@ -92,7 +93,6 @@ import qualified CommandWrapper.Internal.Subcommand.Version as Subcommand
     , versionSubcommandHelp
     )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message (Result)
 
 import Paths_command_wrapper (version) -- Temporary
 

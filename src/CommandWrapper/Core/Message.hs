@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Message
+-- Module:      CommandWrapper.Core.Message
 -- Description: Helper functions for printing messages.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -11,7 +11,7 @@
 --
 -- Helper functions for printing messages, especially error and warning
 -- messages.
-module CommandWrapper.Message
+module CommandWrapper.Core.Message
     ( errorMsg
     , warningMsg
     , noticeMsg

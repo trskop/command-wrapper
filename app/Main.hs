@@ -84,6 +84,7 @@ import qualified CommandWrapper.Core.Help.Pretty as Help
     , usageSection
     , value
     )
+import CommandWrapper.Core.Message (Result(..), errorMsg)
 import CommandWrapper.Environment
     ( AppNames(..)
     , CommandWrapperPrefix
@@ -103,7 +104,6 @@ import CommandWrapper.Environment
     )
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
-import CommandWrapper.Message (Result(..), errorMsg)
 import qualified CommandWrapper.Options as Options
 import CommandWrapper.Options.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Options.ColourOutput as ColourOutput

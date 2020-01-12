@@ -61,6 +61,12 @@ import qualified CommandWrapper.Config.Global as Global
     ( Config(Config, colourOutput, configPaths, searchPath, verbosity)
     , ConfigPaths(ConfigPaths, local, system, user)
     )
+import CommandWrapper.Core.Message
+    ( debugMsg
+    , dieUnableToExecuteSubcommand
+    , dieUnableToFindSubcommandExecutable
+    , errorMsg
+    )
 import qualified CommandWrapper.Environment as Environment
     ( AppNames(AppNames, exePath, names, usedName)
     , Params
@@ -77,12 +83,6 @@ import qualified CommandWrapper.Environment as Environment
     , getEnv
     , mkEnvVars
     , subcommandProtocolVersion
-    )
-import CommandWrapper.Message
-    ( debugMsg
-    , dieUnableToExecuteSubcommand
-    , dieUnableToFindSubcommandExecutable
-    , errorMsg
     )
 
 

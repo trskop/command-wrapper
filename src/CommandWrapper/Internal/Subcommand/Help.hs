@@ -87,6 +87,13 @@ import CommandWrapper.Core.Help.Pretty
     , toolsetCommand
     , usageSection
     )
+import CommandWrapper.Core.Message
+    ( Result(..)
+    , debugMsg
+    , defaultLayoutOptions
+    , hPutDoc
+    , out
+    )
 import CommandWrapper.Environment (AppNames(AppNames, usedName, names))
 import qualified CommandWrapper.External as External
     ( executeCommand
@@ -94,13 +101,6 @@ import qualified CommandWrapper.External as External
     , getSearchPath
     )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message
-    ( Result(..)
-    , debugMsg
-    , defaultLayoutOptions
-    , hPutDoc
-    , out
-    )
 import CommandWrapper.Options.Alias
     ( Alias(Alias, alias, description)
     , applyAlias

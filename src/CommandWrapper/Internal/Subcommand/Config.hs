@@ -110,14 +110,14 @@ import CommandWrapper.Core.Help.Pretty
     , usageSection
     , value
     )
-import CommandWrapper.Environment (AppNames(AppNames, usedName))
-import qualified CommandWrapper.External as External (findSubcommands)
-import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message
+import CommandWrapper.Core.Message
     ( Result
 --  , errorMsg
     , out
     )
+import CommandWrapper.Environment (AppNames(AppNames, usedName))
+import qualified CommandWrapper.External as External (findSubcommands)
+import CommandWrapper.Internal.Utils (runMain)
 import qualified CommandWrapper.Options.Optparse as Options
     ( bashCompleter
     , internalSubcommandParse

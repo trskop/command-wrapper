@@ -98,9 +98,9 @@ import CommandWrapper.Internal.Subcommand.Version.Info
     , VersionInfoField(..)
     , versionQQ
     )
+import CommandWrapper.Core.Message (Result, out)
+--import qualified CommandWrapper.Core.Message as Message (dieTooManyArguments)
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Message (Result, out)
---import qualified CommandWrapper.Message as Message (dieTooManyArguments)
 --import CommandWrapper.Options.Alias (applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
