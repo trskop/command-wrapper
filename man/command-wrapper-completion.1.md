@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 4th January 2020
+% 13th January 2020
 
 
 # NAME
@@ -30,9 +30,16 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query
 \[\--prefix=*STRING*] \[\--suffix=*STRING*]
 \[\--output=*FILE*]
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \--file-system=*TYPE*
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query \--file-system
+\[\--type=*TYPE*]
 \[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*]
 \[\--\[no-]tilde-expansion \[\--\[no-]substitute-tilde]]
+\[\--prefix=*STRING*] \[\--suffix=*STRING*]
+\[\--output=*FILE*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] completion \--query
+\--environment\[-variables]
+\[\--algorithm=*ALGORITHM*] \[\--pattern=*PATTERN*]
 \[\--prefix=*STRING*] \[\--suffix=*STRING*]
 \[\--output=*FILE*]
 
@@ -234,8 +241,16 @@ interface for querying Command Wrapper's command line interface (CLI).
 
 # QUERY FILE SYSTEM OPTIONS
 
-\--file-system=*TYPE*
-:   Query file system for entries of *TYPE*:
+\--file-system
+:   Query file system for entries to complete.  See `--type=`*TYPE* option to to
+    target only specific file system entries.
+
+    In this mode `--algorithm=`*ALGORITHM* option is ignored, and it always
+    behaves as if `--algorithm`=*prefix* was specified.  This may change in the
+    future.
+
+\--type=*TYPE*
+:   Query file system for entries of *TYPE* where *TYPE* is one of:
 
     *   *directory* -- List directories.
     *   *file* -- List entries that are not directories (includes normal files,
@@ -243,16 +258,22 @@ interface for querying Command Wrapper's command line interface (CLI).
     *   *executable* -- List executable files.
     *   *symlink* -- List symbolic links.
 
-    In this mode `--algorithm=`*ALGORITHM* option is ignored, and it always
-    behaves as if `--algorithm=prefix` was specified.  This may change in the
-    future.
-
 \--\[no-]tilde-expansion
 :   Interpret prefix `~` in *PATTERN* as current user's home directory.
 
 \--\[no-]substitute-tilde
 :   Substitute prefix `~` in completions for full path to current user's home
     directory.
+
+
+# QUERY ENVIRONMENT VARIABLES
+
+\--environment\[-variables]
+:   Query environment variables currently available in the environment.
+
+    In this mode `--algorithm=`*ALGORITHM* option is ignored, and it always
+    behaves as if `--algorithm`=*prefix* was specified.  This may change in the
+    future.
 
 
 # QUERY WORDS OPTIONS

@@ -87,6 +87,11 @@ import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, lastMay)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..))
+import CommandWrapper.Core.Completion.EnvironmentVariables
+    ( EnvironmentVariablesOptions(word, prefix)
+    , defEnvironmentVariablesOptions
+    , environmentVariablesCompleter
+    )
 import CommandWrapper.Core.Completion.FileSystem
     ( FileSystemOptions
         ( appendSlashToSingleDirectoryResult
@@ -1355,9 +1360,35 @@ configSubcommandCompleter appNames cfg shell index words
   | shell == Options.Bash || shell == Options.Zsh
   , Just w <- lastMay wordsBeforePattern
   , hadSomeDhall
-  , isBashAndZshStdinExpansion w =
-        -- File paths, even `~/some/path`, are valid Dhall expressions.
-        fileCompleter ""
+  , isBashAndZshStdinExpansion w = do
+        let envPrefix = "env:"
+
+            hasPathPrefix = List.or
+                [ "./" `List.isPrefixOf` pat
+                , "../" `List.isPrefixOf` pat
+                , "~" `List.isPrefixOf` pat
+                ]
+
+        if
+          | envPrefix `List.isPrefixOf` pat ->
+                -- Syntax `env:VARIABLE` is a valid import in Dhall.
+                environmentVariablesCompleter defEnvironmentVariablesOptions
+                    { word = List.drop (length envPrefix) pat
+                    , prefix = envPrefix
+                    }
+
+          | pat == "." || pat == ".." ->
+                pure (List.filter (pat `List.isPrefixOf`) ["./", "../"])
+
+          | hasPathPrefix ->
+                -- File paths, even `~/some/path`, are valid Dhall expressions.
+                -- However, relative paths like `foo/bar` are not, they need to
+                -- start with `./` or `../`
+                fileCompleter ""
+
+          | otherwise ->
+                let alternatives = ["./", "../", "~/", "env:"]
+                in pure (List.filter (pat `List.isPrefixOf`) alternatives)
 
   | Just "--edit" <- lastMay wordsBeforePattern, '-' : _ <- pat =
         pure

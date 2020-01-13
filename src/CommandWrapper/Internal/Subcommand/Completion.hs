@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion
@@ -107,24 +108,25 @@ import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 
 import qualified CommandWrapper.Config.Global as Global (Config(..), getAliases)
+import CommandWrapper.Core.Completion.EnvironmentVariables
+    ( defEnvironmentVariablesOptions
+    , queryEnvironmentVariables
+    )
+import qualified CommandWrapper.Core.Completion.EnvironmentVariables
+  as EnvironmentVariables
+    ( EnvironmentVariablesOptions(..)
+    )
 import CommandWrapper.Core.Completion.FileSystem
     ( EntryType(Directory)
-    , FileSystemOptions
-        ( allowTilde
-        , appendSlashToSingleDirectoryResult
-        , entryType
-        , expandTilde
-        , output
-        , prefix
-        , suffix
-        , word
-        )
     , defFileSystemOptions
     , fileSystemCompleter
     , outputLines
     , parseEntryType
     , queryFileSystem
     , showEntryType
+    )
+import qualified CommandWrapper.Core.Completion.FileSystem as FileSystem
+    ( FileSystemOptions(..)
     )
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Help.Pretty
@@ -237,7 +239,8 @@ data WhatToQuery
     | QueryColourValues
     | QuerySupportedShells
     | QueryWords [String]
-    | QueryFileSystem EntryType
+    | QueryFileSystem (Maybe EntryType)
+    | QueryEnvironmentVariables
   deriving stock (Generic, Show)
 
 defQueryOptions :: Query
@@ -476,15 +479,23 @@ completion completionConfig@CompletionConfig{..} appNames options config =
                         Equality ->
                             List.filter (== patternToMatch) supportedShells
 
+            QueryEnvironmentVariables ->
+                queryEnvironmentVariables defEnvironmentVariablesOptions
+                    { EnvironmentVariables.output
+                    , EnvironmentVariables.prefix
+                    , EnvironmentVariables.suffix
+                    , EnvironmentVariables.word = patternToMatch
+                    }
+
             QueryFileSystem entryType ->
                 queryFileSystem defFileSystemOptions
-                    { entryType = Just entryType
-                    , output
-                    , prefix
-                    , suffix
-                    , word = patternToMatch
-                    , allowTilde = enableTildeExpansion
-                    , expandTilde = substituteTilde
+                    { FileSystem.entryType
+                    , FileSystem.output
+                    , FileSystem.prefix
+                    , FileSystem.suffix
+                    , FileSystem.word = patternToMatch
+                    , FileSystem.allowTilde = enableTildeExpansion
+                    , FileSystem.expandTilde = substituteTilde
                     }
 
             QueryWords words
@@ -702,19 +713,21 @@ getCompletions CompletionConfig{..} appNames config CompletionOptions{..} =
 
                 Just '-'
                   | "--change-directory=" `List.isPrefixOf` pat ->
-                        let prefix = "--change-directory="
-                        in  fileSystemCompleter defFileSystemOptions
-                                { appendSlashToSingleDirectoryResult = True
-                                , entryType = Just Directory
-                                , expandTilde = True
-                                , prefix
-                                , word = List.drop (length prefix) pat
-                                }
+                        directoryCompleter "--change-directory=" pat
 
                   | otherwise ->
                         pure (matchGlobalOptions pat)
                 _ ->
                     subcommands
+
+    directoryCompleter prefix pat =
+        fileSystemCompleter defFileSystemOptions
+            { FileSystem.appendSlashToSingleDirectoryResult = True
+            , FileSystem.entryType = Just Directory
+            , FileSystem.expandTilde = True
+            , FileSystem.prefix
+            , FileSystem.word = List.drop (length prefix) pat
+            }
 
 -- | Complete subcommand options\/arguments.  For external commands we call the
 -- binary and use protocol defined in `command-wrapper-subcommand-protocol(7)`.
@@ -806,12 +819,12 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
 
   | had "--query" =
         pure $ List.filter (pat `List.isPrefixOf`) if
-          | hadFileSystemOption ->
+          | had "--file-system" ->
                 (subsequentQueryOptions <> queryFileSystemSpecificOptions)
           | hadOneOf whatToQueryOptions ->
                 subsequentQueryOptions
           | otherwise ->
-                whatToQueryOptions <> queryFileSystemOptions
+                whatToQueryOptions
 
   | had "--library" =
         pure $ List.filter (pat `List.isPrefixOf`) libraryOptions
@@ -835,17 +848,17 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
     outputOptions = ["--output=", "-o"]
 
     whatToQueryOptions =
-        ["--subcommands", "--subcommand-aliases", "--supported-shells"
-        , "--verbosity-values", "--colour-values", "--color-values"
-        , "--internal-subcommands", "--words"
+        [ "--color-values"
+        , "--colour-values"
+        , "--environment-variables"
+        , "--file-system"
+        , "--internal-subcommands"
+        , "--subcommand-aliases"
+        , "--subcommands"
+        , "--supported-shells"
+        , "--verbosity-values"
+        , "--words"
         ]
-
-    queryFileSystemOptions =
-        [minBound..maxBound] <&> \s ->
-            "--file-system=" <> showEntryType s
-
-    hadFileSystemOption =
-        any ("--file-system=" `List.isPrefixOf`) wordsBeforePattern
 
     subsequentQueryOptions =
         ["--pattern=", "--prefix=", "--suffix="]
@@ -856,6 +869,11 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         [ "--substitute-tilde", "--no-substitute-tilde"
         , "--tilde-expansion", "--no-tilde-expansion"
         ]
+        <> queryFileSystemTypeOptions
+
+    queryFileSystemTypeOptions =
+        [minBound..maxBound] <&> \s ->
+            "--type=" <> showEntryType s
 
     -- At the moment we have library only for Bash.
     libraryOptions = ["--shell=bash" , "--import" , "--content", "--dhall="]
@@ -884,10 +902,10 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
 
     fsCompleter prefix =
         fileSystemCompleter defFileSystemOptions
-            { appendSlashToSingleDirectoryResult = True
-            , expandTilde = not (null prefix)
-            , prefix
-            , word = List.drop (length prefix) pat
+            { FileSystem.appendSlashToSingleDirectoryResult = True
+            , FileSystem.expandTilde = not (null prefix)
+            , FileSystem.prefix
+            , FileSystem.word = List.drop (length prefix) pat
             }
 
 -- | Lookup external and internal subcommands matching pattern (prefix).
@@ -956,8 +974,10 @@ parseOptions appNames config arguments = do
                     <|> verbosityValuesFlag
                     <|> colourValuesFlag
                     <|> wordsFlag words
+                    <|> environmentFlag
                     <|> ( dualFoldEndo
-                            <$> fileSystemOption
+                            <$> fileSystemFlag
+                            <*> many fileSystemTypeOption
                             <*> many tildeExpansionFlag
                             <*> many noTildeExpansionFlag
                             <*> many substituteTildeFlag
@@ -1125,17 +1145,35 @@ parseOptions appNames config arguments = do
       where
         f = Endo \q -> q{what = QuerySupportedShells}
 
-    fileSystemOption :: Options.Parser (Endo Query)
-    fileSystemOption = Options.option parse
-        (Options.long "file-system" <> Options.metavar "TYPE")
+    fileSystemFlag :: Options.Parser (Endo Query)
+    fileSystemFlag = Options.flag' f (Options.long "file-system")
       where
+        f = Endo \opts ->
+            opts{what = QueryFileSystem Nothing}
+
+    fileSystemTypeOption :: Options.Parser (Endo Query)
+    fileSystemTypeOption =
+        Options.option parse (Options.long "type" <> Options.metavar "TYPE")
+      where
+        entryTypeValues :: [CI String]
+        entryTypeValues = showEntryType <$> [minBound..maxBound]
+
         parse = Options.eitherReader \s ->
-            case parseEntryType (CI.mk s) of
-                Just entryType ->
+            -- Parse successfully even if only unique prefix of entry type has
+            -- been specified.
+            case List.filter (CI.mk s `ciIsPrefixOf`) entryTypeValues of
+                [s'] | Just entryType <- parseEntryType s' ->
                     Right $ Endo \opts ->
-                        opts{what = QueryFileSystem entryType}
-                Nothing ->
+                        opts{what = QueryFileSystem (Just entryType)}
+                _ ->
                     Left "Unknown file system entry type"
+
+    environmentFlag :: Options.Parser (Endo Query)
+    environmentFlag = Options.flag' f
+        (Options.long "environment" <> Options.long "environment-variables")
+      where
+        f = Endo \opts ->
+            opts{what = QueryEnvironmentVariables}
 
     tildeExpansionFlag :: Options.Parser (Endo Query)
     tildeExpansionFlag =
@@ -1316,8 +1354,18 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "completion"
             <+> longOption "query"
+            <+> longOption "environment[-variables]"
+--          <+> Pretty.brackets (longOptionWithArgument "algorithm" "ALGORITHM")
+            <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
+            <+> Pretty.brackets (longOptionWithArgument "prefix" "STRING")
+            <+> Pretty.brackets (longOptionWithArgument "suffix" "STRING")
+            <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+
+        , "completion"
+            <+> longOption "query"
             <+> longOptionWithArgument "file-system" "TYPE"
-            <+> Pretty.brackets (longOptionWithArgument "algorithm" "ALGORITHM")
+            <+> Pretty.brackets (longOptionWithArgument "type" "TYPE")
+--          <+> Pretty.brackets (longOptionWithArgument "algorithm" "ALGORITHM")
             <+> Pretty.brackets (longOptionWithArgument "pattern" "PATTERN")
             <+> Pretty.brackets
                 ( longOption "[no-]tilde-expansion"
@@ -1497,8 +1545,14 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         ]
 
     , section "Query file system options:"
-        [ optionDescription ["--file-system=TYPE"]
-            [ Pretty.reflow "Query for entries of"
+        [ optionDescription ["--file-system"]
+            [ Pretty.reflow "Query file system for entries to complete. See"
+            , longOptionWithArgument "type" "TYPE"
+            , Pretty.reflow "to target only specific file system entries."
+            ]
+
+        , optionDescription ["--type=TYPE"]
+            [ Pretty.reflow "Query file system for entries of"
             , metavar "TYPE" <> ","
             , "where"
             , metavar "TYPE"
@@ -1517,6 +1571,13 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ Pretty.reflow "Substitute prefix", value "~"
             , Pretty.reflow "in completions for full path to current user's\
                 \ home directory."
+            ]
+        ]
+
+    , section "Query environment variables options:"
+        [ optionDescription ["--environment[-variables]"]
+            [ Pretty.reflow "Query environment variables currently available\
+                \ in the environment."
             ]
         ]
 
