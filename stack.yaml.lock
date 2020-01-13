@@ -40,26 +40,26 @@ packages:
   original:
     hackage: prettyprinter-1.5.1
 - completed:
-    hackage: dhall-1.28.0@sha256:a0b38be83ab76c59adf6d67868b9b183591edc68d2c3727d38598ddc12c36c95,31625
+    hackage: dhall-1.29.0@sha256:2bb41a7c354a155f6e62b61dfee7474b7bb8c3b474c689e56c6a1f7af37881b9,32058
     pantry-tree:
-      size: 241424
-      sha256: 8c92a349408edf2c72760025740b4950cd0a1d2ce0ba393333332c1bbc469967
+      size: 244291
+      sha256: 974a3764c28f7fe86fbd4117292ca4ba8da685e894656e683989fc4df0106d06
   original:
-    hackage: dhall-1.28.0
+    hackage: dhall-1.29.0
 - completed:
-    hackage: dhall-bash-1.0.25@sha256:ae87c1652220bfa24be19fdc9a2dcf321ddebbf05a6fda78f9c86a48d3d22011,1784
+    hackage: dhall-bash-1.0.27@sha256:4efba91e2ef42ad5e1f1c35929e5a7ef07b1b1a6119fa39f6af2926418986bb8,1784
     pantry-tree:
       size: 266
-      sha256: c1c6c0fd557168b73a452ea8e8bf9e8bb6c78a085973520af2d44a051c5ff463
+      sha256: 91d36fe4bf6f74dc7a759ae2712ffe1c9195a74cc0f581e149d587fa500f3088
   original:
-    hackage: dhall-bash-1.0.25
+    hackage: dhall-bash-1.0.27
 - completed:
-    hackage: dhall-json-1.6.0@sha256:a3c808ac29adb91fbbb4002fa11885b045f4f28933ce5102223a67dda8aa9cfd,4088
+    hackage: dhall-json-1.6.1@sha256:77b3b6e92d82163a6a325c7a07e68132802d57cae4d6b83703117a2bf7984ac1,4088
     pantry-tree:
       size: 3181
-      sha256: 52175ac87a2c446aca84d4413b3f3e50f7cbbf4fea73f67340184d6924dc7d6f
+      sha256: 88cdf872bed2c30c60c2375965a64ba7d72d07017e0f32f52cab2bb9f065a0db
   original:
-    hackage: dhall-json-1.6.0
+    hackage: dhall-json-1.6.1
 - completed:
     hackage: aeson-yaml-1.0.5.0@sha256:5786f021c1e088d6a5aa259120ec5b1f22bb1757f4427c1a87e0513d00f17f31,1975
     pantry-tree:
