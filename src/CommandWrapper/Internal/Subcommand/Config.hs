@@ -102,6 +102,7 @@ import CommandWrapper.Core.Completion.FileSystem
     , defFileSystemOptions
     , fileSystemCompleter
     )
+import CommandWrapper.Core.Config.Shell (Shell(Bash, Fish, Zsh))
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
@@ -128,9 +129,6 @@ import qualified CommandWrapper.Options.Optparse as Options
     , internalSubcommandParse
 --  , splitArguments
 --  , splitArguments'
-    )
-import qualified CommandWrapper.Options.Shell as Options
-    ( Shell(Bash, Fish, Zsh)
     )
 import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput, parseInput)
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
@@ -1322,7 +1320,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 configSubcommandCompleter
     :: AppNames
     -> Global.Config
-    -> Options.Shell
+    -> Shell
     -> Word
     -> [String]
     -> IO [String]
@@ -1342,22 +1340,22 @@ configSubcommandCompleter appNames cfg shell index words
   | Just "--interpreter" <- lastMay wordsBeforePattern =
         Options.bashCompleter "command" "" pat
 
-  | Options.Bash <- shell
+  | Bash <- shell
   , Just w <- lastMay wordsBeforePattern
   , isBashRedirection w =
         fileCompleter ""
 
-  | Options.Zsh <- shell
+  | Zsh <- shell
   , Just w <- lastMay wordsBeforePattern
   , isZshRedirection w =
         fileCompleter ""
 
-  | Options.Fish <- shell
+  | Fish <- shell
   , Just w <- lastMay wordsBeforePattern
   , isFishRedirection w =
         fileCompleter ""
 
-  | shell == Options.Bash || shell == Options.Zsh
+  | shell == Bash || shell == Zsh
   , Just w <- lastMay wordsBeforePattern
   , hadSomeDhall
   , isBashAndZshStdinExpansion w = do

@@ -109,6 +109,7 @@ import CommandWrapper.Core.Config.ColourOutput
     ( ColourOutput(..)
     , shouldUseColours
     )
+import CommandWrapper.Core.Config.Shell (Shell(Bash, Fish, Zsh))
 import CommandWrapper.Core.Environment.Params (Params(..), askParams)
 import CommandWrapper.Core.Environment.Parser (parseEnvIO)
 import qualified CommandWrapper.Core.Message as Message
@@ -123,7 +124,6 @@ import qualified CommandWrapper.Core.Message as Message
     , withTerminal
     )
 import CommandWrapper.Options (splitArguments, splitArguments')
-import CommandWrapper.Options.Shell (Shell(..))
 import CommandWrapper.Subcommand.Options
     ( SubcommandProps(..)
     , completionInfoFlagFields

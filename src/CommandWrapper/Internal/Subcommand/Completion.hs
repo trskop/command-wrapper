@@ -154,13 +154,17 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , exec
     )
 import CommandWrapper.Core.Config.Alias (Alias(alias), applyAliasCompletion)
+import CommandWrapper.Core.Config.Shell
+    ( HasShell(updateShell)
+    , Shell(Bash)
+    , shellOption
+    )
 import CommandWrapper.Internal.Utils (runMain)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     , splitArguments
     , splitArguments'
     )
-import qualified CommandWrapper.Options.Shell as Options
 import CommandWrapper.Internal.Subcommand.Completion.Libraries
     ( ImportOrContent(Content, Import)
     , Library(..)
@@ -181,7 +185,7 @@ type InternalCompleter = String -> Maybe Completer
 type Completer =
         AppNames
     ->  Global.Config
-    ->  Options.Shell
+    ->  Shell
     ->  Word
     ->  [String]
     ->  IO [String]
@@ -278,33 +282,29 @@ updateOutput o = Endo \case
 data CompletionOptions = CompletionOptions
     { words :: [String]
     , index :: Maybe Word
-    , shell :: Options.Shell
+    , shell :: Shell
     , subcommand :: Maybe String
     , output :: OutputStdoutOrFile
     }
   deriving stock (Generic, Show)
+  deriving anyclass (HasShell)
 
 instance HasOutput CompletionOptions where
     type Output CompletionOptions = OutputStdoutOrFile
     output = typed
 
-type CompletionInfo = Options.Shell -> Natural -> [Text] -> [Text]
+type CompletionInfo = Shell -> Natural -> [Text] -> [Text]
 
-instance Options.HasShell CompletionOptions where
-    updateShell =
-        mapEndo \f opts@CompletionOptions{shell} ->
-            (opts :: CompletionOptions){shell = f shell}
-
-instance Options.HasShell (CompletionMode cfg) where
+instance HasShell (CompletionMode cfg) where
     updateShell f = Endo \case
         CompletionMode opts cfg ->
-            CompletionMode (Options.updateShell f `appEndo` opts) cfg
+            CompletionMode (updateShell f `appEndo` opts) cfg
 
         ScriptMode opts cfg ->
-            ScriptMode (Options.updateShell f `appEndo` opts) cfg
+            ScriptMode (updateShell f `appEndo` opts) cfg
 
         LibraryMode opts cfg ->
-            LibraryMode (Options.updateShell f `appEndo` opts) cfg
+            LibraryMode (updateShell f `appEndo` opts) cfg
 
         mode ->
             mode
@@ -527,7 +527,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
         let opts = CompletionOptions
                 { words = []
                 , index = Nothing
-                , shell = Options.Bash
+                , shell = Bash
                 , subcommand = Nothing
                 , output = OutputStdoutOnly
                 }
@@ -733,7 +733,7 @@ getCompletions CompletionConfig{..} appNames config CompletionOptions{..} =
 subcommandCompletion
     :: AppNames
     -> Global.Config
-    -> Options.Shell
+    -> Shell
     -> Word
     -- ^ Index inside arguments.
     -> [String]
@@ -940,7 +940,7 @@ parseOptions appNames config arguments = do
     execParser options $ asum
         [ dualFoldEndo
             <$> scriptFlag
-            <*> optional Options.shellOption
+            <*> optional shellOption
             <*> optional outputOption
             <*> asum
                 [ dualFoldEndo
@@ -957,7 +957,7 @@ parseOptions appNames config arguments = do
             <$> ( libraryFlag
                 <*> ( dualFoldEndo
                     <$> many (importFlag <|> contentFlag)
-                    <*> many (Options.shellOption <|> dhallLibraryOption)
+                    <*> many (shellOption <|> dhallLibraryOption)
                     )
                 )
             <*> optional outputOption
@@ -1013,7 +1013,7 @@ parseOptions appNames config arguments = do
 
         , updateCompletionOptions words $ foldEndo
             <$> optional indexOption
-            <*> optional Options.shellOption
+            <*> optional shellOption
             <*> optional (setOutput <$> Options.outputOption)
             <*> optional subcommandOption
         ]
@@ -1058,7 +1058,7 @@ parseOptions appNames config arguments = do
             let defOpts = CompletionOptions
                     { words
                     , index = Nothing
-                    , shell = Options.Bash
+                    , shell = Bash
                     , subcommand = Nothing
                     , output = OutputStdoutOnly
                     }

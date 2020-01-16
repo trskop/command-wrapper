@@ -80,6 +80,7 @@ import CommandWrapper.Core.Config.Alias
     ( Alias(Alias, alias, description)
     , applyAlias
     )
+import CommandWrapper.Core.Config.Shell (Shell)
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName, names))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
@@ -108,7 +109,6 @@ import CommandWrapper.Internal.Utils (runMain)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     )
-import qualified CommandWrapper.Options.Shell as Options (Shell)
 
 
 data HelpMode a
@@ -325,7 +325,7 @@ helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 helpSubcommandCompleter
     :: AppNames
     -> Config
-    -> Options.Shell
+    -> Shell
     -> Word
     -> [String]
     -> IO [String]

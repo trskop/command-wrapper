@@ -86,12 +86,12 @@ import qualified Options.Applicative as Options
     )
 
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput(Never))
+import CommandWrapper.Core.Config.Shell (Shell)
+import qualified CommandWrapper.Core.Config.Shell as Shell (parse)
 import CommandWrapper.Core.Environment (Params(Params, colour, verbosity))
 import CommandWrapper.Core.Message (Result, defaultLayoutOptions, outWith)
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
 import CommandWrapper.Options.Optparse (subcommandParse)
-import qualified CommandWrapper.Options.Shell as Options (Shell)
-import qualified CommandWrapper.Options.Shell as Options.Shell (parse)
 
 
 -- | Mode of operation of a subcommand.  It can be either 'Action', which is
@@ -114,7 +114,7 @@ data Mode action
     | CompletionInfoHash
     -- ^ Mode initiated by @--completion-info-hash@ that prints semantic hash
     -- of Dhall expressions printed by 'CompletionInfo' mode.
-    | Completion Word Options.Shell [String]
+    | Completion Word Shell [String]
     -- ^ Command line completion mode initiated when subcommand is called using
     -- convention described by 'CompletionInfo' mode.
     | Help
@@ -127,7 +127,7 @@ data SubcommandProps params action = SubcommandProps
     { preprocess :: params -> [String] -> (params, [String])
     -- ^ Pre-process inputs before doing anything.  This is useful to e.g.
     -- split\/filter arguments.
-    , doCompletion :: params -> Word -> Options.Shell -> [String] -> IO ()
+    , doCompletion :: params -> Word -> Shell -> [String] -> IO ()
     -- ^ Perform command line completion using this action.
     , helpMsg :: params -> Pretty.Doc (Result Pretty.AnsiStyle)
     -- ^ Help message to be printed if @--help|-h@ is invoked.
@@ -240,13 +240,13 @@ helpFlagFields = Options.long "help" <> Options.short 'h'
 -- {{{ Completion Options -----------------------------------------------------
 
 completionOptions
-    :: (Word -> Options.Shell -> [String] -> mode)
+    :: (Word -> Shell -> [String] -> mode)
     -> Options.Parser mode
 completionOptions completionMode =
     Options.flag' completionMode
         (Options.long "completion" <> Options.internal)
     <*> Options.option Options.auto (Options.long "index" <> Options.internal)
-    <*> Options.option (Options.maybeReader $ Options.Shell.parse . CI.mk)
+    <*> Options.option (Options.maybeReader $ Shell.parse . CI.mk)
             (Options.long "shell" <> Options.internal)
     <*> many (Options.strArgument (Options.metavar "WORD" <> Options.internal))
 

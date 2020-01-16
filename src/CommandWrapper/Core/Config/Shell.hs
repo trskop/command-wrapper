@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Completion
+-- Module:      CommandWrapper.Core.Config.Shell
 -- Description: Supported shell values and '--shell=SHELL' option.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Supported 'Shell' values and @--shell=SHELL@ option.
-module CommandWrapper.Options.Shell
+module CommandWrapper.Core.Config.Shell
     ( Shell(..)
     , parse
 
@@ -21,9 +21,11 @@ module CommandWrapper.Options.Shell
     )
   where
 
+import Data.Coerce (coerce)
 import Data.Either (Either(Left, Right))
 import Data.Eq (Eq)
 import Data.Function (($), (.), const, id)
+import Data.Functor.Identity (Identity(Identity))
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid (Endo(Endo), (<>))
 import Data.String (IsString)
@@ -31,6 +33,7 @@ import GHC.Generics (Generic)
 import Text.Show (Show)
 
 import qualified Data.CaseInsensitive as CI (mk)
+import Data.Generics.Product.Typed (HasType, typed)
 import Dhall (FromDhall, ToDhall)
 import qualified Options.Applicative as Options
     ( Parser
@@ -68,6 +71,11 @@ shellOption =
 
 class HasShell a where
     updateShell :: Endo Shell -> Endo a
+
+    default updateShell :: HasType Shell a => Endo Shell -> Endo a
+    updateShell (Endo f) = Endo \a -> coerce (l (coerce . f) a)
+      where
+        l = typed :: (Shell -> Identity Shell) -> a -> Identity a
 
 instance HasShell Shell where
     updateShell :: Endo Shell -> Endo Shell

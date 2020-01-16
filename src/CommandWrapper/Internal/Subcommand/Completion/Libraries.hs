@@ -57,7 +57,6 @@ import qualified Data.ByteString as ByteString (putStr)
 import Data.Either.Validation (validationToEither)
 import Data.FileEmbed (embedFile)
 import Data.Generics.Product.Typed (typed)
-import Data.Monoid.Endo (mapEndo)
 import Data.Output
     ( HasOutput(Output)
     , OutputFile(OutputFile)
@@ -78,6 +77,10 @@ import qualified System.AtomicWrite.Writer.ByteString as ByteString
 import qualified System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
+import CommandWrapper.Core.Config.Shell
+    ( HasShell(..)
+    , Shell(..)
+    )
 import CommandWrapper.Core.Environment (AppNames(exePath, usedName))
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( hPutExpr
@@ -94,10 +97,6 @@ import CommandWrapper.Internal.Subcommand.Completion.DhallExpressions
     , shellCompletionTemplate
     )
 import CommandWrapper.Core.Message (errorMsg)
-import qualified CommandWrapper.Options.Shell as Options
-    ( HasShell(..)
-    , Shell(..)
-    )
 
 
 -- TODO:
@@ -118,10 +117,10 @@ data LibraryOptions = LibraryOptions
     }
   deriving stock (Generic, Show)
 
-instance Options.HasShell LibraryOptions where
+instance HasShell LibraryOptions where
     updateShell f = Endo \opts@LibraryOptions{library} ->
         (opts :: LibraryOptions)
-            { library = Options.updateShell f `appEndo` library
+            { library = updateShell f `appEndo` library
             }
 
 instance HasOutput LibraryOptions where
@@ -130,24 +129,24 @@ instance HasOutput LibraryOptions where
 
 defLibraryOptions :: LibraryOptions
 defLibraryOptions = LibraryOptions
-    { library = ShellLibrary Options.Bash
+    { library = ShellLibrary Bash
     , output = OutputStdoutOnly
     , importOrContent = Content
     }
 
 -- | Defines which library content or import will be produced.
 data Library
-    = ShellLibrary Options.Shell
+    = ShellLibrary Shell
     | DhallLibrary DhallLibrary
   deriving stock (Generic, Show)
 
-instance Options.HasShell Library where
+instance HasShell Library where
     updateShell f = Endo \case
         ShellLibrary shell ->
             ShellLibrary (f `appEndo` shell)
         DhallLibrary _ ->
             -- Bash is the default shell.
-            ShellLibrary (f `appEndo` Options.Bash)
+            ShellLibrary (f `appEndo` Bash)
 
 data ImportOrContent
     = Import
@@ -164,7 +163,7 @@ putLibrary
 putLibrary subcmd config LibraryOptions{..} = case library of
     ShellLibrary shell ->
         case shell of
-            Options.Bash ->
+            Bash ->
                 putBashLibrary subcmd config importOrContent output
             _ ->
                 dieUnsupportedShell subcmd config shell
@@ -175,7 +174,7 @@ putLibrary subcmd config LibraryOptions{..} = case library of
 dieUnsupportedShell
     :: (forall ann. Pretty.Doc ann)
     -> Config
-    -> Options.Shell
+    -> Shell
     -> IO a
 dieUnsupportedShell subcmd Config{colourOutput, verbosity} shell = do
     errorMsg subcmd verbosity colourOutput stderr
@@ -333,15 +332,12 @@ putDhallLibrary config dhallLib importOrContent = \case
 
 data ScriptOptions = ScriptOptions
     { aliases :: [String]
-    , shell :: Options.Shell
+    , shell :: Shell
     , subcommand :: Maybe String
     , output :: OutputStdoutOrFile
     }
   deriving stock (Generic, Show)
-
-instance Options.HasShell ScriptOptions where
-    updateShell = mapEndo \f opts@ScriptOptions{shell} ->
-        (opts :: ScriptOptions){shell = f shell}
+  deriving anyclass (HasShell)
 
 instance HasOutput ScriptOptions where
     type Output ScriptOptions = OutputStdoutOrFile
@@ -349,14 +345,14 @@ instance HasOutput ScriptOptions where
 
 defScriptOptions :: ScriptOptions
 defScriptOptions = ScriptOptions
-    { shell = Options.Bash
+    { shell = Bash
     , subcommand = Nothing
     , aliases = []
     , output = OutputStdoutOnly
     }
 
 type MkCompletionScript =
-           Options.Shell
+           Shell
         -> Text
         -> Text
         -> Maybe Text

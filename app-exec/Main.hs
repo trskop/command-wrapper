@@ -85,6 +85,8 @@ import CommandWrapper.Core.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Core.Config.Environment as EnvironmentVariable
     ( toTuple
     )
+import CommandWrapper.Core.Config.Shell (Shell)
+import qualified CommandWrapper.Core.Config.Shell as Shell (parse)
 import qualified CommandWrapper.Core.Help.Pretty as Help
 import CommandWrapper.Core.Message (defaultLayoutOptions, hPutDoc)
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPut)
@@ -92,8 +94,6 @@ import qualified CommandWrapper.Options as Options
     ( splitArguments
     , splitArguments'
     )
-import qualified CommandWrapper.Options.Shell as Options (Shell)
-import qualified CommandWrapper.Options.Shell as Options.Shell (parse)
 import qualified CommandWrapper.Subcommand.Prelude (SubcommandProps(..))
 import CommandWrapper.Subcommand.Prelude
     ( Params(Params, colour, name, subcommand, verbosity)
@@ -128,7 +128,7 @@ data Action
     = List
     | Tree
     | DryRun
-    | DryRunCompletion Word Options.Shell
+    | DryRunCompletion Word Shell
     | Run Bool
     | RunDhall Bool Text
 
@@ -216,7 +216,7 @@ main = do
     getCompletionCommand
         :: Params
         -> Config
-        -> Options.Shell
+        -> Shell
         -> Word
         -> [String]
         -> IO (Maybe Command)
@@ -496,12 +496,12 @@ parseOptions = asum
     indexOption :: Options.Parser Word
     indexOption = Options.option Options.auto (Options.long "index")
 
-    shellOption :: Options.Parser Options.Shell
+    shellOption :: Options.Parser Shell
     shellOption = Options.option
-        (Options.maybeReader (Options.Shell.parse . CaseInsensitive.mk))
+        (Options.maybeReader (Shell.parse . CaseInsensitive.mk))
         (Options.long "shell")
 
-doCompletion :: ExecParams -> Word -> Options.Shell -> [String] -> IO ()
+doCompletion :: ExecParams -> Word -> Shell -> [String] -> IO ()
 doCompletion execParams index shell _ =
     case Options.splitArguments' words of
         (_, _, []) ->
@@ -578,7 +578,7 @@ doCompletion execParams index shell _ =
 doCommandCompletion
     :: Params
     -> Config
-    -> Options.Shell
+    -> Shell
     -> String
     -- ^ Command name.
     -> Word
@@ -598,7 +598,7 @@ getCompletion
     :: Params
     -> Config
     -> String
-    -> IO (Maybe (Options.Shell -> Natural -> [Text] -> Command))
+    -> IO (Maybe (Shell -> Natural -> [Text] -> Command))
 getCompletion params Config{commands} commandName =
     case List.find (NamedCommand.isNamed (fromString commandName)) commands of
         Nothing ->
@@ -609,10 +609,10 @@ getCompletion params Config{commands} commandName =
             pure completion
 
 executeCommandCompletion
-    :: (Options.Shell -> Natural -> [Text] -> Command)
+    :: (Shell -> Natural -> [Text] -> Command)
     -- ^ Function that constructs completion command, i.e. command that will be
     -- executed to provide completion.
-    -> Options.Shell
+    -> Shell
     -> Word
     -> [String]
     -> IO ()

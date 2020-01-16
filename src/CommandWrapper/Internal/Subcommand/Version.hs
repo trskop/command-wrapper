@@ -77,6 +77,9 @@ import CommandWrapper.Core.Completion.FileSystem
     , defFileSystemOptions
     , fileSystemCompleter
     )
+--import CommandWrapper.Core.Config.Alias (applyAlias)
+import CommandWrapper.Core.Config.Shell (Shell(Bash, Fish, Zsh))
+import qualified CommandWrapper.Core.Config.Shell as Shell (shellOption)
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
@@ -90,6 +93,8 @@ import CommandWrapper.Core.Help.Pretty
     , toolsetCommand
     , usageSection
     )
+import CommandWrapper.Core.Message (Result, out)
+--import qualified CommandWrapper.Core.Message as Message (dieTooManyArguments)
 --import qualified CommandWrapper.External as External (executeCommand)
 import CommandWrapper.Internal.Dhall as Dhall (hPut)
 import CommandWrapper.Internal.Subcommand.Version.Info
@@ -98,14 +103,10 @@ import CommandWrapper.Internal.Subcommand.Version.Info
     , VersionInfoField(..)
     , versionQQ
     )
-import CommandWrapper.Core.Message (Result, out)
---import qualified CommandWrapper.Core.Message as Message (dieTooManyArguments)
 import CommandWrapper.Internal.Utils (runMain)
---import CommandWrapper.Options.Alias (applyAlias)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     )
-import qualified CommandWrapper.Options.Shell as Options
 
 
 data VersionMode a
@@ -117,7 +118,7 @@ data VersionMode a
 data OutputFormat
     = PlainFormat
     | DhallFormat
-    | ShellFormat Options.Shell
+    | ShellFormat Shell
   deriving stock (Generic, Show)
 
 version
@@ -136,9 +137,9 @@ version versionInfo appNames options config =
 
                 ShellFormat shell ->
                     (\f -> Text.hPutStr handle $ f versionInfo) case shell of
-                        Options.Bash -> versionInfoBash
-                        Options.Fish -> versionInfoFish
-                        Options.Zsh -> versionInfoBash -- Same syntax as Bash.
+                        Bash -> versionInfoBash
+                        Fish -> versionInfoFish
+                        Zsh -> versionInfoBash -- Same syntax as Bash.
 
                 PlainFormat ->
                     out verbosity colourOutput handle
@@ -211,7 +212,7 @@ parseOptions appNames config options =
     switchToHelpMode = switchTo (const VersionHelp)
 
     switchToShellFormat f =
-        let shell = f `appEndo` Options.Bash
+        let shell = f `appEndo` Bash
         in  switchTo (FullVersion (ShellFormat shell))
 
     dhallFlag, shellOption, helpFlag
@@ -219,7 +220,7 @@ parseOptions appNames config options =
 
     dhallFlag = Options.flag mempty switchToDhallFormat (Options.long "dhall")
 
-    shellOption = switchToShellFormat <$> Options.shellOption
+    shellOption = switchToShellFormat <$> Shell.shellOption
 
     outputOption :: Options.Parser (Endo (VersionMode Config))
     outputOption = Options.outputOption <&> \o -> Endo \case
@@ -291,7 +292,7 @@ versionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 versionSubcommandCompleter
     :: AppNames
     -> Config
-    -> Options.Shell
+    -> Shell
     -> Word
     -> [String]
     -> IO [String]
