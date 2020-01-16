@@ -1,5 +1,5 @@
 -- |
--- Module:      CommandWrapper.Internal.Dhall
+-- Module:      CommandWrapper.Core.Dhall.Dhall
 -- Description: Dhall utilities.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
@@ -9,7 +9,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Dhall utilities.
-module CommandWrapper.Internal.Dhall
+module CommandWrapper.Core.Dhall
     (
     -- * FromDhall Combinators
       interpretWord

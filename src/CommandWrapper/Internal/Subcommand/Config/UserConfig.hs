@@ -66,7 +66,7 @@ import System.FilePath (takeDirectory)
 import System.Exit (die)
 
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
-import CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
+import CommandWrapper.Core.Dhall as Dhall (hPutExpr)
 import CommandWrapper.Internal.Subcommand.Config.Paths (Paths)
 
 data Output = Plain | DhallExpression | DhallType

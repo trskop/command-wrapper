@@ -3,7 +3,7 @@
 -- Module:      CommandWrapper.Config.NotifyWhen
 -- Description: Data type that represents when desktop notifications should be
 --              raised.
--- Copyright:   (c) 2019 Peter Trško
+-- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -32,7 +32,8 @@ import qualified Dhall
     , Decoder
     , natural
     )
-import qualified CommandWrapper.Internal.Dhall as Dhall
+
+import qualified CommandWrapper.Core.Dhall as Dhall
     ( constructor
     , constructor0
     , union

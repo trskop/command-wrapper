@@ -80,6 +80,7 @@ import CommandWrapper.Core.Completion.FileSystem
 --import CommandWrapper.Core.Config.Alias (applyAlias)
 import CommandWrapper.Core.Config.Shell (Shell(Bash, Fish, Zsh))
 import qualified CommandWrapper.Core.Config.Shell as Shell (shellOption)
+import CommandWrapper.Core.Dhall as Dhall (hPut)
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
@@ -96,7 +97,6 @@ import CommandWrapper.Core.Help.Pretty
 import CommandWrapper.Core.Message (Result, out)
 --import qualified CommandWrapper.Core.Message as Message (dieTooManyArguments)
 --import qualified CommandWrapper.External as External (executeCommand)
-import CommandWrapper.Internal.Dhall as Dhall (hPut)
 import CommandWrapper.Internal.Subcommand.Version.Info
     ( PrettyVersion(..)
     , VersionInfo(..)

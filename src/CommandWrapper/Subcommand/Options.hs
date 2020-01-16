@@ -88,9 +88,9 @@ import qualified Options.Applicative as Options
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput(Never))
 import CommandWrapper.Core.Config.Shell (Shell)
 import qualified CommandWrapper.Core.Config.Shell as Shell (parse)
+import qualified CommandWrapper.Core.Dhall as Dhall (hPutExpr)
 import CommandWrapper.Core.Environment (Params(Params, colour, verbosity))
 import CommandWrapper.Core.Message (Result, defaultLayoutOptions, outWith)
-import qualified CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
 import CommandWrapper.Options.Optparse (subcommandParse)
 
 

@@ -44,8 +44,8 @@ import Numeric.Natural (Natural)
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
 import CommandWrapper.Core.Config.Environment (EnvironmentVariable)
 import CommandWrapper.Core.Config.Shell (Shell)
+import CommandWrapper.Core.Dhall as Dhall
 import CommandWrapper.Config.NotifyWhen (NotifyWhen)
-import CommandWrapper.Internal.Dhall as Dhall
 
 
 data NamedCommand = NamedCommand
