@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Options
 -- Description: Utilities for parsing command line options.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -43,10 +43,10 @@ import Data.Monoid.Endo (E)
 import qualified Mainplate (Command(..), ExternalCommand(..))
 import qualified Options.Applicative as Options (ParserInfo, ParserPrefs)
 
+import CommandWrapper.Core.Config.Alias (Alias(..), applyAlias)
 import CommandWrapper.Core.Environment.AppNames (AppNames)
 import qualified CommandWrapper.External as External (Command)
 import qualified CommandWrapper.Internal as Internal (Command(..), command)
-import CommandWrapper.Options.Alias (Alias(..), applyAlias)
 import CommandWrapper.Options.GlobalMode (GlobalMode(..), runGlobalMode)
 import CommandWrapper.Options.Optparse
     ( bashCompleter

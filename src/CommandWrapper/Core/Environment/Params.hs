@@ -58,6 +58,8 @@ import qualified Data.Text.Prettyprint.Doc as Pretty (dquotes, viaShow, vsep)
 import Data.Verbosity (Verbosity)
 import qualified Data.Verbosity as Verbosity (parse)
 
+import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
+import qualified CommandWrapper.Core.Config.ColourOutput as ColourOutput (parse)
 import CommandWrapper.Core.Environment.Builder (EnvBuilder(EnvBuilder))
 import CommandWrapper.Core.Environment.Parser
     ( ParseEnv
@@ -76,9 +78,6 @@ import CommandWrapper.Core.Environment.Variable
     , getCommandWrapperToolsetVarName
     , getCommandWrapperVarName
     )
-import CommandWrapper.Options.ColourOutput (ColourOutput)
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput (parse)
-
 
 -- | Subcommand parameters.  They are used to populate environment variables
 -- used in Subcommand Protocol.

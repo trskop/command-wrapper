@@ -77,8 +77,8 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import qualified System.Console.Terminal.Size as Terminal (Window)
 
+import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
 import CommandWrapper.Core.Message (hPutDoc)
-import CommandWrapper.Options.ColourOutput (ColourOutput)
 
 
 data Annotation

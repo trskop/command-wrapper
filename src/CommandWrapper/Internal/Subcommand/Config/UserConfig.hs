@@ -1,7 +1,7 @@
 -- |
 -- Module:      $Header$
 -- Description: Generate Dhall configuration file with XDG Directories.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -65,9 +65,9 @@ import qualified Dhall.TypeCheck as Dhall (TypeError, typeOf)
 import System.FilePath (takeDirectory)
 import System.Exit (die)
 
+import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
 import CommandWrapper.Internal.Dhall as Dhall (hPutExpr)
 import CommandWrapper.Internal.Subcommand.Config.Paths (Paths)
-import CommandWrapper.Options.ColourOutput (ColourOutput)
 
 data Output = Plain | DhallExpression | DhallType
 

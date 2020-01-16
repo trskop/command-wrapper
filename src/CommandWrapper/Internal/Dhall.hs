@@ -1,7 +1,7 @@
 -- |
 -- Module:      CommandWrapper.Internal.Dhall
 -- Description: Dhall utilities.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -104,7 +104,7 @@ import qualified System.Console.Terminal.Size as Terminal
     , hSize
     )
 
-import CommandWrapper.Options.ColourOutput (ColourOutput, shouldUseColours)
+import CommandWrapper.Core.Config.ColourOutput (ColourOutput, shouldUseColours)
 
 
 -- {{{ ToDhall Combinators ----------------------------------------------------

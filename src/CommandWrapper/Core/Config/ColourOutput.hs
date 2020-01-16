@@ -1,7 +1,7 @@
 -- |
 -- Module:      $Header$
 -- Description: Colourised output preferences
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -9,7 +9,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Colourised output preferences.
-module CommandWrapper.Options.ColourOutput
+module CommandWrapper.Core.Config.ColourOutput
     ( ColourOutput(..)
     , parse
 

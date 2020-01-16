@@ -153,9 +153,8 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , defExec
     , exec
     )
+import CommandWrapper.Core.Config.Alias (Alias(alias), applyAliasCompletion)
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Options.Alias (Alias(alias))
-import qualified CommandWrapper.Options.Alias as Options (applyAliasCompletion)
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     , splitArguments
@@ -689,8 +688,8 @@ getCompletions CompletionConfig{..} appNames config CompletionOptions{..} =
         let -- TODO: Figure out how to take arguments into account when
             -- applying aliases.
             (realSubcommandName, realSubcommandArguments, realIndex) =
-                Options.applyAliasCompletion (Global.getAliases config)
-                    subcommandName subcommandArguments idx
+                applyAliasCompletion (Global.getAliases config) subcommandName
+                    subcommandArguments idx
 
          in case internalCompleter realSubcommandName of
                 Nothing ->

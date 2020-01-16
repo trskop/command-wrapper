@@ -87,6 +87,12 @@ import CommandWrapper.Core.Environment
     , parseEnvIO
     , var
     )
+import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
+import qualified CommandWrapper.Core.Config.ColourOutput as ColourOutput
+    ( ColourOutput(Auto)
+    , options
+    , noColorEnvVar
+    )
 import qualified CommandWrapper.Core.Help.Pretty as Help
     ( dullGreen
     , helpOptions
@@ -105,12 +111,6 @@ import CommandWrapper.Core.Message (Result(..), errorMsg)
 import qualified CommandWrapper.External as External
 import qualified CommandWrapper.Internal as Internal
 import qualified CommandWrapper.Options as Options
-import CommandWrapper.Options.ColourOutput (ColourOutput)
-import qualified CommandWrapper.Options.ColourOutput as ColourOutput
-    ( ColourOutput(Auto)
-    , options
-    , noColorEnvVar
-    )
 import qualified CommandWrapper.Options.GlobalMode as Options
 
 import Paths_command_wrapper (version)

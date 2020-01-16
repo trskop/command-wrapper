@@ -97,8 +97,11 @@ import qualified System.Console.Terminal.Size as Terminal
     , hSize
     )
 
+import CommandWrapper.Core.Config.ColourOutput
+    ( ColourOutput(..)
+    , shouldUseColours
+    )
 import CommandWrapper.Core.Environment.Parser (ParseEnvError)
-import CommandWrapper.Options.ColourOutput (ColourOutput(..), shouldUseColours)
 
 
 errorMsg

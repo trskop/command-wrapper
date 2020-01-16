@@ -2,7 +2,7 @@
 -- |
 -- Module:      CommandWrapper.Config.File
 -- Description: Global toolset configuration file.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -39,8 +39,8 @@ import qualified Dhall (InvalidDecoder, auto, inputFile)
 import qualified Dhall.Parser as Dhall (ParseError, Src)
 import qualified Dhall.TypeCheck as Dhall (TypeError)
 
-import CommandWrapper.Options.Alias (Alias)
-import CommandWrapper.Options.ColourOutput (ColourOutput)
+import CommandWrapper.Core.Config.Alias (Alias)
+import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 
 

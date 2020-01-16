@@ -41,10 +41,10 @@ import qualified Dhall
 import Data.Verbosity (Verbosity)
 import Numeric.Natural (Natural)
 
+import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
 import CommandWrapper.Core.Config.Environment (EnvironmentVariable)
 import CommandWrapper.Config.NotifyWhen (NotifyWhen)
 import CommandWrapper.Internal.Dhall as Dhall
-import CommandWrapper.Options.ColourOutput (ColourOutput)
 import CommandWrapper.Options.Shell (Shell)
 
 

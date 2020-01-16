@@ -222,10 +222,10 @@ import qualified Dhall.TypeCheck
 --import qualified Text.Dot
 
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
+import CommandWrapper.Core.Config.ColourOutput (shouldUseColours)
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import qualified CommandWrapper.Internal.Dhall as Dhall (hPutDoc, hPutExpr)
 import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput(..))
-import CommandWrapper.Options.ColourOutput (shouldUseColours)
 import Data.Generics.Internal.VL.Lens ((^.))
 import qualified Data.Verbosity as Verbosity (Verbosity(Normal, Silent))
 

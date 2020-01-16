@@ -105,6 +105,10 @@ import qualified Options.Applicative as Options (Parser, flag)
 import qualified System.Console.Terminal.Size as Terminal (Window)
 import qualified Dhall (Decoder, InputSettings, input, inputWithSettings)
 
+import CommandWrapper.Core.Config.ColourOutput
+    ( ColourOutput(..)
+    , shouldUseColours
+    )
 import CommandWrapper.Core.Environment.Params (Params(..), askParams)
 import CommandWrapper.Core.Environment.Parser (parseEnvIO)
 import qualified CommandWrapper.Core.Message as Message
@@ -119,7 +123,6 @@ import qualified CommandWrapper.Core.Message as Message
     , withTerminal
     )
 import CommandWrapper.Options (splitArguments, splitArguments')
-import CommandWrapper.Options.ColourOutput (ColourOutput(..), shouldUseColours)
 import CommandWrapper.Options.Shell (Shell(..))
 import CommandWrapper.Subcommand.Options
     ( SubcommandProps(..)

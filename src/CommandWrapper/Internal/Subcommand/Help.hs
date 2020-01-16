@@ -76,6 +76,10 @@ import System.Directory (findExecutablesInDirectories)
 import System.Posix.Process (executeFile)
 
 import CommandWrapper.Config.Global (Config(..), getAliases)
+import CommandWrapper.Core.Config.Alias
+    ( Alias(Alias, alias, description)
+    , applyAlias
+    )
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName, names))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
@@ -101,10 +105,6 @@ import qualified CommandWrapper.External as External
     , getSearchPath
     )
 import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Options.Alias
-    ( Alias(Alias, alias, description)
-    , applyAlias
-    )
 import qualified CommandWrapper.Options.Optparse as Options
     ( internalSubcommandParse
     )

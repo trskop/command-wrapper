@@ -56,8 +56,8 @@ import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
 import Data.Verbosity.Class (HasVerbosity)
 import Dhall (FromDhall)
 
-import CommandWrapper.Options.Alias (Alias)
-import CommandWrapper.Options.ColourOutput (ColourOutput)
+import CommandWrapper.Core.Config.Alias (Alias)
+import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
 
 
 -- | Represents values from global\/toolset configuration file and global
