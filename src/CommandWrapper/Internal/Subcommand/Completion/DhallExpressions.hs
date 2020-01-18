@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Internal.Subcommand.Completion.LibraryImports
@@ -44,28 +45,40 @@ import Data.String (IsString)
 -- therefore content will have to be provided in a different way.
 
 preludeV11_1_0Content :: IsString s => s
-preludeV11_1_0Content = preludeV11_1_0Import
+preludeV11_1_0Content =
+#ifdef DHALL_PRELUDE_V11_1_0
+    DHALL_PRELUDE_V11_1_0
+#else
+    preludeV11_1_0Import
+#endif
 
 preludeV11_1_0Import :: IsString s => s
 preludeV11_1_0Import =
-    "https://prelude.dhall-lang.org/v11.1.0/package.dhall\
-    \ sha256:99462c205117931c0919f155a6046aec140c70fb8876d208c7c77027ab19c2fa"
+    "https://prelude.dhall-lang.org/v11.1.0/package.dhall sha256:99462c205117931c0919f155a6046aec140c70fb8876d208c7c77027ab19c2fa"
 
 preludeV12_0_0Content :: IsString s => s
-preludeV12_0_0Content = preludeV12_0_0Import
+preludeV12_0_0Content =
+#ifdef DHALL_PRELUDE_V12_0_0
+    DHALL_PRELUDE_V12_0_0
+#else
+    preludeV12_0_0Import
+#endif
 
 preludeV12_0_0Import :: IsString s => s
 preludeV12_0_0Import =
-    "https://prelude.dhall-lang.org/v12.0.0/package.dhall\
-    \ sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
+    "https://prelude.dhall-lang.org/v12.0.0/package.dhall sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
 
 preludeV13_0_0Content :: IsString s => s
-preludeV13_0_0Content = preludeV13_0_0Import
+preludeV13_0_0Content =
+#ifdef DHALL_PRELUDE_V13_0_0
+    DHALL_PRELUDE_V13_0_0
+#else
+    preludeV13_0_0Import
+#endif
 
 preludeV13_0_0Import :: IsString s => s
 preludeV13_0_0Import =
-    "https://prelude.dhall-lang.org/v13.0.0/package.dhall\
-    \ sha256:4aa8581954f7734d09b7b21fddbf5d8df901a44b54b4ef26ea71db92de0b1a12"
+    "https://prelude.dhall-lang.org/v13.0.0/package.dhall sha256:4aa8581954f7734d09b7b21fddbf5d8df901a44b54b4ef26ea71db92de0b1a12"
 
 -- }}} Dhall Prelude Library --------------------------------------------------
 
