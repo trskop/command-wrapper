@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-COMPLETION(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 13th January 2020
+% 18th January 2020
 
 
 # NAME
@@ -153,9 +153,10 @@ interface for querying Command Wrapper's command line interface (CLI).
 :   Print specified Dhall *LIBRARY*, or its import snippet when `--import` is
     specified.  Supported values of *LIBRARY* are:
 
-    *   **prelude** -- Latest (known) version of Dhall prelude (v12.0.0).
+    *   **prelude** -- Latest (known) version of Dhall prelude (v13.0.0).
     *   **prelude-v11.1.0**
     *   **prelude-v12.0.0**
+    *   **prelude-v13.0.0**
     *   **command-wrapper** -- Latest (known) version of Command Wrapper's
         Dhall library.
     *   **exec** -- Latest (known) version of Command Wrapper's Exec library.

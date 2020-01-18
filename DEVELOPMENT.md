@@ -36,6 +36,39 @@
     ```
 
 
+# Bump Dhall version
+
+1.  Update versions of `dhall`, `dhall-bash`, and `dhall-json` in:
+
+    ```
+    stack.yaml
+    ```
+
+2.  Update standard version in:
+
+    ```
+    src/CommandWrapper/Internal.hs
+    ```
+
+3.  Rebuild and run tests:
+
+    ```
+    stack test
+    ```
+
+4.  Check that output of `version` subcommand is correct by running:
+
+    ```
+    stack exec -- command-wrapper version
+    ```
+
+5.  With new version of Dhall we usually get new version of Dhall Prelude.  To
+    update it follow instructions in section [Adding a new version of Dhall
+    Prelude](#adding-a-new-version-of-Dhall-Prelude).
+
+6.  Commit&push
+
+
 # Adding a new version of Dhall Prelude
 
 1.  Introduce new definitions `preludeV<major>_<minor>_<patch>Import` and
@@ -64,6 +97,12 @@
 
     ```
     stack test
+    ```
+
+6.  Update documentation of `--dhall=LIBRARY` option in:
+
+    ```
+    man/command-wrapper-completion.1.md
     ```
 
 6.  Commit&push
