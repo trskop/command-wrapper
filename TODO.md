@@ -39,6 +39,18 @@
         Which would create a Nix expression to install the toolset.  It could
         bootstrap the whole directory structure for the toolset as well.
 
+    -   Initialisation of toolset must be aware of Nix.  When we call:
+
+        ```
+        TOOLSET config --init --toolset=NAME
+        ```
+
+        And `command-wrapper` exuecutable is installed via Nix, then symbolic
+        link will be broken whenever we update Nix packages.  Instead, we
+        should generate a script that understands how to call command wrapper,
+        or point to `~/.nix-profile/libexec/command-wrapper` instead of
+        executable directly.
+
 *   **Config file control.**
 
     Since configuration now has three levels (system, user, and local) we can
