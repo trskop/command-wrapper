@@ -94,6 +94,8 @@ import CommandWrapper.Internal.Subcommand.Completion.DhallExpressions
     , preludeV11_1_0Import
     , preludeV12_0_0Content
     , preludeV12_0_0Import
+    , preludeV13_0_0Content
+    , preludeV13_0_0Import
     , shellCompletionTemplate
     )
 import CommandWrapper.Core.Message (errorMsg)
@@ -245,6 +247,7 @@ dieFailedToGenerateLibrary subcmd Config{colourOutput, verbosity} err = do
 
 data DhallLibrary
     = LatestPrelude
+    | PreludeV13_0_0
     | PreludeV12_0_0
     | PreludeV11_1_0
     | CommandWrapper
@@ -256,6 +259,7 @@ parseDhallLibrary = \case
     "prelude"         -> Just LatestPrelude
     "prelude-v11.1.0" -> Just PreludeV11_1_0
     "prelude-v12.0.0" -> Just PreludeV12_0_0
+    "prelude-v13.0.0" -> Just PreludeV13_0_0
     "command-wrapper" -> Just CommandWrapper
     "exec"            -> Just CommandWrapperExec
     _                 -> Nothing
@@ -265,6 +269,7 @@ showDhallLibrary = \case
     LatestPrelude      -> "prelude"
     PreludeV11_1_0     -> "prelude-v11.1.0"
     PreludeV12_0_0     -> "prelude-v12.0.0"
+    PreludeV13_0_0     -> "prelude-v13.0.0"
     CommandWrapper     -> "command-wrapper"
     CommandWrapperExec -> "exec"
 
@@ -297,11 +302,17 @@ putDhallLibrary config dhallLib importOrContent = \case
         (PreludeV12_0_0, Import) ->
             Text.hPutStrLn h preludeV12_0_0Import
 
+        (PreludeV13_0_0, Content) ->
+            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV13_0_0Content)
+
+        (PreludeV13_0_0, Import) ->
+            Text.hPutStrLn h preludeV13_0_0Import
+
         (LatestPrelude, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV12_0_0Content)
+            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV13_0_0Content)
 
         (LatestPrelude, Import) ->
-            Text.hPutStrLn h preludeV12_0_0Import
+            Text.hPutStrLn h preludeV13_0_0Import
 
         -- IMPORTANT!
         --

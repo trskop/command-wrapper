@@ -36,7 +36,7 @@
     ```
 
 
-# Adding a new version of Prelude
+# Adding a new version of Dhall Prelude
 
 1.  Introduce new definitions `preludeV<major>_<minor>_<patch>Import` and
     `preludeV<major>_<minor>_<patch>Content` in:
@@ -60,7 +60,13 @@
 4.  Introduce a new test case in `test/Main.hs` to make sure that the embedding
     of new Dhall Prelude library behaves correctly.
 
-5.  Commit&push
+5.  Rebuild and run tests:
+
+    ```
+    stack test
+    ```
+
+6.  Commit&push
 
 
 # Debugging Bash Completion
