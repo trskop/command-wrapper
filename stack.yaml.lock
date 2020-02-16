@@ -26,12 +26,12 @@ packages:
   original:
     hackage: lock-file-0.7.0.0
 - completed:
-    hackage: verbosity-0.3.0.0@sha256:937c318d73f527a88610c7c036c888578731adac8a1891e65d955db4dd976b7c,5043
+    hackage: verbosity-0.4.0.0@sha256:b396e2cb6880cf0b23794579f1903bace1c07db48d536ce3df0c80bc4569233d,4958
     pantry-tree:
       size: 795
-      sha256: add03785cbb76e808de561b68539f2c303790eeb5884a713efa37d3b8a356e5d
+      sha256: 3710165ea4015c78626a3c6629fafb93b7c2263edc5875bf307bf23a429488d5
   original:
-    hackage: verbosity-0.3.0.0
+    hackage: verbosity-0.4.0.0
 - completed:
     hackage: prettyprinter-1.5.1@sha256:fca87c3e2611d3499a0341a59857e9b424a23f31646e4737d535a18582284f96,5375
     pantry-tree:
@@ -40,26 +40,26 @@ packages:
   original:
     hackage: prettyprinter-1.5.1
 - completed:
-    hackage: dhall-1.29.0@sha256:2bb41a7c354a155f6e62b61dfee7474b7bb8c3b474c689e56c6a1f7af37881b9,32058
+    hackage: dhall-1.30.0@sha256:466fd3d3dcd074ce5b4fc0a11ce1232bb6258e9857b03dddcf09328c78c7ced3,32175
     pantry-tree:
-      size: 244291
-      sha256: 974a3764c28f7fe86fbd4117292ca4ba8da685e894656e683989fc4df0106d06
+      size: 248056
+      sha256: c6e9c604710be0daf83b206524b9f2796084bd036e8a4a905c3da1e50c3c0e70
   original:
-    hackage: dhall-1.29.0
+    hackage: dhall-1.30.0
 - completed:
-    hackage: dhall-bash-1.0.27@sha256:4efba91e2ef42ad5e1f1c35929e5a7ef07b1b1a6119fa39f6af2926418986bb8,1784
+    hackage: dhall-bash-1.0.28@sha256:a7c3d14b2144956a2dc9cd0e00c8a917ed677f7637e52d72264948d91417af5d,1783
     pantry-tree:
       size: 266
-      sha256: 91d36fe4bf6f74dc7a759ae2712ffe1c9195a74cc0f581e149d587fa500f3088
+      sha256: a454c60250cec2a57b1d169ad5595e75714ccc96f2f32adb0cc05e8b986d4588
   original:
-    hackage: dhall-bash-1.0.27
+    hackage: dhall-bash-1.0.28
 - completed:
-    hackage: dhall-json-1.6.1@sha256:77b3b6e92d82163a6a325c7a07e68132802d57cae4d6b83703117a2bf7984ac1,4088
+    hackage: dhall-json-1.6.2@sha256:e4e7a56ada027ee6aa901a759dee46a5076eaa6c401ef9efbf4a7ee8014ad9ae,4087
     pantry-tree:
-      size: 3181
-      sha256: 88cdf872bed2c30c60c2375965a64ba7d72d07017e0f32f52cab2bb9f065a0db
+      size: 3990
+      sha256: 80804b22821d93d98499c2a4aef854d2b8cde178ffa20a369d310fe7bff5090a
   original:
-    hackage: dhall-json-1.6.1
+    hackage: dhall-json-1.6.2
 - completed:
     hackage: aeson-yaml-1.0.5.0@sha256:5786f021c1e088d6a5aa259120ec5b1f22bb1757f4427c1a87e0513d00f17f31,1975
     pantry-tree:
@@ -111,7 +111,7 @@ packages:
     commit: 003e0c7c32628ee27332becfab92b62cad194163
 snapshots:
 - completed:
-    size: 524154
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/20.yaml
-    sha256: 2f5099f69ddb6abfe64400fe1e6a604e8e628f55e6837211cd70a81eb0a8fa4d
-  original: lts-14.20
+    size: 524996
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/27.yaml
+    sha256: 7ea31a280c56bf36ff591a7397cc384d0dff622e7f9e4225b47d8980f019a0f0
+  original: lts-14.27
