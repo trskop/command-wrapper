@@ -1,6 +1,6 @@
 #!/usr/bin/env stack
 {- stack script
-    --resolver lts-14.17
+    --resolver lts-15.0
     --package directory
     --package executable-path
     --package shake
@@ -25,7 +25,7 @@
 -- |
 -- Module:      Main
 -- Description: Install Command Wrapper, its documentation, and required tools.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -36,7 +36,6 @@
 module Main (main)
   where
 
-import Control.Monad (unless)
 import Data.Functor ((<&>))
 import System.Exit (die)
 
@@ -46,6 +45,7 @@ import System.Directory
     , getHomeDirectory
     , getXdgDirectory
     , setCurrentDirectory
+    , createDirectoryIfMissing
     )
 import System.Environment.Executable (ScriptPath(..), getScriptPath)
 
@@ -64,7 +64,7 @@ thisGitRepo :: FilePath -> ThisGitRepo -> Action String
 thisGitRepo directory ThisGitRepo{} = do
     Stdout status <- cmd "git status -s --"
         [ "stack.yaml"
-        , "package.yaml"
+        , "Shakefile.hs"
         , "app-cd/"
         , "app-exec/"
         , "app-skel/"
@@ -72,6 +72,7 @@ thisGitRepo directory ThisGitRepo{} = do
         , "bash/"
         , "dhall/"
         , "man/"
+        , "package.yaml"
         , "src/"
         ]
     if null @[] @Char status
@@ -109,90 +110,169 @@ main = do
     setCurrentDirectory projectRoot
     shakeMain Directories{..} shakeOptions
 
+data ManDirs = ManDirs
+    { man1Dir :: FilePath
+    , man7Dir :: FilePath
+    }
+
+mkManDirs :: FilePath -> ManDirs
+mkManDirs dir = ManDirs
+    { man1Dir = dir </> "man1"
+    , man7Dir = dir </> "man7"
+    }
+
 shakeMain :: Directories -> ShakeOptions -> IO ()
 shakeMain Directories{..} opts = shakeArgs opts do
     let localLibDir = localDir </> "lib"
-
-        commandWrapperLibexecDir = localLibDir </> "command-wrapper"
-
-        commandWrapperBin = commandWrapperLibexecDir </> "command-wrapper"
-        cdBin = commandWrapperLibexecDir </> "command-wrapper-cd"
-        execBin = commandWrapperLibexecDir </> "command-wrapper-exec"
-        skelBin = commandWrapperLibexecDir </> "command-wrapper-skel"
+        libexecDir = localLibDir </> "command-wrapper"
 
         -- Standard `man` command should be able to pick this up.  Try
         -- `manpath` after installation to be sure.
         manDir = dataDir </> "man"
-        man1Dir = manDir </> "man1"
-        man7Dir = manDir </> "man7"
 
-        manPages :: FilePath -> FilePath -> [FilePath]
-        manPages dir1 dir7 =
-            [ dir1 </> "command-wrapper.1.gz"
-            , dir1 </> "command-wrapper-cd.1.gz"
-            , dir1 </> "command-wrapper-completion.1.gz"
-            , dir1 </> "command-wrapper-config.1.gz"
-            , dir1 </> "command-wrapper-exec.1.gz"
-            , dir1 </> "command-wrapper-help.1.gz"
-            , dir1 </> "command-wrapper-skel.1.gz"
-            , dir1 </> "command-wrapper-version.1.gz"
-            , dir7 </> "command-wrapper-bash-library.7.gz"
-            , dir7 </> "command-wrapper-subcommand-protocol.7.gz"
+        staticOut = projectRoot </> "out"
+        staticOutDist = projectRoot </> "out" </> "dist"
+        staticOutDistShare = staticOutDist </> "share"
+        staticLibexecDir = staticOutDist </> "libexec" </> "command-wrapper"
+        staticManDir = staticOutDistShare </> "man"
+        staticDocDir = staticOutDistShare </> "doc" </> "command-wrapper"
+
+        version = "0.1.0.0-rc1"
+        staticTarball =
+            staticOut </> "command-wrapper-" <> version <.> "tar.xz"
+
+        manPages :: ManDirs -> [FilePath]
+        manPages ManDirs{..} =
+            [ man1Dir </> "command-wrapper.1.gz"
+            , man1Dir </> "command-wrapper-cd.1.gz"
+            , man1Dir </> "command-wrapper-completion.1.gz"
+            , man1Dir </> "command-wrapper-config.1.gz"
+            , man1Dir </> "command-wrapper-exec.1.gz"
+            , man1Dir </> "command-wrapper-help.1.gz"
+            , man1Dir </> "command-wrapper-skel.1.gz"
+            , man1Dir </> "command-wrapper-version.1.gz"
+            , man7Dir </> "command-wrapper-bash-library.7.gz"
+            , man7Dir </> "command-wrapper-subcommand-protocol.7.gz"
             ]
 
-        binaries :: [FilePath]
-        binaries =
-            [ commandWrapperBin
-            , cdBin
-            , execBin
-            , skelBin
+        manPagePatterns :: ManDirs -> [String]
+        manPagePatterns ManDirs{..} =
+            [ man1Dir </> "*.1.gz"
+            , man7Dir </> "*.7.gz"
+            ]
+
+        manHtml :: ManDirs -> [FilePath]
+        manHtml dirs = manPages dirs <&> (-<.> "html")
+
+        manHtmlPatterns :: ManDirs -> [FilePath]
+        manHtmlPatterns ManDirs{..} =
+            [ man1Dir </> "*.1.html"
+            , man7Dir </> "*.7.html"
+            ]
+
+        binaries :: FilePath -> [FilePath]
+        binaries dir =
+            [ dir </> "command-wrapper"
+            , dir </> "command-wrapper-cd"
+            , dir </> "command-wrapper-exec"
+            , dir </> "command-wrapper-skel"
             ]
 
     want $ mconcat
-        [ binaries
+        [ binaries libexecDir
         , ["man"]
         ]
 
     "man" ~>
-        need (manPages man1Dir man7Dir)
+        need (manPages (mkManDirs manDir))
 
     "man-html" ~>
-        need (manPages "man" "man" <&> (-<.> "html"))
+        need (manHtml (ManDirs staticDocDir staticDocDir))
+
+    "static" ~>
+        need [staticTarball, staticTarball <.> "sha256sum"]
+
+    staticTarball %> \out -> do
+        let src = takeDirectory out </> "dist"
+
+        need $ mconcat
+            [ manPages (mkManDirs staticManDir)
+            , manHtml (ManDirs staticDocDir staticDocDir)
+            , binaries staticLibexecDir
+            ]
+
+        cmd_ "tar"
+            [ "-C", src
+            , "--owner=root:0"
+            , "--group=root:0"
+            , "--mtime=1970-01-01T00:00:00Z"
+            , "--mode=a-w"
+            , "-cJf", out
+            , "."
+            ]
+
+    staticTarball <.> "sha256sum" %> \out -> do
+        let src = dropExtension out
+            dir = takeDirectory out
+        need [src]
+        cmd_ [Cwd dir, FileStdout out] "sha256sum" [takeFileName src]
 
     hasThisRepoChanged <- addOracle (thisGitRepo projectRoot)
-    [commandWrapperBin, cdBin, execBin, skelBin] &%> \outs -> do
+    binaries libexecDir &%> \outs -> do
         _ <- hasThisRepoChanged (ThisGitRepo ())
 
         let dst = takeDirectory (head outs)
-        targetExists <- doesDirectoryExist dst
-        unless targetExists
-            $ cmd_ "mkdir -p" [dst]
+        liftIO (createDirectoryIfMissing True dst)
 
         cmd_ "stack" ["--local-bin-path=" <> dst] "install"
 
-    [man1Dir </> "*.1.gz", man7Dir </> "*.7.gz"] |%> \out -> do
+    binaries staticLibexecDir &%> \outs -> do
+        _ <- hasThisRepoChanged (ThisGitRepo ())
+
+        let dst = takeDirectory (head outs)
+        liftIO (createDirectoryIfMissing True dst)
+
+        -- Without closing stdin stack would hang.
+        cmd_ [Stdin ""] "stack"
+            [ "--local-bin-path=" <> dst
+            , "--resolver=lts-14.27" -- GHC 8.6.5 to be consistent with image
+            , "--docker"
+            , "--docker-image=ghc-musl:v4-libgmp-ghc865-extended"
+            , "install"
+            , "--flag=command-wrapper:static"
+            ]
+
+    manPagePatterns (mkManDirs manDir) |%> \out -> do
         let tempOut = dropExtension out
             src = "man" </> takeFileName out -<.> "md"
             dst = takeDirectory out
 
         need [src]
 
-        targetExists <- doesDirectoryExist dst
-        unless targetExists
-            $ cmd_ "mkdir -p" [dst]
+        liftIO (createDirectoryIfMissing True dst)
 
         cmd_ "pandoc --standalone --to=man" ["--output=" <> tempOut, src]
         cmd_ "gzip --force -9" [tempOut]
 
-    ["man" </> "*.1.html", "man" </> "*.7.html"] |%> \out -> do
+    manPagePatterns (mkManDirs staticManDir) |%> \out -> do
+        let tempOut = dropExtension out
+            src = "man" </> takeFileName out -<.> "md"
+            dst = takeDirectory out
+
+        need [src]
+
+        liftIO (createDirectoryIfMissing True dst)
+
+        cmd_ "pandoc --standalone --to=man" ["--output=" <> tempOut, src]
+        cmd_ "gzip --force -9" [tempOut]
+
+    manHtmlPatterns (ManDirs staticDocDir staticDocDir) |%> \out -> do
         let src = "man" </> takeFileName out -<.> "md"
             dst = takeDirectory out
 
         need [src]
 
-        targetExists <- doesDirectoryExist dst
-        unless targetExists
-            $ cmd_ "mkdir -p" [dst]
+        liftIO (createDirectoryIfMissing True dst)
 
         cmd_ "pandoc --standalone --to=html" ["--output=" <> out, src]
 

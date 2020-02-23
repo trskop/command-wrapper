@@ -12,6 +12,12 @@ maintainer: peter.trsko@gmail.com
 copyright: (c) 2014-2020 Peter Trško
 category: Tools
 
+flags:
+  static:
+    description: Build static executables
+    manual: true
+    default: false
+
 extra-source-files:
   - README.md
   - bash/*
@@ -101,6 +107,13 @@ ghc-options: ["-Wall", "-Wcompat"]
 library:
   source-dirs: src
 
+  when:
+    - condition: flag(static)
+      ghc-options:
+        - -static
+        - -O2
+        - -fPIC
+
 executables:
   *this:
     source-dirs: app
@@ -108,6 +121,18 @@ executables:
     dependencies:
       - *this
     ghc-options: ["-threaded"]
+
+    when:
+      - condition: flag(static)
+        ghc-options:
+          - -static
+          - -O2
+          - -fPIC
+        cc-options:
+          - -static
+        ld-options:
+          - -static
+          - -pthread
 
   command-wrapper-cd:
     source-dirs: app-cd
@@ -119,6 +144,18 @@ executables:
       - shell-escape
     ghc-options: ["-threaded"]
 
+    when:
+      - condition: flag(static)
+        ghc-options:
+          - -static
+          - -O2
+          - -fPIC
+        cc-options:
+          - -static
+        ld-options:
+          - -static
+          - -pthread
+
   command-wrapper-skel:
     source-dirs: app-skel
     main: Main.hs
@@ -127,6 +164,18 @@ executables:
 
       - turtle
     ghc-options: ["-threaded"]
+
+    when:
+      - condition: flag(static)
+        ghc-options:
+          - -static
+          - -O2
+          - -fPIC
+        cc-options:
+          - -static
+        ld-options:
+          - -static
+          - -pthread
 
   command-wrapper-exec:
     source-dirs: app-exec
@@ -137,6 +186,19 @@ executables:
       - clock
       - turtle
     ghc-options: ["-threaded"]
+
+    when:
+      - condition: flag(static)
+        ghc-options:
+          - -threaded
+          - -static
+          - -O2
+          - -fPIC
+        cc-options:
+          - -static
+        ld-options:
+          - -static
+          - -pthread
 
 tests:
   command-wrapper-tests:
