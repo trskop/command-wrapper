@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 5th January 2020
+% 24th February 2020
 
 
 # NAME
@@ -617,7 +617,7 @@ used by `man` run `manpath` command, which should print out something like:
 
     ```
     $ mkdir subcommands
-    $ cat subcommands/command-wrapper-test <<"EOF"
+    $ cat > subcommands/command-wrapper-test <<"EOF"
     #!/usr/bin/env bash
 
     echo "Test World!"
