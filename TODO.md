@@ -51,6 +51,16 @@
         or point to `~/.nix-profile/libexec/command-wrapper` instead of
         executable directly.
 
+    -   Completion script that works in Nix with wrapper scripts:
+
+        ```
+        TOOLSET completion --script [--shell=SHELL] [--toolset=NAME]
+          [--executable=PATH] [--output=FILE] [--alias=ALIAS ...]
+        ```
+
+        Where `--executable=PATH` allows us to specify wrapper to be called and
+        `--toolset=NAME` allows us to override inferred toolset name.
+
 *   **Config file control.**
 
     Since configuration now has three levels (system, user, and local) we can
