@@ -131,13 +131,13 @@ shakeMain Directories{..} opts = shakeArgs opts do
         manDir = dataDir </> "man"
 
         staticOut = projectRoot </> "out"
-        staticOutDist = projectRoot </> "out" </> "dist"
+        staticOutDist = projectRoot </> "out" </> "command-wrapper"
         staticOutDistShare = staticOutDist </> "share"
         staticLibexecDir = staticOutDist </> "libexec" </> "command-wrapper"
         staticManDir = staticOutDistShare </> "man"
         staticDocDir = staticOutDistShare </> "doc" </> "command-wrapper"
 
-        version = "0.1.0.0-rc1"
+        version = "0.1.0.0-rc2"
         staticTarball =
             staticOut </> "command-wrapper-" <> version <.> "tar.xz"
 
@@ -193,8 +193,6 @@ shakeMain Directories{..} opts = shakeArgs opts do
         need [staticTarball, staticTarball <.> "sha256sum"]
 
     staticTarball %> \out -> do
-        let src = takeDirectory out </> "dist"
-
         need $ mconcat
             [ manPages (mkManDirs staticManDir)
             , manHtml (ManDirs staticDocDir staticDocDir)
@@ -202,13 +200,13 @@ shakeMain Directories{..} opts = shakeArgs opts do
             ]
 
         cmd_ "tar"
-            [ "-C", src
+            [ "-C", takeDirectory out
             , "--owner=root:0"
             , "--group=root:0"
             , "--mtime=1970-01-01T00:00:00Z"
             , "--mode=a-w"
             , "-cJf", out
-            , "."
+            , takeFileName staticOutDist
             ]
 
     staticTarball <.> "sha256sum" %> \out -> do
