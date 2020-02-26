@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      Main
 -- Description: CommandWrapper subcommand for executing commands with a
@@ -28,6 +29,7 @@ import qualified Data.List as List
     , find
     , groupBy
     , isPrefixOf
+    , nub
     , sortBy
     , take
     )
@@ -432,8 +434,11 @@ showCommandTree :: Params -> Config -> TreeOptions -> IO ()
 showCommandTree Params{colour} Config{commands} TreeOptions{} =
     putDoc (treeDoc <> Pretty.line)
   where
+    uniqueCommands :: [Text] =
+        List.nub ((name :: NamedCommand -> Text) <$> commands)
+
     names :: [[Text]] =
-        Text.split (== '.') . (name :: NamedCommand -> Text) <$> commands
+        Text.split (== '.') <$> uniqueCommands
 
     groupNames :: [[Text]] -> [[[Text]]] =
         List.groupBy ((==) `on` headMay) . List.sortBy (compare `on` headMay)
