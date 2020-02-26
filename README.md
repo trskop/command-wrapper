@@ -54,12 +54,12 @@ sense to have one for personal tooling, and one for work tooling.
 
 First subcommand that was introduced was `help`, obviously, but the one right
 after that was `skel`.  Which allows you to create a new subcommand skeleton,
-see [`command-wrapper-skel(1)`](man/command-wrapper-skel.1.md) manual page for
-more details.  Subcommand can be written in any language user chooses.  It just
-needs to be an executable, and follow Command Wrapper's Subcommand Protocol,
-which is described in its own manual page
+see [`command-wrapper-skel(1)`](command-wrapper/man/command-wrapper-skel.1.md) manual
+page for more details.  Subcommand can be written in any language user chooses.
+It just needs to be an executable, and follow Command Wrapper's Subcommand
+Protocol, which is described in its own manual page
 [`command-wrapper-subcommand-protocol(7)`
-](man/command-wrapper-subcommand-protocol.7.md).
+](command-wrapper/man/command-wrapper-subcommand-protocol.7.md).
 
 
 ## Some Interesting Features
@@ -67,13 +67,15 @@ which is described in its own manual page
 *   Command Wrapper makes heavy use of [Dhall][Dhall homepage]
     configuration language.  It goes as far as having Dhall interpreter
     integrated into its `config` (internal) subcommand.  It also provides very
-    useful Dhall library [`dhall/CommandWrapper`](dhall/CommandWrapper/).
+    useful Dhall library [`command-wrapper/dhall/CommandWrapper`
+    ](command-wrapper/dhall/CommandWrapper/).
 
 *   Command line completion for Bash, Fish, and Zsh.
 
 *   Subcommands can be written in any language, they just need to respect
     Subcommand Protocol (described in [`command-wrapper-subcommand-protocol(7)`
-    ](man/command-wrapper-subcommand-protocol.7.md) manual page).
+    ](command-wrapper/man/command-wrapper-subcommand-protocol.7.md) manual
+    page).
 
 *   Subcommands adhering to Subcommand Protocol get command line completion
     and help integration for free.
@@ -87,7 +89,7 @@ which is described in its own manual page
 *   Very useful `exec` subcommand that provides shell aliases on steroids.  It
     can leverage Dhall to compose commands, and even safely share them via
     internet.  Its documentation is available in form of manual page
-    [`command-wrapper-exec(1)`](man/command-wrapper-exec.1.md).
+    [`command-wrapper-exec(1)`](command-wrapper/man/command-wrapper-exec.1.md).
 
 *   A lot more.
 
@@ -96,7 +98,8 @@ which is described in its own manual page
 
 In this section we will focus only on basics, and some interesting use cases.
 Detailed documentation is in the form of manual pages written in Markdown and
-compiled using `pandoc`.  See [`man/`](./man/) directory.
+compiled using `pandoc`.  See [`command-wrapper/man/`](./command-wrapper/man/)
+directory.
 
 When installed these can be viewed using:
 
@@ -197,7 +200,8 @@ TOOLSET_COMMAND skel [--language={bash|haskell}] [--edit] SUBCOMMAND
 If `--edit` is specified then it immediately opens the created file in an
 editor.  Preferred editor and enabling `--edit` by default can be done in a
 configuration file, see [`command-wrapper-skel(1)`
-](man/command-wrapper-skel.1.md) manual page for more information.
+](command-wrapper/man/command-wrapper-skel.1.md) manual page for more
+information.
 
 By default subcommands written in Bash are stored under following name:
 
@@ -212,8 +216,8 @@ In contrast Haskell subcommands are stored as:
 ```
 
 These paths are configurable, see [`command-wrapper-skel(1)`
-](man/command-wrapper-skel.1.md) manual page.  The reason for subcommands
-written in Haskell to be named this way is that we expect
+](command-wrapper/man/command-wrapper-skel.1.md) manual page.  The reason for
+subcommands written in Haskell to be named this way is that we expect
 `~/.config/${toolset}/toolset/` to be a Haskell package so that code can be
 shared among subcommands in the form of a library.
 
@@ -221,8 +225,9 @@ Best approach is to create Bash script first, and later rewrite it using a
 proper programming language.  The later step may never come, it depends on how
 complex the functionality is.
 
-Subcommands written in Bash can use provided `bash/lib.bash` library.  Code
-snippet for importing it can be obtained by:
+Subcommands written in Bash can use provided [`command-wrapper/bash/lib.bash`
+](command-wrapper/bash/lib.bash) library.  Code snippet for importing it can be
+obtained by:
 
 ```
 TOOLSET_COMMAND completion --library --shell=bash --import
@@ -243,7 +248,8 @@ TOOLSET_COMMAND completion --library --shell=bash --content | bat -l bash
 ```
 
 More about Bash library can be found in a dedicated manual page
-[`command-wrapper-bash-library(7)`](man/command-wrapper-bash-library.7.md).
+[`command-wrapper-bash-library(7)`
+](command-wrapper/man/command-wrapper-bash-library.7.md).
 
 
 ### Internal Subcommands
@@ -266,22 +272,24 @@ If `TOOLSET_COMMAND` is named `yx` then invoking help for it is:
 yx help
 ```
 
-More can be found in [`command-wrapper(1)`](man/command-wrapper.1.md) manual
-page.  Individual internal subcommands are:
+More can be found in [`command-wrapper(1)`
+](command-wrapper/man/command-wrapper.1.md) manual page.  Individual internal
+subcommands are:
 
-*   [`command-wrapper-help(1)`](man/command-wrapper-help.1.md) -- Display help
-    message or manual page for Command Wrapper or one of its subcommands.
+*   [`command-wrapper-help(1)`](command-wrapper/man/command-wrapper-help.1.md)
+    -- Display help message or manual page for Command Wrapper or one of its
+    subcommands.
 
-*   [`command-wrapper-config(1)`](man/command-wrapper-config.1.md) -- Command
-    Wrapper's configuration swiss army knife.  It includes
+*   [`command-wrapper-config(1)`](command-wrapper/man/command-wrapper-config.1.md)
+    -- Command Wrapper's configuration swiss army knife.  It includes
     [Dhall][Dhall homepage] interpreter.
 
-*   [`command-wrapper-version(1)`](man/command-wrapper-version.1.md) -- Print
-    version information either in human readable format, or in a machine
-    readable one.
+*   [`command-wrapper-version(1)`](command-wrapper/man/command-wrapper-version.1.md)
+    -- Print version information either in human readable format, or in a
+    machine readable one.
 
-*   [`command-wrapper-completion(1)`](man/command-wrapper-completion.1.md) --
-    Command line completion toolbox.
+*   [`command-wrapper-completion(1)`](command-wrapper/man/command-wrapper-completion.1.md)
+    -- Command line completion toolbox.
 
 
 ### External Subcommands
@@ -317,11 +325,11 @@ directories in specified order:
 Command Wrapper installation comes with following commands that are implemented
 as separate executables (external subcommands):
 
-*   [`command-wrapper-cd(1)`](man/command-wrapper-cd.1.md)
+*   [`command-wrapper-cd(1)`](command-wrapper/man/command-wrapper-cd.1.md)
 
-*   [`command-wrapper-exec(1)`](man/command-wrapper-exec.1.md)
+*   [`command-wrapper-exec(1)`](command-wrapper/man/command-wrapper-exec.1.md)
 
-*   [`command-wrapper-skel(1)`](man/command-wrapper-skel.1.md)
+*   [`command-wrapper-skel(1)`](command-wrapper/man/command-wrapper-skel.1.md)
 
 
 ### Subcommand Aliases
@@ -333,7 +341,7 @@ aliases).  An alias looks like this:
 
 ```Dhall
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
 in  CommandWrapper.SubcommandAlias::{
     , alias = "man"
@@ -344,8 +352,8 @@ in  CommandWrapper.SubcommandAlias::{
 ```
 
 To see definition of `SubcommandAlias` type and default values see
-[`dhall/CommandWrapper/SubcommandAlias`
-](./dhall/CommandWrapper/SubcommandAlias).
+[`command-wrapper/dhall/CommandWrapper/SubcommandAlias`
+](./command-wrapper/dhall/CommandWrapper/SubcommandAlias).
 
 Invoking such alias looks like any other subcommand invocation:
 
@@ -374,22 +382,22 @@ the same as if we called:
 TOOLSET_COMMAND help help
 ```
 
-For more information see [`command-wrapper(1)`](man/command-wrapper.1.md) which
-provides more information on how aliases are defined.  To see what aliases are
-defined by default when
+For more information see [`command-wrapper(1)`
+](command-wrapper/man/command-wrapper.1.md) which provides more information on how
+aliases are defined.  To see what aliases are defined by default when
 `~/.local/lib/command-wrapper/command-wrapper config --init` is invoked
 (described more in [Installation](#installation) section) see
-[`dhall/init/command-wrapper/default/aliases-common.dhall`
-](./dhall/init/command-wrapper/default/aliases-common.dhall).
+[`command-wrapper/dhall/init/command-wrapper/default/aliases-common.dhall`
+](./command-wrapper/dhall/init/command-wrapper/default/aliases-common.dhall).
 
 
 ### Command Line Completion
 
 All subcommands have to provide command line completion.  This is a requirement
 specified in [`command-wrapper-subcommand-protocol(7)`
-](man/command-wrapper-subcommand-protocol.7.md).  The benefit of the approach
-that is documented in mentioned Subcommand Protocol is that there is no need
-to hook it up into our shell if our toolset is already.
+](command-wrapper/man/command-wrapper-subcommand-protocol.7.md).  The benefit
+of the approach that is documented in mentioned Subcommand Protocol is that
+there is no need to hook it up into our shell if our toolset is already.
 
 Command Wrapper provides its own script for enabling command line completion
 in Bash, Fish or Zsh:
@@ -405,8 +413,8 @@ the one that fits your use case the best.
 
 #### Bash Command Line Completion
 
-*   **Sourcing generated script every time.**  For example, enabling it for Bash means adding
-    following line into `~/.bashrc`:
+*   **Sourcing generated script every time.**  For example, enabling it for
+    Bash means adding following line into `~/.bashrc`:
 
     ```Bash
     source <("${toolset}" completion --script --shell=bash)
@@ -504,7 +512,7 @@ Doing this consists of two steps:
 
     ```Dhall
     let CommandWrapper =
-          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
     in  CommandWrapper.SubcommandAlias::{
         , alias = "dhall"

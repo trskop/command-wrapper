@@ -29,9 +29,14 @@ module CommandWrapper.Core.Config.ColourOutput
     )
   where
 
+import Control.Applicative (pure)
+import Data.Bool (Bool(False))
 import Data.Foldable (asum)
+import Data.Function (($), (.))
+import Data.Functor ((<$>))
 import Data.Monoid (mconcat)
-import System.IO (Handle, hIsTerminalDevice)
+import Data.String (String)
+import System.IO (Handle, IO, hIsTerminalDevice)
 
 import qualified Data.CaseInsensitive as CI (mk)
 import Data.Output.Colour

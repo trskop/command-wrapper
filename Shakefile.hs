@@ -242,7 +242,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
 
     manPagePatterns (mkManDirs manDir) |%> \out -> do
         let tempOut = dropExtension out
-            src = "man" </> takeFileName out -<.> "md"
+            src = "toolset" </> "man" </> takeFileName out -<.> "md"
             dst = takeDirectory out
 
         need [src]
@@ -254,7 +254,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
 
     manPagePatterns (mkManDirs staticManDir) |%> \out -> do
         let tempOut = dropExtension out
-            src = "man" </> takeFileName out -<.> "md"
+            src = "toolset" </> "man" </> takeFileName out -<.> "md"
             dst = takeDirectory out
 
         need [src]
@@ -265,7 +265,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
         cmd_ "gzip --force -9" [tempOut]
 
     manHtmlPatterns (ManDirs staticDocDir staticDocDir) |%> \out -> do
-        let src = "man" </> takeFileName out -<.> "md"
+        let src = "toolset" </> "man" </> takeFileName out -<.> "md"
             dst = takeDirectory out
 
         need [src]

@@ -1,11 +1,13 @@
 { pkgs ? import <nixpkgs> { } }:
 
 let
-  toolset = pkgs.callPackage ./nix/command-wrapper-toolset {
+  toolset = pkgs.callPackage ./command-wrapper/nix/command-wrapper-toolset {
     toolset = "something";
     subcommands = [
       (toolset:
-        pkgs.callPackage ./nix/command-wrapper-subcommands { inherit toolset; })
+        pkgs.callPackage ./command-wrapper/nix/command-wrapper-subcommands {
+          inherit toolset;
+        })
     ];
   };
 in pkgs.mkShell {
