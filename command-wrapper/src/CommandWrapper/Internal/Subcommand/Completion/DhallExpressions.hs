@@ -99,7 +99,7 @@ preludeV14_0_0Import =
 -- {{{ Command Wrapper and Exec Libraries -------------------------------------
 
 commit :: IsString s => s
-commit = "c1e8fd4eb3769007fb33ce7bde7d7db78a96c0e8"
+commit = "3fbb92184b88b0a65740ea57c7084a8e067b3bec"
 
 urlBase :: IsString s => s
 urlBase = "https://raw.githubusercontent.com/trskop/command-wrapper/"
@@ -114,7 +114,7 @@ commandWrapperContent =
 
 commandWrapperImport :: (IsString s, Monoid s) => s
 commandWrapperImport =
-    urlBase <> commit <> "/dhall/CommandWrapper/package.dhall "
+    urlBase <> commit <> "/command-wrapper/dhall/CommandWrapper/package.dhall "
     <> commandWrapperHash
 
 execHash :: IsString s => s
@@ -127,7 +127,7 @@ execContent =
 
 execImport :: (IsString s, Monoid s) => s
 execImport =
-    urlBase <> commit <> "/dhall/Exec/package.dhall " <> execHash
+    urlBase <> commit <> "/command-wrapper/dhall/Exec/package.dhall " <> execHash
 
 -- }}} Command Wrapper and Exec Libraries -------------------------------------
 

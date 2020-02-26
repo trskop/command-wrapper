@@ -14,6 +14,8 @@ module Main
     )
   where
 
+import System.IO (IO)
+
 --import Data.CallStack (HasCallStack)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 --import Test.Tasty.HUnit ((@?=), testCase, assertFailure)

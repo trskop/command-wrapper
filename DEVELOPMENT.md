@@ -6,15 +6,16 @@
     git checkout -b BRANCH_NAME
     ```
 
-2.  Modify a file in `./dhall/CommandWrapper/` or `./dhall/Exec/` and don't
-    forget to update semantic hashes of `package.dhall` files.
+2.  Modify a file in `./command-wrapper/dhall/CommandWrapper/` or
+    `./command-wrapper/dhall/Exec/` and don't forget to update semantic hashes
+    of `package.dhall` files.
 
 3.  Commit your changes and push them to GitHub.
 
 4.  Update commit and appropriate hashes in:
 
     ```
-    src/CommandWrapper/Internal/Subcommand/Completion/DhallExpressions.hs
+    command-wrapper/src/CommandWrapper/Internal/Subcommand/Completion/DhallExpressions.hs
     ```
 
     Use hash of the commit created in the step 3.
@@ -47,7 +48,7 @@
 2.  Update standard version in:
 
     ```
-    src/CommandWrapper/Internal.hs
+    command-wrapper/src/CommandWrapper/Internal.hs
     ```
 
 3.  Rebuild and run tests:
@@ -75,13 +76,13 @@
     `preludeV<major>_<minor>_<patch>Content` in:
 
     ```
-    src/CommandWrapper/Internal/Subcommand/Completion/DhallExpressions.hs
+    command-wrapper/src/CommandWrapper/Internal/Subcommand/Completion/DhallExpressions.hs
     ```
 
 2.  Extend `DhallLibrary` enum in
 
     ```
-    src/CommandWrapper/Internal/Subcommand/Completion/Libraries.hs
+    command-wrapper/src/CommandWrapper/Internal/Subcommand/Completion/Libraries.hs
     ```
 
     To include constructor `PreludeV<major>_<minor>_<patch>` and update
@@ -102,7 +103,7 @@
 6.  Update documentation of `--dhall=LIBRARY` option in:
 
     ```
-    man/command-wrapper-completion.1.md
+    command-wrapper/man/command-wrapper-completion.1.md
     ```
 
 6.  Commit&push
