@@ -5,7 +5,7 @@
 resolver: lts-14.27
 
 # GHC 8.8.2
-#resolver: lts-15.0
+#resolver: lts-15.1
 
 packages:
   - './command-wrapper-core/'
