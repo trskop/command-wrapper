@@ -9,6 +9,7 @@ resolver: lts-14.27
 
 packages:
   - './command-wrapper-core/'
+  - './command-wrapper-subcommand/'
   - './command-wrapper/'
 
 extra-deps:

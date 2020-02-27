@@ -142,6 +142,10 @@ import CommandWrapper.Core.Help.Pretty
     , value
     )
 import CommandWrapper.Core.Message (Result, errorMsg, out)
+import qualified CommandWrapper.Core.Options.Optparse as Options
+    ( splitArguments
+    , splitArguments'
+    )
 import qualified CommandWrapper.External as External
     ( executeCommand
     , executeCommandWith
@@ -160,11 +164,6 @@ import CommandWrapper.Core.Config.Shell
     , shellOption
     )
 import CommandWrapper.Internal.Utils (runMain)
-import qualified CommandWrapper.Options.Optparse as Options
-    ( internalSubcommandParse
-    , splitArguments
-    , splitArguments'
-    )
 import CommandWrapper.Internal.Subcommand.Completion.Libraries
     ( ImportOrContent(Content, Import)
     , Library(..)
@@ -176,6 +175,9 @@ import CommandWrapper.Internal.Subcommand.Completion.Libraries
     , putLibrary
     , putShellCompletionScript
     , showDhallLibrary
+    )
+import qualified CommandWrapper.Toolset.Options.Optparse as Options
+    ( internalSubcommandParse
     )
 
 

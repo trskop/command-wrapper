@@ -92,7 +92,7 @@ import qualified CommandWrapper.Core.Config.Shell as Shell (parse)
 import qualified CommandWrapper.Core.Dhall as Dhall (hPut)
 import qualified CommandWrapper.Core.Help.Pretty as Help
 import CommandWrapper.Core.Message (defaultLayoutOptions, hPutDoc)
-import qualified CommandWrapper.Options as Options
+import qualified CommandWrapper.Core.Options.Optparse as Options
     ( splitArguments
     , splitArguments'
     )

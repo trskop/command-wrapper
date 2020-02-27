@@ -23,10 +23,10 @@
 These Dhall scripts are actually embedded into CommandWrapper during
 compilation.
 
-*   [`./command-wrapper-style-completion-info.dhall`](./command-wrapper-style-completion-info.dhall)
 *   [`./completion.dhall`](./completion.dhall)
 *   [`./import-shell-library.dhall`](./import-shell-library.dhall)
-*   [`./optparse-completion-info.dhall`](./optparse-completion-info.dhall)
+*   [`../../command-wrapper-subcommand/dhall/command-wrapper-style-completion-info.dhall`](../../command-wrapper-subcommand/dhall/command-wrapper-style-completion-info.dhall)
+*   [`../../command-wrapper-subcommand/dhall/optparse-completion-info.dhall`](../../command-wrapper-subcommand/dhall/optparse-completion-info.dhall)
 
 Templates of Dhall configuration files for `TOOLSET config --init`:
 

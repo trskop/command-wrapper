@@ -104,7 +104,7 @@ import CommandWrapper.Internal.Subcommand.Version.Info
     , versionQQ
     )
 import CommandWrapper.Internal.Utils (runMain)
-import qualified CommandWrapper.Options.Optparse as Options
+import qualified CommandWrapper.Toolset.Options.Optparse as Options
     ( internalSubcommandParse
     )
 

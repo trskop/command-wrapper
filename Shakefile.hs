@@ -137,7 +137,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
         staticManDir = staticOutDistShare </> "man"
         staticDocDir = staticOutDistShare </> "doc" </> "command-wrapper"
 
-        version = "0.1.0.0-rc2"
+        version = "0.1.0.0-rc3"
         staticTarball =
             staticOut </> "command-wrapper-" <> version <.> "tar.xz"
 
@@ -237,6 +237,8 @@ shakeMain Directories{..} opts = shakeArgs opts do
             , "--docker"
             , "--docker-image=ghc-musl:v4-libgmp-ghc865-extended"
             , "install"
+            , "--flag=command-wrapper-core:static"
+            , "--flag=command-wrapper-subcommand:static"
             , "--flag=command-wrapper:static"
             ]
 

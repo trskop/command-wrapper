@@ -91,7 +91,7 @@ import qualified CommandWrapper.Core.Config.Shell as Shell (parse)
 import qualified CommandWrapper.Core.Dhall as Dhall (hPutExpr)
 import CommandWrapper.Core.Environment (Params(Params, colour, verbosity))
 import CommandWrapper.Core.Message (Result, defaultLayoutOptions, outWith)
-import CommandWrapper.Options.Optparse (subcommandParse)
+import CommandWrapper.Core.Options.Optparse (subcommandParse)
 
 
 -- | Mode of operation of a subcommand.  It can be either 'Action', which is

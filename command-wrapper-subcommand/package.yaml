@@ -1,9 +1,9 @@
-name: &this command-wrapper
+name: &this command-wrapper-subcommand
 version: 0.1.0.0
 synopsis: |
-  Command wrapper for building modular toolsets with uniform UI
+  Command wrapper for building modular toolsets with uniform UI: Subcommand library
 description: |
-  Command wrapper for building modular toolsets with uniform UI
+  Command wrapper for building modular toolsets with uniform UI: Subcommand library
 github: trskop/command-wrapper
 license: BSD3
 license-file: LICENSE
@@ -20,10 +20,7 @@ flags:
 
 extra-source-files:
   - README.md
-  - bash/*
   - dhall/*
-  - dhall/**/*
-  - man/*.md
 
 default-extensions:
   - BlockArguments
@@ -40,6 +37,7 @@ default-extensions:
   - LambdaCase
   - MultiWayIf
   - NamedFieldPuns
+  - NoImplicitPrelude
   - OverloadedStrings
   - PatternSynonyms
   - RankNTypes
@@ -116,97 +114,8 @@ library:
         - -O2
         - -fPIC
 
-executables:
-  *this:
-    source-dirs: app
-    main: Main.hs
-    dependencies:
-      - *this
-    ghc-options: ["-threaded"]
-
-    when:
-      - condition: flag(static)
-        ghc-options:
-          - -static
-          - -O2
-          - -fPIC
-        cc-options:
-          - -static
-        ld-options:
-          - -static
-          - -pthread
-
-  command-wrapper-cd:
-    source-dirs: app-cd
-    main: Main.hs
-    dependencies:
-      - *this
-      - command-wrapper-subcommand
-
-      - turtle
-      - shell-escape
-    ghc-options: ["-threaded"]
-
-    when:
-      - condition: flag(static)
-        ghc-options:
-          - -static
-          - -O2
-          - -fPIC
-        cc-options:
-          - -static
-        ld-options:
-          - -static
-          - -pthread
-
-  command-wrapper-skel:
-    source-dirs: app-skel
-    main: Main.hs
-    dependencies:
-      - *this
-      - command-wrapper-subcommand
-
-      - turtle
-    ghc-options: ["-threaded"]
-
-    when:
-      - condition: flag(static)
-        ghc-options:
-          - -static
-          - -O2
-          - -fPIC
-        cc-options:
-          - -static
-        ld-options:
-          - -static
-          - -pthread
-
-  command-wrapper-exec:
-    source-dirs: app-exec
-    main: Main.hs
-    dependencies:
-      - *this
-      - command-wrapper-subcommand
-
-      - clock
-      - turtle
-    ghc-options: ["-threaded"]
-
-    when:
-      - condition: flag(static)
-        ghc-options:
-          - -threaded
-          - -static
-          - -O2
-          - -fPIC
-        cc-options:
-          - -static
-        ld-options:
-          - -static
-          - -pthread
-
 tests:
-  command-wrapper-tests:
+  command-wrapper-subcommand-tests:
     source-dirs: test
     main: Main.hs
     dependencies:

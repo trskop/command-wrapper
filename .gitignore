@@ -34,6 +34,7 @@ cabal.project.local~
 # {{{ Local ###################################################################
 .shake/
 command-wrapper-core/command-wrapper-core.cabal
+command-wrapper-subcommand/command-wrapper-subcommand.cabal
 command-wrapper/command-wrapper.cabal
 out/
 # }}} Local ###################################################################

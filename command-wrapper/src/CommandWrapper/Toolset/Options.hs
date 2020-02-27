@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Options
+-- Module:      CommandWrapper.Toolset.Options
 -- Description: Utilities for parsing command line options.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
@@ -10,25 +10,19 @@
 -- Portability: GHC specific language extensions.
 --
 -- Utilities for parsing command line options.
-module CommandWrapper.Options
+module CommandWrapper.Toolset.Options
     (
     -- * CommandWrapper Specific API
       Command
     , parseCommandWrapper
 
-    -- * Generic API
-    , parse
-
     -- ** Command Aliases
     , Alias(..)
     , applyAlias
 
-    -- ** Helper Functions
-    , splitArguments
-    , splitArguments'
-    , execParserPure
-    , handleParseResult
-    , bashCompleter
+    -- * Generic API
+    , module CommandWrapper.Toolset.Options.Optparse
+    , module CommandWrapper.Core.Options.Optparse
     )
   where
 
@@ -45,17 +39,11 @@ import qualified Options.Applicative as Options (ParserInfo, ParserPrefs)
 
 import CommandWrapper.Core.Config.Alias (Alias(..), applyAlias)
 import CommandWrapper.Core.Environment.AppNames (AppNames)
+import CommandWrapper.Core.Options.Optparse
 import qualified CommandWrapper.External as External (Command)
 import qualified CommandWrapper.Internal as Internal (Command(..), command)
 import CommandWrapper.Options.GlobalMode (GlobalMode(..), runGlobalMode)
-import CommandWrapper.Options.Optparse
-    ( bashCompleter
-    , execParserPure
-    , handleParseResult
-    , parse
-    , splitArguments
-    , splitArguments'
-    )
+import CommandWrapper.Toolset.Options.Optparse
 
 
 type Command = Mainplate.Command External.Command Internal.Command

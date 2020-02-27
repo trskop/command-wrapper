@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Options.Optparse
+-- Module:      CommandWrapper.Core.Options.Optparse
 -- Description: Utilities for parsing command line options.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
@@ -10,35 +10,30 @@
 -- Portability: GHC specific language extensions.
 --
 -- Utilities for parsing command line options.
-module CommandWrapper.Options.Optparse
+module CommandWrapper.Core.Options.Optparse
     (
     -- * Generic API
       parse
     , subcommandParse
-    , internalSubcommandParse
 
     -- ** Helper Functions
     , splitArguments
     , splitArguments'
     , execParserPure
     , handleParseResult
-
-    -- * Completion
-    , bashCompleter
     )
   where
 
 import Prelude ((+), fromIntegral)
 
 import Control.Applicative (pure)
-import Control.Monad ((>=>))
 import Data.Bool ((&&))
 import Data.Either (Either(Left, Right))
 import Data.Eq ((/=), (==))
 import Data.Foldable (length)
 import Data.Function (($), (.))
 import Data.Functor (Functor, (<$>))
-import qualified Data.List as List (drop, span)
+import qualified Data.List as List (span)
 import Data.Maybe (listToMaybe)
 import Data.Monoid (Endo, (<>))
 import Data.String (String)
@@ -59,15 +54,9 @@ import qualified Options.Applicative as Options
     , ParserResult(CompletionInvoked, Failure, Success)
     , parserFailure
     )
-import qualified Options.Applicative.Builder.Completer as Options
-    ( bashCompleter
-    )
 import qualified Options.Applicative.Common as Options (runParserInfo)
 import qualified Options.Applicative.Internal as Options (runP)
-import qualified Options.Applicative.Types as Options (Completer(runCompleter))
-import System.Directory (doesDirectoryExist)
 
-import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Core.Environment.AppNames (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Environment.Params
     ( Params(Params, colour, name, subcommand, verbosity)
@@ -117,21 +106,6 @@ subcommandParse params parserPrefs parserInfo =
 
     handleParseResult' Params{colour, name, subcommand, verbosity} =
         handleParseResult (name <> " " <> subcommand) verbosity colour
-
-internalSubcommandParse
-    :: AppNames
-    -> Config
-    -> String
-    -> Options.ParserPrefs
-    -> Options.ParserInfo (Endo (mode config))
-    -> [String]
-    -> IO (Endo (mode config))
-internalSubcommandParse appNames config subcommand parserPrefs parserInfo =
-    handleParseResult' appNames config . execParserPure parserPrefs parserInfo
-  where
-    handleParseResult' AppNames{usedName} Config{colourOutput, verbosity} =
-        handleParseResult (usedName <> " " <> subcommand) verbosity
-            colourOutput
 
 -- | Split arguments into global options and the rest.
 --
@@ -222,22 +196,3 @@ handleParseResult command verbosity colour = \case
 
     Options.CompletionInvoked _ ->
         exitWith (ExitFailure 1) -- TODO: This is imposible case.
-
-bashCompleter :: String -> String -> String -> IO [String]
-bashCompleter action prefix =
-    ( Options.runCompleter (Options.bashCompleter action)
-        . List.drop (length prefix)
-    )
-    >=> \case
-        -- If there is only one completion option, and it is a directory, by
-        -- appending '/' we'll force completion to descend into that directory.
-        --
-        -- TODO: This behaviour should be configurable!
-        [path] -> do
-            isDirectory <- doesDirectoryExist path
-            pure if isDirectory
-                then [prefix <> path <> "/"]
-                else [prefix <> path]
-
-        r ->
-            pure $ (prefix <>) <$> r

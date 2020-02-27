@@ -27,7 +27,7 @@ module CommandWrapper.Subcommand.Prelude
 
     -- ** Colour Output
     --
-    -- | Re-exported from "CommandWrapper.Options.ColourOutput" module.
+    -- | Re-exported from "CommandWrapper.Core.Options.ColourOutput" module.
     , ColourOutput(..)
     , shouldUseColours
 
@@ -123,7 +123,7 @@ import qualified CommandWrapper.Core.Message as Message
     , warningMsg
     , withTerminal
     )
-import CommandWrapper.Options (splitArguments, splitArguments')
+import CommandWrapper.Core.Options.Optparse (splitArguments, splitArguments')
 import CommandWrapper.Subcommand.Options
     ( SubcommandProps(..)
     , completionInfoFlagFields

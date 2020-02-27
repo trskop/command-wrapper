@@ -124,12 +124,6 @@ import CommandWrapper.Core.Message
     )
 import qualified CommandWrapper.External as External (findSubcommands)
 import CommandWrapper.Internal.Utils (runMain)
-import qualified CommandWrapper.Options.Optparse as Options
-    ( bashCompleter
-    , internalSubcommandParse
---  , splitArguments
---  , splitArguments'
-    )
 import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput, parseInput)
 import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     ( Bash(..)
@@ -205,6 +199,10 @@ import CommandWrapper.Internal.Subcommand.Config.Menu
 import qualified CommandWrapper.Internal.Subcommand.Config.Menu as Menu
     ( Input(InputItems)
     , setInput
+    )
+import qualified CommandWrapper.Toolset.Options.Optparse as Options
+    ( bashCompleter
+    , internalSubcommandParse
     )
 
 

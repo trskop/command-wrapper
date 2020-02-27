@@ -85,7 +85,6 @@ import CommandWrapper.Config.Command (SimpleCommand(..))
 import CommandWrapper.Core.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Core.Environment as Environment
 import qualified CommandWrapper.Core.Help.Pretty as Help
-import CommandWrapper.Options.Optparse (bashCompleter)
 import qualified CommandWrapper.Subcommand.Prelude as CommandWrapper
     ( Shell
     , SubcommandProps(..)
@@ -101,6 +100,7 @@ import CommandWrapper.Subcommand.Prelude
     , stderr
     , subcommandParams
     )
+import CommandWrapper.Toolset.Options.Optparse (bashCompleter)
 
 
 data Config = Config
