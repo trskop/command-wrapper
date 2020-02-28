@@ -75,7 +75,6 @@ import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
-import Data.Verbosity (Verbosity(Annoying, Normal, Silent, Verbose))
 import qualified Options.Applicative.Help as Options
     ( Chunk(..)
     , ParserHelp(ParserHelp, helpError)
@@ -100,6 +99,9 @@ import qualified System.Console.Terminal.Size as Terminal
 import CommandWrapper.Core.Config.ColourOutput
     ( ColourOutput(..)
     , shouldUseColours
+    )
+import CommandWrapper.Core.Config.Verbosity
+    ( Verbosity(Annoying, Normal, Silent, Verbose)
     )
 import CommandWrapper.Core.Environment.Parser (ParseEnvError)
 

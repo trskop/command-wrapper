@@ -21,8 +21,7 @@ module CommandWrapper.Subcommand.Prelude
 
     -- ** Verbosity
     --
-    -- | Re-exported from "Data.Verbosity" module of
-    -- <http://hackage.haskell.org/package/verbosity verbosity> package.
+    -- | Re-exported from "CommandWrapper.Core.Config.Verbosity" module.
     , Verbosity(..)
 
     -- ** Colour Output
@@ -100,7 +99,6 @@ import Data.Text.Prettyprint.Doc (Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
-import Data.Verbosity (Verbosity(..))
 import qualified Options.Applicative as Options (Parser, flag)
 import qualified System.Console.Terminal.Size as Terminal (Window)
 import qualified Dhall (Decoder, InputSettings, input, inputWithSettings)
@@ -110,6 +108,7 @@ import CommandWrapper.Core.Config.ColourOutput
     , shouldUseColours
     )
 import CommandWrapper.Core.Config.Shell (Shell(Bash, Fish, Zsh))
+import CommandWrapper.Core.Config.Verbosity (Verbosity(..))
 import CommandWrapper.Core.Environment.Params (Params(..), askParams)
 import CommandWrapper.Core.Environment.Parser (parseEnvIO)
 import qualified CommandWrapper.Core.Message as Message

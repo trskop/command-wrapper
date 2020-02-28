@@ -51,13 +51,14 @@ import GHC.Generics (Generic)
 import System.IO (FilePath)
 import Text.Show (Show)
 
-import Data.Verbosity (Verbosity)
-import qualified Data.Verbosity as Verbosity (Verbosity(Normal))
-import Data.Verbosity.Class (HasVerbosity)
 import Dhall (FromDhall)
 
 import CommandWrapper.Core.Config.Alias (Alias)
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
+import CommandWrapper.Core.Config.Verbosity (HasVerbosity, Verbosity)
+import qualified CommandWrapper.Core.Config.Verbosity as Verbosity
+    ( Verbosity(Normal)
+    )
 
 
 -- | Represents values from global\/toolset configuration file and global

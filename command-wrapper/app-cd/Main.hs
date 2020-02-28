@@ -48,7 +48,6 @@ import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
-import Data.Verbosity (Verbosity(Silent))
 import qualified Options.Applicative as Options
     ( Parser
     , flag'
@@ -83,6 +82,7 @@ import qualified Turtle
 
 import CommandWrapper.Config.Command (SimpleCommand(..))
 import CommandWrapper.Core.Config.Environment (EnvironmentVariable(..))
+import CommandWrapper.Core.Config.Verbosity (Verbosity(Silent))
 import qualified CommandWrapper.Core.Environment as Environment
 import qualified CommandWrapper.Core.Help.Pretty as Help
 import qualified CommandWrapper.Subcommand.Prelude as CommandWrapper

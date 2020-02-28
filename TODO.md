@@ -99,13 +99,20 @@
 
     This will require Subcommand Protocol to be extended.
 
+*   **Better security**:
+
+    -   Extend Dhall subcommands to have `--secure-url-imports`, or similar,
+        where URL imports would be required to be guarded by integrity hash.
+
+    -   Not search `PATH` for subcommands.
+
 *   (**IN PROGRESS**) **Restructure library into three**:
 
     -   `command-wrapper-core` that uses `CommandWrapper.Core` module prefix.
-    -   `command-wrapper-toolset` that uses `CommandWrapper.Toolset` module
-        prefix.
     -   `command-wrapper-subcommand` that uses `CommandWrapper.Subcommand`
         module prefix.
+    -   `command-wrapper` that uses `CommandWrapper.Toolset` module
+        prefix.
 
     Steps:
 
@@ -129,8 +136,8 @@
     3.  Figure out where to put `cd`, `skel` and `exec` subcommands.
 
         While they are very useful it may not make sense to put them into
-        `command-wrapper-toolset` or `command-wrapper-subcommand`.  They may
-        need a package each.  It may be the most modular apprach as well.
+        `command-wrapper` or `command-wrapper-subcommand`.  They may
+        need a package each.  It may be the most modular approach as well.
 
 
 ## Internal Subcommands

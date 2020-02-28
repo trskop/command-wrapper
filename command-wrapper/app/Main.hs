@@ -45,8 +45,6 @@ import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
-import Data.Verbosity (Verbosity(Silent))
-import Data.Verbosity.Class (setVerbosity)
 import qualified Mainplate.Extensible as Mainplate
     ( Command(Internal)
     , runExtensibleAppWith
@@ -93,6 +91,7 @@ import qualified CommandWrapper.Core.Config.ColourOutput as ColourOutput
     , options
     , noColorEnvVar
     )
+import CommandWrapper.Core.Config.Verbosity (Verbosity(Silent), setVerbosity)
 import qualified CommandWrapper.Core.Help.Pretty as Help
     ( dullGreen
     , helpOptions

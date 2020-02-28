@@ -33,7 +33,6 @@ import System.IO (FilePath, IO)
 import Text.Show (Show, show)
 
 import Data.Monoid.Endo (E)
-import Data.Verbosity (Verbosity)
 import Dhall (FromDhall)
 import qualified Dhall (InvalidDecoder, auto, inputFile)
 import qualified Dhall.Parser as Dhall (ParseError, Src)
@@ -42,6 +41,7 @@ import qualified Dhall.TypeCheck as Dhall (TypeError)
 import CommandWrapper.Core.Config.Alias (Alias)
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Config.Global as Global (Config(..))
+import CommandWrapper.Core.Config.Verbosity (Verbosity)
 
 
 -- | Represents toolset configuration file.

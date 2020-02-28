@@ -55,11 +55,11 @@ import Data.Text (Text)
 import qualified Data.Text as Text (unpack)
 import Data.Text.Prettyprint.Doc (Doc, Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty (dquotes, viaShow, vsep)
-import Data.Verbosity (Verbosity)
-import qualified Data.Verbosity as Verbosity (parse)
 
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
 import qualified CommandWrapper.Core.Config.ColourOutput as ColourOutput (parse)
+import CommandWrapper.Core.Config.Verbosity (Verbosity)
+import qualified CommandWrapper.Core.Config.Verbosity as Verbosity (parse)
 import CommandWrapper.Core.Environment.Builder (EnvBuilder(EnvBuilder))
 import CommandWrapper.Core.Environment.Parser
     ( ParseEnv
