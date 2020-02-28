@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 25th October 2019
+% 28th February 2020
 
 
 # NAME
@@ -92,7 +92,7 @@ scripting language like Bash.
 
     ```
     let CommandWrapper =
-          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
     in    ∀(verbosity : CommandWrapper.Verbosity.Type)
         → ∀(colour : CommandWrapper.ColourOutput.Type)
@@ -104,7 +104,7 @@ scripting language like Bash.
 
     ```
     let CommandWrapper =
-          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
     in    λ(verbosity : CommandWrapper.Verbosity.Type)
         → λ(colourOutput : CommandWrapper.ColourOutput.Type)
@@ -132,7 +132,7 @@ scripting language like Bash.
 
     ```
     let CommandWrapper =
-          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
     in  { commands =
             [   { name = "echo"
@@ -255,7 +255,7 @@ Configuration file of `exec` subcommand has following type signature:
 
 ```
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 
@@ -268,7 +268,7 @@ If we expand `CommandWrapper.ExecNamedCommand.Type` type we get:
 
 ```
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 
@@ -369,7 +369,7 @@ contains the following:
 
 ```
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 
@@ -423,7 +423,7 @@ will add an alias named `hello.world`:
 
 ```
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 
@@ -453,7 +453,7 @@ Following Dhall expression will create aliases for all exec commands:
 
 ```
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
 let execConfig = ../command-wrapper-exec.dhall
 

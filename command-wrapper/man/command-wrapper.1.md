@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 24th February 2020
+% 28th February 2020
 
 
 # NAME
@@ -654,7 +654,7 @@ Toolset configuration file has following type:
 
 ```
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 
@@ -747,7 +747,7 @@ between versions.  Smart constructor syntax example:
 
 ```Dhall
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 

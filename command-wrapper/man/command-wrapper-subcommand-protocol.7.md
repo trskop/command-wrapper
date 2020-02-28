@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SUBCOMMAND-PROTOCOL(7) Subcommand Protocol | v1.0.0
 % Peter Trsko
-% 5th January 2020
+% 28th February 2020
 
 
 # NAME
@@ -368,3 +368,8 @@ command-wrapper-completion(1), command-wrapper-config(1)
 * [Dhall configuration language](https://dhall-lang.org)
 * [Advanced Bash-Scripting Guide: Appendix E. Exit Codes With Special Meanings
   ](http://tldp.org/LDP/abs/html/exitcodes.html)
+
+
+# BUGS
+
+<https://github.com/trskop/command-wrapper/issues>
