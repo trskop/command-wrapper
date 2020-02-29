@@ -10,6 +10,13 @@
         *   Introduce environment variable `COMMAND_WRAPPER_SYSTEM_CONFIG_DIR`
             for this purpose.
 
+    -   (**DONE**) Allow using facade (Nix-style wrapper script) for Command
+        Wrapper.
+
+        Introduces `COMMAND_WRAPPER_FACADE` environment variable that specifies
+        what executable to use instead of resolving underlying Command Wrapper
+        executable.
+
     -   Variation of toolset initialisation for Nix:
 
         ```

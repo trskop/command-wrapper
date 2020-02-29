@@ -25,7 +25,7 @@ import Control.Exception
     )
 import Control.Monad ((>>=))
 import Data.Bool (Bool(False, True))
-import Data.Either (Either(Right), either)
+import Data.Either (Either(Left, Right), either)
 import Data.Eq ((/=))
 import Data.Foldable (for_)
 import Data.Function (($), (.), id)
@@ -69,7 +69,8 @@ import qualified CommandWrapper.Config.Global as Global.Config
     )
 import qualified CommandWrapper.Config.File as Config.File (apply, read)
 import CommandWrapper.Core.Environment
-    ( AppNames(..)
+    ( AppNameError(..)
+    , AppNames(..)
     , CommandWrapperPrefix
     , CommandWrapperToolsetVarName
         ( CommandWrapperLocalConfigDir
@@ -185,7 +186,27 @@ main staticConfig = do
         run appNames command config
 
 getAppNames' :: IO AppNames
-getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version)
+getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version) >>= \case
+    Left RunningInInteractiveInterpreterError ->
+        die ( "Unable to resolve its executable path in\
+            \ GHCi.  Consider setting " <> facadeEnvVarName
+            <> " environment variable to bypass this restriction."
+            )
+
+    Left (FacadeDoesNotExistOrIsNotAFileError path) ->
+        die ( facadeEnvVarName <> ": " <> show path
+            <> ": File does not exist or is not a file (e.g. directory)."
+            )
+
+    Left (FacadeIsNotExecutableError path) ->
+        die ( show facadeEnvVarName <> ": " <> show path
+            <> ": File is not executable."
+            )
+
+    Right appNames ->
+        pure appNames
+  where
+    facadeEnvVarName = Text.unpack (defaultCommandWrapperPrefix <> "_FACADE")
 
 -- | Parse environment variables and produce default configuration that can be
 -- later updated by configuration file and command line options.

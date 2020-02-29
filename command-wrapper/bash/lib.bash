@@ -312,14 +312,22 @@ function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
     fi
 }
 
-# List CommandWrapper environment variables.  Useful if we need to remove them
-# before executing something.
+# List Command Wrapper environment variables that are part of the Subcommand
+# Protocol.  Useful if we need to remove them before executing something.
 #
 # Usage:
 #
 #   commandWrapperEnvironmentVariables
+#
+# See `command-wrapper-subcommand-protocol(7)` for more information.
 function commandWrapperEnvironmentVariables() {
-    env | sed -n 's/\(COMMAND_WRAPPER_[^=]*\)=.*/\1/;T;p'
+    env | sed -n '
+        s/\(COMMAND_WRAPPER_\(EXE\|VERSION\|NAME\)*\)=.*/\1/;
+        s/\(COMMAND_WRAPPER_\(SUBCOMMAND\|CONFIG\)*\)=.*/\1/;
+        s/\(COMMAND_WRAPPER_\(VERBOSITY\|COLOUR\)*\)=.*/\1/;
+        T;
+        p
+    '
 }
 
 # Uses 'commandWrapperEnvironmentVariables' to list Command Wrapper environment

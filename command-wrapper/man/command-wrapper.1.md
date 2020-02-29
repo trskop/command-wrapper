@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 28th February 2020
+% 29th February 2020
 
 
 # NAME
@@ -212,7 +212,7 @@ Some of the *EXIT STATUS* codes were inspired by Bash exit codes.  See e.g.
 # FILES AND DIRECTORIES
 
 `${COMMAND_WRAPPER_USER_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}/command-wrapper/default.dhall`
-:   Top-level command wrapper configuration file.  It mostly provides defaults
+:   User-level command wrapper configuration file.  It mostly provides defaults
     that can be overriden by `GLOBAL_OPTIONS`, additional help messages, and
     alias definitions.
 
@@ -549,28 +549,15 @@ used by `man` run `manpath` command, which should print out something like:
     addition to user-level can be very useful when using tools like [`direnv`
     ](https://direnv.net/).
 
-`NO_COLOR`
-:   This environment variable is an informal standard which is available
-    online at <https://no-color.org>. The standard states:
+`COMMAND_WRAPPER_SYSTEM_CONFIG_DIR`
+:   When Command Wrapper binary is compiled statically then it responds to this
 
-    > Accepting the futility of trying to reverse this trend, an informal
-    > standard is hereby proposed:
-    >
-    > All command-line software which outputs text with ANSI color added
-    > should check for the presence of a `NO_COLOR` environment variable
-    > that, when present (regardless of its value), prevents the addition of
-    > ANSI color.
-
-    Command Wrapper treats `NO_COLOR` as a default value.  It can be overridden
-    by `colourOutput` property in *toolset* configuration file (`default.dhall`)
-    and/or using command line option(s).
-
-    Alternatively, following command can be used to temporarily disable
-    `NO_COLOR`:
-
-    ```
-    env -u 'NO_COLOR' TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
-    ```
+    variable being set by introducing yet another level in configuration
+    hierarchy.  Toolset configuration files in provided directory are read
+    before the ones in `COMMAND_WRAPPER_USER_CONFIG_DIR`/`XDG_CONFIG_HOME`.
+    Subcommand configuration files are tried only if they are not found in
+    `COMMAND_WRAPPER_LOCAL_CONFIG_DIR`, `COMMAND_WRAPPER_USER_CONFIG_DIR`, and
+    `XDG_CONFIG_HOME`, in that order.
 
 `COMMAND_WRAPPER_INVOKE_AS`
 :   This value overrides the name under which `command-wrapper` command was
@@ -605,8 +592,25 @@ used by `man` run `manpath` command, which should print out something like:
     }
     ```
 
-    See also `command-wrapper-subcommand-protocol(7)` for more details on how
-    subcommands are invoked.
+    This environment variable is unset before external subcommand is executed,
+    and appropriate environment variable from Subcommand Protocol is used
+    instead.  See also `command-wrapper-subcommand-protocol(7)` for more
+    details on how subcommands are invoked.
+
+`COMMAND_WRAPPER_FACADE`
+:   Command Wrapper needs to know absolute file path to its underlying
+    executable.  This is so that subcommands can be given a reliable way how
+    to call Command Wrapper.  Setting this variable overrides default
+    executable resolution and provided value is used instead.
+
+    Very useful in Nix derivations (Nix package definitions) when creating
+    wrapper scripts to pass Nix-specific environment.  See following links for
+    more information:
+
+    *   [Nixpkgs Users and Contributors Guide: 6.6 Shell functions: makeWrapper](https://nixos.org/nixpkgs/manual/#fun-makeWrapper)
+    *   [Nixpkgs Users and Contributors Guide: 6.6 Shell functions: wrapProgram](https://nixos.org/nixpkgs/manual/#fun-wrapProgram)
+
+    Environment variable is unset before external subcommand is executed.
 
 `COMMAND_WRAPPER_PATH`
 :   Default search path for external subcommands.  Any value that is specified
@@ -631,6 +635,33 @@ used by `man` run `manpath` command, which should print out something like:
 :   Default search path for manual pages.  Any value that is specified
     in configuration file (see *CONFIGURATION FILE* section for details) is
     appended to this value.
+
+`NO_COLOR`
+:   This environment variable is an informal standard which is available
+    online at <https://no-color.org>. The standard states:
+
+    > Accepting the futility of trying to reverse this trend, an informal
+    > standard is hereby proposed:
+    >
+    > All command-line software which outputs text with ANSI color added
+    > should check for the presence of a `NO_COLOR` environment variable
+    > that, when present (regardless of its value), prevents the addition of
+    > ANSI color.
+
+    Command Wrapper treats `NO_COLOR` as a default value.  It can be overridden
+    by `colourOutput` property in *toolset* configuration file (`default.dhall`)
+    and/or using command line option(s).
+
+    Alternatively, following command can be used to temporarily disable
+    `NO_COLOR`:
+
+    ```
+    env -u 'NO_COLOR' TOOLSET_COMMAND [GLOBAL_OPTIONS] SUBCOMMAND [SUBCOMMAND_ARGUMENTS]
+    ```
+
+    Value of this environment variable is kept when external subcommand is
+    executed, however, external subcommands should use Subcommand Protocol to
+    figure out if they should use colours in their output or not.
 
 
 # CONFIGURATION FILE

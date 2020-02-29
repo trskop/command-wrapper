@@ -144,6 +144,20 @@ data CommandWrapperToolsetVarName
     -- See also module "CommandWrapper.Environment.AppNames", especially
     -- 'CommandWrapper.Environment.AppNames.getAppNames' function.
 
+    | CommandWrapperFacade
+    -- ^ Specifies executable to be used for recursive calls, and when invoking
+    -- extenral subcommands, instead of trying to resolve what is the
+    -- underlying Command Wrapper executable.
+    --
+    -- Normally Command Wrapper tries to resolve all links and indirections
+    -- to figure out what is the underlying executable.  Path to that
+    -- executable is then passed to subcommands as well.  This removes a lot of
+    -- indirections and unnecessary overhead.  The downside is that it prevents
+    -- usage of Nix-style wrapper scripts.  Having this environment variable
+    -- gives us that ability back.
+    --
+    -- > <prefix>_FACADE
+
     | CommandWrapperPath
     -- ^ Search path for external commands prepended to the one retrieved from
     -- configuration.
@@ -161,7 +175,6 @@ data CommandWrapperToolsetVarName
     -- system-wide configuration files.  One of such examples is when the main
     -- executable is built statically.  We don't want to preempt where it will
     -- be installed and how it will be used.
-    --
     --
     -- > <prefix>_SYSTEM_CONFIG_DIR
     --
@@ -208,6 +221,7 @@ getCommandWrapperToolsetVarName
     -> EnvVarName
 getCommandWrapperToolsetVarName prefix = (prefix <>) . \case
     CommandWrapperInvokeAs -> "_INVOKE_AS"
+    CommandWrapperFacade -> "_FACADE"
     CommandWrapperPath -> "_PATH"
     CommandWrapperManPath -> "_MANPATH"
     CommandWrapperSystemConfigDir -> "_SYSTEM_CONFIG_DIR"

@@ -19,18 +19,26 @@ module CommandWrapper.Core.Environment.AppNames
     (
     -- * Application Names
       AppNames(..)
+    , AppNameError(..)
     , getAppNames
+
+    -- * Executable Path
+    , ExecutablePath(..)
+    , getExecutablePath
     )
   where
 
 import Control.Applicative (pure)
-import Data.Eq ((==))
-import Data.Functor ((<$>), (<&>))
+import Control.Monad ((>>=))
+import Data.Eq (Eq, (==))
+import Data.Function ((.))
+import Data.Functor ((<$>), (<&>), fmap)
 import Data.List.NonEmpty (NonEmpty((:|)), toList)
-import Data.Maybe (maybe)
+import Data.Either (Either(Left, Right))
+import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Semigroup ((<>))
 import Data.String (String)
-import Data.Version (Version, makeVersion, showVersion)
+import Data.Version (Version, showVersion)
 import GHC.Generics (Generic)
 import System.Environment (getProgName, lookupEnv)
 import System.IO (FilePath, IO)
@@ -45,19 +53,33 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     , encloseSep
     , vsep
     )
-import System.Environment.Executable (ScriptPath(..), getScriptPath)
+import System.Directory
+    ( doesFileExist
+    , executable
+    , getPermissions
+    , makeAbsolute
+    )
+import qualified System.Environment.Executable as Executable
+    ( ScriptPath(..)
+    , getScriptPath
+    )
 import System.FilePath (takeFileName)
 
 import CommandWrapper.Core.Environment.Variable
     ( CommandWrapperPrefix
-    , CommandWrapperToolsetVarName(CommandWrapperInvokeAs)
+    , CommandWrapperToolsetVarName
+        ( CommandWrapperFacade
+        , CommandWrapperInvokeAs
+        )
     , getCommandWrapperToolsetVarName
     )
 
 
 data AppNames = AppNames
     { exePath :: FilePath
-    -- ^ Full path to the executable, symlinks are resolved.
+    -- ^ Full path to the executable, symlinks are resolved.  If environment
+    -- variable @\<prefix\>_FACADE@ is set then that value is used instead.
+    -- See 'CommandWrapperFacade' data constructor for more information.
     --
     -- For example, default installation path of Command Wrapper for user
     -- @\"neo\"@ is:
@@ -138,6 +160,22 @@ instance Pretty AppNames where
             <+> Pretty.dquotes (pretty commandWrapperPrefix)
         ]
 
+-- | Application name resolution error.
+data AppNameError
+    = RunningInInteractiveInterpreterError
+    -- ^ We are unable to figure out executable paths when running in
+    -- interactive mode.  Use @\<prefix\>_FACADE@ environment variable to
+    -- override the resolution algorithm.
+
+    | FacadeDoesNotExistOrIsNotAFileError String
+    -- ^ Path passed via @\<prefix\>_FACADE@ environment variable is not
+    -- pointing to a file.
+
+    | FacadeIsNotExecutableError String
+    -- ^ Executable path passed via @\<prefix\>_FACADE@ environment variable
+    -- is not pointing to an executable.
+  deriving stock (Eq, Generic, Show)
+
 -- | Smart constructor for 'AppNames'.
 --
 -- Lets say that we have a following installation:
@@ -163,37 +201,28 @@ instance Pretty AppNames where
 --     , 'names' = \"yx\" :| [\"command-wrapper\"]
 --     }
 -- @
+--
+-- See also 'AppNames', 'CommandWrapperInvokeAs' and 'CommandWrapperFacade' for
+-- more information on how this works and why it's done.
 getAppNames
     :: CommandWrapperPrefix
     -- ^ Prefix used by Command Wrapper's environment variables.  Usually
     -- 'CommandWrapper.Environment.Variable.defaultCommandWrapperPrefix'.
     -> IO Version
-    -> IO AppNames
+    -> IO (Either AppNameError AppNames)
 getAppNames prefix getVersion = do
     usedName <- getUsedName
     version <- getVersion
-    getScriptPath <&> \case
-        Executable exePath ->
-            appNamesWithExePath usedName exePath version
-
-        RunGHC exePath ->
-            appNamesWithExePath usedName exePath version
-
-        Interactive ->
-            -- TODO: Command Wrapper is probably not able to function with
-            -- following values.  This needs to be tested and maybe it's better
-            -- to die with honor then to continue.
-            AppNames
-                { exePath = ""
-                , exeName = ""
-                , exeVersion = makeVersion []
-                , usedName
-                , names = usedName :| []
-                , commandWrapperPrefix = prefix
-                }
+    fmap (appNamesWithExePath usedName version) <$> getExecutablePath prefix
   where
-    appNamesWithExePath usedName exePath exeVersion =
-        let exeName = takeFileName exePath
+    appNamesWithExePath :: String -> Version -> ExecutablePath -> AppNames
+    appNamesWithExePath usedName exeVersion exePath' =
+        let exePath =  case exePath' of
+                Executable e -> e
+                Facade     e -> e
+
+            exeName = takeFileName exePath
+
         in AppNames
             { exePath
             , exeName
@@ -206,6 +235,7 @@ getAppNames prefix getVersion = do
             , commandWrapperPrefix = prefix
             }
 
+    getUsedName :: IO String
     getUsedName = do
         -- Environment variable @<prefix>_INVOKE_AS=<used-name>@ overrides the
         -- default value of 'usedName'. This is useful for testing, and when
@@ -216,3 +246,47 @@ getAppNames prefix getVersion = do
 
         possiblyOverrideProgName <- lookupEnv (Text.unpack invokeAsVarName)
         maybe getProgName pure possiblyOverrideProgName
+
+-- | Resolved path to Command Wrapper executable.
+data ExecutablePath
+    = Executable FilePath
+    -- ^ Resolved absolute file path to Command Wrapper executable.
+
+    | Facade FilePath
+    -- ^ Environment variable @\<prefix\>_FACADE@ was supplied, providing it's
+    -- value instead.
+  deriving (Eq, Generic, Show)
+
+-- | Figure out absolute path to Command Wrapper executable.
+--
+-- See also 'ExecutablePath', 'AppNames' (especially 'exePath'), and
+-- 'CommandWrapperFacade' for more information on how this works and why it's
+-- done.
+getExecutablePath
+    :: CommandWrapperPrefix
+    -> IO (Either AppNameError ExecutablePath)
+getExecutablePath prefix = lookupEnv (Text.unpack facadeVarName) >>= \case
+    Just exePath -> do
+        facadeExists <- doesFileExist exePath
+        if facadeExists
+            then do
+                facadeIsExecutable <- isExecutable exePath
+                if facadeIsExecutable
+                    then Right . Facade <$> makeAbsolute exePath
+                    else pure (Left (FacadeIsNotExecutableError exePath))
+            else
+                pure (Left (FacadeDoesNotExistOrIsNotAFileError exePath))
+    Nothing ->
+        Executable.getScriptPath <&> \case
+            Executable.Executable exePath ->
+                Right (Executable  exePath)
+
+            Executable.RunGHC exePath ->
+                Right (Executable exePath)
+
+            Executable.Interactive ->
+                Left RunningInInteractiveInterpreterError
+  where
+    facadeVarName = getCommandWrapperToolsetVarName prefix CommandWrapperFacade
+
+    isExecutable fp = executable <$> getPermissions fp
