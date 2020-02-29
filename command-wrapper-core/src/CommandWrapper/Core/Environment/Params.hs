@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Environment.Params
+-- Module:      $Header$
 -- Description: Subcommand parameters as defined by Subcommand Protocol.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

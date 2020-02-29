@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Help.Message
+-- Module:      $Header$
 -- Description: Experiment to make help messages easier to create.
 -- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3

@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Options.Optparse
+-- Module:      $Header$
 -- Description: Utilities for parsing command line options.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

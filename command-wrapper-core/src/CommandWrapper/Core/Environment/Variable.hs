@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Environment.Variable
+-- Module:      $Header$
 -- Description: Environment variables as they are understood by Command Wrapper.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

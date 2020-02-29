@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Config.Alias
+-- Module:      $Header$
 -- Description: Subcommand aliases; their definition and evaluation
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

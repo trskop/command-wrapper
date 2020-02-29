@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Help.Pretty
+-- Module:      $Header$
 -- Description: Combinators and helper functions for constructing help message
 --              using prettyprint library.
 -- Copyright:   (c) 2018-2020 Peter Trško

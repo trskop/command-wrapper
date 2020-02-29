@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Config.Environment
+-- Module:      $Header$
 -- Description: Data type representing environment variable.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

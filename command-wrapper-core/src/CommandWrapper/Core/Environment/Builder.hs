@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Environment.Builder
+-- Module:      $Header$
 -- Description: Builder for environment (list of environment variables)
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

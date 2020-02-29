@@ -1,8 +1,7 @@
-{-# LANGUAGE InstanceSigs #-}
 -- |
--- Module:      CommandWrapper.Options.GlobalMode
+-- Module:      $Header$
 -- Description: Top-level application mode
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -11,12 +10,15 @@
 --
 -- Top-level application mode.  It provides the ability for us to handle help
 -- without interference from option parsing library.
-module CommandWrapper.Options.GlobalMode
+module CommandWrapper.Core.Options.GlobalMode
     ( GlobalMode(..)
     , switchGlobalMode
     , runGlobalMode
     )
   where
+
+import Data.Function ((.))
+import Data.Functor (Functor, fmap)
 
 import Data.Monoid (Endo(Endo))
 

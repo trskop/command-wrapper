@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Config.Shell
+-- Module:      $Header$
 -- Description: Supported shell values and '--shell=SHELL' option.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

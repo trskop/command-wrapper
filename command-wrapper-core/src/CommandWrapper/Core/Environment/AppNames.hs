@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Environment.AppNames
+-- Module:      $Header$
 -- Description: Representation of all the names and paths under wich Command
 --              Wrapper toolset is known.
 -- Copyright:   (c) 2018-2020 Peter Trško

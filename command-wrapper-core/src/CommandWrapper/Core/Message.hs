@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Message
+-- Module:      $Header$
 -- Description: Helper functions for printing messages.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Core.Environment.Parser
+-- Module:      $Header$
 -- Description: Parser for environment variables.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

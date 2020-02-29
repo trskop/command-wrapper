@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Config.File
+-- Module:      $Header$
 -- Description: Global toolset configuration file.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3

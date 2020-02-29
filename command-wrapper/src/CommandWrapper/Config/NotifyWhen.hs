@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Config.NotifyWhen
+-- Module:      $Header$
 -- Description: Data type that represents when desktop notifications should be
 --              raised.
 -- Copyright:   (c) 2019-2020 Peter Trško

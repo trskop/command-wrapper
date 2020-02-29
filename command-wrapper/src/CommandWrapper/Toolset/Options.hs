@@ -23,6 +23,7 @@ module CommandWrapper.Toolset.Options
     -- * Generic API
     , module CommandWrapper.Toolset.Options.Optparse
     , module CommandWrapper.Core.Options.Optparse
+    , module CommandWrapper.Core.Options.GlobalMode
     )
   where
 
@@ -39,10 +40,10 @@ import qualified Options.Applicative as Options (ParserInfo, ParserPrefs)
 
 import CommandWrapper.Core.Config.Alias (Alias(..), applyAlias)
 import CommandWrapper.Core.Environment.AppNames (AppNames)
+import CommandWrapper.Core.Options.GlobalMode
 import CommandWrapper.Core.Options.Optparse
 import qualified CommandWrapper.External as External (Command)
 import qualified CommandWrapper.Internal as Internal (Command(..), command)
-import CommandWrapper.Options.GlobalMode (GlobalMode(..), runGlobalMode)
 import CommandWrapper.Toolset.Options.Optparse
 
 

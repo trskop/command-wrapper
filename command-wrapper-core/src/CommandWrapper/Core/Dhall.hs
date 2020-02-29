@@ -1,5 +1,5 @@
 -- |
--- Module:      CommandWrapper.Core.Dhall.Dhall
+-- Module:      $Header$
 -- Description: Dhall utilities.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
