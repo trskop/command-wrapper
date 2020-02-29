@@ -155,6 +155,23 @@ data CommandWrapperToolsetVarName
     --
     -- > <prefix>_MANPATH
 
+    | CommandWrapperSystemConfigDir
+    -- ^ System-level configuration directory.  This is useful if Command
+    -- Wrapper is not installed via package manager and we still desire having
+    -- system-wide configuration files.  One of such examples is when the main
+    -- executable is built statically.  We don't want to preempt where it will
+    -- be installed and how it will be used.
+    --
+    --
+    -- > <prefix>_SYSTEM_CONFIG_DIR
+    --
+    -- Common value used here is:
+    --
+    -- > ${PREFIX}/etc/command-wrapper
+    --
+    -- Where `${PREFIX}` is installation prefix such as `\/`, `\/usr\/local`,
+    -- Nix store path, etc.
+
     | CommandWrapperUserConfigDir
     -- ^ Overrides @XDG_CONFIG_HOME@ value.
     --
@@ -193,5 +210,6 @@ getCommandWrapperToolsetVarName prefix = (prefix <>) . \case
     CommandWrapperInvokeAs -> "_INVOKE_AS"
     CommandWrapperPath -> "_PATH"
     CommandWrapperManPath -> "_MANPATH"
+    CommandWrapperSystemConfigDir -> "_SYSTEM_CONFIG_DIR"
     CommandWrapperUserConfigDir -> "_USER_CONFIG_DIR"
     CommandWrapperLocalConfigDir -> "_LOCAL_CONFIG_DIR"

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:       Main
@@ -17,7 +18,14 @@ module Main (main)
 import System.IO (IO)
 
 import qualified CommandWrapper.Toolset.Main (main)
+import qualified CommandWrapper.Toolset.Main.StaticConfig as StaticConfig
 
 
 main :: IO ()
-main = CommandWrapper.Toolset.Main.main
+main =
+    CommandWrapper.Toolset.Main.main StaticConfig.def
+#ifdef STATIC_EXECUTABLE
+        { StaticConfig.lookupSystemConfigDir =
+            StaticConfig.doLookupSystemConfigDir
+        }
+#endif

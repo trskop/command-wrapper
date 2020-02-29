@@ -70,15 +70,14 @@ Protocol, which is described in its own manual page
     useful Dhall library [`command-wrapper/dhall/CommandWrapper`
     ](command-wrapper/dhall/CommandWrapper/).
 
-*   Command line completion for Bash, Fish, and Zsh.
+*   Command line completion for Bash, Fish, and Zsh.  Subcommands adhering to
+    Subcommand Protocol get command line completion and help integration for
+    free.  No need to load/source any additional scripts.
 
 *   Subcommands can be written in any language, they just need to respect
     Subcommand Protocol (described in [`command-wrapper-subcommand-protocol(7)`
     ](command-wrapper/man/command-wrapper-subcommand-protocol.7.md) manual
     page).
-
-*   Subcommands adhering to Subcommand Protocol get command line completion
-    and help integration for free.
 
 *   Subcommand skeletons for Bash and Haskell.  Subcommands in those languages
     can leverage libraries provided by Command Wrapper.

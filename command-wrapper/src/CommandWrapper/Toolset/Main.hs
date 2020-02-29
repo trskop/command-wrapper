@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:       Main
+-- Module:       $Header$
 -- Description:  Top-level executable of Command Wrapper.
 -- Copyright:    (c) 2014-2020 Peter Trsko
 -- License:      BSD3
@@ -109,6 +109,8 @@ import qualified CommandWrapper.Core.Help.Pretty as Help
 import CommandWrapper.Core.Message (Result(..), errorMsg)
 import qualified CommandWrapper.Toolset.ExternalSubcommand as External
 import qualified CommandWrapper.Toolset.InternalSubcommand as Internal
+import qualified CommandWrapper.Toolset.Main.StaticConfig as StaticConfig
+import CommandWrapper.Toolset.Main.StaticConfig (StaticConfig(StaticConfig))
 import qualified CommandWrapper.Toolset.Options as Options
 
 import Paths_command_wrapper (version)
@@ -124,11 +126,11 @@ defaults
 defaults config (Endo f) =
     pure . f $ Mainplate.Internal (Internal.HelpCommand []) config
 
-main :: IO ()
-main = do
+main :: StaticConfig CommandWrapperPrefix -> IO ()
+main staticConfig = do
     appNames@AppNames{exeName, usedName} <- getAppNames'
     -- TODO: It would be great to have debugging message with 'appNames' in it.
-    defaultConfig <- parseEnv
+    defaultConfig <- parseEnv staticConfig
 
     config <- (`appEndo` defaultConfig) <$> do
         let Global.Config
@@ -187,17 +189,21 @@ getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version)
 
 -- | Parse environment variables and produce default configuration that can be
 -- later updated by configuration file and command line options.
-parseEnv :: IO Global.Config
-parseEnv = parseEnvIO (die . show) do
+parseEnv :: StaticConfig CommandWrapperPrefix -> IO Global.Config
+parseEnv StaticConfig{..} = parseEnvIO (die . show) do
     defColour <- fromMaybe ColourOutput.Auto <$> ColourOutput.noColorEnvVar
 
     searchPath <- searchPathVar Global.Config.SearchPath CommandWrapperPath
     manPath    <- searchPathVar Global.Config.ManPath    CommandWrapperManPath
 
     configPaths <- do
+        system <- lookupSystemConfigDir
         user <- lookupUserConfigDir
         local <- lookupLocalConfigDir
-        pure (Global.defConfigPaths user){Global.Config.local}
+        pure (Global.defConfigPaths user)
+            { Global.Config.system
+            , Global.Config.local
+            }
 
     pure (Global.Config.def defColour searchPath manPath configPaths)
   where

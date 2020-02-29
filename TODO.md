@@ -4,25 +4,11 @@
 
 *   (**IN PROGRESS**) **Support for installing via Nix**:
 
-    -   How to set system config directory in Nix?  (See also **Fallback
+    -   (**DONE**) How to set system config directory in Nix?  (See also **Fallback
         configuration files for subcommands.**)  There are few ideas:
 
-        *   Compile the value into the executable itself.
-
-        *   Introduce environment variable for this purpose.  There are few
-            ideas for this:
-
-            `COMMAND_WRAPPER_PREFIX` which mimics the standard configure
-            `PREFIX`.  This can be used as a default to resolve more than just
-            config.
-
-            `COMMAND_WRAPPER_SYSTEM_CONFIG` which resembles what we already
-            have for user and local configuration.
-
-            `COMMAND_WRAPPER_NIX_PREFIX` which is Nix-specific.  We could
-            compile Command Wrapper toolset with or without Nix support.  In
-            later case the environment variable would be simply ignored and we
-            could hardcode a value based on Cabal package setup phase.
+        *   Introduce environment variable `COMMAND_WRAPPER_SYSTEM_CONFIG_DIR`
+            for this purpose.
 
     -   Variation of toolset initialisation for Nix:
 

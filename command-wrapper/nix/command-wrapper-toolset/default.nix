@@ -47,7 +47,7 @@ in stdenv.mkDerivation rec {
   buildInputs = [ makeWrapper ] ++ toolsetSubcommands;
 
   installPhase = ''
-    mkdir -p "$out/bin"
+    mkdir -p "$out/bin" "$out/etc"
     tar -C "$out" -xf "$src" --strip-components=1
     chmod u+w "$out/share"
 
@@ -55,6 +55,7 @@ in stdenv.mkDerivation rec {
       "$out/bin/${toolset}" \
       --argv0 "${toolset}" \
       --set TERMINFO_DIRS "/etc/terminfo:/lib/terminfo:/usr/share/terminfo" \
+      --set COMMAND_WRAPPER_SYSTEM_CONFIG_DIR "$out/libexec/command-wrapper/etc" \
       --prefix COMMAND_WRAPPER_PATH : "$out/libexec/command-wrapper" \
       --prefix COMMAND_WRAPPER_PATH : "${
         lib.makeSearchPath "libexec/${toolset}" toolsetSubcommands
@@ -78,5 +79,16 @@ in stdenv.mkDerivation rec {
     COMMAND_WRAPPER_INVOKE_AS="${toolset}" "$out/libexec/command-wrapper/command-wrapper" \
       completion --script --shell=zsh \
       --output="$out/share/zsh/vendor_completions/_command-wrapper"
+
+    mkdir -p "$out/etc/command-wrapper/lib"
+    "$out/libexec/command-wrapper/command-wrapper" \
+      completion --library --dhall=command-wrapper --import \
+      > "$out/etc/command-wrapper/lib/CommandWrapper"
+    "$out/libexec/command-wrapper/command-wrapper" \
+      completion --library --dhall=exec --import \
+      > "$out/etc/command-wrapper/lib/Exec"
+    "$out/libexec/command-wrapper/command-wrapper" \
+      completion --library --dhall=prelude --import \
+      > "$out/etc/command-wrapper/lib/Prelude"
   '';
 }
