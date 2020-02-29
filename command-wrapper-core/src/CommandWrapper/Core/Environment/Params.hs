@@ -35,7 +35,7 @@ import Data.Eq ((/=))
 import Data.Foldable (foldMap)
 import Data.Function (($), (.))
 import Data.Functor ((<$>), fmap)
-import qualified Data.List as List (dropWhile)
+import qualified Data.List as List (dropWhile, filter)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Monoid (Endo(Endo, appEndo))
 import Data.Semigroup (Semigroup((<>)))
@@ -76,6 +76,7 @@ import CommandWrapper.Core.Environment.Variable
     , EnvVarValue
     , getCommandWrapperToolsetVarName
     , getCommandWrapperVarName
+    , isVariableRemovedBeforeInvokingExternalCommand
     )
 
 -- | Subcommand parameters.  They are used to populate environment variables
@@ -205,7 +206,9 @@ commandWrapperEnv AppNames{commandWrapperPrefix} (EnvBuilder mkEnv) =
             . HashMap.delete
             . getCommandWrapperToolsetVarName commandWrapperPrefix
         )
-        [minBound .. maxBound]
+        ( List.filter isVariableRemovedBeforeInvokingExternalCommand
+            [minBound .. maxBound]
+        )
 
 -- | Parse Command Wrapper environment variables that are part of subcommand
 -- protocol.

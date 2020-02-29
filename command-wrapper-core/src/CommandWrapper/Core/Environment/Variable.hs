@@ -33,11 +33,13 @@ module CommandWrapper.Core.Environment.Variable
     -- for details.
     , CommandWrapperToolsetVarName(..)
     , getCommandWrapperToolsetVarName
+    , isVariableRemovedBeforeInvokingExternalCommand
     )
   where
 
 import Prelude (Bounded, Enum)
 
+import Data.Bool (Bool(False, True))
 import Data.Function ((.))
 import Data.Monoid ((<>))
 import GHC.Generics (Generic)
@@ -143,6 +145,10 @@ data CommandWrapperToolsetVarName
     --
     -- See also module "CommandWrapper.Environment.AppNames", especially
     -- 'CommandWrapper.Environment.AppNames.getAppNames' function.
+    --
+    -- This variable is removed before external command is invoked.  If it was
+    -- kept and external subcommand would be calling a different toolset then
+    -- having this variable set would not allow it.
 
     | CommandWrapperFacade
     -- ^ Specifies executable to be used for recursive calls, and when invoking
@@ -157,17 +163,23 @@ data CommandWrapperToolsetVarName
     -- gives us that ability back.
     --
     -- > <prefix>_FACADE
+    --
+    -- This variable is removed before external command is invoked.
 
     | CommandWrapperPath
     -- ^ Search path for external commands prepended to the one retrieved from
     -- configuration.
     --
     -- > <prefix>_PATH
+    --
+    -- This variable is kept when executing external subcommand is invoked.
 
     | CommandWrapperManPath
     -- ^ `MANPATH` prepended to the one provided by configuration.
     --
     -- > <prefix>_MANPATH
+    --
+    -- This variable is kept when executing external subcommand is invoked.
 
     | CommandWrapperSystemConfigDir
     -- ^ System-level configuration directory.  This is useful if Command
@@ -184,6 +196,8 @@ data CommandWrapperToolsetVarName
     --
     -- Where `${PREFIX}` is installation prefix such as `\/`, `\/usr\/local`,
     -- Nix store path, etc.
+    --
+    -- This variable is kept when executing external subcommand is invoked.
 
     | CommandWrapperUserConfigDir
     -- ^ Overrides @XDG_CONFIG_HOME@ value.
@@ -203,6 +217,8 @@ data CommandWrapperToolsetVarName
     --
     -- This resolution algorithm is compatible with
     -- [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
+    --
+    -- This variable is kept when executing external subcommand is invoked.
 
     | CommandWrapperLocalConfigDir
     -- ^ This intorduces another configuration level that is used in addition
@@ -211,7 +227,23 @@ data CommandWrapperToolsetVarName
     -- directory\/project.
     --
     -- > <prefix>_LOCAL_CONFIG_DIR
+    --
+    -- This variable is kept when executing external subcommand is invoked.
   deriving stock (Bounded, Enum, Generic, Show)
+
+-- | Predicate that tells us if we need to remove toolset environment variable
+-- before executing external command.
+isVariableRemovedBeforeInvokingExternalCommand
+    :: CommandWrapperToolsetVarName
+    -> Bool
+isVariableRemovedBeforeInvokingExternalCommand = \case
+    CommandWrapperInvokeAs        -> True
+    CommandWrapperFacade          -> True
+    CommandWrapperPath            -> False
+    CommandWrapperManPath         -> False
+    CommandWrapperSystemConfigDir -> False
+    CommandWrapperUserConfigDir   -> False
+    CommandWrapperLocalConfigDir  -> False
 
 -- | Get fully formed Command Wrapper (toolset) variable name.  See
 -- documentation of 'CommandWrapperToolsetVarName' for more information.

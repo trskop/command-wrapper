@@ -529,6 +529,9 @@ used by `man` run `manpath` command, which should print out something like:
     ](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
     for more information on rationale behind this.
 
+    This variable is kept in the environment when external commands and
+    external subcommands are executed.
+
 `COMMAND_WRAPPER_LOCAL_CONFIG_DIR`
 :   If this environment variable is set it introduces another level of
     configuration.
@@ -549,6 +552,9 @@ used by `man` run `manpath` command, which should print out something like:
     addition to user-level can be very useful when using tools like [`direnv`
     ](https://direnv.net/).
 
+    This variable is kept in the environment when external commands and
+    external subcommands are executed.
+
 `COMMAND_WRAPPER_SYSTEM_CONFIG_DIR`
 :   When Command Wrapper binary is compiled statically then it responds to this
 
@@ -558,6 +564,9 @@ used by `man` run `manpath` command, which should print out something like:
     Subcommand configuration files are tried only if they are not found in
     `COMMAND_WRAPPER_LOCAL_CONFIG_DIR`, `COMMAND_WRAPPER_USER_CONFIG_DIR`, and
     `XDG_CONFIG_HOME`, in that order.
+
+    This variable is kept in the environment when external commands and
+    external subcommands are executed.
 
 `COMMAND_WRAPPER_INVOKE_AS`
 :   This value overrides the name under which `command-wrapper` command was
@@ -592,10 +601,12 @@ used by `man` run `manpath` command, which should print out something like:
     }
     ```
 
-    This environment variable is unset before external subcommand is executed,
-    and appropriate environment variable from Subcommand Protocol is used
-    instead.  See also `command-wrapper-subcommand-protocol(7)` for more
-    details on how subcommands are invoked.
+    This environment variable is unset before external command or external
+    subcommand is executed.  If external command/subcommand is calling
+    different toolset then this would interfere.  External subcommands will
+    still have access to this value via appropriate environment variable from
+    Subcommand Protocol.  See also `command-wrapper-subcommand-protocol(7)` for
+    more details on how subcommands are invoked.
 
 `COMMAND_WRAPPER_FACADE`
 :   Command Wrapper needs to know absolute file path to its underlying
@@ -611,6 +622,13 @@ used by `man` run `manpath` command, which should print out something like:
     *   [Nixpkgs Users and Contributors Guide: 6.6 Shell functions: wrapProgram](https://nixos.org/nixpkgs/manual/#fun-wrapProgram)
 
     Environment variable is unset before external subcommand is executed.
+
+    This environment variable is unset before external command or external
+    subcommand is executed.  Having is present can interfere in what underlying
+    command intended to execute.  External subcommands still have access to
+    this value via appropriate environment variable from Subcommand Protocol.
+    See also `command-wrapper-subcommand-protocol(7)` for more details on how
+    subcommands are invoked.
 
 `COMMAND_WRAPPER_PATH`
 :   Default search path for external subcommands.  Any value that is specified
@@ -631,10 +649,16 @@ used by `man` run `manpath` command, which should print out something like:
     Test World!
     ```
 
+    This variable is kept in the environment when external commands and
+    external subcommands are executed.
+
 `COMMAND_WRAPPER_MANPATH`
 :   Default search path for manual pages.  Any value that is specified
     in configuration file (see *CONFIGURATION FILE* section for details) is
     appended to this value.
+
+    This variable is kept in the environment when external commands and
+    external subcommands are executed.
 
 `NO_COLOR`
 :   This environment variable is an informal standard which is available
