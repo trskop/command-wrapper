@@ -43,13 +43,13 @@ import Control.Monad ((>>=))
 import Data.Either (Either(Left, Right))
 import Data.Eq (Eq)
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe(Just, Nothing))
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>))
 import Data.String (IsString, String, fromString)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import System.Exit (ExitCode(ExitFailure), exitWith)
-import System.IO (IO, IOMode(WriteMode), stderr, stdout, withFile)
+import System.IO (FilePath, IO, IOMode(WriteMode), stderr, stdout, withFile)
 import Text.Show (Show, show)
 
 import Data.ByteString (ByteString)
@@ -357,6 +357,8 @@ data ScriptOptions = ScriptOptions
     , shell :: Shell
     , subcommand :: Maybe String
     , output :: OutputStdoutOrFile
+    , overrideExecutablePath :: Maybe FilePath
+    , overrideToolsetName :: Maybe String
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasShell)
@@ -371,6 +373,8 @@ defScriptOptions = ScriptOptions
     , subcommand = Nothing
     , aliases = []
     , output = OutputStdoutOnly
+    , overrideExecutablePath = Nothing
+    , overrideToolsetName = Nothing
     }
 
 type MkCompletionScript =
@@ -395,8 +399,8 @@ putShellCompletionScript subcmd appNames config ScriptOptions{..} =
         Right (mkScript :: MkCompletionScript) -> do
             let completionScript = mkScript
                     shell
-                    (fromString (usedName appNames) :: Text)
-                    (fromString (exePath appNames) :: Text)
+                    (fromString toolsetName :: Text)
+                    (fromString exePath' :: Text)
                     (fromString <$> subcommand :: Maybe Text)
                     (fromString <$> aliases :: [Text])
 
@@ -407,6 +411,12 @@ putShellCompletionScript subcmd appNames config ScriptOptions{..} =
                 OutputNotHandle (OutputFile fn) ->
                     Text.atomicWriteFile fn completionScript
   where
+    exePath' :: FilePath
+    exePath' = fromMaybe (exePath appNames) overrideExecutablePath
+
+    toolsetName :: String
+    toolsetName = fromMaybe (usedName appNames) overrideToolsetName
+
     script = Dhall.extract Dhall.auto
         $(Dhall.TH.staticDhallExpression shellCompletionTemplate)
 

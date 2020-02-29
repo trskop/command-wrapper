@@ -40,7 +40,7 @@ import qualified Data.List as List
     , take
     )
 import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Maybe (Maybe(Just), fromMaybe)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Data.Monoid (Endo(Endo, appEndo), (<>), mconcat, mempty)
 import Data.String (String, fromString)
 import Data.Word (Word)
@@ -204,6 +204,11 @@ import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Menu as Menu
     , setInput
     )
 import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
+import qualified CommandWrapper.Toolset.InternalSubcommand.Utils as Options
+    ( dhallFlag
+    , helpFlag
+    , toolsetOption
+    )
 import qualified CommandWrapper.Toolset.Options.Optparse as Options
     ( bashCompleter
     , internalSubcommandParse
@@ -301,7 +306,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (manDirOption \d opts -> opts{manDir = Just d})
             )
 
-    , dhallFlag
+    , Options.dhallFlag switchToDhallMode
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
                 <*> many (alphaFlag <|> noAlphaFlag)
@@ -421,7 +426,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 )
             )
 
-    , helpFlag
+    , Options.helpFlag switchToHelpMode
 
     , pure mempty
     ]
@@ -515,12 +520,6 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     initFlag
         :: Options.Parser (Endo InitOptions -> Endo (ConfigMode Global.Config))
     initFlag = Options.flag mempty switchToInitMode (Options.long "init")
-
-    dhallFlag
-        :: Options.Parser
-            (Endo Dhall.Interpreter -> Endo (ConfigMode Global.Config))
-    dhallFlag =
-        Options.flag mempty switchToDhallMode (Options.long "dhall")
 
     alphaFlag :: HasField' "alpha" a Bool => Options.Parser (Endo a)
     alphaFlag = Options.flag' (setAlpha True) (Options.long "alpha")
@@ -758,9 +757,8 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
 
     toolsetOption :: Options.Parser (Endo InitOptions)
     toolsetOption =
-        Options.strOption (Options.long "toolset" <> Options.metavar "NAME")
-            <&> \toolsetName -> Endo \opts ->
-                    (opts :: InitOptions){toolsetName}
+        Options.toolsetOption Nothing <&> \toolsetName ->
+            Endo \opts -> (opts :: InitOptions){toolsetName}
 
     editFlag
         :: Options.Parser (Endo EditOptions -> Endo (ConfigMode Global.Config))
@@ -851,12 +849,6 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         parser = Options.eitherReader \case
             "" -> Left "Expected DIRECTORY, but got empty file path"
             fp -> Right (Endo (f fp))
-
-    helpFlag :: Options.Parser (Endo (ConfigMode Global.Config))
-    helpFlag = Options.flag mempty switchToHelpMode $ mconcat
-        [ Options.short 'h'
-        , Options.long "help"
-        ]
 
     execParser
         :: [Options.Parser (Endo (ConfigMode Global.Config))]

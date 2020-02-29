@@ -68,7 +68,6 @@ import qualified Options.Applicative as Options
     , info
     , long
     , metavar
-    , short
     , strArgument
     )
 import Safe (atMay, headMay, lastMay)
@@ -106,6 +105,9 @@ import qualified CommandWrapper.Toolset.ExternalSubcommand as External
     , getSearchPath
     )
 import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
+import qualified CommandWrapper.Toolset.InternalSubcommand.Utils as Options
+    ( helpFlag
+    )
 import qualified CommandWrapper.Toolset.Options.Optparse as Options
     ( internalSubcommandParse
     )
@@ -236,7 +238,7 @@ parseOptions appNames config options =
                 ( subcommandArg
                 <|> (manFlag <*> optional subcommandOrTopicArg)
                 <|> aliasesFlag
-                <|> helpFlag
+                <|> Options.helpFlag (switchTo $ SubcommandHelp "help")
                 )
   where
     switchTo :: (Config -> HelpMode Config) -> Endo (HelpMode Config)
@@ -256,11 +258,6 @@ parseOptions appNames config options =
     subcommandOrTopicArg :: Options.Parser String
     subcommandOrTopicArg =
         Options.strArgument (Options.metavar "SUBCOMMAND|TOPIC")
-
-    helpFlag :: Options.Parser (Endo (HelpMode Config))
-    helpFlag =
-        Options.flag mempty (switchTo $ SubcommandHelp "help")
-            (Options.long "help" <> Options.short 'h')
 
     subcommandArg :: Options.Parser (Endo (HelpMode Config))
     subcommandArg =

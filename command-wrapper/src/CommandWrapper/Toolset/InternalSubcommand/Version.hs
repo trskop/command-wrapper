@@ -26,10 +26,10 @@ import Control.Applicative ((<*>), (<|>), optional, pure)
 import Data.Bool (Bool(True), (||), not, otherwise)
 import Data.Foldable (length, null)
 import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<$>), (<&>))
+import Data.Functor (Functor, (<$>), (<&>), fmap)
 import qualified Data.List as List (drop, elem, filter, isPrefixOf, take)
 import Data.Maybe (Maybe(Just), fromMaybe)
-import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
+import Data.Monoid (Endo(Endo, appEndo), mempty)
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
 import Data.Version (showVersion)
@@ -55,14 +55,7 @@ import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import qualified Dhall
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Mainplate (applySimpleDefaults)
-import qualified Options.Applicative as Options
-    ( Parser
-    , defaultPrefs
-    , flag
-    , info
-    , long
-    , short
-    )
+import qualified Options.Applicative as Options (Parser, defaultPrefs, info)
 import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, headMay, lastMay)
 
@@ -96,6 +89,10 @@ import CommandWrapper.Core.Help.Pretty
     )
 import CommandWrapper.Core.Message (Result, out)
 import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
+import qualified CommandWrapper.Toolset.InternalSubcommand.Utils as Options
+    ( dhallFlag
+    , helpFlag
+    )
 import CommandWrapper.Toolset.InternalSubcommand.Version.Info
     ( PrettyVersion(..)
     , VersionInfo(..)
@@ -195,9 +192,9 @@ versionInfoFish VersionInfo{..} = Text.unlines
 parseOptions :: AppNames -> Config -> [String] -> IO (Endo (VersionMode Config))
 parseOptions appNames config options =
     execParser $ foldEndo
-        <$> (   dhallFlag
-            <|> shellOption
-            <|> helpFlag
+        <$> (   Options.dhallFlag switchToDhallFormat
+            <|> fmap switchToShellFormat Shell.shellOption
+            <|> Options.helpFlag switchToHelpMode
             )
         <*> optional outputOption
   where
@@ -213,13 +210,6 @@ parseOptions appNames config options =
         let shell = f `appEndo` Bash
         in  switchTo (FullVersion (ShellFormat shell))
 
-    dhallFlag, shellOption, helpFlag
-        :: Options.Parser (Endo (VersionMode Config))
-
-    dhallFlag = Options.flag mempty switchToDhallFormat (Options.long "dhall")
-
-    shellOption = switchToShellFormat <$> Shell.shellOption
-
     outputOption :: Options.Parser (Endo (VersionMode Config))
     outputOption = Options.outputOption <&> \o -> Endo \case
         FullVersion format _ a -> FullVersion format o a
@@ -229,11 +219,6 @@ parseOptions appNames config options =
     execParser parser =
         Options.internalSubcommandParse appNames config "version"
             Options.defaultPrefs (Options.info parser mempty) options
-
-    helpFlag = Options.flag mempty switchToHelpMode $ mconcat
-        [ Options.short 'h'
-        , Options.long "help"
-        ]
 
 versionSubcommandHelp
     :: AppNames

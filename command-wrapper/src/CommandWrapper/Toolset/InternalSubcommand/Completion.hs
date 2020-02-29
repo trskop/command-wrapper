@@ -47,7 +47,7 @@ import qualified Data.List as List
     , takeWhile
     )
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Monoid (Endo(Endo, appEndo), mconcat, mempty)
+import Data.Monoid (Endo(Endo, appEndo), mempty)
 import Data.Ord ((>))
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
@@ -98,7 +98,6 @@ import qualified Options.Applicative as Options
     , long
     , metavar
     , option
-    , short
     , strOption
     )
 import qualified Options.Applicative.Standard as Options (outputOption)
@@ -117,7 +116,7 @@ import qualified CommandWrapper.Core.Completion.EnvironmentVariables
     ( EnvironmentVariablesOptions(..)
     )
 import CommandWrapper.Core.Completion.FileSystem
-    ( EntryType(Directory)
+    ( EntryType(Directory, Executable)
     , defFileSystemOptions
     , fileSystemCompleter
     , outputLines
@@ -176,6 +175,11 @@ import CommandWrapper.Toolset.InternalSubcommand.Completion.Libraries
     , showDhallLibrary
     )
 import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
+import qualified CommandWrapper.Toolset.InternalSubcommand.Utils as Options
+    ( executableOption
+    , helpFlag
+    , toolsetOption
+    )
 import qualified CommandWrapper.Toolset.Options.Optparse as Options
     ( internalSubcommandParse
     )
@@ -812,6 +816,9 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
   | had "--library", "--dhall=" `List.isPrefixOf` pat =
       pure (List.filter (pat `List.isPrefixOf`) dhallLibraryOptions)
 
+  | had "--script", "--executable=" `List.isPrefixOf` pat =
+        executableCompleter "--executable="
+
   | hadOneOf ["--help", "-h"] =
         pure []
 
@@ -884,7 +891,13 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
 
     completionOptions = ["--shell=", "--subcommand=", "--"] <> outputOptions
 
-    scriptOptions = ["--alias=", "--shell=", "--subcommand="] <> outputOptions
+    scriptOptions =
+        [ "--alias="
+        , "--executable="
+        , "--shell="
+        , "--subcommand="
+        , "--toolset"
+        ] <> outputOptions
 
     shellOptions = ("--shell=" <>) <$> supportedShells
 
@@ -905,6 +918,15 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         fileSystemCompleter defFileSystemOptions
             { FileSystem.appendSlashToSingleDirectoryResult = True
             , FileSystem.expandTilde = not (null prefix)
+            , FileSystem.prefix
+            , FileSystem.word = List.drop (length prefix) pat
+            }
+
+    executableCompleter prefix =
+        fileSystemCompleter defFileSystemOptions
+            { FileSystem.appendSlashToSingleDirectoryResult = True
+            , FileSystem.entryType = Just Executable
+            , FileSystem.expandTilde = True
             , FileSystem.prefix
             , FileSystem.word = List.drop (length prefix) pat
             }
@@ -944,6 +966,8 @@ parseOptions appNames config arguments = do
             <$> scriptFlag
             <*> optional shellOption
             <*> optional outputOption
+            <*> optional toolsetOption
+            <*> optional executableOption
             <*> asum
                 [ dualFoldEndo
                     <$> aliasOption
@@ -1011,7 +1035,7 @@ parseOptions appNames config arguments = do
                 <*  execFlag
                 )
 
-        , helpFlag
+        , Options.helpFlag switchToHelpMode
 
         , updateCompletionOptions words $ foldEndo
             <$> optional indexOption
@@ -1236,6 +1260,30 @@ parseOptions appNames config arguments = do
                     mode ->
                         mode
 
+    toolsetOption :: Options.Parser (Endo (CompletionMode Global.Config))
+    toolsetOption = Options.toolsetOption Nothing <&> \toolsetName ->
+        Endo \case
+            ScriptMode opts@ScriptOptions{} cfg ->
+                ScriptMode
+                    (opts :: ScriptOptions)
+                        { overrideToolsetName = Just toolsetName
+                        }
+                    cfg
+            mode ->
+                mode
+
+    executableOption :: Options.Parser (Endo (CompletionMode Global.Config))
+    executableOption = Options.executableOption Nothing <&> \executablePath ->
+        Endo \case
+            ScriptMode opts@ScriptOptions{} cfg ->
+                ScriptMode
+                    (opts :: ScriptOptions)
+                        { overrideExecutablePath = Just executablePath
+                        }
+                    cfg
+            mode ->
+                mode
+
     outputOption :: Options.Parser (Endo (CompletionMode Global.Config))
     outputOption = updateOutput <$> Options.outputOption
 
@@ -1291,11 +1339,6 @@ parseOptions appNames config arguments = do
     suffixOption f = Endo . f <$> Options.strOption
         (Options.long "suffix" <> Options.metavar "STRING")
 
-    helpFlag = Options.flag mempty switchToHelpMode $ mconcat
-        [ Options.short 'h'
-        , Options.long "help"
-        ]
-
     execParser options parser =
         Options.internalSubcommandParse appNames config "completion"
             Options.defaultPrefs (Options.info parser mempty) options
@@ -1321,6 +1364,8 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "completion"
             <+> longOption "script"
             <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
+            <+> Pretty.brackets (longOptionWithArgument "toolset" "NAME")
+            <+> Pretty.brackets (longOptionWithArgument "executable" "PATH")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
             <+> Pretty.brackets
                 ( longOptionWithArgument "alias" "ALIAS"
@@ -1330,6 +1375,8 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "completion"
             <+> longOption "script"
             <+> Pretty.brackets (longOptionWithArgument "shell" "SHELL")
+            <+> Pretty.brackets (longOptionWithArgument "toolset" "NAME")
+            <+> Pretty.brackets (longOptionWithArgument "executable" "PATH")
             <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
             <+> longOptionWithArgument "subcommand" "SUBCOMMAND"
             <+> longOptionWithArgument "alias" "ALIAS"
@@ -1445,6 +1492,18 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , Pretty.reflow "Supported", metavar "SHELL", "values are: "
             , value "bash" <> ",", value "fish" <> ",", "and"
             , value "zsh" <> "."
+            ]
+
+        , optionDescription ["--toolset=NAME"]
+            [ Pretty.reflow "Set toolset"
+            , metavar "NAME"
+            , Pretty.reflow "for which the completion script will be invoked."
+            ]
+
+        , optionDescription ["--executable=PATH"]
+            [ Pretty.reflow "Set Command Wrapper executable"
+            , metavar "PATH"
+            , Pretty.reflow "that will be called in the completion script."
             ]
 
         , optionDescription ["--subcommand=SUBCOMMAND"]

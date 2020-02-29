@@ -37,7 +37,7 @@
         or point to `~/.nix-profile/libexec/command-wrapper` instead of
         executable directly.
 
-    -   Completion script that works in Nix with wrapper scripts:
+    -   (**DONE**) Completion script that works in Nix with wrapper scripts:
 
         ```
         TOOLSET completion --script [--shell=SHELL] [--toolset=NAME]
