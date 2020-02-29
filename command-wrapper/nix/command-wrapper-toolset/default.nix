@@ -28,13 +28,13 @@ in stdenv.mkDerivation rec {
     fetchurl {
       url = let
         repoUrl = "https://github.com/trskop/command-wrapper";
-        version = "0.1.0.0-rc2";
+        version = "0.1.0.0-rc3";
       in "${repoUrl}/releases/download/${version}/command-wrapper-${version}.tar.xz";
 
       # This value can be taken from `${url}.sha256sum`, and converted using:
       #
       #   nix-hash --type sha256 --to-base32 "${sha256inBase16}"
-      sha256 = "1fam4szk8i53db04qcvhsqp6gx76jfvca6fj8hl8ww2dcrc97l04";
+      sha256 = "03lf2jysjd45ji0vx7vnxl1b4d0dqs57r07s3lk7hx43c4g2xw8v";
     };
 
   dontUnpack = true;
@@ -66,18 +66,24 @@ in stdenv.mkDerivation rec {
       }"
 
     mkdir -p "$out/share/bash-completion/completions"
-    COMMAND_WRAPPER_INVOKE_AS="${toolset}" "$out/libexec/command-wrapper/command-wrapper" \
+    "$out/libexec/command-wrapper/command-wrapper" \
       completion --script --shell=bash \
+      --toolset="${toolset}" \
+      --executable="$out/bin/${toolset}" \
       --output="$out/share/bash-completion/completions/command-wrapper.bash"
 
     mkdir -p "$out/share/fish/vendor_completions.d"
-    COMMAND_WRAPPER_INVOKE_AS="${toolset}" "$out/libexec/command-wrapper/command-wrapper" \
+    "$out/libexec/command-wrapper/command-wrapper" \
       completion --script --shell=fish \
+      --toolset="${toolset}" \
+      --executable="$out/bin/${toolset}" \
       --output="$out/share/fish/vendor_completions.d/command-wrapper.fish"
 
     mkdir -p "$out/share/zsh/vendor_completions"
-    COMMAND_WRAPPER_INVOKE_AS="${toolset}" "$out/libexec/command-wrapper/command-wrapper" \
+    "$out/libexec/command-wrapper/command-wrapper" \
       completion --script --shell=zsh \
+      --toolset="${toolset}" \
+      --executable="$out/bin/${toolset}" \
       --output="$out/share/zsh/vendor_completions/_command-wrapper"
 
     mkdir -p "$out/etc/command-wrapper/lib"
