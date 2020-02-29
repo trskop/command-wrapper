@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Completion.LibraryImports
+-- Module:      $Header$
 -- Description: Static Dhall expressions to satisfy TH stage restriction.
 -- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
@@ -11,7 +11,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Static Dhall expressions to satisfy TH stage restriction.
-module CommandWrapper.Internal.Subcommand.Completion.DhallExpressions
+module CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions
     (
     -- * Dhall Prelude Library
       preludeV11_1_0Content

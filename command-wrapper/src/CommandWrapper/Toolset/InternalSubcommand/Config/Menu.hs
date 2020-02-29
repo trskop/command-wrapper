@@ -1,5 +1,5 @@
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Config.Menu
+-- Module:      $Header$
 -- Description: Simple terminal selection tool.
 -- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
@@ -9,7 +9,7 @@
 -- Portability: GHC specific language extensions; POSIX.
 --
 -- Simple terminal selection tool.
-module CommandWrapper.Internal.Subcommand.Config.Menu
+module CommandWrapper.Toolset.InternalSubcommand.Config.Menu
     ( MenuOptions(..)
     , defMenuOptions
     , menu
@@ -52,7 +52,7 @@ import CommandWrapper.Config.Global (Config(Config, colourOutput))
 import CommandWrapper.Core.Config.ColourOutput (shouldUseColours)
 import CommandWrapper.Core.Environment (AppNames(AppNames))
 import CommandWrapper.Core.Message (withTerminal)
-import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput(..))
+import CommandWrapper.Toolset.InternalSubcommand.Config.IsInput (IsInput(..))
 
 data MenuOptions = MenuOptions
     { input :: Input

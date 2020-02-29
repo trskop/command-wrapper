@@ -9,7 +9,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Generate Dhall configuration file with XDG Directories.
-module CommandWrapper.Internal.Subcommand.Config.UserConfig
+module CommandWrapper.Toolset.InternalSubcommand.Config.UserConfig
     ( Options(..)
     , Output(..)
     , dhall
@@ -67,7 +67,7 @@ import System.Exit (die)
 
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
 import CommandWrapper.Core.Dhall as Dhall (hPutExpr)
-import CommandWrapper.Internal.Subcommand.Config.Paths (Paths)
+import CommandWrapper.Toolset.InternalSubcommand.Config.Paths (Paths)
 
 data Output = Plain | DhallExpression | DhallType
 

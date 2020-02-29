@@ -11,7 +11,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Implementation of internal command named @config@.
-module CommandWrapper.Internal.Subcommand.Config
+module CommandWrapper.Toolset.InternalSubcommand.Config
     ( config
     , configSubcommandHelp
     , configSubcommandCompleter
@@ -122,10 +122,13 @@ import CommandWrapper.Core.Message
 --  , errorMsg
     , out
     )
-import qualified CommandWrapper.External as External (findSubcommands)
-import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput, parseInput)
-import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
+import qualified CommandWrapper.Toolset.ExternalSubcommand as External
+    ( findSubcommands
+    )
+import CommandWrapper.Toolset.InternalSubcommand.Config.IsInput
+    ( IsInput, parseInput
+    )
+import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     ( Bash(..)
     , BashMode(..)
     , Diff(..)
@@ -180,26 +183,27 @@ import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
     , setShowType
     , toText
     )
-import CommandWrapper.Internal.Subcommand.Config.Edit
+import CommandWrapper.Toolset.InternalSubcommand.Config.Edit
     ( EditOptions(..)
     , WhatToEdit(..)
     , defEditOptions
     , edit
     )
-import CommandWrapper.Internal.Subcommand.Config.Init
+import CommandWrapper.Toolset.InternalSubcommand.Config.Init
     ( InitOptions(..)
     , defInitOptions
     , init
     )
-import CommandWrapper.Internal.Subcommand.Config.Menu
+import CommandWrapper.Toolset.InternalSubcommand.Config.Menu
     ( MenuOptions(..)
     , defMenuOptions
     , menu
     )
-import qualified CommandWrapper.Internal.Subcommand.Config.Menu as Menu
+import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Menu as Menu
     ( Input(InputItems)
     , setInput
     )
+import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
 import qualified CommandWrapper.Toolset.Options.Optparse as Options
     ( bashCompleter
     , internalSubcommandParse

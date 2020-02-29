@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Help
+-- Module:      $Header$
 -- Description: Implementation of internal command named help
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions; POSIX.
 --
 -- Implementation of internal command named @help@.
-module CommandWrapper.Internal.Subcommand.Help
+module CommandWrapper.Toolset.InternalSubcommand.Help
     ( help
     , helpSubcommandHelp
     , helpSubcommandCompleter
@@ -100,12 +100,12 @@ import CommandWrapper.Core.Message
     , hPutDoc
     , out
     )
-import qualified CommandWrapper.External as External
+import qualified CommandWrapper.Toolset.ExternalSubcommand as External
     ( executeCommand
     , findSubcommands
     , getSearchPath
     )
-import CommandWrapper.Internal.Utils (runMain)
+import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
 import qualified CommandWrapper.Toolset.Options.Optparse as Options
     ( internalSubcommandParse
     )

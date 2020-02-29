@@ -1,5 +1,6 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Version.Info
+-- Module:      $Header$
 -- Description: Data type representing Command Wrapper version information.
 -- Copyright:   (c) 2018 Peter Trško
 -- License:     BSD3
@@ -9,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Data type representing Command Wrapper version information.
-module CommandWrapper.Internal.Subcommand.Version.Info
+module CommandWrapper.Toolset.InternalSubcommand.Version.Info
     ( VersionInfo(..)
     , PrettyVersion(..)
     , VersionInfoField(..)
@@ -17,7 +18,17 @@ module CommandWrapper.Internal.Subcommand.Version.Info
     )
   where
 
+import Prelude (error, fromIntegral)
+
+import Control.Monad (fail)
+import Data.Bool (otherwise)
+import Data.Eq (Eq, (/=), (==))
+import Data.Function ((.), const)
+import Data.Functor (fmap)
 import qualified Data.List as List (dropWhile, takeWhile)
+import Data.Int (Int)
+import Data.Semigroup ((<>))
+import Data.Ord (Ord)
 import Data.Tuple (snd)
 import Data.Version
     ( Version(versionBranch)
@@ -27,6 +38,7 @@ import Data.Version
     )
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
+import Text.Show (Show, show)
 import Text.ParserCombinators.ReadP (readP_to_S)
 
 import Data.Text.Prettyprint.Doc (Pretty(pretty))

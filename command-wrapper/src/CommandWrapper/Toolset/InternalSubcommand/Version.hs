@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Version
+-- Module:      $Header$
 -- Description: Implementation of internal command named version
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Implementation of internal command named @version@.
-module CommandWrapper.Internal.Subcommand.Version
+module CommandWrapper.Toolset.InternalSubcommand.Version
     ( VersionInfo(..)
     , PrettyVersion(..)
     , version
@@ -95,15 +95,13 @@ import CommandWrapper.Core.Help.Pretty
     , usageSection
     )
 import CommandWrapper.Core.Message (Result, out)
---import qualified CommandWrapper.Core.Message as Message (dieTooManyArguments)
---import qualified CommandWrapper.External as External (executeCommand)
-import CommandWrapper.Internal.Subcommand.Version.Info
+import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
+import CommandWrapper.Toolset.InternalSubcommand.Version.Info
     ( PrettyVersion(..)
     , VersionInfo(..)
     , VersionInfoField(..)
     , versionQQ
     )
-import CommandWrapper.Internal.Utils (runMain)
 import qualified CommandWrapper.Toolset.Options.Optparse as Options
     ( internalSubcommandParse
     )

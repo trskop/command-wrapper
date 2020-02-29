@@ -1,7 +1,7 @@
 -- |
--- Module:      Main.Paths
+-- Module:      $Header$
 -- Description: Generate Dhall configuration file with XDG Directories.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -9,7 +9,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Generate Dhall configuration file with XDG Directories.
-module CommandWrapper.Internal.Subcommand.Config.Paths
+module CommandWrapper.Toolset.InternalSubcommand.Config.Paths
     ( Paths(..)
     , Toolset(..)
     , mk

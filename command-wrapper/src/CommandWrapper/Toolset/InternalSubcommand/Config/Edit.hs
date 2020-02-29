@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Config.Edit
+-- Module:      $Header$
 -- Description: Invoke editor.
 -- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions; POSIX.
 --
 -- Invoke editor.
-module CommandWrapper.Internal.Subcommand.Config.Edit
+module CommandWrapper.Toolset.InternalSubcommand.Config.Edit
     ( EditOptions(..)
     , WhatToEdit(..)
     , defEditOptions
@@ -45,7 +45,7 @@ import System.Editor
 import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Core.Message (errorMsg)
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
-import CommandWrapper.External (getSubcommandConfigPathToEdit)
+import CommandWrapper.Toolset.ExternalSubcommand (getSubcommandConfigPathToEdit)
 
 
 data EditOptions = EditOptions

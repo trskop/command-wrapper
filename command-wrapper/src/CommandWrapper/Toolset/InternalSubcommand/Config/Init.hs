@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Config.Init
+-- Module:      $Header$
 -- Description: Initialisation capabilities of config subcommand.
 -- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
@@ -16,7 +16,7 @@
 -- * Create config and library directories.
 -- * Create initial configuration for toolset and Command Wrapper's external
 --   subcommands.
-module CommandWrapper.Internal.Subcommand.Config.Init
+module CommandWrapper.Toolset.InternalSubcommand.Config.Init
     ( InitOptions(..)
     , defInitOptions
     , init
@@ -73,7 +73,7 @@ import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Core.Environment (AppNames(AppNames, exePath, usedName))
 import CommandWrapper.Core.Help.Pretty (command)
 import CommandWrapper.Core.Message (errorMsg, out)
-import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
+import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     ( Freeze(input, output)
     , Input(InputFile)
     , Output(OutputBasedOnInput)

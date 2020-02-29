@@ -13,7 +13,7 @@
 -- Dhall operations provided by the config command.  This module started its
 -- life as a copy of @Dhall.Main@ from @dhall-haskell@ package, hence the
 -- copyright.
-module CommandWrapper.Internal.Subcommand.Config.Dhall
+module CommandWrapper.Toolset.InternalSubcommand.Config.Dhall
     (
     -- * Interpreter
       Interpreter(..)
@@ -228,7 +228,7 @@ import qualified CommandWrapper.Core.Config.Verbosity as Verbosity
     )
 import qualified CommandWrapper.Core.Dhall as Dhall (hPutDoc, hPutExpr)
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
-import CommandWrapper.Internal.Subcommand.Config.IsInput (IsInput(..))
+import CommandWrapper.Toolset.InternalSubcommand.Config.IsInput (IsInput(..))
 import Data.Generics.Internal.VL.Lens ((^.))
 
 

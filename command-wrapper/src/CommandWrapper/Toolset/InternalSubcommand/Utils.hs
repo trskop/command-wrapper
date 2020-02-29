@@ -1,7 +1,8 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Utils
+-- Module:      $Header$
 -- Description: Utilities used by internal subcommands.
--- Copyright:   (c) 2018-2019 Peter Trško
+-- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -9,12 +10,16 @@
 -- Portability: GHC specific language extensions.
 --
 -- Utilities used by internal subcommands.
-module CommandWrapper.Internal.Utils
+module CommandWrapper.Toolset.InternalSubcommand.Utils
     ( runMain
     )
   where
 
+import Control.Applicative (pure)
+import Data.Function ((.))
+import Data.Functor (Functor)
 import Data.Monoid (Endo)
+import System.IO (IO)
 
 import qualified Mainplate (noConfigToRead, runAppWith)
 

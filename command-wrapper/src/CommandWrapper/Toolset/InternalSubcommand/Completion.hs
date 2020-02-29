@@ -1,7 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Completion
+-- Module:      $Header$
 -- Description: Implementation of internal subcommand that provides command
 --              line completion and support for IDE-like functionality.
 -- Copyright:   (c) 2018-2020 Peter Trško
@@ -13,7 +13,7 @@
 --
 -- Implementation of internal subcommand that provides command line completion
 -- and support for IDE-like functionality.
-module CommandWrapper.Internal.Subcommand.Completion
+module CommandWrapper.Toolset.InternalSubcommand.Completion
     ( completion
     , completionSubcommandCompleter
     , completionSubcommandHelp
@@ -128,6 +128,12 @@ import CommandWrapper.Core.Completion.FileSystem
 import qualified CommandWrapper.Core.Completion.FileSystem as FileSystem
     ( FileSystemOptions(..)
     )
+import CommandWrapper.Core.Config.Alias (Alias(alias), applyAliasCompletion)
+import CommandWrapper.Core.Config.Shell
+    ( HasShell(updateShell)
+    , Shell(Bash)
+    , shellOption
+    )
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Help.Pretty
     ( globalOptionsHelp
@@ -146,25 +152,18 @@ import qualified CommandWrapper.Core.Options.Optparse as Options
     ( splitArguments
     , splitArguments'
     )
-import qualified CommandWrapper.External as External
+import qualified CommandWrapper.Toolset.ExternalSubcommand as External
     ( executeCommand
     , executeCommandWith
     , findSubcommands
     )
-import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
+import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     ( Exec(arguments)
     , Input(..)
     , defExec
     , exec
     )
-import CommandWrapper.Core.Config.Alias (Alias(alias), applyAliasCompletion)
-import CommandWrapper.Core.Config.Shell
-    ( HasShell(updateShell)
-    , Shell(Bash)
-    , shellOption
-    )
-import CommandWrapper.Internal.Utils (runMain)
-import CommandWrapper.Internal.Subcommand.Completion.Libraries
+import CommandWrapper.Toolset.InternalSubcommand.Completion.Libraries
     ( ImportOrContent(Content, Import)
     , Library(..)
     , LibraryOptions(..)
@@ -176,6 +175,7 @@ import CommandWrapper.Internal.Subcommand.Completion.Libraries
     , putShellCompletionScript
     , showDhallLibrary
     )
+import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
 import qualified CommandWrapper.Toolset.Options.Optparse as Options
     ( internalSubcommandParse
     )

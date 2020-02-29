@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.External
+-- Module:      $Header$
 -- Description: Find and execute external subcommands.
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Find and execute external subcommands.
-module CommandWrapper.External
+module CommandWrapper.Toolset.ExternalSubcommand
     ( Command
     , run
     , executeCommand

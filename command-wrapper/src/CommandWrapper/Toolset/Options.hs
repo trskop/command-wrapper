@@ -42,8 +42,13 @@ import CommandWrapper.Core.Config.Alias (Alias(..), applyAlias)
 import CommandWrapper.Core.Environment.AppNames (AppNames)
 import CommandWrapper.Core.Options.GlobalMode
 import CommandWrapper.Core.Options.Optparse
-import qualified CommandWrapper.External as External (Command)
-import qualified CommandWrapper.Internal as Internal (Command(..), command)
+import qualified CommandWrapper.Toolset.ExternalSubcommand as External
+    ( Command
+    )
+import qualified CommandWrapper.Toolset.InternalSubcommand as Internal
+    ( Command(..)
+    , command
+    )
 import CommandWrapper.Toolset.Options.Optparse
 
 

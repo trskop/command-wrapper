@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Completion.DhallLibraries
+-- Module:      $Header$
 -- Description: Print requested library to stdout or write it into a file.
 -- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
@@ -11,7 +11,7 @@
 -- Portability: GHC specific language extensions; POSIX.
 --
 -- Print requested library to stdout or write it into a file.
-module CommandWrapper.Internal.Subcommand.Completion.Libraries
+module CommandWrapper.Toolset.InternalSubcommand.Completion.Libraries
     (
     -- * Script and Dhall Libraries
       LibraryOptions(..)
@@ -82,10 +82,11 @@ import CommandWrapper.Core.Config.Shell
     , Shell(..)
     )
 import CommandWrapper.Core.Environment (AppNames(exePath, usedName))
-import qualified CommandWrapper.Internal.Subcommand.Config.Dhall as Dhall
+import CommandWrapper.Core.Message (errorMsg)
+import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     ( hPutExpr
     )
-import CommandWrapper.Internal.Subcommand.Completion.DhallExpressions
+import CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions
     ( commandWrapperContent
     , commandWrapperImport
     , execContent
@@ -100,7 +101,6 @@ import CommandWrapper.Internal.Subcommand.Completion.DhallExpressions
     , preludeV14_0_0Import
     , shellCompletionTemplate
     )
-import CommandWrapper.Core.Message (errorMsg)
 
 
 -- TODO:

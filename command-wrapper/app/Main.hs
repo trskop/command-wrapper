@@ -107,8 +107,8 @@ import qualified CommandWrapper.Core.Help.Pretty as Help
     , value
     )
 import CommandWrapper.Core.Message (Result(..), errorMsg)
-import qualified CommandWrapper.External as External
-import qualified CommandWrapper.Internal as Internal
+import qualified CommandWrapper.Toolset.ExternalSubcommand as External
+import qualified CommandWrapper.Toolset.InternalSubcommand as Internal
 import qualified CommandWrapper.Toolset.Options as Options
 
 import Paths_command_wrapper (version)

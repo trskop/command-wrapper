@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
--- Module:      CommandWrapper.Internal.Subcommand.Config.IsInput
+-- Module:      $Header$
 -- Description: Class of data types that can represent FilePath.
--- Copyright:   (c) 2019 Peter Trško
+-- Copyright:   (c) 2019-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions; POSIX.
 --
 -- Class of data types that can represent 'FilePath'.
-module CommandWrapper.Internal.Subcommand.Config.IsInput
+module CommandWrapper.Toolset.InternalSubcommand.Config.IsInput
     ( IsInput(..)
     )
   where

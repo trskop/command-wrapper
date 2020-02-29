@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE QuasiQuotes #-}
 -- |
--- Module:      CommandWrapper.Internal
+-- Module:      $Header$
 -- Description: Internal commands supported by CommandWrapper
 -- Copyright:   (c) 2018-2020 Peter Trško
 -- License:     BSD3
@@ -12,7 +12,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Internal commands supported by CommandWrapper.
-module CommandWrapper.Internal
+module CommandWrapper.Toolset.InternalSubcommand
     (
     -- * Internal Commands
       Command(..)
@@ -66,7 +66,7 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Core.Environment (AppNames, subcommandProtocolVersion)
 import CommandWrapper.Core.Message (Result)
-import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
+import qualified CommandWrapper.Toolset.InternalSubcommand.Completion as Subcommand
     ( Completer
     , CompletionConfig(..)
     , InternalCompleter
@@ -74,17 +74,17 @@ import qualified CommandWrapper.Internal.Subcommand.Completion as Subcommand
     , completionSubcommandCompleter
     , completionSubcommandHelp
     )
-import qualified CommandWrapper.Internal.Subcommand.Config as Subcommand
+import qualified CommandWrapper.Toolset.InternalSubcommand.Config as Subcommand
     ( config
     , configSubcommandCompleter
     , configSubcommandHelp
     )
-import qualified CommandWrapper.Internal.Subcommand.Help as Subcommand
+import qualified CommandWrapper.Toolset.InternalSubcommand.Help as Subcommand
     ( help
     , helpSubcommandCompleter
     , helpSubcommandHelp
     )
-import qualified CommandWrapper.Internal.Subcommand.Version as Subcommand
+import qualified CommandWrapper.Toolset.InternalSubcommand.Version as Subcommand
     ( VersionInfo(..)
     , PrettyVersion(..)
     , version
@@ -92,7 +92,7 @@ import qualified CommandWrapper.Internal.Subcommand.Version as Subcommand
     , versionSubcommandCompleter
     , versionSubcommandHelp
     )
-import CommandWrapper.Internal.Utils (runMain)
+import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
 
 import Paths_command_wrapper (version) -- Temporary
 
