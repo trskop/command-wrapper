@@ -2,7 +2,7 @@
 
 ## Command Wrapper
 
-*   **Support for installing via Nix**:
+*   (**IN PROGRESS**) **Support for installing via Nix**:
 
     -   How to set system config directory in Nix?  (See also **Fallback
         configuration files for subcommands.**)  There are few ideas:
@@ -90,6 +90,9 @@
     *   User level configuration.
     *   Local AKA project-level configuration.
 
+    This may be related to parametrisation of `main` function.  That way we
+    could avoid hardcoding paths all over the place.
+
 *   **Pipe help message to pager** if on terminal and the message is too long.
 
 *   **Configuration for colours**:
@@ -106,6 +109,17 @@
 
     -   Not search `PATH` for subcommands.
 
+*   (**IN PROGRESS**) **Configurable/extensible `main`**:
+
+    -   Move toolset `main` function into `CommandWrapper.Toolset.Main`.
+        (**DONE**)
+
+    -   Parametrise toolset `main` function with options that specify how it
+        should behave.
+
+    -   Pass at least following parameter: toolset version so that it doesn't
+        have to be the same as `command-wrapper` library.
+
 *   (**IN PROGRESS**) **Restructure library into three**:
 
     -   `command-wrapper-core` that uses `CommandWrapper.Core` module prefix.
@@ -116,13 +130,17 @@
 
     Steps:
 
-    1.  Reorganise modules so that they fit into the hierarchy mentioned above:
+    1.  (**IN PROGRESS**) Reorganise modules so that they fit into the
+        hierarchy mentioned above:
 
         -   CommandWrapper.Core
-        -   CommandWrapper.Toolset
         -   CommandWrapper.Subcommand
+        -   CommandWrapper.Toolset
 
-    2.  Split them into following packages where
+        Some modules will have to be split, moved, reorganised to better fit
+        the above structure.
+
+    2.  (**DONE**) Split them into following packages where
 
         -   `command-wrapper-core` that contains all `CommandWrapper.Core`
             modules.
