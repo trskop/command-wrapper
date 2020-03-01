@@ -42,6 +42,10 @@
 --  -- Value of `aliases` would be `[ "foo" ]`.
 --  → Text
 --  -- ^ Generated shell script.
+--
+-- When Command Wrapper is invoked by command line completion we pass
+-- `--verbosity=silent` so that error messages do not interfere with
+-- completion.
 
 let bashTemplate =
         λ(name : Text)
@@ -86,7 +90,8 @@ let bashTemplate =
                 COMP_WORDBREAKS="''${COMP_WORDBREAKS//:}"
                 local IFS=$'\n'
                 mapfile -t COMPREPLY < <(
-                    COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion \
+                    COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" --verbosity=silent \
+                        completion \
                         --index="''${COMP_CWORD}" ${subcommandOption}\
                         --shell=bash \
                         -- "''${COMP_WORDS[@]}"
@@ -140,7 +145,7 @@ let fishTemplate =
                 set -l cn (commandline --tokenize --cut-at-cursor --current-process)
                 set -l cn (count $cn)
                 set -l tmpline --index=$cn ${subcommandOption}--shell=fish -- $cl
-                for opt in (env COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion $tmpline)
+                for opt in (env COMMAND_WRAPPER_INVOKE_AS='${toolset}' --verbosity=silent "${command}" completion $tmpline)
                   if test -d $opt
                     echo -E "$opt/"
                   else
@@ -188,7 +193,8 @@ let zshTemplate =
             local index=$((CURRENT - 1))
 
             IFS=$'\n' completions=($(
-                COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" completion \
+                COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" --verbosity=silent \
+                    completion \
                     --index="''${index}" ${subcommandOption}\
                     --shell=zsh \
                     -- "''${words[@]}"

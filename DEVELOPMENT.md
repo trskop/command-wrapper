@@ -134,6 +134,11 @@
     }
     ```
 
+    Be aware that completion is invoked by the shell, therefore, things like
+    verbosity and other settings are not passed to it from command line.  It
+    may be a good idea to add `--verbosity=annoying` to command wrapper call
+    embedded in the completion function.
+
 4.  Open another terminal to besides the current one so that both can be seen.
     Run following in that new terminal:
 
