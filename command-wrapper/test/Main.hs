@@ -25,7 +25,7 @@ import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit ((@?=), testCase, assertFailure)
 import System.Process (runInteractiveProcess, waitForProcess)
 
-import CommandWrapper.Internal.Subcommand.Completion.Libraries
+import CommandWrapper.Toolset.InternalSubcommand.Completion.Libraries
     ( DhallLibrary(..)
     , ImportOrContent(..)
     , showDhallLibrary
