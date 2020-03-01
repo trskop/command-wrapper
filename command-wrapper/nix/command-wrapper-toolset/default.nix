@@ -131,7 +131,7 @@ in stdenv.mkDerivation rec {
       "$out/libexec/command-wrapper/command-wrapper" \
         completion --script --shell="''${shell}" \
         --toolset="${toolset}" \
-        --executable="$out/bin/${toolset}" \
+        --executable="$out/bin/command-wrapper" \
         --output="''${completionFile}"
     done
 
