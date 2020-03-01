@@ -33,12 +33,12 @@ packages:
   original:
     hackage: verbosity-0.4.0.0
 - completed:
-    hackage: prettyprinter-1.5.1@sha256:fca87c3e2611d3499a0341a59857e9b424a23f31646e4737d535a18582284f96,5375
+    hackage: prettyprinter-1.6.1@sha256:11876ec94a79048e1d2942a99bfaa6f2be5222eafeedac6a9545673a79465009,5459
     pantry-tree:
-      size: 2106
-      sha256: 86fd583112db41bac5ac9ecf258ec402ad615253e9c5eabc56ec127bfb94c096
+      size: 2194
+      sha256: b8ddc48e267da0bc8da3082929b478df80c3c986865394f93e7bc7631c0031cf
   original:
-    hackage: prettyprinter-1.5.1
+    hackage: prettyprinter-1.6.1
 - completed:
     hackage: dhall-1.30.0@sha256:466fd3d3dcd074ce5b4fc0a11ce1232bb6258e9857b03dddcf09328c78c7ced3,32175
     pantry-tree:
@@ -61,12 +61,12 @@ packages:
   original:
     hackage: dhall-json-1.6.2
 - completed:
-    hackage: aeson-yaml-1.0.5.0@sha256:5786f021c1e088d6a5aa259120ec5b1f22bb1757f4427c1a87e0513d00f17f31,1975
+    hackage: aeson-yaml-1.0.6.0@sha256:bdf6d67265d9a3e251122fa53d2f0f19e0b9865d928e5d6efb77d4754ca3f6cb,1975
     pantry-tree:
-      size: 450
-      sha256: abc06de688cab0956ed76bfb88e8c845158d2f3debf9812cb002d9f4db5d3695
+      size: 451
+      sha256: 959322f98d04221b5680efafb75a9009fd3c5a2d737d46330be9c466091619f7
   original:
-    hackage: aeson-yaml-1.0.5.0
+    hackage: aeson-yaml-1.0.6.0
 - completed:
     cabal-file:
       size: 2396
