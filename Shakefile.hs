@@ -36,6 +36,7 @@
 module Main (main)
   where
 
+import Control.Monad (unless)
 import Data.Functor ((<&>))
 import System.Exit (die)
 
@@ -86,6 +87,16 @@ thisGitRepo directory ThisGitRepo{} = do
             pure hash
         else
             ("Workspace dirty " <>) . show <$> liftIO getCurrentTime
+
+newtype HaveDockerImage = HaveDockerImage ()
+  deriving newtype (Binary, Eq, Hashable, NFData, Show)
+
+type instance RuleResult HaveDockerImage = Bool
+
+haveDockerImage :: String -> HaveDockerImage -> Action Bool
+haveDockerImage repoAndTag HaveDockerImage{} = do
+    Stdout ids <- cmd "docker images" [repoAndTag, "--format={{.ID}}"]
+    pure (not (null @[] @Char ids))
 
 data Directories = Directories
     { home :: FilePath
@@ -142,9 +153,12 @@ shakeMain Directories{..} opts = shakeArgs opts do
         staticManDir = staticOutDistShare </> "man"
         staticDocDir = staticOutDistShare </> "doc" </> "command-wrapper"
 
-        version = "0.1.0.0-rc4"
+        version = "0.1.0.0-rc5"
         staticTarball =
             staticOut </> "command-wrapper-" <> version <.> "tar.xz"
+
+        staticBuildImage = "ghc-musl:v4-libgmp-ghc865-extended"
+        loadStaticBuildImageNix = "load-docker-image-ghc-musl.nix"
 
         manPages :: ManDirs -> [FilePath]
         manPages ManDirs{..} =
@@ -220,6 +234,9 @@ shakeMain Directories{..} opts = shakeArgs opts do
         need [src]
         cmd_ [Cwd dir, FileStdout out] "sha256sum" [takeFileName src]
 
+    "build" ~>
+        cmd_ "stack" ["build", "--flag=command-wrapper:nix"]
+
     hasThisRepoChanged <- addOracle (thisGitRepo projectRoot)
     binaries libexecDir &%> \outs -> do
         _ <- hasThisRepoChanged (ThisGitRepo ())
@@ -233,8 +250,37 @@ shakeMain Directories{..} opts = shakeArgs opts do
             , "--flag=command-wrapper:nix"
             ]
 
+    staticOut </> loadStaticBuildImageNix %> \out ->
+        writeFile' out "\
+            \{ pkgs ? import <nixpkgs> { } }:\n\
+            \\n\
+            \let\n\
+            \  ghc-musl-repo = pkgs.fetchFromGitHub {\n\
+            \    owner = \"trskop\";\n\
+            \    repo = \"ghc-musl\";\n\
+            \    rev = \"f398b10761f4a30dda0ba4b221df1944861d9322\";\n\
+            \    sha256 = \"1bbl1nfh89wky0wmwx6i6r8483pnn96999znal51y5flrqg5dlar\";\n\
+            \  };\
+            \\
+            \  dockerImage = (import \"${ghc-musl-repo}/extend.nix\" { }).image;\n\
+            \\
+            \  docker = \"${pkgs.docker}/bin/docker\";\n\
+            \\n\
+            \in pkgs.writeScript \"load-docker-image-ghc-musl.bash\" ''\n\
+            \    #!/usr/bin/env bash\n\
+            \\n\
+            \    docker load --input \"${dockerImage}\"\n\
+            \  ''\n"
+
+    haveDockerImageForStaticBuild <- addOracle (haveDockerImage staticBuildImage)
     binaries staticLibexecDir &%> \outs -> do
         _ <- hasThisRepoChanged (ThisGitRepo ())
+        haveImage <- haveDockerImageForStaticBuild (HaveDockerImage ())
+
+        unless haveImage do
+            need [staticOut </> loadStaticBuildImageNix]
+            cmd_ [Cwd staticOut] "nix-build" ["./" <> loadStaticBuildImageNix]
+            cmd (staticOut </> "result")
 
         let dst = takeDirectory (head outs)
         liftIO (createDirectoryIfMissing True dst)
@@ -249,6 +295,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
             , "--flag=command-wrapper-core:static"
             , "--flag=command-wrapper-subcommand:static"
             , "--flag=command-wrapper:static"
+            , "command-wrapper"
             ]
 
     manPagePatterns (mkManDirs manDir) |%> \out -> do
