@@ -10,6 +10,7 @@ resolver: lts-14.27
 packages:
   - './command-wrapper-core/'
   - './command-wrapper-subcommand/'
+  - './command-wrapper-subcommand-shake/'
   - './command-wrapper/'
 
 extra-deps:

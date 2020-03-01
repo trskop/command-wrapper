@@ -1,0 +1,84 @@
+name: &this command-wrapper-subcommand-shake
+version: 0.1.0.0
+synopsis: |
+  Command wrapper for building modular toolsets with uniform UI: Subcommand in Shake
+description: |
+  Command wrapper for building modular toolsets with uniform UI: Subcommand in Shake
+github: trskop/command-wrapper
+license: BSD3
+license-file: LICENSE
+author: Peter Trško
+maintainer: peter.trsko@gmail.com
+copyright: (c) 2020 Peter Trško
+category: Tools
+
+flags:
+  static:
+    description: Build static executables
+    manual: true
+    default: false
+
+extra-source-files:
+  - README.md
+
+default-extensions:
+  - BlockArguments
+  - DefaultSignatures
+  - DeriveAnyClass
+  - DeriveFunctor
+  - DeriveGeneric
+  - DerivingStrategies
+  - DuplicateRecordFields
+  - FlexibleContexts
+  - FlexibleInstances
+  - GeneralizedNewtypeDeriving
+  - InstanceSigs
+  - LambdaCase
+  - MultiWayIf
+  - NamedFieldPuns
+  - NoImplicitPrelude
+  - OverloadedStrings
+  - PatternSynonyms
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TupleSections
+  - TypeApplications
+  - TypeFamilies
+  - TypeOperators
+
+dependencies:
+  - command-wrapper-core
+  - command-wrapper-subcommand
+
+  - base
+
+  - generic-lens
+  - shake
+
+ghc-options: ["-Wall", "-Wcompat"]
+
+library:
+  source-dirs: src
+
+  when:
+    - condition: flag(static)
+      ghc-options:
+        - -static
+        - -O2
+        - -fPIC
+
+tests:
+  command-wrapper-subcommand-tests:
+    source-dirs: test
+    main: Main.hs
+    dependencies:
+      - *this
+
+      - call-stack
+      - deepseq
+      - tasty
+      - tasty-hunit
+#     - tasty-program
+    ghc-options: ["-threaded", "-rtsopts", "-with-rtsopts=-N"]

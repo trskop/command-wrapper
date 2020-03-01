@@ -68,9 +68,14 @@ thisGitRepo directory ThisGitRepo{} = do
         , "Shakefile.hs"
         , "command-wrapper-core/package.yaml"
         , "command-wrapper-core/src/"
+        , "command-wrapper-core/test/"
+        , "command-wrapper-subcommand-shake/package.yaml"
+        , "command-wrapper-subcommand-shake/src/"
+        , "command-wrapper-subcommand-shake/test/"
         , "command-wrapper-subcommand/dhall/"
         , "command-wrapper-subcommand/package.yaml"
         , "command-wrapper-subcommand/src/"
+        , "command-wrapper-subcommand/test/"
         , "command-wrapper/app-cd/"
         , "command-wrapper/app-exec/"
         , "command-wrapper/app-skel/"
@@ -80,6 +85,7 @@ thisGitRepo directory ThisGitRepo{} = do
         , "command-wrapper/man/"
         , "command-wrapper/package.yaml"
         , "command-wrapper/src/"
+        , "command-wrapper/test/"
         ]
     if null @[] @Char status
         then do
