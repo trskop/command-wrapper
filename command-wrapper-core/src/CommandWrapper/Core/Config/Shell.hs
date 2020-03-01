@@ -23,7 +23,7 @@ module CommandWrapper.Core.Config.Shell
 import Data.Coerce (coerce)
 import Data.Either (Either(Left, Right))
 import Data.Eq (Eq)
-import Data.Function (($), (.), const, id)
+import Data.Function ((.), const, id)
 import Data.Functor.Identity (Identity(Identity))
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid (Endo(Endo), (<>))
@@ -64,7 +64,7 @@ shellOption :: HasShell a => Options.Parser (Endo a)
 shellOption =
     Options.option parse' (Options.long "shell" <> Options.metavar "SHELL")
   where
-    parse' = Options.eitherReader $ \s -> case parse (CI.mk s) of
+    parse' = Options.eitherReader \s -> case parse (CI.mk s) of
         Just sh  -> Right (setShell sh)
         _        -> Left "Unrecognised shell name"
 

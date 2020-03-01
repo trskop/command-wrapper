@@ -188,7 +188,7 @@ generateSkeleton params createParents Template{..} = do
         then createDirectoryIfMissing True targetDirectory
         else do
             targetDirectoryExists <- doesDirectoryExist targetDirectory
-            unless targetDirectoryExists $ do
+            unless targetDirectoryExists do
                 dieWith params stderr 3
                     $ fromString (show targetDirectory)
                     <> ": Target directory doesn't exist, use '--parents' if\
@@ -203,7 +203,7 @@ generateSkeleton params createParents Template{..} = do
         else
             Text.atomicWriteFile targetFile template
 
-    when executable $ do
+    when executable do
         perms <- getPermissions targetFile
         setPermissions targetFile perms{Directory.executable = True}
 

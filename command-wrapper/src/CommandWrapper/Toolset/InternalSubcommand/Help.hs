@@ -135,7 +135,7 @@ help
     -> Config
     -> IO ()
 help internalHelp mainHelp appNames@AppNames{usedName} options config =
-    runMain (parseOptions appNames config options) defaults $ \case
+    runMain (parseOptions appNames config options) defaults \case
         MainHelp config' -> do
             out verbosity colourOutput stdout (mainHelp appNames config')
             traverse_ putStrLn extraHelpMessage

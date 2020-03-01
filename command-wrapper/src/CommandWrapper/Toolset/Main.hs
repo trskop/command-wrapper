@@ -302,7 +302,7 @@ aliasesFlag = Options.flag' modifyConfig $ mconcat
   where
     modifyConfig :: Endo Global.Config
     modifyConfig =
-        Endo $ \config -> config{Global.Config.ignoreAliases = False}
+        Endo \config -> config{Global.Config.ignoreAliases = False}
 
 noAliasesFlag :: Options.Parser (Endo Global.Config)
 noAliasesFlag = Options.flag' modifyConfig $ mconcat
@@ -312,7 +312,7 @@ noAliasesFlag = Options.flag' modifyConfig $ mconcat
   where
     modifyConfig :: Endo Global.Config
     modifyConfig =
-        Endo $ \config -> config{Global.Config.ignoreAliases = True}
+        Endo \config -> config{Global.Config.ignoreAliases = True}
 
 changeDirectoryOption :: Options.Parser (Endo Global.Config)
 changeDirectoryOption = fmap modifyConfig . Options.strOption $ mconcat
@@ -323,7 +323,7 @@ changeDirectoryOption = fmap modifyConfig . Options.strOption $ mconcat
   where
     modifyConfig :: FilePath -> Endo Global.Config
     modifyConfig dir =
-        Endo $ \config -> config{Global.Config.changeDirectory = pure dir}
+        Endo \config -> config{Global.Config.changeDirectory = pure dir}
 
 withGlobalMode
     :: Options.Parser

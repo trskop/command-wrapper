@@ -768,18 +768,18 @@ subcommandCompletion appNames config shell index words _invokedAs subcommand =
             <- External.executeCommandWith readProcess appNames config
                 subcommand ["--completion-info"]
 
-        when (exitCode /= ExitSuccess) $ do
+        when (exitCode /= ExitSuccess) do
             let Global.Config{colourOutput, verbosity} = config
 
                 subcommand' :: forall ann. Pretty.Doc ann
-                subcommand' = pretty
-                    $ usedName appNames <> " completion"
+                subcommand' = pretty (usedName appNames <> " completion")
 
             errorMsg subcommand' verbosity colourOutput stderr
-                $ fromString subcommand
+                ( fromString subcommand
                 <> ": Subcommand protocol violated when called with\
                     \ '--completion-info':\n"
                 <> fromString errH
+                )
             exitWith (ExitFailure 2)
 
         Dhall.input Dhall.auto (fromString outH)

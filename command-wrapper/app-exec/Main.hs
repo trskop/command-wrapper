@@ -343,7 +343,7 @@ doNotifyWhen NotifyConfig{..} p notificationMessage status = when p do
 startDuration :: IO (IO Clock.TimeSpec)
 startDuration = do
     start <- getTime
-    return $ do
+    pure do
         end <- getTime
         pure (end - start)
   where

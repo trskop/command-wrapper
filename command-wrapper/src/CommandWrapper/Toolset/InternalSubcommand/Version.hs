@@ -123,7 +123,7 @@ version
     -> Config
     -> IO ()
 version versionInfo appNames options config =
-    runMain (parseOptions appNames config options) defaults $ \case
+    runMain (parseOptions appNames config options) defaults \case
         FullVersion format output Config{colourOutput, verbosity} -> do
             withOutputHandle output \handle -> case format of
                 DhallFormat ->

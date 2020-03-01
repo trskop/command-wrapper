@@ -192,7 +192,7 @@ mainAction ps@Env{params} Mode{..} = do
                 pure (Turtle.unsafeTextToLine dir)
 
         environment <- Turtle.env
-        for_ environment $ \(name, _) ->
+        for_ environment \(name, _) ->
             if "COMMAND_WRAPPER_" `isPrefixOf` name
                 then Turtle.unset name
                 else pure ()
@@ -210,12 +210,12 @@ runMenuTool
     -> Turtle.Shell Turtle.Line
     -> Turtle.Shell Turtle.Line
 runMenuTool SimpleCommand{..} input = do
-    for_ environment $ \EnvironmentVariable{name, value} ->
+    for_ environment \EnvironmentVariable{name, value} ->
         Turtle.export name value
 
     r <- Turtle.inproc (fromString command) (fromString <$> arguments) input
 
-    for_ environment $ \EnvironmentVariable{name} ->
+    for_ environment \EnvironmentVariable{name} ->
         Turtle.unset name
 
     pure r
@@ -462,7 +462,7 @@ executeAction env@Env{params} directory = \case
     executeCommand command arguments environment = do
         echo params (": " <> showCommand command arguments)
 
-        for_ environment $ \EnvironmentVariable{name, value} ->
+        for_ environment \EnvironmentVariable{name, value} ->
             Turtle.export name value
 
         liftIO $ executeFile command True arguments Nothing

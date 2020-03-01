@@ -29,7 +29,7 @@ module CommandWrapper.Toolset.Options
 
 import Control.Applicative (pure)
 import Data.Bool (otherwise)
-import Data.Function (($), (.))
+import Data.Function ((.))
 import Data.Maybe (Maybe(Just))
 import Data.Monoid (Endo(Endo), mempty)
 import System.IO (IO)
@@ -62,9 +62,9 @@ parseCommandWrapper
     -> IO (Endo (Command config))
 parseCommandWrapper appNames parserPrefs parserInfo getAliases =
     parse appNames parserPrefs parserInfo runGlobalMode'
-        $ \updateConfig arguments -> do
+        \updateConfig arguments -> do
             aliases <- getAliases updateConfig
-            pure $ case arguments of
+            pure case arguments of
                 [] ->
                     mempty
 
@@ -93,14 +93,14 @@ parseCommandWrapper appNames parserPrefs parserInfo getAliases =
     runGlobalMode' :: GlobalMode (Endo config) -> Endo (Command config)
     runGlobalMode' = runGlobalMode helpMode versionMode
       where
-        helpMode (Endo f) = Endo $ \case
+        helpMode (Endo f) = Endo \case
             Mainplate.Internal _oldCmd config ->
                 Mainplate.Internal (Internal.HelpCommand []) (f config)
 
             Mainplate.External _oldCmd config ->
                 Mainplate.Internal (Internal.HelpCommand []) (f config)
 
-        versionMode (Endo f) = Endo $ \case
+        versionMode (Endo f) = Endo \case
             Mainplate.Internal _oldCmd config ->
                 Mainplate.Internal (Internal.VersionCommand []) (f config)
 

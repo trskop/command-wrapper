@@ -177,7 +177,7 @@ subcommandProtocolVersion = makeVersion [1, 0, 0]
 -- See also 'Params' and @command-wrapper-subcommand-protocol(7)@ manual page
 -- for more details.
 mkEnvVars :: Params -> EnvBuilder CommandWrapperPrefix
-mkEnvVars Params{..} = EnvBuilder $ \prefix ->
+mkEnvVars Params{..} = EnvBuilder \prefix ->
     HashMap.fromList $ fmap (first $ getCommandWrapperVarName prefix)
         [ (CommandWrapperExe, fromString exePath)
         , (CommandWrapperName, fromString name)

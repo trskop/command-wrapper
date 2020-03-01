@@ -128,7 +128,7 @@ shouldUseColours
     -- * 'False' - Don't use colours when printing to specified 'Handle'.
     -- * 'True' - You are free to use colours when printing to specified
     --   'Handle'.
-shouldUseColours handle = useColoursWhen $ do
+shouldUseColours handle = useColoursWhen do
     otputIsTerminal <- hIsTerminalDevice handle
     if otputIsTerminal
         then terminalSupportsColours <$> setupTermFromEnv

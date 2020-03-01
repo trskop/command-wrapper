@@ -272,9 +272,9 @@ dieFailedToParseOptions
     -> IO a
 dieFailedToParseOptions name verbosity colour h
   Options.ParserHelp{Options.helpError} = do
-    when (verbosity > Silent) $ do
+    when (verbosity > Silent) do
         useColours <- shouldUseColours h colour
-        withColour useColours vividRed $ \h' -> do
+        withColour useColours vividRed \h' -> do
             width <- maybe 80 Terminal.width <$> Terminal.hSize h'
             hPutStrLn h' (renderError width)
 
