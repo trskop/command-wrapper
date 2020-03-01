@@ -18,6 +18,11 @@ flags:
     manual: true
     default: false
 
+  nix:
+    description: Nix-specific tweaks for executables
+    manual: true
+    default: false
+
 extra-source-files:
   - README.md
   - bash/*
@@ -130,11 +135,17 @@ executables:
           - -static
           - -O2
           - -fPIC
+        cpp-options:
+          - -DSTATIC_EXECUTABLE
         cc-options:
           - -static
         ld-options:
           - -static
           - -pthread
+
+      - condition: flag(nix)
+        cpp-options:
+          - -DNIX_EXECUTABLE
 
   command-wrapper-cd:
     source-dirs: app-cd

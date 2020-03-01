@@ -24,8 +24,8 @@ import qualified CommandWrapper.Toolset.Main.StaticConfig as StaticConfig
 main :: IO ()
 main =
     CommandWrapper.Toolset.Main.main StaticConfig.def
-#ifdef STATIC_EXECUTABLE
+#if defined(STATIC_EXECUTABLE) || defined(NIX_EXECUTABLE)
         { StaticConfig.lookupSystemConfigDir =
-            StaticConfig.doLookupSystemConfigDir
+            StaticConfig.doSystemConfigDirLookup
         }
 #endif

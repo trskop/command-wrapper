@@ -142,7 +142,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
         staticManDir = staticOutDistShare </> "man"
         staticDocDir = staticOutDistShare </> "doc" </> "command-wrapper"
 
-        version = "0.1.0.0-rc3"
+        version = "0.1.0.0-rc4"
         staticTarball =
             staticOut </> "command-wrapper-" <> version <.> "tar.xz"
 
@@ -227,7 +227,11 @@ shakeMain Directories{..} opts = shakeArgs opts do
         let dst = takeDirectory (head outs)
         liftIO (createDirectoryIfMissing True dst)
 
-        cmd_ "stack" ["--local-bin-path=" <> dst] "install"
+        cmd_ "stack"
+            [ "--local-bin-path=" <> dst
+            , "install"
+            , "--flag=command-wrapper:nix"
+            ]
 
     binaries staticLibexecDir &%> \outs -> do
         _ <- hasThisRepoChanged (ThisGitRepo ())

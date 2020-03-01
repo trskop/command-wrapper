@@ -167,7 +167,7 @@ main staticConfig = do
             else
                 pure id
 
-    go :: (AppNames -> command -> Global.Config -> IO ())
+    go  :: (AppNames -> command -> Global.Config -> IO ())
         -> AppNames
         -> command
         -> Global.Config
@@ -188,18 +188,18 @@ main staticConfig = do
 getAppNames' :: IO AppNames
 getAppNames' = getAppNames defaultCommandWrapperPrefix (pure version) >>= \case
     Left RunningInInteractiveInterpreterError ->
-        die ( "Unable to resolve its executable path in\
+        die ( "command-wrapper: Unable to resolve its executable path in\
             \ GHCi.  Consider setting " <> facadeEnvVarName
             <> " environment variable to bypass this restriction."
             )
 
     Left (FacadeDoesNotExistOrIsNotAFileError path) ->
-        die ( facadeEnvVarName <> ": " <> show path
+        die ( "command-wrapper: " <> facadeEnvVarName <> ": " <> show path
             <> ": File does not exist or is not a file (e.g. directory)."
             )
 
     Left (FacadeIsNotExecutableError path) ->
-        die ( show facadeEnvVarName <> ": " <> show path
+        die ( "command-wrapper: " <> show facadeEnvVarName <> ": " <> show path
             <> ": File is not executable."
             )
 
@@ -318,7 +318,7 @@ changeDirectoryOption :: Options.Parser (Endo Global.Config)
 changeDirectoryOption = fmap modifyConfig . Options.strOption $ mconcat
     [ Options.long "change-directory"
     , Options.metavar "DIRECTORY"
-    , Options.help "Change current wworking directory to DIRECTORY."
+    , Options.help "Change current working directory to DIRECTORY."
     ]
   where
     modifyConfig :: FilePath -> Endo Global.Config
@@ -457,7 +457,7 @@ helpMessage AppNames{usedName} Global.Config{description} = Pretty.vsep
         , Pretty.squotes (Help.longOption "verbosity=silent") <> "."
         ]
 
-    defaultDescription = "Toolset of commands for working developer."
+    defaultDescription = "Toolset of commands for a working developer."
 
     subcommandArguments =
         Pretty.brackets (Pretty.annotate Help.dullGreen "SUBCOMMAND_ARGUMENTS")

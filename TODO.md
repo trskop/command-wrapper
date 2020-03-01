@@ -104,8 +104,8 @@
 
 *   (**IN PROGRESS**) **Configurable/extensible `main`**:
 
-    -   Move toolset `main` function into `CommandWrapper.Toolset.Main`.
-        (**DONE**)
+    -   (**DONE**) Move toolset `main` function into `CommandWrapper.Toolset.Main`.
+
 
     -   Parametrise toolset `main` function with options that specify how it
         should behave.
