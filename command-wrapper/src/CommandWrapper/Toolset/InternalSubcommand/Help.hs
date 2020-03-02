@@ -339,10 +339,20 @@ helpSubcommandCompleter appNames config _shell index words
     hadDashDash = "--" `List.elem` wordsBeforePattern
     hadAliases = "--aliases" `List.elem` wordsBeforePattern
     hadHelp = any (`List.elem` ["--help", "-h"]) wordsBeforePattern
+    hadMan = any (== "--man") wordsBeforePattern
     pat = fromMaybe "" $ atMay words (fromIntegral index)
     isOption = headMay pat == Just '-'
     helpOptions' = ["--aliases", "--help", "-h", "--man", "--"]
-    subcmds = findSubcommands appNames config pat
+    subcmds =
+        ((if hadMan then specialManPages else []) <>)
+        <$> findSubcommands appNames config pat
+
+    specialManPages =
+        List.filter (fmap Char.toLower pat `List.isPrefixOf`)
+            [ "bash-library"
+            , "command-wrapper"
+            , "subcommand-protocol"
+            ]
 
     hadTopic = case lastMay wordsBeforePattern of
         Nothing -> False
