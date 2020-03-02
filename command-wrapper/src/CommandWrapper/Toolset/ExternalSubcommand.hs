@@ -18,7 +18,6 @@ module CommandWrapper.Toolset.ExternalSubcommand
     , findSubcommands
 
     -- * Utilities
-    , getSearchPath
     , getSubcommandConfigPathToEdit
     )
   where
@@ -54,12 +53,12 @@ import System.Directory
     , listDirectory
     )
 import System.FilePath ((</>), (<.>), takeFileName)
-import qualified System.FilePath as FilePath (getSearchPath)
 import System.Posix.Process (executeFile)
 
 import qualified CommandWrapper.Config.Global as Global
-    ( Config(Config, colourOutput, configPaths, searchPath, verbosity)
+    ( Config(Config, colourOutput, configPaths, verbosity)
     , ConfigPaths(ConfigPaths, local, system, user)
+    , getSearchPath
     )
 import qualified CommandWrapper.Core.Environment as Environment
     ( AppNames(AppNames, exePath, names, usedName)
@@ -283,7 +282,7 @@ findSubcommandExecutable
     -> NonEmpty (String, String)
     -> IO (Maybe (String, String, FilePath))
 findSubcommandExecutable config usedName subcommands = do
-    searchPath <- getSearchPath config
+    searchPath <- Global.getSearchPath config
     debugMsg (fromString usedName) verbosity colourOutput stderr
         $ "Using following subcommand executable search path: "
         <> fromString (show searchPath)
@@ -305,7 +304,7 @@ findSubcommandExecutable config usedName subcommands = do
 -- | Find all (unique) external subcommands.
 findSubcommands :: Environment.AppNames -> Global.Config -> IO [String]
 findSubcommands Environment.AppNames{Environment.names} config = do
-    searchPath <- getSearchPath config
+    searchPath <- Global.getSearchPath config
     executablesToSubcommands <$> mapM listDirectoryExecutables searchPath
   where
     prefixes :: NonEmpty String
@@ -336,12 +335,3 @@ findSubcommands Environment.AppNames{Environment.names} config = do
         if prefix `List.isPrefixOf` fileName
             then Just $ List.drop (length prefix) fileName
             else Nothing
-
--- | Get search path for subcommands, i.e. list of directories where (external)
--- subcommand executables are expected to be present.
-getSearchPath :: Global.Config -> IO [FilePath]
-getSearchPath Global.Config{Global.searchPath} =
-    (searchPath <>) <$> FilePath.getSearchPath
-    -- Search path provided in configuration has precedence to system search
-    -- path (value of `PATH` environment variable). This allows users to
-    -- override external subcommands if necessary.

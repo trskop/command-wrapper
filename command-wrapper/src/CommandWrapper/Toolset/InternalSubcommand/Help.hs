@@ -74,7 +74,7 @@ import Safe (atMay, headMay, lastMay)
 import System.Directory (findExecutablesInDirectories)
 import System.Posix.Process (executeFile)
 
-import CommandWrapper.Config.Global (Config(..), getAliases)
+import CommandWrapper.Config.Global (Config(..), getAliases, getSearchPath)
 import CommandWrapper.Core.Config.Alias
     ( Alias(Alias, alias, description)
     , applyAlias
@@ -102,7 +102,6 @@ import CommandWrapper.Core.Message
 import qualified CommandWrapper.Toolset.ExternalSubcommand as External
     ( executeCommand
     , findSubcommands
-    , getSearchPath
     )
 import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
 import qualified CommandWrapper.Toolset.InternalSubcommand.Utils as Options
@@ -205,7 +204,7 @@ findSubcommandManualPageName
   AppNames{usedName, names}
   config@Config{verbosity, colourOutput}
   subcommandName = do
-    searchPath <- External.getSearchPath config
+    searchPath <- getSearchPath config
     debugMsg (fromString usedName) verbosity colourOutput stderr
         $ "Using following subcommand executable search path: "
         <> fromString (show searchPath)

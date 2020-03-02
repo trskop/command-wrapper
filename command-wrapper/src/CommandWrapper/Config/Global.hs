@@ -30,6 +30,7 @@ module CommandWrapper.Config.Global
     -- known\/invoked.
       Config(..)
     , getAliases
+    , getSearchPath
 
     -- * Smart Constructor
     , SearchPath(..)
@@ -44,14 +45,18 @@ module CommandWrapper.Config.Global
     )
   where
 
+import Control.Applicative (pure)
 import Data.Bool (Bool(False))
+import Data.Functor ((<$>))
 import Data.Maybe (Maybe(Nothing))
+import Data.Semigroup ((<>))
 import Data.String (String)
 import GHC.Generics (Generic)
-import System.IO (FilePath)
+import System.IO (FilePath, IO)
 import Text.Show (Show)
 
 import Dhall (FromDhall)
+import qualified System.FilePath as FilePath (getSearchPath)
 
 import CommandWrapper.Core.Config.Alias (Alias)
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
@@ -80,6 +85,10 @@ data Config = Config
 
     , searchPath :: [FilePath]
     -- ^ Path where to search for subcommands.
+
+    , searchSystemPath :: Bool
+    -- ^ If set to 'True' then the value of system @PATH@ is appended to
+    -- 'searchPath' before doing lookup.
 
     , manPath :: [FilePath]
     -- ^ Path where to search for manual pages.
@@ -153,6 +162,7 @@ def colourOutput (SearchPath searchPath) (ManPath manPath) configPaths = Config
     , ignoreAliases = False
     , manPath
     , searchPath
+    , searchSystemPath = False
     , verbosity = Verbosity.Normal
     , configPaths
     }
@@ -164,6 +174,20 @@ getAliases Config{aliases, ignoreAliases} =
     if ignoreAliases
         then []
         else aliases
+
+-- | Get search path for subcommands, i.e. list of directories where (external)
+-- subcommand executables are expected to be present.
+--
+-- If the value of 'searchSystemPath' is 'True' then system @PATH@ is searched
+-- appended.  See documentation for 'searchPath'.
+getSearchPath :: Config -> IO [FilePath]
+getSearchPath Config{searchPath, searchSystemPath} =
+    if searchSystemPath
+        then (searchPath <>) <$> FilePath.getSearchPath
+        else pure searchPath
+    -- Search path provided in configuration has precedence to system search
+    -- path (value of `PATH` environment variable). This allows users to
+    -- override external subcommands if necessary.
 
 -- | Configuration base directories where configuration is looked up.  The
 -- lookup order for toolset configuration is:
