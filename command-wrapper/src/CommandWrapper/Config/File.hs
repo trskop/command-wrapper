@@ -18,12 +18,12 @@ module CommandWrapper.Config.File
     )
   where
 
-import Control.Applicative ((<*>), pure)
+import Control.Applicative (pure)
 import Control.Exception (Exception, catch)
 import Data.Either (Either(Left, Right))
 import Data.Function (($), (.), on)
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Data.Monoid (Last(Last, getLast))
 import Data.Semigroup (Semigroup((<>)))
 import Data.String (String)
@@ -66,7 +66,8 @@ apply Config{..} config = config
     , Global.searchPath = gSearchPath <> searchPath
     , Global.manPath = gManPath <> manPath
     , Global.description = getLast $ ((<>) `on` Last) gDescription description
-    , Global.extraHelpMessage = (<>) <$> gExtraHelpMessage <*> extraHelpMessage
+    , Global.extraHelpMessage =
+        composeHelpMessage gExtraHelpMessage extraHelpMessage
     , Global.verbosity = fromMaybe gVerbosity verbosity
     , Global.colourOutput = fromMaybe gColourOutput colourOutput
     }
@@ -81,6 +82,10 @@ apply Config{..} config = config
         , Global.colourOutput = gColourOutput
         }
         = config
+
+    composeHelpMessage Nothing    x          = x
+    composeHelpMessage x          Nothing    = x
+    composeHelpMessage (Just lhs) (Just rhs) = Just (lhs <> rhs)
 
 -- | Read and parse Dhall configuration file.
 read :: FilePath -> IO (Either String Config)
