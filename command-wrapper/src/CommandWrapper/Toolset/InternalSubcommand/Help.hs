@@ -154,6 +154,7 @@ help internalHelp mainHelp appNames@AppNames{usedName} options config =
             possiblyManualPageName <- case topic of
                 Nothing -> pure (Just usedName)
 
+                Just "bash-library" -> pure internalCommandManPage
                 Just "command-wrapper" -> pure (Just "command-wrapper")
                 Just "completion" -> pure internalCommandManPage
                 Just "config" -> pure internalCommandManPage
