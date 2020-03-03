@@ -1,8 +1,8 @@
 -- vim: filetype=dhall
 
 { toShell =
-      ./to-shell sha256:1c04acd702d77136948fff8dc03af084322049a6cbcfdd6add145eebc48fbfbb
-    ? ./to-shell
+      ./toShell sha256:7fd3d2f87c06065e72dd9b8584666b35dc2b860601b2c50fa435f9cdf824eba1
+    ? ./toShell
 , verbosityOptions =
       ./verbosityOptions sha256:53abdd9ed8f27c0d175efc6b33e0a72d1d77661554e3e79e2a23d2c1252aa9a9
     ? ./verbosityOptions

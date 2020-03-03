@@ -2,7 +2,7 @@
 -- |
 -- Module:      $Header$
 -- Description: Configuration compiled into toolset executable.
--- Copyright:   (c) 2019 Peter Trško
+-- Copyright:   (c) 2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com

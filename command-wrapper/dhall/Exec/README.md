@@ -20,13 +20,39 @@ constructors for building `ExecCommand` builders of type:
 
 ## Importing
 
-There are two basic ways of importing this library:
+There multiple ways of importing this library:
+
+*   Version from when Command Wrapper binary was compiled:
+
+    ```Bash
+    export COMMAND_WRAPPER_EXEC_LIB="$(
+        "${TOOLSET}" completion --library --dhall=exec --import
+    )"
+    ```
+
+    ```
+    let Exec = env:COMMAND_WRAPPER_EXEC_LIB
+
+    in  Exec
+    ```
+
+*   Version embedded in Command Wrapper:
+
+    ```Bash
+    "${TOOLSET}" completion --library --dhall=exec --content > ./Exec
+    ```
+
+    ```Dhall
+    lib Exec = ./Exec
+
+    in  Exec
+    ```
 
 *   Latest version:
 
     ```Dhall
     let Exec =
-          https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall
+          https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/Exec/package.dhall
 
     in  Exec
     ```
@@ -35,7 +61,7 @@ There are two basic ways of importing this library:
 
     ```Dhall
     let Exec =
-          https://raw.githubusercontent.com/trskop/command-wrapper/d12e686ef9f68ed91a71f66810f86205cd8b4376/dhall/Exec/package.dhall
+          https://raw.githubusercontent.com/trskop/command-wrapper/f85a043ca22407994b0a9183cb43025226463816/command-wrapper/dhall/Exec/package.dhall
 
     in  Exec
     ```
@@ -254,9 +280,9 @@ Some useful utilities can be found in [`utils`](./utils):
     : Optional Text → List Text
     ```
 
-*   [`utils/to-shell`](./utils/to-shell) – Convert output of
+*   [`utils/toShell`](./utils/toShell) – Convert output of
     `TOOLSET exec --print COMMAND` into command that can be executed on command
-    line.  See [`utils/to-shell`](./utils/to-shell) for examples.
+    line.  See [`utils/toShell`](./utils/toShell) for examples.
 
 *   [`utils/verbosityOptions`](./utils/verbosityOptions) – Convert `Verbosity`
     value into command line options.  Usage example:
