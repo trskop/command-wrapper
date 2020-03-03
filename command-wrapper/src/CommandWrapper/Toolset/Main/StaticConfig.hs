@@ -21,6 +21,7 @@ module CommandWrapper.Toolset.Main.StaticConfig
 
 import Control.Applicative (pure)
 import Control.Monad ((>>=))
+import Data.Bool (Bool(False))
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Functor ((<$>), (<&>), fmap)
 import GHC.Generics (Generic)
@@ -39,12 +40,14 @@ import CommandWrapper.Core.Environment
 
 data StaticConfig context = StaticConfig
     { lookupSystemConfigDir :: ParseEnv context (Maybe FilePath)
+    , searchSystemPath :: Bool
     }
   deriving stock (Generic)
 
 def :: StaticConfig context
 def = StaticConfig
     { lookupSystemConfigDir = noSystemConfigDirLookup
+    , searchSystemPath = False
     }
 
 doSystemConfigDirLookup :: ParseEnv CommandWrapperPrefix (Maybe FilePath)

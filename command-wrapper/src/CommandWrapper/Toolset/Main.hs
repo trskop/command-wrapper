@@ -227,6 +227,8 @@ parseEnv StaticConfig{..} = parseEnvIO (die . show) do
             }
 
     pure (Global.Config.def defColour searchPath manPath configPaths)
+        { Global.Config.searchSystemPath
+        }
   where
     searchPathVar
         :: ([FilePath] -> a)
