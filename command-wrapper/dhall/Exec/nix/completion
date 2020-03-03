@@ -1,8 +1,11 @@
 -- vim: filetype=dhall
 
 let script =
-        ../completion/scripts.dhall sha256:5c0666159348b5216c012c72d7ee0a0a61c7f6f30b6c3a18c43e34f521d561c0
-      ? ../completion/scripts.dhall
+      { url =
+          "https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc7/command-wrapper/dhall/Exec/nix/completion-script"
+      , hash =
+          "sha256:4a79f8b86f6ace664d44b60d10e6b1494a64dd339e071979fd3bcbf4d73d9e1c"
+      }
 
 let Command =
         ./Command/Type sha256:dc2b111daadb4265396dc562b757f208189242a884e704a4298686ce8984af27
@@ -20,6 +23,6 @@ in    λ(toolset : Text)
     → λ(command : Command)
     → wrapper
         { toolset = toolset
-        , expression = "(${script.url} ${script.hash}).nix"
+        , expression = "${script.url} ${script.hash}"
         , command = Command/show command
         }

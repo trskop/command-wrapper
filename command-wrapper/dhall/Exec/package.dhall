@@ -3,7 +3,7 @@
 -- Library of utilities for Command Wrapper's `exec` subcommand.
 
 { bazel =
-      ./bazel/package.dhall sha256:a18d34414126e78b7995493492d33c6cea6210d4a4a156025a818f3da262eea7
+      ./bazel/package.dhall sha256:00c06c750b9656980c9d49f821b8d6001f43007a9fc2dbdb4485b20240e95f8e
     ? ./bazel/package.dhall
 , buildifier =
       ./buildifier/package.dhall sha256:2db5e3723ff4a17092c826b9d9200eab106d720dd940c7b4024d5a847e68f404
@@ -15,13 +15,13 @@
       ./completion/package.dhall sha256:010acfececfce2a8f66530f258ced7a7ffd5769cc3e5d22b4e13f7e520eaeccf
     ? ./completion/package.dhall
 , direnv =
-      ./direnv/package.dhall sha256:4cd1eb2a57bc33bd178772417c8553199f002458e42fe9524ebe688e0d71397d
+      ./direnv/package.dhall sha256:4608bfa206973bf5b6cd7c8da0df676c24290e84772e107b26b5dd36be5c77f8
     ? ./direnv/package.dhall
 , docker =
       ./docker/package.dhall sha256:13ee98abc91fa54c5b43d77d1d855c6fb4776cff0daaca961fb3de451bb95740
     ? ./docker/package.dhall
 , docker-compose =
-      ./docker-compose/package.dhall sha256:6afaf8e2718377264e4633db2aeea51c655692404a6a2d16bc4e4f63c1ca9c58
+      ./docker-compose/package.dhall sha256:58b9a32289115b6780c41c52ed61a2d7910e11d00879a13413ae1bce161c1806
     ? ./docker-compose/package.dhall
 , firefox =
       ./firefox/package.dhall sha256:7f6e5fe7087c2dbc297349b4640c9a5a1e04ebe378254fedb254e9a7b2c94140
@@ -33,13 +33,13 @@
       ./fzy/package.dhall sha256:41e967ece673a9681c2ace686f8ff2579c532c9c11fb595294ee0e70ce2b77b2
     ? ./fzy/package.dhall
 , go-jira =
-      ./go-jira/package.dhall sha256:d4deec8aebedd14031af8623c947727888784ae426c2786bac122de3354776ce
+      ./go-jira/package.dhall sha256:ebc278eebf5fa7cf9fcff00ba7c017955029b50c706fc35a25e434f77dcfd102
     ? ./go-jira/package.dhall
 , jq =
-      ./jq/package.dhall sha256:963c5dfa15b7686bd03fe07aae7c6ca1198994bf6e0e07edbaa29bf330d40d0e
+      ./jq/package.dhall sha256:5de8091cab621b3193a19aa4cca4c580372b88230a12a10b618edfbd50d038a6
     ? ./jq/package.dhall
 , nix =
-      ./nix/package.dhall sha256:a816e103f072359f0a9a6fc769223796a69de09d4413245ab691075cc207e155
+      ./nix/package.dhall sha256:8c4d4597080a7cbd817109c2ca247be7b85a8c01d1809c2ab8c4115dc7202d22
     ? ./nix/package.dhall
 , nvr =
       ./nvr/package.dhall sha256:f48a7ed1672b16c8b1442e536d348b22fe809648ba5cf6bf614fd686f3747d69
@@ -75,6 +75,6 @@
       ./yarn/package.dhall sha256:0cc83ac66ba8a97c71fa52e023ddaa85d45c0935626bf054a9f56edf994b4503
     ? ./yarn/package.dhall
 , youtube-dl =
-      ./youtube-dl/package.dhall sha256:1f740feb774b344ba601bb06fcaa2af73b67066b7a826eccf0a9f6af94792afc
+      ./youtube-dl/package.dhall sha256:913a60075cc3d848df1d9ee50d94a2715a39fb7ee2d2eb2844b30eba4ab3ad34
     ? ./youtube-dl/package.dhall
 }

@@ -1,8 +1,9 @@
 -- vim: filetype=dhall
 
 let script =
-        ../completion/scripts.dhall sha256:5c0666159348b5216c012c72d7ee0a0a61c7f6f30b6c3a18c43e34f521d561c0
-      ? ../completion/scripts.dhall
+      { url = "https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc7/command-wrapper/dhall/Exec/direnv/completion-script"
+      , hash = "sha256:806c6f8632ddddedfd3c93330f26f074078bc26c4ffd91a232e589385f198c51"
+      }
 
 let wrapper =
         ../completion/wrapper sha256:2581cfe8c184898fe6b04aedad5ad9c1be34154b3a795ecab17ee19c899e5c8b
@@ -11,6 +12,6 @@ let wrapper =
 in    λ(toolset : Text)
     → wrapper
         { toolset = toolset
-        , expression = "(${script.url} ${script.hash}).direnv"
+        , expression = "${script.url} ${script.hash}"
         , command = "direnv"
         }
