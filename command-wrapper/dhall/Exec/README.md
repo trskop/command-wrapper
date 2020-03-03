@@ -57,11 +57,11 @@ There multiple ways of importing this library:
     in  Exec
     ```
 
-*   Specific version (notice the commit hash in the URL):
+*   Specific version (notice the tag in the URL, commit hash can be used too):
 
     ```Dhall
     let Exec =
-          https://raw.githubusercontent.com/trskop/command-wrapper/f85a043ca22407994b0a9183cb43025226463816/command-wrapper/dhall/Exec/package.dhall
+          https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc6/command-wrapper/dhall/Exec/package.dhall
 
     in  Exec
     ```

@@ -12,11 +12,8 @@ let optionalOptions =
         ../../utils/optionalOptions sha256:f9626a1ef8209d45703cc7ac05aee40c9e96f5ccc2c406cdbd68eafd6d3234f0
       ? ../../utils/optionalOptions
 
-let List/null =
-      https://prelude.dhall-lang.org/v11.1.0/List/null sha256:2338e39637e9a50d66ae1482c0ed559bbcc11e9442bfca8f8c176bbcd9c4fc80
-
 let Natural/greaterThanEqual =
-      https://prelude.dhall-lang.org/v11.1.0/Natural/greaterThanEqual sha256:30ebfab0febd7aa0ccccfdf3dc36ee6d50f0117f35dd4a9b034750b7e885a1a4
+      https://prelude.dhall-lang.org/v12.0.0/Natural/greaterThanEqual sha256:30ebfab0febd7aa0ccccfdf3dc36ee6d50f0117f35dd4a9b034750b7e885a1a4
 
 let noArguments = [] : List Text
 
