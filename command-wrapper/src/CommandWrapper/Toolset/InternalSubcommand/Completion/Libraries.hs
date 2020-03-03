@@ -97,8 +97,6 @@ import CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions
     , commandWrapperImport
     , execContent
     , execImport
-    , preludeV11_1_0Content
-    , preludeV11_1_0Import
     , preludeV12_0_0Content
     , preludeV12_0_0Import
     , preludeV13_0_0Content
@@ -297,7 +295,6 @@ data DhallLibrary
     | PreludeV14_0_0
     | PreludeV13_0_0
     | PreludeV12_0_0
-    | PreludeV11_1_0
     | CommandWrapper
     | CommandWrapperExec
   deriving stock (Bounded, Enum, Generic, Show)
@@ -305,7 +302,6 @@ data DhallLibrary
 parseDhallLibrary :: (Eq s, IsString s) => s -> Maybe DhallLibrary
 parseDhallLibrary = \case
     "prelude"         -> Just LatestPrelude
-    "prelude-v11.1.0" -> Just PreludeV11_1_0
     "prelude-v12.0.0" -> Just PreludeV12_0_0
     "prelude-v13.0.0" -> Just PreludeV13_0_0
     "prelude-v14.0.0" -> Just PreludeV14_0_0
@@ -316,7 +312,6 @@ parseDhallLibrary = \case
 showDhallLibrary :: IsString s => DhallLibrary -> s
 showDhallLibrary = \case
     LatestPrelude      -> "prelude"
-    PreludeV11_1_0     -> "prelude-v11.1.0"
     PreludeV12_0_0     -> "prelude-v12.0.0"
     PreludeV13_0_0     -> "prelude-v13.0.0"
     PreludeV14_0_0     -> "prelude-v14.0.0"
@@ -340,12 +335,6 @@ putDhallLibrary config dhallLib importOrContent = \case
     hPutExpr = Dhall.hPutExpr config
 
     hPutDhallLibrary h = case (dhallLib, importOrContent) of
-        (PreludeV11_1_0, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV11_1_0Content)
-
-        (PreludeV11_1_0, Import) ->
-            Text.hPutStrLn h preludeV11_1_0Import
-
         (PreludeV12_0_0, Content) ->
             hPutExpr h $(Dhall.TH.staticDhallExpression preludeV12_0_0Content)
 

@@ -14,9 +14,7 @@
 module CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions
     (
     -- * Dhall Prelude Library
-      preludeV11_1_0Content
-    , preludeV11_1_0Import
-    , preludeV12_0_0Content
+      preludeV12_0_0Content
     , preludeV12_0_0Import
     , preludeV13_0_0Content
     , preludeV13_0_0Import
@@ -45,18 +43,6 @@ import Data.String (IsString)
 -- The reason for having two definitions, one content and the other import, is
 -- that in Nix we will need to avoid fetching stuff from the internet,
 -- therefore content will have to be provided in a different way.
-
-preludeV11_1_0Content :: IsString s => s
-preludeV11_1_0Content =
-#ifdef DHALL_PRELUDE_V11_1_0
-    DHALL_PRELUDE_V11_1_0
-#else
-    preludeV11_1_0Import
-#endif
-
-preludeV11_1_0Import :: IsString s => s
-preludeV11_1_0Import =
-    "https://prelude.dhall-lang.org/v11.1.0/package.dhall sha256:99462c205117931c0919f155a6046aec140c70fb8876d208c7c77027ab19c2fa"
 
 preludeV12_0_0Content :: IsString s => s
 preludeV12_0_0Content =

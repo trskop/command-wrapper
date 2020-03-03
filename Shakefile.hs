@@ -244,6 +244,9 @@ shakeMain Directories{..} opts = shakeArgs opts do
     "build" ~>
         cmd_ "stack" ["build", "--flag=command-wrapper:nix"]
 
+    "test" ~>
+        cmd_ "stack" ["test", "--flag=command-wrapper:nix"]
+
     hasThisRepoChanged <- addOracle (thisGitRepo projectRoot)
     binaries libexecDir &%> \outs -> do
         _ <- hasThisRepoChanged (ThisGitRepo ())

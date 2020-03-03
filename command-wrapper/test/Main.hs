@@ -94,7 +94,6 @@ testDhallLibraries = concat
     , [Content, Import] <&> testDhallLibrary PreludeV14_0_0
     , [Content, Import] <&> testDhallLibrary PreludeV13_0_0
     , [Content, Import] <&> testDhallLibrary PreludeV12_0_0
-    , [Content, Import] <&> testDhallLibrary PreludeV11_1_0
     ]
 
 dhallLibOption :: DhallLibrary -> String
@@ -116,7 +115,6 @@ testDhallLibrary lib importOrContent =
         (actualHash <> "\n") @?= expectedHash
   where
     libName = (\v -> unwords ["Prelude", v, show importOrContent]) case lib of
-        PreludeV11_1_0     -> "v11.1.0"
         PreludeV12_0_0     -> "v12.0.0"
         PreludeV13_0_0     -> "v13.0.0"
         PreludeV14_0_0     -> "v14.0.0"
@@ -125,7 +123,6 @@ testDhallLibrary lib importOrContent =
         CommandWrapperExec -> notTestable
 
     actualHash = case lib of
-        PreludeV11_1_0     -> v11_1_0
         PreludeV12_0_0     -> v12_0_0
         PreludeV13_0_0     -> v13_0_0
         PreludeV14_0_0     -> v14_0_0
@@ -134,9 +131,6 @@ testDhallLibrary lib importOrContent =
         CommandWrapperExec -> notTestable
 
     notTestable =  error ("Not designed to test this library " <> show lib)
-
-    v11_1_0 =
-        "sha256:99462c205117931c0919f155a6046aec140c70fb8876d208c7c77027ab19c2fa"
 
     v12_0_0 =
         "sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
