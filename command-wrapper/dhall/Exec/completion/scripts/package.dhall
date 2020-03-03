@@ -18,9 +18,6 @@
 , nix =
       ./nix.bash.dhall sha256:4a79f8b86f6ace664d44b60d10e6b1494a64dd339e071979fd3bcbf4d73d9e1c
     ? ./nix.bash.dhall
-, yarn =
-      ./yarn.bash.dhall sha256:65bc18ba5131cb50564c7fe48231b28d0c1fd4680548248cd078ab1530e64ab3
-    ? ./yarn.bash.dhall
 , youtube-dl =
       ./youtube-dl.bash.dhall sha256:4944c2e5cf852aa4969dae360495e92a53a5530def414b0090d0a691dc3351e6
     ? ./youtube-dl.bash.dhall

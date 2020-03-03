@@ -12,7 +12,7 @@
       ./command-wrapper/package.dhall sha256:196834fd31413e78d5f8e28d6dfec488e74b8bf21f7e90c20d610bdca3c880bb
     ? ./command-wrapper/package.dhall
 , completion =
-      ./completion/package.dhall sha256:cf7cc7082eec8178f94f400173a63d7616bdb3ff1ea864bc8be75552816b1fcc
+      ./completion/package.dhall sha256:010acfececfce2a8f66530f258ced7a7ffd5769cc3e5d22b4e13f7e520eaeccf
     ? ./completion/package.dhall
 , direnv =
       ./direnv/package.dhall sha256:4cd1eb2a57bc33bd178772417c8553199f002458e42fe9524ebe688e0d71397d
@@ -72,7 +72,7 @@
       ./xdg-open/package.dhall sha256:141cea3791cf64099e76ae3245f60c248c386fce353c68d410d297af2d4191b8
     ? ./xdg-open/package.dhall
 , yarn =
-      ./yarn/package.dhall sha256:7c8b77114dbe143fa4143aee185b1ee25fa6d7b0a4e8b799030464300a5862bd
+      ./yarn/package.dhall sha256:0cc83ac66ba8a97c71fa52e023ddaa85d45c0935626bf054a9f56edf994b4503
     ? ./yarn/package.dhall
 , youtube-dl =
       ./youtube-dl/package.dhall sha256:1f740feb774b344ba601bb06fcaa2af73b67066b7a826eccf0a9f6af94792afc

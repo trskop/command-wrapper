@@ -1,8 +1,9 @@
 -- vim: filetype=dhall
 
 let script =
-        ../completion/scripts.dhall sha256:5c0666159348b5216c012c72d7ee0a0a61c7f6f30b6c3a18c43e34f521d561c0
-      ? ../completion/scripts.dhall
+      { url = "https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc7/command-wrapper/dhall/Exec/yarn/completion-script"
+      , hash = "sha256:80d3eecf7ea99ec629c1acf0d852a50a80394d3ed18801f3af83a1190d70cd20"
+      }
 
 let wrapper =
         ../completion/wrapper sha256:2581cfe8c184898fe6b04aedad5ad9c1be34154b3a795ecab17ee19c899e5c8b
@@ -11,6 +12,6 @@ let wrapper =
 in    λ(toolset : Text)
     → wrapper
         { toolset = toolset
-        , expression = "(${script.url} ${script.hash}).yarn"
+        , expression = "${script.url} ${script.hash}"
         , command = "yarn"
         }

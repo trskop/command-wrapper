@@ -2,16 +2,16 @@
 
 let completionFor = "yarn"
 
-let -- This version of yarn-completion.bash works for yarn 1.19.1
+let -- This version of yarn-completion.bash works for yarn 1.21.1
     completion =
-      https://raw.githubusercontent.com/dsifford/yarn-completion/f4194c2ab2bb70e31c6596abb48bf54f43496ea7/yarn-completion.bash sha256:7a10f592c758bafe3a822dcaffeab4f207138187030054dc56c5a4449ccac1af as Text
+      https://raw.githubusercontent.com/dsifford/yarn-completion/v0.16.0/yarn-completion.bash sha256:ded3d564f8d74c42942eda2b560d67d55dc1b8682b78fcd91e0705b243466341 as Text
 
 let entryPoint = "_yarn"
 
 in  ''
     #!/usr/bin/env bash
 
-    # Copyright (c) 2019, Peter Trsko
+    # Copyright (c) 2019-2020, Peter Trsko
     #
     # All rights reserved.
     #
@@ -85,11 +85,6 @@ in  ''
                 ;;
             esac
         done
-
-        if ! command -v 'docker-compose' &>/dev/null; then
-            # TODO: Consider using default shell completion.
-            exit 0
-        fi
 
         if (( index >= ''${#words[@]} )); then
             words+=("")

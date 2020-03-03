@@ -9,9 +9,6 @@
 , wordlist =
       ./wordlist sha256:6984c0f59b61ea8feed634bde8ced6f88fed27ecdf2fe89ac4467d626c370a8b
     ? ./wordlist
-, scripts =
-      ./scripts/package.dhall sha256:afe58176b31fb9cbb98a8f0abf01a2c9561f1ec9567bbed1d72e5d785240e7bd
-    ? ./scripts/package.dhall
 , wrapper =
       ./wrapper sha256:2581cfe8c184898fe6b04aedad5ad9c1be34154b3a795ecab17ee19c899e5c8b
     ? ./wrapper
