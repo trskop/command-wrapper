@@ -100,7 +100,17 @@ import CommandWrapper.Subcommand.Prelude
     , stderr
     , subcommandParams
     )
-import CommandWrapper.Toolset.Options.Optparse (bashCompleter)
+import CommandWrapper.Core.Completion.FileSystem
+    ( EntryType(Directory)
+    , FileSystemOptions
+        ( appendSlashToSingleDirectoryResult
+        , entryType
+        , expandTilde
+        , word
+        )
+    , defFileSystemOptions
+    , queryFileSystem
+    )
 
 
 data Config = Config
@@ -513,7 +523,12 @@ die Env{params} n m = liftIO (dieWith params stderr n m)
 doCompletion :: Env a -> Word -> CommandWrapper.Shell -> [String] -> IO ()
 doCompletion Env{} index _shell words' = do
     mapM_ putStrLn (List.filter (pat `List.isPrefixOf`) allOptions)
-    bashCompleter "directory" "" pat >>= mapM_ putStrLn
+    queryFileSystem defFileSystemOptions
+        { appendSlashToSingleDirectoryResult = True
+        , entryType = Just Directory
+        , word = pat
+        , expandTilde = True
+        }
   where
     pat = fromMaybe (lastDef "" words') (atMay words' (fromIntegral index))
 
