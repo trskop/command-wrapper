@@ -155,6 +155,29 @@
         `CommandWrapper.{Core,Subcommand}.Config`.  Otherwise they (`cd`,
         `skel`, `exec`) would have to depend on toolset library.
 
+*   **Direnv support**:
+
+    1.  Introduce a library that extends Direnv's stdlib:
+
+        ```
+        TOOLSET completion --library --direnv [--content|--import]
+            [-o FILE|--output=FILE]
+        ```
+
+        Or:
+
+        ```
+        TOOLSET direnv --envrc [--content|--import] [-o FILE|--output=FILE]
+        ```
+
+    2.  Introduce:
+
+        ```
+        TOOLSET completion --query {--man-path}
+        ```
+
+        So that we can add them to `MANPATH` in `.envrc`.
+
 
 ## Internal Subcommands
 
