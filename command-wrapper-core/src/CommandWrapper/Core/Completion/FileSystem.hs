@@ -170,35 +170,43 @@ fileSystemCompleter FileSystemOptions{..} = do
     let ((wordDirectory, wordPrefix), wordPattern) =
             splitWord home word SplitWordsOptions{allowTilde, expandTilde}
 
-    entries <- listEntries wordDirectory wordPrefix wordPattern
-        >>= \case
-            -- If there is only one completion option, and it is a directory,
-            -- by appending '/' we'll force completion to descend into that
-            -- directory.
-            --
-            -- TODO: There are probably some corner cases that aren't handled
-            -- properly, like when we don't want to go deeper into it.
-            es@[(path, completion)]
-              | appendSlashToSingleDirectoryResult -> do
-                    isDir <- doesDirectoryExist path
-                    pure if isDir
-                        then [(path <> "/", completion <> "/")]
-                        else es
+    entries <- listEntries wordDirectory wordPrefix wordPattern >>= \entries ->
+        case entryType of
+            Just et -> filterM (\(p, _) ->
+                -- The value 3 limits the look ahead to 3 directory levels.  The
+                -- value was choosen arbitrarily.
+                isEntryType 3 et p) entries
 
-              | otherwise ->
-                    pure es
+            Nothing ->
+                pure entries
 
-            es ->
+
+    fmap updateEntry <$> case entries of
+        -- If there is only one completion option, and it is a directory,
+        -- by appending '/' we'll force completion to descend into that
+        -- directory.
+        --
+        -- TODO: There are probably some corner cases that aren't handled
+        -- properly, like when we don't want to go deeper into it.
+        es@[(path, completion)]
+          | appendSlashToSingleDirectoryResult
+          , Just Directory <- entryType ->
+                -- If we are listing only directories then we know that the
+                -- 'path' is directory without needing to do another file
+                -- system query.
+                pure [(path <> "/", completion <> "/")]
+
+          | appendSlashToSingleDirectoryResult -> do
+                isDir <- doesDirectoryExist path
+                pure if isDir
+                    then [(path <> "/", completion <> "/")]
+                    else es
+
+          | otherwise ->
                 pure es
 
-    fmap updateEntry <$> case entryType of
-        Just et -> filterM (\(p, _) ->
-            -- The value 3 limits the look ahead to 3 directory levels.  The
-            -- value was choosen arbitrarily.
-            isEntryType 3 et p) entries
-
-        Nothing ->
-            pure entries
+        es ->
+            pure es
   where
     updateEntry = \(_, s) -> prefix <> s <> suffix
 
@@ -375,6 +383,8 @@ listEntries
     -- ^ Prefix of an entry.  This doesn't include the directory part, only the
     -- final entry name.
     -> IO [(FilePath, String)]
+    -- TODO: It would be nice if we returned type of the entry (directory,
+    -- regular file, executable file, symbolic linke, etc.) as well.
 listEntries directory prefix pat = do
     isReadable <- readable <$> getPermissions directory
     if isReadable
