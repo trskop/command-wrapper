@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Global toolset configuration, i.e. one used by @command-wrapper@ executable.
-module CommandWrapper.Config.Global
+module CommandWrapper.Toolset.Config.Global
     (
     -- | Global configuration combines values from following sources:
     --

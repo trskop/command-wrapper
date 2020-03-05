@@ -11,7 +11,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Data type that represents when desktop notifications should be raised.
-module CommandWrapper.Config.NotifyWhen
+module CommandWrapper.Toolset.Config.NotifyWhen
 --  (
 --  )
   where

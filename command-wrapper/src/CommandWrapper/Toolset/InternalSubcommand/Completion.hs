@@ -106,7 +106,6 @@ import System.Process (CreateProcess(env), proc, readCreateProcessWithExitCode)
 import Text.Fuzzy as Fuzzy (Fuzzy)
 import qualified Text.Fuzzy as Fuzzy (Fuzzy(original), filter)
 
-import qualified CommandWrapper.Config.Global as Global (Config(..), getAliases)
 import CommandWrapper.Core.Completion.EnvironmentVariables
     ( defEnvironmentVariablesOptions
     , queryEnvironmentVariables
@@ -150,6 +149,10 @@ import CommandWrapper.Core.Message (Result, errorMsg, out)
 import qualified CommandWrapper.Core.Options.Optparse as Options
     ( splitArguments
     , splitArguments'
+    )
+import qualified CommandWrapper.Toolset.Config.Global as Global
+    ( Config(Config, colourOutput, verbosity)
+    , getAliases
     )
 import qualified CommandWrapper.Toolset.ExternalSubcommand as External
     ( executeCommand

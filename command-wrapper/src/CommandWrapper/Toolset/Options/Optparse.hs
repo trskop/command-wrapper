@@ -33,9 +33,11 @@ import qualified Options.Applicative.Builder.Completer as Options
 import qualified Options.Applicative.Types as Options (Completer(runCompleter))
 import System.Directory (doesDirectoryExist)
 
-import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Core.Environment.AppNames (AppNames(AppNames, usedName))
 import CommandWrapper.Core.Options.Optparse (execParserPure, handleParseResult)
+import CommandWrapper.Toolset.Config.Global
+    ( Config(Config, colourOutput, verbosity)
+    )
 
 
 internalSubcommandParse

@@ -76,13 +76,15 @@ import qualified System.AtomicWrite.Writer.ByteString as ByteString
     )
 import qualified System.AtomicWrite.Writer.Text as Text (atomicWriteFile)
 
-import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Core.Config.Shell
     ( HasShell(..)
     , Shell(..)
     )
 import CommandWrapper.Core.Environment (AppNames(exePath, usedName))
 import CommandWrapper.Core.Message (errorMsg)
+import CommandWrapper.Toolset.Config.Global
+    ( Config(Config, colourOutput, verbosity)
+    )
 import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     ( hPutExpr
     )

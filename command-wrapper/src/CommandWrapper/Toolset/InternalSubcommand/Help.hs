@@ -74,7 +74,6 @@ import Safe (atMay, headMay, lastMay)
 import System.Directory (findExecutablesInDirectories)
 import System.Posix.Process (executeFile)
 
-import CommandWrapper.Config.Global (Config(..), getAliases, getSearchPath)
 import CommandWrapper.Core.Config.Alias
     ( Alias(Alias, alias, description)
     , applyAlias
@@ -98,6 +97,11 @@ import CommandWrapper.Core.Message
     , defaultLayoutOptions
     , hPutDoc
     , out
+    )
+import CommandWrapper.Toolset.Config.Global
+    ( Config(Config, colourOutput, extraHelpMessage, manPath, verbosity)
+    , getAliases
+    , getSearchPath
     )
 import qualified CommandWrapper.Toolset.ExternalSubcommand as External
     ( executeCommand

@@ -81,8 +81,6 @@ import qualified System.Posix as Posix
     )
 import qualified Turtle (procs) -- Get rid of dependency on turtle, use process.
 
-import CommandWrapper.Config.Command (Command(..), NamedCommand(..))
-import qualified CommandWrapper.Config.Command as NamedCommand (isNamed)
 import CommandWrapper.Core.Config.Environment (EnvironmentVariable(..))
 import qualified CommandWrapper.Core.Config.Environment as EnvironmentVariable
     ( toTuple
@@ -109,6 +107,8 @@ import CommandWrapper.Subcommand.Prelude
     , subcommandParams
     , runSubcommand
     )
+import CommandWrapper.Toolset.Config.Command (Command(..), NamedCommand(..))
+import qualified CommandWrapper.Toolset.Config.Command as NamedCommand (isNamed)
 
 
 newtype Config = Config

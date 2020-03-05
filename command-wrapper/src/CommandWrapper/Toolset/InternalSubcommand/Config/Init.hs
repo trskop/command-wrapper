@@ -69,10 +69,12 @@ import System.Directory
 import System.FilePath ((</>))
 import System.Posix.Files (createSymbolicLink)
 
-import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Core.Environment (AppNames(AppNames, exePath, usedName))
 import CommandWrapper.Core.Help.Pretty (command)
 import CommandWrapper.Core.Message (errorMsg, out)
+import CommandWrapper.Toolset.Config.Global
+    ( Config(Config, colourOutput, verbosity)
+    )
 import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     ( Freeze(input, output)
     , Input(InputFile)

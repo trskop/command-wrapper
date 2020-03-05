@@ -48,10 +48,10 @@ import qualified Graphics.Vty as Vty
     )
 import System.Posix (OpenMode(ReadWrite), closeFd, defaultFileFlags, openFd)
 
-import CommandWrapper.Config.Global (Config(Config, colourOutput))
 import CommandWrapper.Core.Config.ColourOutput (shouldUseColours)
 import CommandWrapper.Core.Environment (AppNames(AppNames))
 import CommandWrapper.Core.Message (withTerminal)
+import CommandWrapper.Toolset.Config.Global (Config(Config, colourOutput))
 import CommandWrapper.Toolset.InternalSubcommand.Config.IsInput (IsInput(..))
 
 data MenuOptions = MenuOptions

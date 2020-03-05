@@ -80,7 +80,17 @@ import qualified Turtle
     , unset
     )
 
-import CommandWrapper.Config.Command (SimpleCommand(..))
+import CommandWrapper.Core.Completion.FileSystem
+    ( EntryType(Directory)
+    , FileSystemOptions
+        ( appendSlashToSingleDirectoryResult
+        , entryType
+        , expandTilde
+        , word
+        )
+    , defFileSystemOptions
+    , queryFileSystem
+    )
 import CommandWrapper.Core.Config.Environment (EnvironmentVariable(..))
 import CommandWrapper.Core.Config.Verbosity (Verbosity(Silent))
 import qualified CommandWrapper.Core.Environment as Environment
@@ -100,17 +110,7 @@ import CommandWrapper.Subcommand.Prelude
     , stderr
     , subcommandParams
     )
-import CommandWrapper.Core.Completion.FileSystem
-    ( EntryType(Directory)
-    , FileSystemOptions
-        ( appendSlashToSingleDirectoryResult
-        , entryType
-        , expandTilde
-        , word
-        )
-    , defFileSystemOptions
-    , queryFileSystem
-    )
+import CommandWrapper.Toolset.Config.Command (SimpleCommand(..))
 
 
 data Config = Config

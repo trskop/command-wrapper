@@ -11,7 +11,7 @@
 --
 -- Global toolset configuration file, i.e. one used by @command-wrapper@
 -- executable.
-module CommandWrapper.Config.File
+module CommandWrapper.Toolset.Config.File
     ( Config(..)
     , apply
     , read
@@ -40,8 +40,8 @@ import qualified Dhall.TypeCheck as Dhall (TypeError)
 
 import CommandWrapper.Core.Config.Alias (Alias)
 import CommandWrapper.Core.Config.ColourOutput (ColourOutput)
-import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Core.Config.Verbosity (Verbosity)
+import qualified CommandWrapper.Toolset.Config.Global as Global (Config(..))
 
 
 -- | Represents toolset configuration file.

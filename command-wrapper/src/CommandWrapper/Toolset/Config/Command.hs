@@ -10,7 +10,7 @@
 -- Portability: GHC specific language extensions.
 --
 -- Command description suitable for execution.
-module CommandWrapper.Config.Command
+module CommandWrapper.Toolset.Config.Command
     ( Command(..)
     , SimpleCommand(..)
     , NamedCommand(..)
@@ -45,7 +45,7 @@ import CommandWrapper.Core.Config.Environment (EnvironmentVariable)
 import CommandWrapper.Core.Config.Shell (Shell)
 import CommandWrapper.Core.Config.Verbosity (Verbosity)
 import CommandWrapper.Core.Dhall as Dhall
-import CommandWrapper.Config.NotifyWhen (NotifyWhen)
+import CommandWrapper.Toolset.Config.NotifyWhen (NotifyWhen)
 
 
 data NamedCommand = NamedCommand

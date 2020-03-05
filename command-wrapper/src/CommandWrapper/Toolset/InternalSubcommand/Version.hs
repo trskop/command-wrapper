@@ -59,7 +59,6 @@ import qualified Options.Applicative as Options (Parser, defaultPrefs, info)
 import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, headMay, lastMay)
 
-import CommandWrapper.Config.Global (Config(..))
 import CommandWrapper.Core.Completion.FileSystem
     ( FileSystemOptions
         ( appendSlashToSingleDirectoryResult
@@ -88,6 +87,9 @@ import CommandWrapper.Core.Help.Pretty
     , usageSection
     )
 import CommandWrapper.Core.Message (Result, out)
+import CommandWrapper.Toolset.Config.Global
+    ( Config(Config, colourOutput, verbosity)
+    )
 import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
 import qualified CommandWrapper.Toolset.InternalSubcommand.Utils as Options
     ( dhallFlag

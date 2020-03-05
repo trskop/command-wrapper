@@ -54,20 +54,6 @@ import qualified Options.Applicative.Standard as Options
 import System.Directory (doesFileExist, setCurrentDirectory)
 import System.FilePath ((</>), splitSearchPath)
 
-import qualified CommandWrapper.Config.Global as Global
-    ( Config(Config)
-    , ConfigPaths(ConfigPaths)
-    , defConfigPaths
-    )
-import qualified CommandWrapper.Config.Global as Global.Config
-    ( Config(..)
-    , ConfigPaths(..)
-    , ManPath(..)
-    , SearchPath(..)
-    , def
-    , getAliases
-    )
-import qualified CommandWrapper.Config.File as Config.File (apply, read)
 import CommandWrapper.Core.Environment
     ( AppNameError(..)
     , AppNames(..)
@@ -108,6 +94,20 @@ import qualified CommandWrapper.Core.Help.Pretty as Help
     , value
     )
 import CommandWrapper.Core.Message (Result(..), errorMsg)
+import qualified CommandWrapper.Toolset.Config.Global as Global
+    ( Config(Config)
+    , ConfigPaths(ConfigPaths)
+    , defConfigPaths
+    )
+import qualified CommandWrapper.Toolset.Config.Global as Global.Config
+    ( Config(..)
+    , ConfigPaths(..)
+    , ManPath(..)
+    , SearchPath(..)
+    , def
+    , getAliases
+    )
+import qualified CommandWrapper.Toolset.Config.File as Config.File (apply, read)
 import qualified CommandWrapper.Toolset.ExternalSubcommand as External
 import qualified CommandWrapper.Toolset.InternalSubcommand as Internal
 import qualified CommandWrapper.Toolset.Main.StaticConfig as StaticConfig

@@ -86,7 +86,6 @@ import qualified Options.Applicative as Options
 import qualified Options.Applicative.Standard as Options (outputOption)
 import Safe (atMay, lastMay)
 
-import qualified CommandWrapper.Config.Global as Global (Config(..))
 import CommandWrapper.Core.Completion.EnvironmentVariables
     ( EnvironmentVariablesOptions(word, prefix)
     , defEnvironmentVariablesOptions
@@ -121,6 +120,9 @@ import CommandWrapper.Core.Message
     ( Result
 --  , errorMsg
     , out
+    )
+import qualified CommandWrapper.Toolset.Config.Global as Global
+    ( Config(Config, colourOutput, verbosity)
     )
 import qualified CommandWrapper.Toolset.ExternalSubcommand as External
     ( findSubcommands

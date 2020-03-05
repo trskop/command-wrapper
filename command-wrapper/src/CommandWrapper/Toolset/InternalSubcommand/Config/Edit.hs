@@ -42,9 +42,11 @@ import System.Editor
     , stdEditorLookupStrategy
     )
 
-import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Core.Message (errorMsg)
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
+import CommandWrapper.Toolset.Config.Global
+    ( Config(Config, colourOutput, verbosity)
+    )
 import CommandWrapper.Toolset.ExternalSubcommand (getSubcommandConfigPathToEdit)
 
 

@@ -220,16 +220,18 @@ import qualified Dhall.Pretty
 import qualified Dhall.Repl
 import qualified Dhall.TypeCheck
 --import qualified Text.Dot
+import Data.Generics.Internal.VL.Lens ((^.))
 
-import CommandWrapper.Config.Global (Config(Config, colourOutput, verbosity))
 import CommandWrapper.Core.Config.ColourOutput (shouldUseColours)
 import qualified CommandWrapper.Core.Config.Verbosity as Verbosity
     ( Verbosity(Normal, Silent)
     )
 import qualified CommandWrapper.Core.Dhall as Dhall (hPutDoc, hPutExpr)
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
+import CommandWrapper.Toolset.Config.Global
+    ( Config(Config, colourOutput, verbosity)
+    )
 import CommandWrapper.Toolset.InternalSubcommand.Config.IsInput (IsInput(..))
-import Data.Generics.Internal.VL.Lens ((^.))
 
 
 -- {{{ Interpreter ------------------------------------------------------------

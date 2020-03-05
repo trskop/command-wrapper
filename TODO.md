@@ -123,7 +123,7 @@
 
     Steps:
 
-    1.  (**IN PROGRESS**) Reorganise modules so that they fit into the
+    1.  (**DONE**) Reorganise modules so that they fit into the
         hierarchy mentioned above:
 
         -   CommandWrapper.Core
@@ -149,6 +149,11 @@
         While they are very useful it may not make sense to put them into
         `command-wrapper` or `command-wrapper-subcommand`.  They may
         need a package each.  It may be the most modular approach as well.
+
+        This may require moving some submodules from
+        `CommandWrapper.Toolset.Config` into
+        `CommandWrapper.{Core,Subcommand}.Config`.  Otherwise they (`cd`,
+        `skel`, `exec`) would have to depend on toolset library.
 
 
 ## Internal Subcommands

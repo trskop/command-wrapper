@@ -55,11 +55,6 @@ import System.Directory
 import System.FilePath ((</>), (<.>), takeFileName)
 import System.Posix.Process (executeFile)
 
-import qualified CommandWrapper.Config.Global as Global
-    ( Config(Config, colourOutput, configPaths, verbosity)
-    , ConfigPaths(ConfigPaths, local, system, user)
-    , getSearchPath
-    )
 import qualified CommandWrapper.Core.Environment as Environment
     ( AppNames(AppNames, exePath, names, usedName)
     , Params
@@ -82,6 +77,11 @@ import CommandWrapper.Core.Message
     , dieUnableToExecuteSubcommand
     , dieUnableToFindSubcommandExecutable
     , errorMsg
+    )
+import qualified CommandWrapper.Toolset.Config.Global as Global
+    ( Config(Config, colourOutput, configPaths, verbosity)
+    , ConfigPaths(ConfigPaths, local, system, user)
+    , getSearchPath
     )
 
 
