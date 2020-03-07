@@ -167,6 +167,13 @@
         Or:
 
         ```
+        TOOLSET completion --library --direnv=envrc [--content|--import] \
+            [-o FILE|--output=FILE]
+        ```
+
+        Or:
+
+        ```
         TOOLSET direnv --envrc [--content|--import] [-o FILE|--output=FILE]
         ```
 
@@ -177,6 +184,18 @@
         ```
 
         So that we can add them to `MANPATH` in `.envrc`.
+
+    3.  Introduce:
+
+        ```
+        TOOLSET config --init --direnv
+        ```
+
+        Or:
+
+        ```
+        TOOLSET direnv --init
+        ```
 
 
 ## Internal Subcommands
