@@ -382,12 +382,18 @@
 
 ### Help
 
+*   Implement `TOOLSET help --list` that would print subcommands and short help
+    message.  It should include aliases, but it should be obvious what they
+    are.
+
 *   `TOOLSET help --man` needs to understand aliases.
 
-*   Completion should support topics as well.
+*   (**DONE**) Completion should support topics as well.
 
 *   All `command-wrapper-${TOPIC}` and `${TOOLSET}-${TOPIC}` manual pages
-    should be accessible.
+    should be accessible.  This doesn't have to be by understanding how `man`
+    searches for pages, but it can be implemented as part of toolset
+    configuration.
 
 *   We should be able to default to `command-wrapper(1)` when there is no
     toolset-specific manual page.
@@ -395,7 +401,8 @@
 *   `TOOLSET help --format [--input=FILE] [--subcommand=NAME]` that takes Dhall
     representation of help message and prints it formatted including colours.
 
-*   Be able to access manual pages inside `nix-shell` correctly.
+*   (**DONE**) Be able to access manual pages inside `nix-shell` correctly.
+    Resolved by using separate man path.
 
 
 ## Bundled External Subcommands

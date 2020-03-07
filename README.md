@@ -7,6 +7,12 @@ Command Wrapper is a meta tool.  A tool to create tools with a nice and
 consistent UI.  We call these tools **toolsets**, sets of commands with a common
 theme, or a purpose.
 
+Have you ever made a `Makefile` just to not repeat the same long command line
+again?  Was your project ever cluttered by a lot of small utility scripts that
+no one remembers the purpose of?  Is your `PATH` cluttered with same tools over
+and over because it was hard to remember what are their names?  Those are the
+kinds of problems Command Wrapper is trying to help with.
+
 
 ## Table of Contents
 
@@ -26,6 +32,7 @@ theme, or a purpose.
     -   [Command Line Completion](#command-line-completion)
         *   [Bash Command Line Completion](#bash-command-line-completion)
         *   [Command Line Completion For Aliases](#command-line-completion-for-aliases)
+    -   [Direnv and Nix](#direnv-and-nix)
 
 *   [Installation](#installation)
 
@@ -62,6 +69,17 @@ Protocol, which is described in its own manual page
 ](command-wrapper/man/command-wrapper-subcommand-protocol.7.md).
 
 
+## Design Principles
+
+*   Generalisation instead of abstractions whenever possible.
+
+*   Transparent abstractions when they are necessary.  Everything should be
+    there in the open to debug.
+
+*   Composable and simple design decisions. In other words, it doesn't have to
+    be easy, but there should be a way.
+
+
 ## Some Interesting Features
 
 *   Command Wrapper makes heavy use of [Dhall][Dhall homepage]
@@ -69,6 +87,8 @@ Protocol, which is described in its own manual page
     integrated into its `config` (internal) subcommand.  It also provides very
     useful Dhall library [`command-wrapper/dhall/CommandWrapper`
     ](command-wrapper/dhall/CommandWrapper/).
+
+    Dhall has a strong normalising property, which removes all abstractions.
 
 *   Command line completion for Bash, Fish, and Zsh.  Subcommands adhering to
     Subcommand Protocol get command line completion and help integration for
@@ -534,6 +554,33 @@ The reason why we can't use `alias dhall='habit config --dhall'` is that, at
 the moment, Command Wrapper has no way of knowing that we are passing `--dhall`
 option to `config` command.  Therefore, command line completion would be for
 `config` subcommand, and not for `config --dhall`.
+
+
+### Direnv and Nix
+
+It's possible to use [Direnv](https://direnv.net/) and
+[Nix](https://nixos.org/nix/) to build a project-specific tooling.  Resources
+to look into:
+
+*   Library for configuring Command Wrapper toolset in `.envrc`:
+
+    -   Documented on its own manual page:
+        [./command-wrapper/man/command-wrapper-direnv-library.7.md
+        ](./command-wrapper/man/command-wrapper-direnv-library.7.md)
+
+    -   Source code is nicely documented as well:
+        [./command-wrapper/bash/direnv.bash](./command-wrapper/bash/direnv.bash)
+
+    -   It is used in [dev/cw-dev.envrc](./dev/cw-dev.envrc).
+
+*   Nix example derivations for toolset
+    [command-wrapper/nix/command-wrapper-toolset/default.nix
+    ](./command-wrapper/nix/command-wrapper-toolset/default.nix)
+    and subcommands
+    [command-wrapper/nix/command-wrapper-subcommands/default.nix
+    ](./command-wrapper/nix/command-wrapper-subcommands/default.nix)
+
+*   This project setup in [dev/README.md](./dev/README.md).
 
 
 ## Installation
