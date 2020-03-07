@@ -159,7 +159,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
         staticManDir = staticOutDistShare </> "man"
         staticDocDir = staticOutDistShare </> "doc" </> "command-wrapper"
 
-        version = "0.1.0.0-rc6"
+        version = "0.1.0.0-rc7"
         staticTarball =
             staticOut </> "command-wrapper-" <> version <.> "tar.xz"
 
