@@ -155,26 +155,20 @@
         `CommandWrapper.{Core,Subcommand}.Config`.  Otherwise they (`cd`,
         `skel`, `exec`) would have to depend on toolset library.
 
-*   **Direnv support**:
+*   (**IN PROGRESS**) **Direnv support**:
 
-    1.  Introduce a library that extends Direnv's stdlib:
+    1.  (**DONE**) Introduce a library that extends Direnv's stdlib:
 
         ```
         TOOLSET completion --library --direnv [--content|--import]
             [-o FILE|--output=FILE]
         ```
 
-        Or:
+        This may be an alternative if we'll need more Direnv-related libraries:
 
         ```
         TOOLSET completion --library --direnv=envrc [--content|--import] \
             [-o FILE|--output=FILE]
-        ```
-
-        Or:
-
-        ```
-        TOOLSET direnv --envrc [--content|--import] [-o FILE|--output=FILE]
         ```
 
     2.  Introduce:
@@ -189,12 +183,6 @@
 
         ```
         TOOLSET config --init --direnv
-        ```
-
-        Or:
-
-        ```
-        TOOLSET direnv --init
         ```
 
 

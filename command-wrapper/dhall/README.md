@@ -13,17 +13,19 @@
     TOOLSET help [--man] exec
     ```
 
+
 # Examples
 
 *   Simple command definitions for [`exec`](./example/exec/) subcommand.
 
 
-# Dhall Scripts Embedded in CommandWrapper
+# Dhall Scripts Embedded in Command Wrapper
 
-These Dhall scripts are actually embedded into CommandWrapper during
+These Dhall scripts are actually embedded into Command Wrapper during
 compilation.
 
 *   [`./completion.dhall`](./completion.dhall)
+*   [`./import-direnv-library.dhall`](./import-direnv-library.dhall)
 *   [`./import-shell-library.dhall`](./import-shell-library.dhall)
 *   [`../../command-wrapper-subcommand/dhall/command-wrapper-style-completion-info.dhall`](../../command-wrapper-subcommand/dhall/command-wrapper-style-completion-info.dhall)
 *   [`../../command-wrapper-subcommand/dhall/optparse-completion-info.dhall`](../../command-wrapper-subcommand/dhall/optparse-completion-info.dhall)

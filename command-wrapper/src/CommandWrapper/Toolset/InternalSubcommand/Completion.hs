@@ -388,7 +388,7 @@ completion completionConfig@CompletionConfig{..} appNames options config =
             putShellCompletionScript subcommand' appNames config' opts
 
         LibraryMode opts config' ->
-            putLibrary subcommand' config' opts
+            putLibrary subcommand' appNames config' opts
 
         QueryMode query@Query{..} config' -> case what of
             QuerySubcommands
@@ -886,8 +886,15 @@ completionSubcommandCompleter internalSubcommands appNames config _shell index
         [minBound..maxBound] <&> \s ->
             "--type=" <> showEntryType s
 
-    -- At the moment we have library only for Bash.
-    libraryOptions = ["--shell=bash" , "--import" , "--content", "--dhall="]
+    libraryOptions =
+        [ "--dhall="
+        , "--direnv"
+        -- At the moment we have library only for Bash.
+        , "--shell=bash"
+
+        , "--content"
+        , "--import"
+        ]
 
     dhallLibraryOptions = [minBound..maxBound] <&> \lib ->
         "--dhall=" <> showDhallLibrary lib
@@ -986,7 +993,7 @@ parseOptions appNames config arguments = do
             <$> ( libraryFlag
                 <*> ( dualFoldEndo
                     <$> many (importFlag <|> contentFlag)
-                    <*> many (shellOption <|> dhallLibraryOption)
+                    <*> many (shellOption <|> dhallLibraryOption <|> direnvFlag)
                     )
                 )
             <*> optional outputOption
@@ -1134,6 +1141,12 @@ parseOptions appNames config arguments = do
                         opts{library = DhallLibrary lib}
                 Nothing ->
                     Left "Unknown Dhall library"
+
+    direnvFlag :: Options.Parser (Endo LibraryOptions)
+    direnvFlag = Options.flag' direnvLibrary (Options.long "direnv")
+      where
+        direnvLibrary = Endo \opts ->
+            opts{library = DirenvLibrary}
 
     queryFlag :: Options.Parser (Endo (CompletionMode Global.Config))
     queryFlag = Options.flag mempty switchToQueryMode (Options.long "query")
@@ -1442,6 +1455,7 @@ completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             <+> Pretty.brackets
                 ( longOptionWithArgument "shell" "SHELL"
                 <> "|" <> longOptionWithArgument "dhall" "LIBRARY"
+                <> "|" <> longOption "direnv"
                 )
             <+> Pretty.brackets
                 (         longOption "import"

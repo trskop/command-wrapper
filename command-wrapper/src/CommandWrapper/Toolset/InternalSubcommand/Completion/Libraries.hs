@@ -29,6 +29,9 @@ module CommandWrapper.Toolset.InternalSubcommand.Completion.Libraries
     , showDhallLibrary
     , putDhallLibrary
 
+    -- ** Direnv Library
+    , putDirenvLibrary
+
     -- * Shell Completion Script
     , ScriptOptions(..)
     , defScriptOptions
@@ -54,6 +57,7 @@ import Text.Show (Show, show)
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (putStr)
+--import Data.ByteString.ShellEscape (bash, bytes)
 import Data.Either.Validation (validationToEither)
 import Data.FileEmbed (embedFile)
 import Data.Generics.Product.Typed (typed)
@@ -144,6 +148,7 @@ defLibraryOptions = LibraryOptions
 data Library
     = ShellLibrary Shell
     | DhallLibrary DhallLibrary
+    | DirenvLibrary
   deriving stock (Generic, Show)
 
 instance HasShell Library where
@@ -151,8 +156,11 @@ instance HasShell Library where
         ShellLibrary shell ->
             ShellLibrary (f `appEndo` shell)
         DhallLibrary _ ->
-            -- Bash is the default shell.
-            ShellLibrary (f `appEndo` Bash)
+            ShellLibrary (f `appEndo` defaultShell)
+        DirenvLibrary ->
+            ShellLibrary (f `appEndo` defaultShell)
+      where
+        defaultShell = Bash
 
 data ImportOrContent
     = Import
@@ -163,10 +171,11 @@ data ImportOrContent
 
 putLibrary
     :: (forall ann. Pretty.Doc ann)
+    -> AppNames
     -> Config
     -> LibraryOptions
     -> IO ()
-putLibrary subcmd config LibraryOptions{..} = case library of
+putLibrary subcmd appNames config LibraryOptions{..} = case library of
     ShellLibrary shell ->
         case shell of
             Bash ->
@@ -176,6 +185,9 @@ putLibrary subcmd config LibraryOptions{..} = case library of
 
     DhallLibrary dhallLib ->
         putDhallLibrary config dhallLib importOrContent output
+
+    DirenvLibrary ->
+        putDirenvLibrary subcmd appNames config importOrContent output
 
 dieUnsupportedShell
     :: (forall ann. Pretty.Doc ann)
@@ -213,7 +225,7 @@ putBashLibrary subcmd config importOrContent = \case
                 ByteString.atomicWriteFile fn libContent
   where
     libContent :: ByteString
-    libContent = $(embedFile "bash/lib.bash")
+    libContent = $(embedFile "./bash/lib.bash")
 
     libImportScriptExpr =
         $(Dhall.TH.staticDhallExpression
@@ -232,20 +244,51 @@ putBashLibrary subcmd config importOrContent = \case
             Right t ->
                 pure t
 
-dieFailedToGenerateLibrary
-    :: (forall ann. Pretty.Doc ann)
-    -> Config
-    -> Dhall.ExtractErrors Dhall.Src Void
-    -> IO a
-dieFailedToGenerateLibrary subcmd Config{colourOutput, verbosity} err = do
-    errorMsg subcmd verbosity colourOutput stderr
-        ( "Failed to generate library or its import with: "
-        <> fromString (show err)
-        )
-    -- TODO: This is probably not the best exit code.
-    exitWith (ExitFailure 1)
-
 -- }}} Script and Dhall Libraries -- Bash Library -----------------------------
+
+-- {{{ Script and Dhall Libraries -- Direnv Library ---------------------------
+
+putDirenvLibrary
+    :: (forall ann. Pretty.Doc ann)
+    -> AppNames
+    -> Config
+    -> ImportOrContent
+    -> OutputStdoutOrFile
+    -> IO ()
+putDirenvLibrary subcmd appNames config importOrContent = \case
+    OutputHandle _ ->
+        case importOrContent of
+            Import ->
+                getLibImportScript >>= Text.putStr
+            Content ->
+                ByteString.putStr libContent
+
+    OutputNotHandle (OutputFile fn) ->
+        case importOrContent of
+            Import ->
+                getLibImportScript >>= Text.atomicWriteFile fn
+            Content ->
+                ByteString.atomicWriteFile fn libContent
+  where
+    libContent :: ByteString
+    libContent = $(embedFile "./bash/direnv.bash")
+
+    libImportScriptExpr =
+        $(Dhall.TH.staticDhallExpression "./dhall/import-direnv-library.dhall")
+
+    getLibImportScript :: IO Text
+    getLibImportScript = do
+        let script = Dhall.extract Dhall.auto libImportScriptExpr
+        case validationToEither script of
+            Left e ->
+                -- TODO: Error handling  should probably be left to higher
+                -- level code.
+                dieFailedToGenerateLibrary subcmd config e
+
+            Right f ->
+                pure (f (usedName appNames))
+
+-- }}} Script and Dhall Libraries -- Direnv Library ---------------------------
 
 -- {{{ Script and Dhall Libraries -- Dhall Libraries --------------------------
 
@@ -431,6 +474,19 @@ dieFailedToGenerateCompletionScript
   subcmd Config{colourOutput, verbosity} err = do
     errorMsg subcmd verbosity colourOutput stderr
         ( "Failed to generate completion script: "
+        <> fromString (show err)
+        )
+    -- TODO: This is probably not the best exit code.
+    exitWith (ExitFailure 1)
+
+dieFailedToGenerateLibrary
+    :: (forall ann. Pretty.Doc ann)
+    -> Config
+    -> Dhall.ExtractErrors Dhall.Src Void
+    -> IO a
+dieFailedToGenerateLibrary subcmd Config{colourOutput, verbosity} err = do
+    errorMsg subcmd verbosity colourOutput stderr
+        ( "Failed to generate library or its import with: "
         <> fromString (show err)
         )
     -- TODO: This is probably not the best exit code.

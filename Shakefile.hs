@@ -177,6 +177,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
             , man1Dir </> "command-wrapper-skel.1.gz"
             , man1Dir </> "command-wrapper-version.1.gz"
             , man7Dir </> "command-wrapper-bash-library.7.gz"
+            , man7Dir </> "command-wrapper-direnv-library.7.gz"
             , man7Dir </> "command-wrapper-subcommand-protocol.7.gz"
             ]
 

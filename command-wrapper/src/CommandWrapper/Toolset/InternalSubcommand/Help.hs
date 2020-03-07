@@ -162,6 +162,7 @@ help internalHelp mainHelp appNames@AppNames{usedName} options config =
                 Just "command-wrapper" -> pure (Just "command-wrapper")
                 Just "completion" -> pure internalCommandManPage
                 Just "config" -> pure internalCommandManPage
+                Just "direnv-library" -> pure internalCommandManPage
                 Just "help" -> pure internalCommandManPage
                 Just "subcommand-protocol" -> pure internalCommandManPage
                 Just "version" -> pure internalCommandManPage
@@ -355,6 +356,7 @@ helpSubcommandCompleter appNames config _shell index words
         List.filter (fmap Char.toLower pat `List.isPrefixOf`)
             [ "bash-library"
             , "command-wrapper"
+            , "direnv-library"
             , "subcommand-protocol"
             ]
 
