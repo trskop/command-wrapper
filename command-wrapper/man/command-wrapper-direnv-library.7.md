@@ -27,7 +27,7 @@ its Direnv library in `.envrc` files.  Paste output of the following command
 into your script:
 
 ```
-TOOLSET_COMMAND completion --library --direnv=envrc --import
+TOOLSET_COMMAND completion --library --direnv --import
 ```
 
 For more information see `command-wrapper-completion(1)` manual page.
@@ -39,7 +39,7 @@ Direnv library is self-documented, the easiest way how to see the embedded
 documentation is to run (if you're using `less` as pager, if not read further):
 
 ```
-TOOLSET_COMMAND completion --library --direnv=envrc [--content] | less
+TOOLSET_COMMAND completion --library --direnv [--content] | less
 ```
 
 When we're not using `less` then change the last command in the pipeline to be
@@ -50,7 +50,7 @@ If [`bat`](https://github.com/sharkdp/bat), or any other `cat`-like command
 with syntax highlighting functionality is installed, then it is better to use:
 
 ```
-TOOLSET_COMMAND completion --library --direnv=envrc [--content] | bat -l bash
+TOOLSET_COMMAND completion --library --direnv [--content] | bat -l bash
 ```
 
 Where `-l` is short for `--language` and allows `bat` to use syntax
@@ -116,7 +116,7 @@ it, via e.g. Nix, then that has to be done before.
 # ...
 
 # shellcheck source=/dev/null
-source <(yx completion --library --direnv=envrc --content)
+source <(yx completion --library --direnv --content)
 use command_wrapper 'yx' './.command-wrapper'
 
 # ...
@@ -125,7 +125,7 @@ use command_wrapper 'yx' './.command-wrapper'
 With Nix setup you may want to write output of this command:
 
 ```
-TOOLSET completion --library --direnv=envrc --content
+TOOLSET completion --library --direnv --content
 ```
 
 Into a file and expose path to it in an environment variable:
