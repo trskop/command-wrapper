@@ -58,7 +58,7 @@
       ./Shell/package.dhall sha256:ec32d80f4962cf4f2a5be99dfbc2534c15431a40bad5142448fb6ec2bd8ef0a4
     ? ./Shell/package.dhall
 , SkelConfig =
-      ./SkelConfig/package.dhall sha256:d5c99e0937e7d5e4cd2ac55222f239fee8ae0b4495a821ffea742771a42b2798
+      ./SkelConfig/package.dhall sha256:50266a1fdbcd0e83a01152d1ecd03fc1414d0f78440052b4fee2bdcf2dc099cc
     ? ./SkelConfig/package.dhall
 , SubcommandAlias =
       ./SubcommandAlias/package.dhall sha256:3c0eb761e752cf7f43a794586af41951faf744d5d6c8b7c00e0fb31f4e6a9ff2
@@ -89,23 +89,21 @@
           ./help/value sha256:5f1f3fcc9e13c5576bd0b75e8619aa8b02269a01c9d148c6a520602adba87527
         ? ./help/value
     }
-, utils =
-    { url =
-        { defaultPort =
-              ./url/defaultPort sha256:bfdc295856e05e3610d202d9c12f56f7c423de81cd6069f590786ca176b94df3
-            ? ./url/defaultPort
-        , emptyPath =
-              ./url/emptyPath sha256:f08ed5225480d827ff3ce74b756afa6330f66d974d6f0d6160d767b5c45642aa
-            ? ./url/emptyPath
-        , mk =
-              ./url/mk sha256:e9438a6467c75130cd3eb6dbfdfabc13a35b78f7cf5009de2564dd6799d429d0
-            ? ./url/mk
-        , port =
-              ./url/port sha256:d7e20173b3139c6c37b7b71a94a6ada30efe37db9e60ff9f25aa8292cc1d4502
-            ? ./url/port
-        , portToText =
-              ./url/portToText sha256:a1d2133ee6b8cd5a5f2bdbc439a80f4c0ceff48194617cd28c98a1a30ad917e3
-            ? ./url/portToText
-        }
+, utils.url =
+    { defaultPort =
+          ./url/defaultPort sha256:bfdc295856e05e3610d202d9c12f56f7c423de81cd6069f590786ca176b94df3
+        ? ./url/defaultPort
+    , emptyPath =
+          ./url/emptyPath sha256:f08ed5225480d827ff3ce74b756afa6330f66d974d6f0d6160d767b5c45642aa
+        ? ./url/emptyPath
+    , mk =
+          ./url/mk sha256:e9438a6467c75130cd3eb6dbfdfabc13a35b78f7cf5009de2564dd6799d429d0
+        ? ./url/mk
+    , port =
+          ./url/port sha256:d7e20173b3139c6c37b7b71a94a6ada30efe37db9e60ff9f25aa8292cc1d4502
+        ? ./url/port
+    , portToText =
+          ./url/portToText sha256:a1d2133ee6b8cd5a5f2bdbc439a80f4c0ceff48194617cd28c98a1a30ad917e3
+        ? ./url/portToText
     }
 }

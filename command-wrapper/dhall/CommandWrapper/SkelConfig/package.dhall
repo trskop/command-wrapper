@@ -10,6 +10,6 @@
       ./SkelLanguage sha256:9756f293780a9da48ed4c81914fd65f64ad1b2bbd1006ebafe3eded645806790
     ? ./SkelLanguage
 , template =
-      ./template/package.dhall sha256:0adac1f4a15a543667fe4cd5bfb826e08046e2a53cede49ad8af45fb138f08fe
+      ./template/package.dhall sha256:0c9bf5e71f027e931749675fbc6fdf9ea8c6e519f95d7af6f069581df8307940
     ? ./template/package.dhall
 }
