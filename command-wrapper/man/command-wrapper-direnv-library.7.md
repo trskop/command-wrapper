@@ -63,6 +63,7 @@ For more information see `command-wrapper-completion(1)` manual page.
 
 use command\_wrapper *TOOLSET\_NAME* *CONFIG\_DIR*
 
+
 ## ARGUMENTS
 
 *TOOLSET\_NAME*
@@ -105,6 +106,70 @@ use command\_wrapper *TOOLSET\_NAME* *CONFIG\_DIR*
 
     If you're using version control system then make sure that generated
     files are ignored.
+
+
+## EXPORTED ENVIRONMENT VARIABLES
+
+`COMMAND_WRAPPER_PRELUDE_LIB`
+:   Dhall expression representing Dhall Prelude library.
+
+    Usage example:
+
+    ```Dhall
+    let Prelude = env:COMMAND_WRAPPER_PRELUDE_LIB
+
+    let List/map = Prelude.List.map
+
+    in  List/map
+    ```
+
+`COMMAND_WRAPPER_LIB`
+:   Dhall expression representing Command Wrapper Dhall library.
+
+    Library is documented on
+    <https://github.com/trskop/command-wrapper/tree/master/command-wrapper/dhall/CommandWrapper>.
+
+`COMMAND_WRAPPER_EXEC_LIB`
+:   Dhall expression representing Command Wrapper Exec Dhall library.
+
+    Library is documented on
+    <https://github.com/trskop/command-wrapper/tree/master/command-wrapper/dhall/Exec>.
+
+`${TOOLSET_PREFIX}_BASH_COMPLETION`
+:   Variable contains file path to Bash completion for a specific toolset
+    indicated by `TOOLSET_PREFIX`.  Value of `TOOLSET_PREFIX` is the name of
+    the toolset converted to upper case and all non-alphanumerical character
+    exchanged for `'_'` character.
+
+    Usage example for toolset named `dev-tools`:
+
+    ```Bash
+    source "${DEV_TOOLS_BASH_COMPLETION}"
+    ```
+
+`${TOOLSET_PREFIX}_FISH_COMPLETION`
+:   Variable contains file path to Fish completion for a specific toolset
+    indicated by `TOOLSET_PREFIX`.  Value of `TOOLSET_PREFIX` is the name of
+    the toolset converted to upper case and all non-alphanumerical character
+    exchanged for `'_'` character.
+
+`${TOOLSET_PREFIX}_ZSH_COMPLETION`
+:   Variable contains file path to Zsh completion for a specific toolset
+    indicated by `TOOLSET_PREFIX`.  Value of `TOOLSET_PREFIX` is the name of
+    the toolset converted to upper case and all non-alphanumerical character
+    exchanged for `'_'` character.
+
+`COMMAND_WRAPPER_LOCAL_CONFIG_DIR`
+:   This is set to the value *CONFIG\_DIR* passed to `use command_wrapper`.
+    Toolset will then look for its configuration in:
+
+    ```Bash
+    ${COMMAND_WRAPPER_LOCAL_CONFIG_DIR}/${TOOLSET}
+    ```
+
+    More information about this environment variable can be found in
+    `command-wrapper(1)` manual page.
+
 
 ## Examples
 
