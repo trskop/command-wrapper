@@ -32,9 +32,10 @@ kinds of problems Command Wrapper is trying to help with.
     -   [Command Line Completion](#command-line-completion)
         *   [Bash Command Line Completion](#bash-command-line-completion)
         *   [Command Line Completion For Aliases](#command-line-completion-for-aliases)
+    -   [Direnv](#direnv)
     -   [Direnv and Nix](#direnv-and-nix)
 
-*   [Installation](#installation)
+*   [Source Installation](#source-installation)
 
 
 ## Description
@@ -405,7 +406,7 @@ For more information see [`command-wrapper(1)`
 ](command-wrapper/man/command-wrapper.1.md) which provides more information on how
 aliases are defined.  To see what aliases are defined by default when
 `~/.local/lib/command-wrapper/command-wrapper config --init` is invoked
-(described more in [Installation](#installation) section) see
+(described more in [Source Installation](#source-installation) section) see
 [`command-wrapper/dhall/init/command-wrapper/default/aliases-common.dhall`
 ](./command-wrapper/dhall/init/command-wrapper/default/aliases-common.dhall).
 
@@ -556,6 +557,24 @@ option to `config` command.  Therefore, command line completion would be for
 `config` subcommand, and not for `config --dhall`.
 
 
+### Direnv
+
+Command Wrapper allows you to set `COMMAND_WRAPPER_LOCAL_CONFIG_DIR` which then
+becomes the most specific configuration.  If Direnv sets this variable to a
+directory/project specific value, existing toolsets can be reconfigured.
+Common scenario is to have a `build` command that is specific to a project.
+The way this approach behaves is very close to a project specific `Makefile`.
+
+For more information see [`command-wrapper(1)`
+](./command-wrapper/man/command-wrapper.1.md) manual page, especially section
+*ENVIRONMENT VARIABLES*.
+
+This setup is useful for personal projects since it depends on knowing what
+user setup to configure.  For larger projects it may be better to use
+[Direnv and Nix](#direnv-and-nix) approach where Nix is used to install and
+setup the toolset itself.
+
+
 ### Direnv and Nix
 
 It's possible to use [Direnv](https://direnv.net/) and
@@ -565,7 +584,7 @@ to look into:
 *   Library for configuring Command Wrapper toolset in `.envrc`:
 
     -   Documented on its own manual page:
-        [./command-wrapper/man/command-wrapper-direnv-library.7.md
+        [`command-wrapper-direnv-library(7)`
         ](./command-wrapper/man/command-wrapper-direnv-library.7.md)
 
     -   Source code is nicely documented as well:
@@ -582,8 +601,18 @@ to look into:
 
 *   This project setup in [dev/README.md](./dev/README.md).
 
+*   Direnv doesn't support setting up command line completion.  This has to be
+    done from outside.  Command Wrapper Direnv library exports few environment
+    variables that make this easier to achieve.  See
+    [`command-wrapper-direnv-library(7)`
+    ](./command-wrapper/man/command-wrapper-direnv-library.7.md) for more
+    information on that.
 
-## Installation
+
+## Source Installation
+
+This section describes how to install Command Wrapper from source code and
+create a new toolset.
 
 1.  Install `command-wrapper`:
 
