@@ -21,17 +21,11 @@ Generic usage:
 
 ```
 cw-dev [GLOBAL_OPTIONS] SUBCOMMAND [--] [SUBCOMMAND_ARGUMENTS]
-
 cw-dev [GLOBAL_OPTIONS] help [SUBCOMMAND]
-
 cw-dev [GLOBAL_OPTIONS] config [SUBCOMMAND] [CONFIG_OPTIONS]
-
 cw-dev [GLOBAL_OPTIONS] completion [COMPLETION_OPTIONS]
-
 cw-dev [GLOBAL_OPTIONS] version [VERSION_OPTIONS]
-
 cw-dev {--help|-h}
-
 cw-dev {--version|-V}
 ```
 
