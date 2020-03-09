@@ -601,9 +601,10 @@ to look into:
 
 *   This project setup in [dev/README.md](./dev/README.md).
 
-*   Direnv doesn't support setting up command line completion.  This has to be
-    done from outside.  Command Wrapper Direnv library exports few environment
-    variables that make this easier to achieve.  See
+*   Direnv doesn't support setting up command line completion (see
+    [Direnv issue #443](https://github.com/direnv/direnv/issues/443). This has
+    to be done from outside.  Command Wrapper Direnv library exports few
+    environment variables that make this easier to achieve.  See
     [`command-wrapper-direnv-library(7)`
     ](./command-wrapper/man/command-wrapper-direnv-library.7.md) for more
     information on that.
