@@ -1,6 +1,65 @@
 # shellcheck shell=bash
 # vim: filetype=direnv
 
+# While this library is self documenting a lot more information and usage
+# examples can be found in `command-wrapper-direnv-library(7) manual` page.  It
+# can be accessed by calling:
+#
+# ```
+# "${TOOLSET}" help --man direnv-library
+# ```
+
+# Copyright (c) 2020, Peter Trsko
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
+#       with the distribution.
+#
+#     * Neither the name of Peter Trsko nor the names of other
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# Same as Direnv's `watch_file`, but allows to specify multiple file paths at
+# the same time.
+#
+# Usage:
+#
+#   watch_files [FILE ...]
+#
+# Arguments:
+#
+#   FILE
+#       File path of a file which should be watched by Direnv for changes.  If
+#       its contents change Direnv will reload the environment.
+function watch_files() {
+    local -a -r files="$@"
+
+    for file in "${files[@]}"; do
+        watch_file "${file}"
+    done
+}
+
 # Get the value of Command Wrapper cache directory for given toolset and Direnv
 # purposes.
 #
@@ -12,6 +71,10 @@
 #
 #   TOOLSET_NAME
 #       Name of the toolset we setting up environment for.
+#
+# Q: Why not use `direnv_layout_dir`?
+# A: There's a lot of stuff that can be safely shared beteween invocations and
+#    Direnv environments when content hash is part of the generated file name.
 function command_wrapper_cache_dir() {
     local -r toolset="$1"; shift
 
@@ -55,6 +118,15 @@ function command_wrapper_cache_dir() {
 #       instead of standard input.  Be aware that when standard input is read
 #       then the content can be arbitrary Dhall expression whereas `INPUT_FILE`
 #       has to be a file path.
+#
+# Real content is stored in directory returned by:
+#
+# ```
+# command_wrapper_dhall_cache TOOLSET_NAME
+# ```
+#
+# That allows us to safely share content between different environments since
+# Dhall files stored there contain integrity hash in their name.
 function command_wrapper_dhall_cache() {
     local -r toolset="$1"; shift
     local -r file_name="$1"; shift

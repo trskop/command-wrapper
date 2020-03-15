@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-BASH-LIBRARY(7) Bash Library | v1.0.0
 % Peter Trsko
-% 7th March 2020
+% 15th March 2020
 
 
 # NAME
@@ -26,11 +26,18 @@ Command Wrapper provides snippet of code that describes the best way to import
 its Direnv library in `.envrc` files.  Paste output of the following command
 into your script:
 
-```
+```Bash
 TOOLSET_COMMAND completion --library --direnv --import
 ```
 
 For more information see `command-wrapper-completion(1)` manual page.
+
+In Vim/Neovim you can use following ex command to insert the code snippet
+(don't forget to substitute `TOOLSET_COMMAND` with what you're using):
+
+```
+:r!TOOLSET_COMMAND completion --library --direnv --import
+```
 
 
 # LIBRARY DOCUMENTATION
@@ -43,8 +50,8 @@ TOOLSET_COMMAND completion --library --direnv [--content] | less
 ```
 
 When we're not using `less` then change the last command in the pipeline to be
-your preferred pager. If we're on Debian-like system then an also use
-`sensible-pager` command instead of directly calling specific one.
+your preferred pager. If we're on Debian-like system then you can also use
+`sensible-pager` command instead of directly calling a specific one.
 
 If [`bat`](https://github.com/sharkdp/bat), or any other `cat`-like command
 with syntax highlighting functionality is installed, then it is better to use:
@@ -60,6 +67,16 @@ For more information see `command-wrapper-completion(1)` manual page.
 
 
 # CONFIGURING TOOLSET
+
+Basic Command Wrapper toolset configuration in Direnv environment is done by
+`use\_command\_wrapper` function invoked via `use` Direnv clause.  See *USAGE*
+and *EXAMPLES* subsections on how to invoke it.
+
+See *USING AND CACHING ADDITIONAL CONFIGURATION FILES* section for additional
+customisation of configuration of toolset and its subcommands.
+
+
+## USAGE
 
 use command\_wrapper *TOOLSET\_NAME* *CONFIG\_DIR*
 
@@ -109,6 +126,14 @@ use command\_wrapper *TOOLSET\_NAME* *CONFIG\_DIR*
 
 
 ## EXPORTED ENVIRONMENT VARIABLES
+
+Environment variable that are constant even if we are using multiple toolsets
+start with `COMMAND_WRAPPER_` prefix.  Those that are toolset-specific start
+with a `${TOOLSET_PREFIX}_` string, where `${TOOLSET_PREFIX}` is the name of
+the toolset converted to upper case and all non-alphanumerical character
+exchanged for `'_'` character.  For example, if our toolset is named
+`this-is-my-toolset:number-1` then the value of `${TOOLSET_PREFIX}` will be
+`THIS_IS_MY_TOOLSET_NUMBER_1`.
 
 `COMMAND_WRAPPER_PRELUDE_LIB`
 :   Dhall expression representing Dhall Prelude library.
@@ -171,7 +196,7 @@ use command\_wrapper *TOOLSET\_NAME* *CONFIG\_DIR*
     `command-wrapper(1)` manual page.
 
 
-## Examples
+## EXAMPLES
 
 Snipped of `.envrc` that configures Command Wrapper toolset named `yx`.  Notice
 that it needs to be already available in `PATH`, i.e. if Direnv is installing
@@ -210,6 +235,82 @@ use command_wrapper 'yx' './.command-wrapper'
 
 # ...
 ```
+
+
+# USING AND CACHING ADDITIONAL CONFIGURATION FILES
+
+
+## `watch_files()`
+
+Same as Direnv's `watch_file`, but allows to specify multiple file paths at the
+same time.
+
+Q: Why not use `direnv_layout_dir`?
+
+A: There's a lot of stuff that can be safely shared beteween invocations and
+Direnv environments when content hash is part of the generated file name.
+
+### USAGE
+
+watch\_files \[*FILE* ...]
+
+### ARGUMENTS
+
+FILE
+:   File path of a file which should be watched by Direnv for changes.  If
+    its contents change Direnv will reload the environment.
+
+
+## `command_wrapper_cache_dir()`
+
+Get the value of Command Wrapper cache directory for given toolset and Direnv
+purposes.
+
+Real content is stored in directory returned by:
+
+```Bash
+command_wrapper_dhall_cache TOOLSET_NAME
+```
+
+That allows us to safely share content between different environments since
+Dhall files stored there contain integrity hash in their name.
+
+### USAGE
+
+command\_wrapper\_cache\_dir *TOOLSET\_NAME*
+
+### ARGUMENTS
+
+*TOOLSET_NAME*
+:   Name of the toolset we setting up environment for.
+
+
+## `command_wrapper_dhall_cache()`
+
+Create a cached Dhall expression.
+
+### USAGE
+
+command\_wrapper\_dhall\_cache *TOOLSET\_NAME* *FILE\_NAME* *TARGET\_DIR*
+  \[*INPUT_FILE*]
+
+### Arguments:
+
+*TOOLSET_NAME*
+:   Name of the toolset we setting up environment for.
+
+*FILE_NAME*
+:   Base name of the file that we are creating, i.e. it doesn't contain
+    any path separators (e.g. slashes).
+
+*TARGET_DIR*
+:   Where the resulting symbolic link is created.
+
+*INPUT_FILE*
+:   If provided then `command_wrapper_dhall_cache` will read this file
+    instead of standard input.  Be aware that when standard input is read
+    then the content can be arbitrary Dhall expression whereas `INPUT_FILE`
+    has to be a file path.
 
 
 # SEE ALSO
