@@ -590,7 +590,7 @@ to look into:
     -   Source code is nicely documented as well:
         [./command-wrapper/bash/direnv.bash](./command-wrapper/bash/direnv.bash)
 
-    -   It is used in [dev/cw-dev.envrc](./dev/cw-dev.envrc).
+    -   It is used in [dev/project-toolset-setup.envrc](./dev/project-toolset-setup.envrc).
 
 *   Nix example derivations for toolset
     [command-wrapper/nix/command-wrapper-toolset/default.nix

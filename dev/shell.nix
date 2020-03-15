@@ -1,9 +1,9 @@
 { pkgs ? import <nixpkgs> { } }:
 
-let cw-dev = import ./nix/cw-dev.nix { inherit pkgs; };
+let habit = import ./nix/habit.nix { inherit pkgs; };
 
-in pkgs.mkShell (cw-dev.env // {
-  buildInputs = cw-dev.buildInputs
+in pkgs.mkShell (habit.env // {
+  buildInputs = habit.buildInputs
     ++ [ pkgs.fish pkgs.zsh pkgs.zsh-completions ];
 
   LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";

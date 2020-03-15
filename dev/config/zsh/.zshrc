@@ -5,21 +5,21 @@ compinit
 promptinit
 prompt redhat
 
-_load_cw_dev_completion() {
-  if [[ -n ${CW_DEV_ZSH_COMPLETION} ]]; then
-    source "${CW_DEV_ZSH_COMPLETION}"
+_load_project_toolset_completion() {
+  if [[ -n ${HABIT_ZSH_COMPLETION} ]]; then
+    source "${HABIT_ZSH_COMPLETION}"
 
     # Aliases and completion for them can be introduced here as well:
-    alias hb=cw_dev
-    compdef '_cw-dev' 'hb'
+    alias hb=habit
+    compdef '_habit' 'hb'
   else 
 
     alias hb &>/dev/null && unalias hb
     [[ -n $_comps[hb] ]] && compdef -d 'hb'
-    [[ -n $_comps[cw-dev] ]] && compdef -d 'cw-dev'
+    [[ -n $_comps[habit] ]] && compdef -d 'habit'
   fi
 }
 typeset -ag precmd_functions;
-if [[ -z ${precmd_functions[(r)_load_cw_dev_completion]} ]]; then
-  precmd_functions+=_load_cw_dev_completion;
+if [[ -z ${precmd_functions[(r)_load_project_toolset_completion]} ]]; then
+  precmd_functions+=_load_project_toolset_completion;
 fi

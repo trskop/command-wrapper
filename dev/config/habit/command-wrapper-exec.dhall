@@ -25,7 +25,6 @@ let shake =
                 , Never = [] : List Text
                 }
                 colour
-            # [ "build" ]
             # arguments
             # extraArguments
         , workingDirectory = Some "${options.projectRoot}"
