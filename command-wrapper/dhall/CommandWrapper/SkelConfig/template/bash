@@ -187,7 +187,7 @@ function completion() {
     if (( index == -1 )); then
         index="''${#words[@]}"
     fi
-    previousWords=("''${words[@]:0:''${index}")
+    previousWords=("''${words[@]:0:''${index}}")
 
     local -i hadDashDash=0
     for opt in "''${previousWords[@]}"; do
