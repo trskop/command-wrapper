@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-BASH-LIBRARY(7) Bash Library | v1.0.0
 % Peter Trsko
-% 6th January 2020
+% 19th March 2020
 
 
 # NAME
@@ -30,7 +30,15 @@ TOOLSET_COMMAND completion --library --shell=bash --import
 ```
 
 For more information see `command-wrapper-completion(1)` manual page.
-When subcommand is created via `skel` template, like:
+
+In Vim/Neovim you can use following ex command to insert the code snippet
+(don't forget to substitute `TOOLSET_COMMAND` with what you're using):
+
+```
+:r!TOOLSET_COMMAND completion --library --shell=bash --import
+```
+
+When subcommand is created via standard `skel` template, like:
 
 ```
 TOOLSET_COMMAND skel --language=bash SUBCOMMAND
@@ -50,7 +58,7 @@ TOOLSET_COMMAND completion --library --shell=bash [--content] | less
 ```
 
 When we're not using `less` then change the last command in the pipeline to be
-your preferred pager. If we're on Debian-like system then an also use
+your preferred pager. If we're on Debian-like system then you can also use
 `sensible-pager` command instead of directly calling specific one.
 
 If [`bat`](https://github.com/sharkdp/bat), or any other `cat`-like command
@@ -217,7 +225,7 @@ Check that the subcommand was called via Commnad Wrapper Subcommand Protocol
 (documented in `command-wrapper-subcommand-protocol(7)`) or die with
 appropriate error message and exit status:
 
-dieIfExecutedOutsideOfCommandWrapperEnvironment
+dieIfExecutedOutsideOfCommandWrapperEnvironment \[*MIN_VERSION*]
 
 Subcommands are required to implement `--completion-info` option which prints
 Dhall expression that describes how subcommand should be called to do

@@ -1,6 +1,6 @@
-% COMMAND-WRAPPER-BASH-LIBRARY(7) Bash Library | v1.0.0
+% COMMAND-WRAPPER-DIRENV-LIBRARY(7) Bash Library | v1.0.0
 % Peter Trsko
-% 15th March 2020
+% 19th March 2020
 
 
 # NAME

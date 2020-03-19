@@ -248,6 +248,54 @@ function die() {
     exit "${exitCode}"
 }
 
+# Test that version is greater or equal than a specified version bound
+# (VERSION >= MIN_BOUND_VERSION).
+#
+# Usage:
+#
+#   testVersionMinBound VERSION MIN_BOUND_VERSION
+#
+# Examples:
+#
+#   testVersionMinBound 0.1 0.2 # $? = 1 (false)
+#   testVersionMinBound 0.3 0.2 # $? = 0 (true)
+testVersionMinBound() {
+    local -r version="$1"; shift
+    local -r minVersion="$1"; shift
+
+    local -a actualVersion
+    # shellcheck disable=2206
+    IFS='.' actualVersion=(${version})
+
+    local -a bound
+    # shellcheck disable=2206
+    IFS='.' bound=(${minVersion})
+
+    if (( ${#bound[@]} < ${#actualVersion[@]} )); then
+        for (( i=${#bound[@]}; i < ${#actualVersion[@]}; i++ )); do
+            bound[$i]=0
+        done
+    else
+        for (( i=${#actualVersion[@]}; i < ${#bound[@]}; i++ )); do
+            actualVersion[$i]=0
+        done
+    fi
+
+    for (( i=0; i < ${#bound[@]}; i++ )); do
+        if (( 10#${bound[$i]} == 10#${actualVersion[$i]} )); then
+            # Inconclusive, we need to test further.
+            continue;
+        elif (( 10#${bound[$i]} < 10#${actualVersion[$i]} )); then
+            # We are safely above of MIN_VERSION.
+            return 0
+        elif (( 10#${bound[$i]} > 10#${actualVersion[$i]} )); then
+            return 1
+        fi
+    done
+
+    return 0
+}
+
 # Check that the Command Wrapper environment variables, as defined in
 # Subcommand Protocol, were passed to us.  If any of them is missing then this
 # this function will terminate the the subcommand with exit code 2, and
@@ -255,7 +303,13 @@ function die() {
 #
 # Usage:
 #
-#   dieIfExecutedOutsideOfCommandWrapperEnvironment
+#   dieIfExecutedOutsideOfCommandWrapperEnvironment [MIN_VERSION]
+#
+# Arguments:
+#
+#   MIN_VERSION
+#       If specified then we check that the Command Wrapper Subcommand Protocol
+#       version is either MIN_VERSION or later.
 #
 # Return value:
 #
@@ -266,6 +320,11 @@ function die() {
 #   Command Wrapper's Subcommand Protocol command-wrapper-subcommand-protocol(7)
 #   for more details.
 function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
+    if (( $# )); then
+        local -r minVersion="$1"; shift
+    else
+        local -r minVersion="1.0.0"  # Initial version of subcommand protocol.
+    fi
 
     if  [[ -z "${COMMAND_WRAPPER_EXE}" ]]; then
         die 2 'COMMAND_WRAPPER_EXE: %s: %s' \
@@ -277,6 +336,12 @@ function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
         die 2 'COMMAND_WRAPPER_VERSION: %s: %s' \
             'Missing environment variable' \
             'This command must be executed inside command-wrapper environment.'
+    elif ! testVersionMinBound "${COMMAND_WRAPPER_VERSION}" "${minVersion}"
+    then
+        die 2 'COMMAND_WRAPPER_VERSION: %s: %s. %s: %s.' \
+            "${COMMAND_WRAPPER_VERSION}" \
+            'Unsupported Subcommand protocol version by this subcommand' \
+            'Minimum required version is' "${minVersion}"
     fi
 
     if  [[ -z "${COMMAND_WRAPPER_NAME}" ]]; then
