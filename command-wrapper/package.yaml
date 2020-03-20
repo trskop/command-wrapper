@@ -227,5 +227,5 @@ tests:
       - deepseq
       - tasty
       - tasty-hunit
-#     - tasty-program
+      - tasty-program
     ghc-options: ["-threaded", "-rtsopts", "-with-rtsopts=-N"]

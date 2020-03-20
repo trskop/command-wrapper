@@ -31,6 +31,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+function testMsg() {
+    echo "$@" 1>&2
+}
+
 function test_testVersionMinBound () {
     local -r message="$1"; shift
     local -r -i expectedExitCode="$1"; shift
@@ -39,22 +43,25 @@ function test_testVersionMinBound () {
     local -r -i ret=$?
 
     if (( ret == expectedExitCode )); then
-        echo "    PASS: ${message}"
+        testMsg "    PASS: ${message}"
+        return 0
     else
-        echo "    FAIL: ${message}: Expected exit code ${expectedExitCode}," \
+        testMsg "    FAIL: ${message}: Expected exit code ${expectedExitCode}," \
             "but got ${ret}."
+        return 1
     fi
 }
 
 function main() {
     local -r bashLibraryFile="$1"; shift
 
+    local -i testFailed=0
+
     # shellcheck source=/dev/null
     source "${bashLibraryFile}"
 
-    echo "Testing Command Wrapper Bash library: ${bashLibraryFile}"
-
-    echo "  Testing testVersionMinBound():"
+    testMsg "Command Wrapper Bash library: ${bashLibraryFile}"
+    testMsg "  testVersionMinBound():"
 
     local -A test_testVersionMinBound_data=(
         ['1 >= 1']='0:1:1'
@@ -79,8 +86,14 @@ function main() {
     for testName in "${!test_testVersionMinBound_data[@]}"; do
         mapfile -d ':' -c 3 -t testArgs \
           <<< "${test_testVersionMinBound_data[${testName}]}:"
-        test_testVersionMinBound "${testName}" "${testArgs[@]}"
+        if ! test_testVersionMinBound "${testName}" "${testArgs[@]}"; then
+            testFailed=1
+        fi
     done
+
+    if (( testFailed )); then
+        exit 1
+    fi
 }
 
 main "$@"

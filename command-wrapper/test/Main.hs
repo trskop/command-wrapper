@@ -9,20 +9,21 @@
 -- Portability: GHC specific language extensions; POSIX.
 --
 -- Tests for Command Wrapper.
-module Main
---  (
---  )
+module Main (main)
   where
 
 import Control.Monad (unless)
 import Data.Functor ((<&>))
+import Data.Maybe (fromJust)
 import System.Exit (ExitCode(..))
 import System.IO (hClose, hGetContents, hPutStr)
 
 import Control.DeepSeq (deepseq)
 import Data.CallStack (HasCallStack)
-import Test.Tasty (TestTree, defaultMain, testGroup)
+import Test.Tasty (TestTree, defaultMain, localOption, testGroup)
 import Test.Tasty.HUnit ((@?=), testCase, assertFailure)
+import Test.Tasty.Options (parseValue)
+import Test.Tasty.Program (CatchStderr, testProgram)
 import System.Process (runInteractiveProcess, waitForProcess)
 
 import CommandWrapper.Toolset.InternalSubcommand.Completion.Libraries
@@ -34,7 +35,14 @@ import CommandWrapper.Toolset.InternalSubcommand.Completion.Libraries
 main :: IO ()
 main = defaultMain $ testGroup "CommandWrapper.Tests"
     [ testGroup "DhallLibraries" testDhallLibraries
+    , catchStderr $ testGroup "BashLibrary"
+        [ testBashSubcommandLibrary
+        ]
     ]
+  where
+    -- Library `tasty-program` hides constructor, so this is the only way I
+    -- could come up with.
+    catchStderr = localOption (fromJust (parseValue "True") :: CatchStderr)
 
 testDhallLibraries :: [TestTree]
 testDhallLibraries = concat
@@ -182,3 +190,9 @@ dhallHash
     -> String
     -> IO String
 dhallHash args = callCommandWrapper (["config", "--dhall-hash"] <> args)
+
+testBashSubcommandLibrary :: TestTree
+testBashSubcommandLibrary =
+    testProgram "Subcommand" "bash" ["./test/lib-tests.bash", "./bash/lib.bash"]
+        Nothing
+
