@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 28th February 2020
+% 21st March 2020
 
 
 # NAME
@@ -32,16 +32,62 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help exec
 
 # DESCRIPTION
 
-This command is similar to shell aliases.  Its configuration defines list of
-commands (in form of a Dhall function) associated with a symbolic name.  For
-each command we can specify a working directory, environment variables, and
-arguments.
+Purpose of this subcommand is to build "porcelain" actions, a set high-level
+easy to use commands.  They should have simpler API, completion, and
+hierarchical structure (dot-separated, e.g.  `docker.purne`).  If something is
+too complex to be implemented using exec then it should go into a script, or it
+should be implemented as a separate subcommand.
 
-Most of the features, as well as restriction, come from using Dhall for
-configuration.  Biggest advantage is probably that it is possible to share
-command definitions in the form of Dhall files that we can safely import, even
-from a URL.  All of this can be done without dropping to general purpose
-scripting language like Bash.
+What we mean by hierarchical is for example following:
+
+```
+psql.development.cart
+psql.development.products
+psql.production.cart
+psql.production.products
+```
+
+In the above example the structure implies certain command line options and/or
+environment variables passed to the underlying command.  Specifically, which
+environment (production or development) to use, and what database to connect to
+(cart or products).  To make understanding and organising commands easier `exec`
+provides `--tree` option to list its commands in tree structure.  Above example
+would look something like:
+
+```
+├── psql
+│   ├── development
+│   │   ├── cart*
+│   │   └── products*
+│   └── production
+│       ├── cart*
+│       └── products*
+└── ...
+```
+
+This functionality is probably the closest thing to common pattern of putting a
+`Makefile` into project root directory just to have few phony targets.  If we
+look at it from different perspective then we can see that `exec` command
+provides similar functionality to some shell features, especially aliases.
+Exec's configuration defines list of commands (in form of a Dhall function)
+associated with a symbolic name.  For each command we can specify a working
+directory, environment variables, arguments, completion, and working directory.
+The ability to specify working directory is very interesting for big projects
+that consist of multiple separate applications.  Just one example of subcommand
+names to illustrate its usefulness:
+
+```
+yarn.eshop.cart
+yarn.eshop.orders
+yarn.eshop.product-view
+yarn.eshop.search
+```
+
+Most of exec's features, as well as restriction, come from using Dhall for
+configuration.  Biggest advantage is probably that it's possible to share
+command definitions in the form of Dhall files.  Those we can safely import
+even from an URL.  All of this can be done without dropping into general
+purpose scripting language like Bash.
 
 
 # OPTIONS
@@ -88,36 +134,96 @@ scripting language like Bash.
     ```
 
 \--expression=*EXPRESSION*
-:   Execute Dhall *EXPRESSION*.  The *EXPRESSION* has to have following type:
+:   Execute Dhall *EXPRESSION*.  The *EXPRESSION* can have one of the following
+    types:
 
-    ```
-    let CommandWrapper =
-          https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
+    1.  `CommandWrapper.ExecCommand.Type` constructor function:
 
-    in    ∀(verbosity : CommandWrapper.Verbosity.Type)
+        ```Dhall
+          ∀(verbosity : CommandWrapper.Verbosity.Type)
         → ∀(colour : CommandWrapper.ColourOutput.Type)
         → ∀(arguments : List Text)
         → CommandWrapper.ExecCommand.Type
-    ```
+        ```
 
-    For example:
+        For example:
 
-    ```
-    let CommandWrapper =
-          https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
+        ```Dhall
+        let CommandWrapper =
+              https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
-    in    λ(verbosity : CommandWrapper.Verbosity.Type)
-        → λ(colourOutput : CommandWrapper.ColourOutput.Type)
-        → λ(arguments : List Text)
-        → { arguments = arguments
-          , command = "echo"
-          , environment = [] : List CommandWrapper.EnvironmentVariable.Type
-          , searchPath = True
-          , workingDirectory = None Text
-          }
-    ```
+        in    λ(verbosity : CommandWrapper.Verbosity.Type)
+            → λ(colourOutput : CommandWrapper.ColourOutput.Type)
+            → λ(arguments : List Text)
+            → CommandWrapper.ExecCommand::{
+              , command = "echo"
+              , arguments = arguments
+              , environment = [] : List CommandWrapper.EnvironmentVariable.Type
+              , searchPath = True
+              , workingDirectory = None Text
+              }
+        ```
 
-    This is very useful when designing new commands.
+    2.  `CommandWrapper.ExecCommand.Type`, for example:
+
+        ```Dhall
+        let CommandWrapper =
+              https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
+
+        in  CommandWrapper.ExecCommand::{
+            , command = "echo"
+            , arguments = [] : List Text
+            , environment = [] : List CommandWrapper.EnvironmentVariable.Type
+            , searchPath = True
+            , workingDirectory = None Text
+            }
+        ```
+
+        Expression of type `CommandWrapper.ExecCommand.Type` is what is created
+        with `--print` option.
+
+        In this case user-provided arguments will be appended to the value
+        supplied in `arguments` field.
+
+    3.  `CommandWrapper.Command.Type`, for example:
+
+        ```Dhall
+        let CommandWrapper =
+              https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
+
+        in  CommandWrapper.Command::{
+            , command = "echo"
+            , arguments = [] : List Text
+            }
+        ```
+
+        In this case user-provided arguments will be appended to the value
+        supplied in `arguments` field.
+
+    4.  `CommandWrapper.ExecNamedCommand.Type`, for example:
+
+        ```Dhall
+        let CommandWrapper =
+              https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
+
+        in  CommandWrapper.ExecNamedCommand::{
+            , name = "echo"
+            , command =
+                λ(verbosity : CommandWrapper.Verbosity.Type)
+                → λ(colourOutput : CommandWrapper.ColourOutput.Type)
+                → λ(arguments : List Text)
+                → CommandWrapper.ExecCommand::{
+                  , command = "echo"
+                  , arguments = arguments
+                  }
+            }
+        ```
+
+        This one is probably the best one for designing new `exec` commands
+        that can be immediately plugged into its configuration file.
+
+    This feature (`--expression=`*EXPRESSION*`) is very useful when designing
+    new commands.
 
 \--notify
 :   Send desktop notification when the command is done.
@@ -130,35 +236,24 @@ scripting language like Bash.
 
     Let's say that configuration contains following command definition:
 
-    ```
+    ```Dhall
     let CommandWrapper =
           https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
-    in  { commands =
-            [   { name = "echo"
-                , description = Some "Call echo command (not the shell builtin)."
-                , command =
-                      λ(_ : CommandWrapper.Verbosity.Type)
-                    → λ(_ : CommandWrapper.ColourOutput.Type)
-                    → λ(arguments : List Text)
-                    →   { command = "echo"
-                        , arguments = arguments
-                        , environment =
-                            [] : List CommandWrapper.EnvironmentVariable.Type
-                        , searchPath = True
-                        , workingDirectory = None Text
-                        }
-                      : CommandWrapper.ExecCommand.Type
-                , completion =
-                    None
-                      (   CommandWrapper.Shell.Type
-                        → Natural
-                        → List Text
-                        → CommandWrapper.ExecCommand.Type
-                      )
-                , notifyWhen = None CommandWrapper.NotifyWhen.Type
-                }
-              : CommandWrapper.ExecNamedCommand.Type
+    in  CommandWrapper.ExecConfig::{
+        , commands =
+            [ CommandWrapper.ExecNamedCommand::{
+              , name = "echo"
+              , description = Some "Call echo command (not the shell builtin)."
+              , command =
+                    λ(_ : CommandWrapper.Verbosity.Type)
+                  → λ(_ : CommandWrapper.ColourOutput.Type)
+                  → λ(arguments : List Text)
+                  → CommandWrapper.ExecCommand::{
+                    , command = "echo"
+                    , arguments = arguments
+                    }
+              }
             ]
         }
     ```
@@ -171,7 +266,7 @@ scripting language like Bash.
 
     Then we'll get output like this one:
 
-    ```
+    ```Dhall
     { command = "echo"
     , arguments = [ "foo", "bar" ]
     , environment = [] : List { name : Text, value : Text }
@@ -251,22 +346,34 @@ mentioned there applies to this subcommand as well.
 See *FILES* section for documentation on where `exec`'s configuration file is
 located.
 
-Configuration file of `exec` subcommand has following type signature:
+Following example shows `exec` configuration file with one subcommand named
+`echo` (for more see *EXAMPLES* section):
 
-```
+```Dhall
 let CommandWrapper =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
-      -- Note that adding a hash will allow Dhall to cache the import.
-      -- See also `dhall hash --help`.
 
-in  -- List of commands that `exec` subcommand can execute.
-    { commands : List CommandWrapper.ExecNamedCommand.Type
+in  CommandWrapper.ExecConfig::{
+    , commands =
+        [ CommandWrapper.ExecNamedCommand::{
+          , name = "echo"
+          , description = Some "Call echo command (not the shell builtin)."
+          , command =
+                λ(_ : CommandWrapper.Verbosity.Type)
+              → λ(_ : CommandWrapper.ColourOutput.Type)
+              → λ(arguments : List Text)
+              → CommandWrapper.ExecCommand::{
+                , command = "echo"
+                , arguments = arguments
+                }
+          }
+        ]
     }
 ```
 
 If we expand `CommandWrapper.ExecNamedCommand.Type` type we get:
 
-```
+```Dhall
 let CommandWrapper =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
@@ -367,45 +474,45 @@ Lets say
 `${XDG_CONFIG_HOME:-$HOME/.config}/command-wrapper/command-wrapper-exec.dhall`
 contains the following:
 
-```
+```Dhall
 let CommandWrapper =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
       -- See also `dhall hash --help`.
 
-in  { commands =
+in  CommandWrapper.ExecConfig::{
+    , commands =
         -- Use smart constructor to create named commands to avoid upgrade
         -- issues any time there is a change in definition of
         -- `CommandWrapper.ExecNamedCommand.Type`.
-        [   CommandWrapper.ExecNamedCommand.namedCommand
-            -- Name of the command we are defining, this will be what needs to
-            -- be passed to `exec` to invoke it:
-            -- ```
-            -- TOOLSET_COMMAND [GLOBAL_OPTIONS] exec [EXEC_OPTIONS] echo [ARGUMENTS]
-            -- ```
-            "echo"
-            -- We are ignoring `verbosity` and `colourOutput`, both of those
-            -- are passed down from toolset configuration and GLOBAL_OPTIONS.
-            -- Therefore, we can construct a command that respects those
-            -- options as well.
-            (   λ(verbosity : CommandWrapper.Verbosity.Type)
-              → λ(colourOutput : CommandWrapper.ColourOutput.Type)
-              → λ(arguments : List Text)
-              →   { command =
-                      "echo"
-                  , arguments =
-                      arguments
-                  , environment =
-                      CommandWrapper.Command.emptyEnvironment
-                  , searchPath =
-                      True
-                  , workingDirectory =
-                      None Text
+        [ CommandWrapper.ExecNamedCommand::{
+          -- Name of the command we are defining, this will be what needs to
+          -- be passed to `exec` to invoke it:
+          -- ```
+          -- TOOLSET_COMMAND [GLOBAL_OPTIONS] exec [EXEC_OPTIONS] echo [ARGUMENTS]
+          -- ```
+          , name = "echo"
+          , description = Some "Call echo command (not the shell builtin)."
+
+          -- We are ignoring `verbosity` and `colourOutput`, both of those
+          -- are passed down from toolset configuration and GLOBAL_OPTIONS.
+          -- Therefore, we can construct a command that respects those
+          -- options as well.
+          , command =
+              (   λ(verbosity : CommandWrapper.Verbosity.Type)
+                → λ(colourOutput : CommandWrapper.ColourOutput.Type)
+                → λ(arguments : List Text)
+                → CommandWrapper.ExecCommand::{
+                  , command = "echo"
+                  , arguments = arguments
+
+                  -- Following default values can be omitted:
+                  , environment = CommandWrapper.Environment.empty
+                  , searchPath = True
+                  , workingDirectory = None Text
                   }
-                : CommandWrapper.ExecCommand.Type
-            )
-          //  { description = Some "Call echo command (not the shell builtin)."
-              }
+              )
+          }
         ]
     }
 ```
@@ -421,7 +528,7 @@ We can simplify that if we modify `TOOLSET_COMMAND` configuration to provide an
 alias for it.  Following is a function that if applied to toolset configuration
 will add an alias named `hello.world`:
 
-```
+```Dhall
 let CommandWrapper =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
       -- Note that adding a hash will allow Dhall to cache the import.
@@ -451,7 +558,7 @@ hello world again
 
 Following Dhall expression will create aliases for all exec commands:
 
-```
+```Dhall
 let CommandWrapper =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 

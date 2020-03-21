@@ -56,7 +56,7 @@ import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 import Data.Tree (Forest, Tree(Node), unfoldForest)
 import Dhall (FromDhall, ToDhall)
-import qualified Dhall (auto, inject, input)
+import qualified Dhall (auto, inject)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
 import qualified Options.Applicative as Options
     ( Parser
@@ -109,6 +109,8 @@ import CommandWrapper.Subcommand.Prelude
     )
 import CommandWrapper.Toolset.Config.Command (Command(..), NamedCommand(..))
 import qualified CommandWrapper.Toolset.Config.Command as NamedCommand (isNamed)
+
+import DhallInput (defaultDhallInputParams, dhallInput, fromDhallInput)
 
 
 newtype Config = Config
@@ -388,7 +390,8 @@ runDhall
   RunDhallOptions{arguments, expression} = do
     -- TODO: Handle dhall exceptions properly.  Get inspired by `config`
     -- subcommand.
-    mkCommand <- Dhall.input Dhall.auto expression
+    mkCommand
+        <- fromDhallInput <$> dhallInput (defaultDhallInputParams expression)
     let cmd@Command{command} = mkCommand verbosity colour arguments
         monitorOptions' = monitorOptions
             { notificationMessage =

@@ -438,12 +438,21 @@
     well.  Having the ability to tell when the command requires additional
     arguments, but there is no obvious simple solution.
 
-*   Support other types of Dhall expression when invoked with
+*   (**IN PROGRESS**) Support other types of Dhall expression when invoked with
     `--expression=EXPRESSION`:
 
-    - Already supported: `Verbosity -> ColourOutput -> [Text] -> ExecCommand`
-    - `ExecCommand` -- This would be nice dual to `--print`
-    - `ExecNamedCommand`  -- Should completion work in this case?  Probably yes.
+    -   (**DONE**) `Verbosity -> ColourOutput -> [Text] -> ExecCommand`
+    -   (**DONE**) `ExecCommand` -- This would be nice dual to `--print`
+    -   (**DONE**) `Command` -- Same as `ExecCommand`, but without
+        `workingDirectory : Optional Text` and `searchPath : Bool` fields.
+    -   (**DONE**) `ExecNamedCommand`  -- Best for testing.
+
+    Additional features:
+
+    -   Completion works in case of using `ExecNamedCommand=
+        Probably yes.
+    -   Better error message if we fail to deserialise any supported format,
+        i.e. type.
 
     We may want to consider having:
 
