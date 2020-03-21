@@ -1084,11 +1084,7 @@ filter appNames config Filter{..} = handleExceptions appNames config do
     parseExpression =
         Dhall.Core.throws . Dhall.Parser.exprFromText "(expression)"
 
-    emptyStatus =
-        (Dhall.Import.emptyStatus ".")
-            { Dhall.Import._semanticCacheMode =
-                toDhallSemanticCacheMode semanticCache
-            }
+    emptyStatus = mkImportStatus "." semanticCache
 
 -- }}} Filter -----------------------------------------------------------------
 
@@ -1171,11 +1167,7 @@ readExpression semanticCache = \case
         (,) <$> Dhall.Core.throws (Dhall.Parser.exprFromText f txt)
             <*> pure (emptyStatus c)
 
-    emptyStatus c =
-        (Dhall.Import.emptyStatus c)
-            { Dhall.Import._semanticCacheMode =
-                toDhallSemanticCacheMode semanticCache
-            }
+    emptyStatus c = mkImportStatus c semanticCache
 
 readExpressionAndHeader
     :: Input
@@ -1420,12 +1412,13 @@ doTheLetThing allowImports semanticCache = flip (foldrM let_)
       | allowImports = State.evalStateT (Dhall.Import.loadWith expr) status
       | otherwise    = Dhall.Import.assertNoImports expr
       where
-        status =
-            (Dhall.Import.emptyStatus ".")
-                { Dhall.Import._semanticCacheMode =
-                    toDhallSemanticCacheMode semanticCache
-                }
+        status = mkImportStatus "." semanticCache
 
     typeOf = Dhall.Core.throws . Dhall.TypeCheck.typeOf
+
+mkImportStatus :: FilePath -> SemanticCacheMode -> Dhall.Import.Status
+mkImportStatus path semanticCache = (Dhall.Import.emptyStatus path)
+    { Dhall.Import._semanticCacheMode = toDhallSemanticCacheMode semanticCache
+    }
 
 -- }}} Helper Functions -------------------------------------------------------
