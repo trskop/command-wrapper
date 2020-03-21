@@ -100,6 +100,7 @@ let bashTemplate =
                 if (( ''${#COMPREPLY[@]} == 1 )); then
                     if [[ "''${COMPREPLY[0]}" == "''${COMPREPLY[0]%=}=" \
                        || "''${COMPREPLY[0]}" == */ \
+                       || "''${COMPREPLY[0]}" == 'env:' \
                        ]]
                     then
                         compopt -o nospace
