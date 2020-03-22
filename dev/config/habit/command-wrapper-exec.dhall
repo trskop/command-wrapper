@@ -44,14 +44,26 @@ let shake =
           }
 
 let commands =
-        [ ExecNamedCommand::{ name = "build", command = shake [ "build" ] }
+        [ ExecNamedCommand::{
+          , name = "build"
+          , description = Some "Build the project"
+          , command = shake [ "build" ]
+          }
         , ExecNamedCommand::{
           , name = "build-static"
+          , description =
+              Some
+              "Build static binaries inside Docker and package them for release"
           , command = shake [ "static" ]
           }
-        , ExecNamedCommand::{ name = "test", command = shake [ "test" ] }
+        , ExecNamedCommand::{
+          , name = "test"
+          , description = Some "Run tests for the project"
+          , command = shake [ "test" ]
+          }
         , ExecNamedCommand::{
           , name = "install"
+          , description = Some "Build and install into ~/.local"
           , command = shake ([] : List Text)
           }
         , let stack =
@@ -61,6 +73,7 @@ let commands =
 
           in  ExecNamedCommand::{
               , name = "stack"
+              , description = Some "Invoke stack with project-specific settings"
               , command =
                     λ(verbosity : Verbosity.Type)
                   → λ(colour : ColourOutput.Type)
