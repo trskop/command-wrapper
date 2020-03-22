@@ -2,7 +2,7 @@
 
 let script =
       { url =
-          "https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc7/command-wrapper/dhall/Exec/nix/completion-script"
+          "https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc8/command-wrapper/dhall/Exec/nix/completion-script"
       , hash =
           "sha256:4a79f8b86f6ace664d44b60d10e6b1494a64dd339e071979fd3bcbf4d73d9e1c"
       }

@@ -12,6 +12,8 @@
 module Main (main)
   where
 
+import Prelude
+
 import Control.Monad (unless)
 import Data.Functor ((<&>))
 import Data.Maybe (fromJust)
