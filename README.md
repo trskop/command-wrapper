@@ -13,6 +13,10 @@ no one remembers the purpose of?  Is your `PATH` cluttered with same tools over
 and over because it was hard to remember what are their names?  Those are the
 kinds of problems Command Wrapper is trying to help with.
 
+Demo of project tooling bootstrapped by [Direnv and Nix](#direnv-and-nix):
+
+![Direnv and Nix demo in terminal](./doc/direnv-and-nix-demo.gif)
+
 
 ## Table of Contents
 
