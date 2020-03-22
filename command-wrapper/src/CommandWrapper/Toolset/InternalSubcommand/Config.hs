@@ -1354,6 +1354,8 @@ configSubcommandCompleter appNames cfg shell index words
   , Just w <- lastMay wordsBeforePattern
   , hadSomeDhall
   , isBashAndZshStdinExpansion w = do
+        -- TODO: Very similar code can be found in `exec` (external)
+        -- subcommand.  Should this be somewhere in `command-wrapper-core`?
         let envPrefix = "env:"
 
             hasPathPrefix = List.or

@@ -22,7 +22,7 @@ import Control.Monad ((>>=), when)
 import Data.Bifunctor (bimap)
 import Data.Bool (Bool(False, True), (||), not, otherwise)
 import Data.Eq ((/=), (==))
-import Data.Foldable (any, asum, elem, foldMap, for_, mapM_)
+import Data.Foldable (any, asum, elem, foldMap, for_, length, mapM_, or)
 import Data.Function (($), (.), const, id, on)
 import Data.Functor ((<$>), (<&>), fmap)
 import qualified Data.List as List
@@ -97,6 +97,21 @@ import qualified CommandWrapper.Core.Config.Environment as EnvironmentVariable
     )
 import CommandWrapper.Core.Config.Shell (Shell)
 import qualified CommandWrapper.Core.Config.Shell as Shell (parse)
+import CommandWrapper.Core.Completion.EnvironmentVariables
+    ( EnvironmentVariablesOptions(word, prefix)
+    , defEnvironmentVariablesOptions
+    , queryEnvironmentVariables
+    )
+import CommandWrapper.Core.Completion.FileSystem
+    ( FileSystemOptions
+        ( appendSlashToSingleDirectoryResult
+        , expandTilde
+        , prefix
+        , word
+        )
+    , defFileSystemOptions
+    , queryFileSystem
+    )
 import qualified CommandWrapper.Core.Dhall as Dhall (hPut)
 import qualified CommandWrapper.Core.Help.Pretty as Help
 import CommandWrapper.Core.Message (defaultLayoutOptions, hPutDoc)
@@ -538,7 +553,48 @@ doCompletion execParams index shell _ =
         , commandAndItsArguments = words
         } = execParams
 
+    completeExecSubcommand :: IO ()
     completeExecSubcommand
+      | "--expression=" `List.isPrefixOf` pat = do
+            -- TODO: Very similar code can be found in `config` (internal)
+            -- subcommand.  Should this be somewhere in `command-wrapper-core`?
+            let prefix = "--expression="
+
+                pat' = List.drop (length prefix) pat
+
+                envPrefix = "env:"
+
+                hasPathPrefix = or
+                    [ "./" `List.isPrefixOf` pat'
+                    , "../" `List.isPrefixOf` pat'
+                    , "~" `List.isPrefixOf` pat'
+                    ]
+
+            if
+              | envPrefix `List.isPrefixOf` pat' ->
+                    -- Syntax `env:VARIABLE` is a valid import in Dhall.
+                    queryEnvironmentVariables defEnvironmentVariablesOptions
+                        { word = List.drop (length envPrefix) pat'
+                        , prefix = prefix <> envPrefix
+                        }
+
+              | pat' == "." || pat' == ".." ->
+                    printMatching ((prefix <>) <$> ["./", "../"])
+
+              | hasPathPrefix ->
+                    -- File paths, even `~/some/path`, are valid Dhall
+                    -- expressions.  However, relative paths like `foo/bar` are
+                    -- not, they need to start with `./` or `../`
+                    queryFileSystem defFileSystemOptions
+                        { appendSlashToSingleDirectoryResult = True
+                        , expandTilde = True
+                        , prefix
+                        , word = pat'
+                        }
+
+              | otherwise ->
+                    printMatching ((prefix <>) <$> ["./", "../", "~/", "env:"])
+
       | hadListOrTreeOrHelp =
             pure ()
       | hadExpression, any (== "--notify") wordsBeforePattern =
