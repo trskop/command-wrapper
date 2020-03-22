@@ -1,5 +1,4 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      $Header$
 -- Description: Implementation of internal subcommand that provides command
@@ -716,9 +715,10 @@ getCompletions CompletionConfig{..} appNames config CompletionOptions{..} =
             subcommands = findSubcommands appNames config internalSubcommands pat
 
          in case headMay pat of
-                Nothing ->
-                    (matchGlobalOptions ('-' : pat) <>) <$> subcommands
-
+                -- We want completion for options to be shown only if we start
+                -- with '-'.  This way we support the most common case of
+                -- invoking subcommand first, while giving easy access to
+                -- option completion.
                 Just '-'
                   | "--change-directory=" `List.isPrefixOf` pat ->
                         directoryCompleter "--change-directory=" pat

@@ -21,11 +21,23 @@ module DhallInput
     )
   where
 
+import Control.Applicative (pure)
 import Control.Exception (throwIO)
+import Control.Monad ((>>=))
 import Data.Bifunctor (first)
+import Data.Bool (Bool(True), otherwise)
+import Data.Either (Either(Left, Right))
+import Data.Foldable (foldr1)
+import Data.Function (($), flip)
+import Data.Functor ((<$), (<$>), fmap)
 import Data.List.NonEmpty (NonEmpty((:|)))
+import Data.Maybe (Maybe(Nothing))
+import Data.Semigroup ((<>))
+import Data.String (String)
 import Data.Void (Void)
 import GHC.Generics (Generic)
+import System.IO (FilePath, IO)
+import Text.Show (Show)
 
 import Data.Either.Validation (validationToEither)
 import Data.Text (Text)

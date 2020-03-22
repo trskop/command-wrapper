@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      $Header$
 -- Description: Find and execute external subcommands.

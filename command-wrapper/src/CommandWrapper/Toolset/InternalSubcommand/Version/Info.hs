@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      $Header$
 -- Description: Data type representing Command Wrapper version information.

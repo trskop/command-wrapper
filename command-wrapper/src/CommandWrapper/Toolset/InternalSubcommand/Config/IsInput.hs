@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      $Header$
 -- Description: Class of data types that can represent FilePath.

@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      $Header$
 -- Description: Data type that represents when desktop notifications should be

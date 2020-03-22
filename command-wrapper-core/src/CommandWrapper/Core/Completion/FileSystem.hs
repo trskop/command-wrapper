@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Core.Completion.FileSystem
 -- Description: File system entry completion.

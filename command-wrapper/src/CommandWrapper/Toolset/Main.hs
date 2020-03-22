@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:       $Header$
 -- Description:  Top-level executable of Command Wrapper.

@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      Main
 -- Description: CommandWrapper subcommand for executing commands with a
@@ -16,30 +15,41 @@
 module Main (main)
   where
 
-import Prelude hiding (words)
+import Prelude ((-), fromIntegral)
 
-import Control.Applicative (empty)
-import Control.Monad (when)
+import Control.Applicative ((<*>), empty, pure)
+import Control.Monad ((>>=), when)
 import Data.Bifunctor (bimap)
-import Data.Foldable (asum, elem, for_)
-import Data.Function (on)
-import Data.Functor ((<&>))
+import Data.Bool (Bool(False, True), (||), not, otherwise)
+import Data.Eq ((/=), (==))
+import Data.Foldable (any, asum, elem, foldMap, for_, mapM_)
+import Data.Function (($), (.), const, id, on)
+import Data.Functor ((<$>), (<&>), fmap)
 import qualified Data.List as List
-    ( filter
+    ( drop
+    , filter
     , find
     , groupBy
     , isPrefixOf
     , nub
+    , repeat
     , sortBy
     , take
+    , zipWith
     )
-import Data.Maybe (fromMaybe)
-import Data.Monoid (Endo(..))
-import Data.String (fromString)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe, maybe)
+import Data.Monoid (Endo(..), mconcat)
+import Data.Ord ((<=), compare)
+import Data.Semigroup ((<>))
+import Data.String (String, fromString)
+import Data.Tuple (fst)
+import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import System.Environment (getArgs, getEnvironment)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
+import System.IO (FilePath, IO, putStrLn)
+import Text.Show (show)
 
 import qualified Data.CaseInsensitive as CaseInsensitive (mk)
 import qualified Data.Map.Strict as Map (delete, fromList, toList)
@@ -448,7 +458,7 @@ showCommandTree Params{colour} Config{commands} TreeOptions{} =
 
     forest :: Forest (Doc TreeAnn) = (`unfoldForest` groupNames names) \case
         (n : r) : ns ->
-            let rs = groupNames $ r : fmap (drop 1) ns
+            let rs = groupNames $ r : fmap (List.drop 1) ns
                 isLeaf = [[]] `elem` rs
                 ann = Pretty.annotate (if isLeaf then LeafName else NodeName)
 
@@ -469,9 +479,9 @@ showCommandTree Params{colour} Config{commands} TreeOptions{} =
             t : ts ->
                 shift "├── " "│   " (draw t) <> drawSubTrees ts
 
-        shift first other = zipWith (<>) (first : repeat other)
+        shift first other = List.zipWith (<>) (first : List.repeat other)
 
-    treeDoc = Pretty.vsep $ drop 1 (draw (Node "" forest))
+    treeDoc = Pretty.vsep $ List.drop 1 (draw (Node "" forest))
 
     putDoc = hPutDoc defaultLayoutOptions toAnsi colour stdout
 

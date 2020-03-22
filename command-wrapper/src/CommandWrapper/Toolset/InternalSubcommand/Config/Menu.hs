@@ -20,11 +20,30 @@ module CommandWrapper.Toolset.InternalSubcommand.Config.Menu
     )
   where
 
+import Prelude ((+), (-), fromIntegral)
+
+import Control.Applicative (pure)
+import Control.Monad ((>>=))
 import Control.Exception (bracket)
-import Data.Functor ((<&>))
+import Data.Bool (Bool, not, otherwise)
+import Data.Char (Char)
+import Data.Eq ((==))
+import Data.Foldable (length, null)
+import Data.Function (($), (.))
+import Data.Functor ((<$), (<$>), (<&>))
+import Data.Int (Int)
+import Data.List ((!!))
+import qualified Data.List as List (break, drop, zip)
+import Data.Maybe (Maybe(Just, Nothing))
+import Data.Ord ((<), (<=), (>), (>=))
+import Data.Semigroup ((<>))
+import Data.String (String)
+import Data.Tuple (uncurry)
 import Data.Word (Word8)
-import System.Exit (ExitCode(ExitFailure), exitWith)
 import GHC.Generics (Generic)
+import System.Exit (ExitCode(ExitFailure), exitWith)
+import System.IO (FilePath, IO, getContents, putStrLn, readFile)
+import Text.Show (Show)
 
 import Graphics.Vty (Vty, mkVty)
 import qualified Graphics.Vty as Vty
@@ -110,7 +129,7 @@ renderMenu :: [String] -> MenuOptions -> Bool -> Vty.Vty -> IO Result
 renderMenu items opts colours vty = render 0 0 >>= loop
   where
     menuItems :: [(Int, String)]
-    menuItems = zip [0..] items
+    menuItems = List.zip [0..] items
 
     maxLine :: Int
     maxLine
@@ -125,7 +144,7 @@ renderMenu items opts colours vty = render 0 0 >>= loop
 
             renderedItems =
                 -- Dropping negative value is the same thing as 'drop 0'.
-                drop (0 - newOffset) menuItems <&> \(lineNumber, content) ->
+                List.drop (0 - newOffset) menuItems <&> \(lineNumber, content) ->
                     renderItem opts colours (lineNumber == currentLine) content
 
         Vty.update vty (Vty.picForImage (Vty.vertCat renderedItems))
@@ -278,7 +297,7 @@ readInput delimiter = \case
     parse :: String -> [String]
     parse "" = []
     parse s  =
-        uncurry (:) case break (== delimiter) s of
+        uncurry (:) case List.break (== delimiter) s of
             (x, s') ->
                 ( x
                 , case s' of

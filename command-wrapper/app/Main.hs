@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:       Main
 -- Description:  Top-level executable of Command Wrapper.

@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Subcommand.Prelude
 -- Description: Give subcommands everything they need to seamlessly integrate.

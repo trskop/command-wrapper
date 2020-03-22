@@ -1,11 +1,14 @@
 # For advanced use and comprehensive documentation of the format, please see:
 # https://docs.haskellstack.org/en/stable/yaml_configuration/
 
+# TODO: Currently fully static build uses old LTS 14.27 due to Docker image
+# that we are using. See `Shakefile.hs` for more information.
+#
 # GHC 8.6.5
-resolver: lts-14.27
+#resolver: lts-14.27
 
-# GHC 8.8.2
-#resolver: lts-15.1
+# GHC 8.8.3
+resolver: lts-15.5
 
 packages:
   - './command-wrapper-core/'

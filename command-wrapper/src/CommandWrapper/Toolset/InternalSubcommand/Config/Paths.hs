@@ -16,13 +16,19 @@ module CommandWrapper.Toolset.InternalSubcommand.Config.Paths
     )
   where
 
-import Control.Applicative (liftA2)
---import Control.Monad (guard)
---import qualified Data.Char as Char (toUpper)
---import qualified Data.List as List (filter, takeWhile)
+import Control.Applicative ((<*>), liftA2, pure)
+import Control.Monad ((>>=))
+import Data.Eq ((==))
+import Data.Bool (Bool(True), (||))
+import Data.Function ((.))
+import Data.Foldable (null)
+import Data.Functor ((<$>), fmap)
+import Data.Maybe (Maybe(Just), maybe)
 import Data.String ({-IsString,-} fromString)
 import GHC.Generics (Generic)
 import System.Environment (lookupEnv)
+import System.IO (IO)
+import Text.Show (Show)
 
 import CommandWrapper.Core.Environment (Params(Params, exePath, name))
 import Data.Text (Text)

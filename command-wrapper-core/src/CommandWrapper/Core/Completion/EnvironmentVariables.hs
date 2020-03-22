@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Core.Completion.EnvironmentVariables
 -- Description: Completion of environment variables.

@@ -106,32 +106,47 @@ module CommandWrapper.Toolset.InternalSubcommand.Config.Dhall
     )
   where
 
-import Prelude hiding (filter)
+import Prelude (error)
 
+import Control.Applicative ((<*>), pure)
 import Control.Exception (Exception, SomeException, bracket, handle, throwIO)
-import Control.Monad (unless)
-import Data.Foldable (foldrM, for_, traverse_)
-import Data.Functor ((<&>))
+import Control.Monad ((=<<), (>>=), unless)
+import Data.Bool (Bool(False, True), (||), otherwise)
+import Data.Char (Char)
+import Data.Eq (Eq, (/=), (==))
+import Data.Foldable (foldrM, for_, null, traverse_)
+import Data.Functor (Functor, (<$>), (<&>))
+import Data.Function (($), (.), flip, id)
 import Data.List as List (dropWhile, map, span)
 import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Monoid ((<>))
+import Data.Maybe (Maybe(Just, Nothing), maybe)
+import Data.Monoid ((<>), mconcat)
+import Data.Ord ((>))
+import Data.String (String)
+import Data.Traversable (traverse)
+import Data.Tuple (uncurry)
 import Data.Typeable (Typeable)
 import Data.Void (Void)
 import GHC.Generics (Generic)
 import qualified GHC.IO.Encoding as IO (setLocaleEncoding)
 import System.Exit (exitFailure)
 import System.IO
-    ( Handle
+    ( FilePath
+    , Handle
+    , IO
     , IOMode(WriteMode)
     , SeekMode(AbsoluteSeek)
     , hClose
-    , hSeek
     , hPutStrLn
+    , hSeek
+    , print -- TODO: Get rid of this dependency, everything should support
+            -- custom output.
     , stderr
     , stdout
     , withFile
     )
 import qualified System.IO as IO (utf8)
+import Text.Show (Show, show)
 
 import Crypto.Hash (Digest, SHA256)
 import qualified Crypto.Hash as Crypto (hash)
@@ -782,7 +797,7 @@ exec appNames@AppNames{usedName} config Exec{..} =
         cacheDir <- getXdgDirectory XdgCache (usedName <> "-dhall-exec")
         expression <- case input of
             InputExpression e -> pure e
-            _ -> undefined
+            _ -> error (usedName <> "dhall-exec: Impossible case")
 
         content <- Dhall.input Dhall.auto expression
         let checksum = Crypto.hash (Text.encodeUtf8 content)

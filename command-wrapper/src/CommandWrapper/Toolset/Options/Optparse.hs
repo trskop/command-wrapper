@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      CommandWrapper.Toolset.Options.Optparse
 -- Description: Utilities for parsing command line options.

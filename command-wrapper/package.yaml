@@ -45,6 +45,7 @@ default-extensions:
   - LambdaCase
   - MultiWayIf
   - NamedFieldPuns
+  - NoImplicitPrelude
   - OverloadedStrings
   - PatternSynonyms
   - RankNTypes

@@ -16,15 +16,24 @@ module CommandWrapper.Toolset.InternalSubcommand.Config.UserConfig
     )
   where
 
+import Prelude (Integer)
+
+import Control.Applicative (pure)
 import Control.Exception (Exception, throwIO)
-import Data.Foldable (asum, traverse_)
-import Data.Functor ((<&>))
+import Control.Monad ((>>=))
+import Data.Either (Either, either)
+import Data.Foldable (asum, mapM_, traverse_)
+import Data.Function (($), (.), id)
+import Data.Functor ((<$>), (<&>))
 import Data.String (fromString)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe, maybe)
+import Data.Monoid (mempty)
 import Data.Traversable (for)
+import Data.Tuple (fst, snd)
 import Data.Void (Void)
 import Numeric.Natural (Natural)
-import System.IO (stdout)
+import System.IO (FilePath, IO, stdout)
+import Text.Show (Show, show)
 
 import Control.Monad.State.Strict (evalStateT)
 import Control.Monad.Except (liftEither, runExcept, withExcept)

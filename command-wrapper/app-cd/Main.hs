@@ -17,22 +17,31 @@
 module Main (main)
   where
 
-import Control.Applicative (many, optional)
+import Prelude ((+), error, fromIntegral)
+
+import Control.Applicative ((<*>), many, optional, pure)
 import Control.Exception (onException)
-import Control.Monad ((>=>), unless, when)
+import Control.Monad ((>>=), (>=>), unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Foldable (for_)
-import Data.Functor ((<&>))
+import Data.Bool (Bool(False, True), (&&), not, otherwise)
+import Data.Eq ((==))
+import Data.Foldable (for_, mapM_)
+import Data.Function (($), (.))
+import Data.Functor (Functor, (<$), (<$>), (<&>), fmap)
+import Data.Int (Int)
 import qualified Data.List as List (filter, nub, isPrefixOf)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe, isJust, maybe)
 import Data.Monoid (Endo(Endo))
+import Data.Ord ((>))
 import Data.Semigroup (Semigroup(..))
-import Data.String (fromString)
+import Data.String (String, fromString)
 import Data.Void (Void)
+import Data.Word (Word)
 import GHC.Generics (Generic)
 import System.Environment (getArgs)
-import System.IO (hIsTerminalDevice, stdout)
+import System.IO (FilePath, IO, hIsTerminalDevice, putStrLn, stdout)
 import Text.Read (readMaybe)
+import Text.Show (show)
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as ByteString (putStrLn)
@@ -500,7 +509,7 @@ executeAction env@Env{params} directory = \case
 
     incrementLevel :: Maybe Text -> Text
     incrementLevel =
-        maybe "1" (fromString . show . (+1))
+        maybe "1" (fromString . show . (+ 1))
         . (>>= readMaybe @Word . Text.unpack)
 
 resolveShell :: MonadIO io => Env void -> Maybe Text -> io FilePath
