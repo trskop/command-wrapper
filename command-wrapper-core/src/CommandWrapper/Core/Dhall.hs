@@ -302,7 +302,7 @@ assertSecureImports
 assertSecureImports hashRequredFor expression = Dhall.throws
     $ for expression \i@Dhall.Import{importHashed = Dhall.ImportHashed{..}} ->
         if
-          | Nothing <- hash, not (hashRequredFor importType) ->
+          | Nothing <- hash, hashRequredFor importType ->
                 Left UnsecureImportResolutionDisabled
           | otherwise ->
                 pure i

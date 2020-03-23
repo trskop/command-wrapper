@@ -100,6 +100,7 @@ module CommandWrapper.Toolset.InternalSubcommand.Config.Dhall
     , hPutExpr
     , handleExceptions
     , setAllowImports
+    , setOnlySecureImpors
     , setAlpha
     , setAnnotate
     , setShowType
@@ -110,12 +111,12 @@ import Prelude (error)
 
 import Control.Applicative ((<*>), pure)
 import Control.Exception (Exception, SomeException, bracket, handle, throwIO)
-import Control.Monad ((=<<), (>>=), unless)
+import Control.Monad ((=<<), (>>=), unless, when)
 import Data.Bool (Bool(False, True), (||), otherwise)
 import Data.Char (Char)
 import Data.Eq (Eq, (/=), (==))
 import Data.Foldable (foldrM, for_, null, traverse_)
-import Data.Functor (Functor, (<$>), (<&>))
+import Data.Functor (Functor, (<$>), (<&>), void)
 import Data.Function (($), (.), flip, id)
 import Data.List as List (dropWhile, map, span)
 import Data.List.NonEmpty (NonEmpty((:|)))
@@ -148,12 +149,13 @@ import System.IO
 import qualified System.IO as IO (utf8)
 import Text.Show (Show, show)
 
+import qualified Control.Monad.Trans.State.Strict as State
 import Crypto.Hash (Digest, SHA256)
 import qualified Crypto.Hash as Crypto (hash)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (hPutStr)
 import Data.Either.Validation (validationToEither)
-import Data.Generics.Internal.VL.Lens (set, view)
+import Data.Generics.Internal.VL.Lens ((^.), set, view)
 import Data.Generics.Product.Fields (HasField', field')
 import Data.Generics.Product.Typed (HasType, typed)
 import Data.Output (IsOutput, HasOutput)
@@ -175,21 +177,83 @@ import qualified Data.Text.IO as Text
     , getContents
     , readFile
     )
-import Data.Text.Prettyprint.Doc (Doc)
-import qualified Dhall.Map (keys)
-import qualified Dhall.Bash as Bash
+import Data.Text.Prettyprint.Doc (Doc, pretty)
+import qualified Data.Text.Prettyprint.Doc as Pretty (line)
+import qualified Data.Text.Prettyprint.Doc.Render.Text as Pretty (renderStrict)
+import qualified Dhall
+    ( Decoder(Decoder, expected, extract)
+    , auto
+    , inputExpr
+    )
+import qualified Dhall.Bash as Dhall.Bash
     ( ExpressionError
     , StatementError
     , dhallToExpression
     , dhallToStatement
     )
-import Dhall.Core (Expr(..), Import)
+import qualified Dhall.Core as Dhall
+    ( Binding
+        ( Binding
+        , annotation
+        , bindingSrc0
+        , bindingSrc1
+        , bindingSrc2
+        , value
+        , variable
+        )
+    , Expr
+        ( Annot
+        , Embed
+        , ImportAlt
+        , Let
+        , Note
+        )
+    , Import(..)
+    , ImportHashed(..)
+    , ImportType(Remote)
+    , alphaNormalize
+    , denote
+    , normalize
+    , subExpressions
+    , throws
+    )
+import qualified Dhall.Diff (Diff(Diff, doc), diffNormalized)
 import qualified Dhall.Freeze as Dhall (freezeImport, freezeRemoteImport)
-import Dhall.Import (Chained(chainedImport), Imported(..), MissingImports)
+import qualified Dhall.Import as Dhall
+    ( Chained(chainedImport)
+    , Imported(Imported)
+    , MissingImports
+    , Status(_semanticCacheMode)
+    , SemanticCacheMode(IgnoreSemanticCache, UseSemanticCache)
+    , assertNoImports
+    , cache
+    , emptyStatus
+    , hashExpressionToCode
+    , loadWith
+    )
 import qualified Dhall.Lint as Dhall (lint)
-import Dhall.Parser (ParseError, SourcedException, Src)
-import qualified Dhall.Pretty as Dhall (Ann, CharacterSet(..))
-import Dhall.TypeCheck (DetailedTypeError(..), TypeError)
+import qualified Dhall.Map (keys)
+import qualified Dhall.Optics (transformMOf)
+import qualified Dhall.Parser as Dhall
+    ( Header(Header)
+    , ParseError
+    , SourcedException
+    , Src(Src, srcText)
+    , exprAndHeaderFromText
+    , exprFromText
+    )
+import qualified Dhall.Pretty as Dhall
+    ( Ann
+    , CharacterSet(Unicode)
+    , layout
+    , prettyCharacterSet
+    )
+import qualified Dhall.Repl as Dhall (repl)
+import qualified Dhall.TypeCheck as Dhall
+    ( DetailedTypeError(DetailedTypeError)
+    , TypeError
+    , typeOf
+    )
 import System.Directory
     ( XdgDirectory(XdgCache)
     , createDirectoryIfMissing
@@ -211,37 +275,15 @@ import System.IO.LockFile.Internal
     )
 import System.Posix.Process (executeFile)
 
---import qualified Codec.CBOR.JSON
---import qualified Codec.CBOR.Read
---import qualified Codec.CBOR.Write
---import qualified Codec.Serialise
-import qualified Control.Monad.Trans.State.Strict as State
---import qualified Data.Aeson
---import qualified Data.Aeson.Encode.Pretty
---import qualified Data.ByteString.Lazy
---import qualified Data.ByteString.Lazy.Char8
---import qualified Data.Text
-import qualified Data.Text.Prettyprint.Doc as Pretty
---import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
-import qualified Dhall
---import qualified Dhall.Binary
-import qualified Dhall.Core
-import qualified Dhall.Diff
-import qualified Dhall.Import
-import qualified Dhall.Optics (transformMOf)
---import qualified Dhall.Import.Types
-import qualified Dhall.Parser
-import qualified Dhall.Pretty
-import qualified Dhall.Repl
-import qualified Dhall.TypeCheck
---import qualified Text.Dot
-import Data.Generics.Internal.VL.Lens ((^.))
-
 import CommandWrapper.Core.Config.ColourOutput (shouldUseColours)
 import qualified CommandWrapper.Core.Config.Verbosity as Verbosity
     ( Verbosity(Normal, Silent)
     )
-import qualified CommandWrapper.Core.Dhall as Dhall (hPutDoc, hPutExpr)
+import qualified CommandWrapper.Core.Dhall as Dhall
+    ( assertSecureImports
+    , hPutDoc
+    , hPutExpr
+    )
 import CommandWrapper.Core.Environment (AppNames(AppNames, usedName))
 import CommandWrapper.Toolset.Config.Global
     ( Config(Config, colourOutput, verbosity)
@@ -253,6 +295,7 @@ import CommandWrapper.Toolset.InternalSubcommand.Config.IsInput (IsInput(..))
 
 data Interpreter = Interpreter
     { allowImports :: Bool
+    , onlySecureImpors :: Bool
     , alpha :: Bool
     , annotate :: Bool
     , showType :: Bool
@@ -275,11 +318,13 @@ instance HasOutput Interpreter where
 
 defInterpreter :: Interpreter
 defInterpreter = Interpreter
-    { annotate = False
+    { allowImports = True
     , alpha = False
-    , allowImports = True
-    , showType = False
+    , annotate = False
+    , onlySecureImpors = False
     , semanticCache = UseSemanticCache
+    , showType = False
+
     , variables = []
 
 --  , inputEncoding   =
@@ -306,48 +351,34 @@ interpreter
     , alpha
     , annotate
     , input
+    , onlySecureImpors
     , output
     , semanticCache
     , showType
     , variables
     }
   = handleExceptions appNames config do
-
     IO.setLocaleEncoding IO.utf8
+
     (resolvedExpression, inferredType) <- do
         expression <- readExpression semanticCache input
-            >>= resolveImports
-            >>= doTheLetThing allowImports semanticCache variables
+            >>= resolveImports allowImports onlySecureImpors
+            >>= doTheLetThing allowImports onlySecureImpors semanticCache
+                    variables
 
-        expressionType <- Dhall.Core.throws (Dhall.TypeCheck.typeOf expression)
-
+        expressionType <- typeOf expression
         if showType
-            then
-                (expressionType,) <$> Dhall.Core.throws
-                    (Dhall.TypeCheck.typeOf expressionType)
-            else
-                pure (expression, expressionType)
+            then (expressionType,) <$> typeOf expressionType
+            else pure (expression, expressionType)
 
-    let normalizedExpression = Dhall.Core.normalize resolvedExpression
-
-        alphaNormalizedExpression =
-            if alpha
-                then Dhall.Core.alphaNormalize normalizedExpression
-                else normalizedExpression
+    let alphaNormalizedExpression = alphaNormalize alpha resolvedExpression
 
         annotatedExpression =
-            if annotate
-                then Annot alphaNormalizedExpression inferredType
-                else alphaNormalizedExpression
+            annotateExpression annotate alphaNormalizedExpression inferredType
 
     withOutputHandle input output (hPutExpr config) annotatedExpression
   where
-    resolveImports
-        :: (Expr Src Import, Dhall.Import.Status)
-        -> IO (Expr Src Void)
-    resolveImports (expr, status)
-      | allowImports = State.evalStateT (Dhall.Import.loadWith expr) status
-      | otherwise    = Dhall.Import.assertNoImports expr
+    typeOf = Dhall.throws . Dhall.typeOf
 
 -- }}} Interpreter ------------------------------------------------------------
 
@@ -385,33 +416,32 @@ resolve :: AppNames -> Config -> Resolve -> IO ()
 resolve appNames config Resolve{mode, input, output, semanticCache} =
     handleExceptions appNames config do
         IO.setLocaleEncoding IO.utf8
+
         (expression, status) <- readExpression semanticCache input
 
         case mode of
             ResolveDependencies -> do
-                (resolvedExpression, _) <- State.runStateT
-                    (Dhall.Import.loadWith expression) status
+                (resolvedExpression, _)
+                    <- State.runStateT (Dhall.loadWith expression) status
 
                 withOutputHandle input output (hPutExpr config)
                     resolvedExpression
 
             ListImmediateDependencies ->
                 -- TODO: Handle I/O correctly.
-                traverse_ (print . Pretty.pretty . Dhall.Core.importHashed)
-                    expression
+                traverse_ (print . pretty . Dhall.importHashed) expression
 
             ListTransitiveDependencies -> do
-                cache <- (^. Dhall.Import.cache)
-                    <$> State.execStateT (Dhall.Import.loadWith expression)
-                        status
+                cache <- (^. Dhall.cache)
+                    <$> State.execStateT (Dhall.loadWith expression) status
 
                 for_ (Dhall.Map.keys cache)
                     -- TODO: Handle I/O correctly.
                     ( print
-                    . Pretty.pretty
---                  . Dhall.Core.importType
-                    . Dhall.Core.importHashed
-                    . chainedImport
+                    . pretty
+--                  . Dhall.importType
+                    . Dhall.importHashed
+                    . Dhall.chainedImport
                     )
 
             -- TODO: Unable to implement at the moment.
@@ -444,13 +474,12 @@ lint :: AppNames -> Config -> Lint -> IO ()
 lint appNames config Lint{input, output, characterSet} =
     handleExceptions appNames config do
         IO.setLocaleEncoding IO.utf8
-        (Dhall.Parser.Header header, expression, _)
-            <- readExpressionAndHeader input
+
+        (Dhall.Header header, expression, _) <- readExpressionAndHeader input
 
         withOutputHandle input output (renderDoc config)
-            (   Pretty.pretty header
-            <>  Dhall.Pretty.prettyCharacterSet characterSet
-                    (Dhall.lint expression)
+            (   pretty header
+            <>  Dhall.prettyCharacterSet characterSet (Dhall.lint expression)
             )
 
 -- }}} Lint -------------------------------------------------------------------
@@ -473,7 +502,7 @@ command Options{..} = do
                 then do
                     let decoder = Codec.CBOR.JSON.decodeValue False
 
-                    (_, value) <- Dhall.Core.throws (Codec.CBOR.Read.deserialiseFromBytes decoder bytes)
+                    (_, value) <- Dhall.throws (Codec.CBOR.Read.deserialiseFromBytes decoder bytes)
 
                     let jsonBytes = Data.Aeson.Encode.Pretty.encodePretty value
 
@@ -498,13 +527,13 @@ command Options{..} = do
                         let encoding = Codec.CBOR.JSON.encodeValue value
 
                         let cborBytes = Codec.CBOR.Write.toLazyByteString encoding
-                        Dhall.Core.throws (Codec.Serialise.deserialiseOrFail cborBytes)
+                        Dhall.throws (Codec.Serialise.deserialiseOrFail cborBytes)
                     else do
-                        Dhall.Core.throws (Codec.Serialise.deserialiseOrFail bytes)
+                        Dhall.throws (Codec.Serialise.deserialiseOrFail bytes)
 
-            expression <- Dhall.Core.throws (Dhall.Binary.decodeExpression term)
+            expression <- Dhall.throws (Dhall.Binary.decodeExpression term)
 
-            let doc = Dhall.Pretty.prettyCharacterSet characterSet expression
+            let doc = Dhall.prettyCharacterSet characterSet expression
 
             renderDoc System.IO.stdout doc
 -}
@@ -533,12 +562,11 @@ defFormat = Format
 format :: AppNames -> Config -> Format -> IO ()
 format appNames config Format{..} = handleExceptions appNames config do
     IO.setLocaleEncoding IO.utf8
-    (Dhall.Parser.Header header, expression, _) <- readExpressionAndHeader input
+
+    (Dhall.Header header, expression, _) <- readExpressionAndHeader input
 
     withOutputHandle input output (renderDoc config)
-        (   Pretty.pretty header
-        <>  Dhall.Pretty.prettyCharacterSet characterSet expression
-        )
+        (pretty header <> Dhall.prettyCharacterSet characterSet expression)
 
 -- }}} Format -----------------------------------------------------------------
 
@@ -587,7 +615,7 @@ freeze
 freeze appNames config Freeze{..} = handleExceptions appNames config do
     IO.setLocaleEncoding IO.utf8
 
-    (Dhall.Parser.Header header, expression, directory)
+    (Dhall.Header header, expression, directory)
         <- readExpressionAndHeader input
 
     frozenExpression <- case purpose of
@@ -596,13 +624,13 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
 
         FreezeForCaching  ->
             Dhall.Optics.transformMOf
-                Dhall.Core.subExpressions
+                Dhall.subExpressions
                 (rewriteForCaching directory)
-                (Dhall.Core.denote expression)
+                (Dhall.denote expression)
 
     withOutputHandle input output (renderDoc config)
-        ( Pretty.pretty header
-        <> Dhall.Pretty.prettyCharacterSet characterSet frozenExpression
+        ( pretty header
+        <> Dhall.prettyCharacterSet characterSet frozenExpression
         )
   where
     freezeFunction =
@@ -613,17 +641,17 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
     -- Following code is mostly copy-paste-reformatt from `dhall` library
     -- version 1.27.0.
     rewriteForCaching directory = \case
-        Dhall.Core.ImportAlt
-            ( Dhall.Core.Embed Dhall.Core.Import
+        Dhall.ImportAlt
+            ( Dhall.Embed Dhall.Import
                 { importHashed =
-                    Dhall.Core.ImportHashed{hash = Just _expectedHash}
+                    Dhall.ImportHashed{hash = Just _expectedHash}
                 }
             )
             import_@(
-                Dhall.Core.ImportAlt
-                    ( Dhall.Core.Embed Dhall.Core.Import
+                Dhall.ImportAlt
+                    ( Dhall.Embed Dhall.Import
                         { importHashed =
-                            Dhall.Core.ImportHashed{hash = Just _actualHash}
+                            Dhall.ImportHashed{hash = Just _actualHash}
                         }
                     )
                 _
@@ -638,10 +666,10 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
                 -- change.
                 pure import_
 
-        Dhall.Core.Embed
+        Dhall.Embed
             import_@(
-                Dhall.Core.Import
-                    { importHashed = Dhall.Core.ImportHashed{hash = Nothing}
+                Dhall.Import
+                    { importHashed = Dhall.ImportHashed{hash = Nothing}
                     }
             )
             -> do
@@ -651,11 +679,11 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
                 -- `freezeFunction` only freezes remote imports
                 pure if frozenImport /= import_
                     then
-                        ImportAlt
-                            (Dhall.Core.Embed frozenImport)
-                            (Dhall.Core.Embed import_)
+                        Dhall.ImportAlt
+                            (Dhall.Embed frozenImport)
+                            (Dhall.Embed import_)
                     else
-                        Dhall.Core.Embed import_
+                        Dhall.Embed import_
 
         expression ->
             pure expression
@@ -685,20 +713,14 @@ defHash = Hash
 
 hash :: AppNames -> Config -> Hash -> IO ()
 hash appNames config Hash{..} = handleExceptions appNames config do
-
     IO.setLocaleEncoding IO.utf8
+
     (expression, status) <- readExpression semanticCache input
-
-    resolvedExpression <- State.evalStateT
-        (Dhall.Import.loadWith expression) status
-
-    _ <- Dhall.Core.throws (Dhall.TypeCheck.typeOf resolvedExpression)
-
-    let normalizedExpression =
-            Dhall.Core.alphaNormalize (Dhall.Core.normalize resolvedExpression)
+    resolvedExpression <- State.evalStateT (Dhall.loadWith expression) status
+    _ <- Dhall.throws (Dhall.typeOf resolvedExpression)
 
     withOutputHandle input output Text.hPutStrLn
-        (Dhall.Import.hashExpressionToCode normalizedExpression)
+        (Dhall.hashExpressionToCode (alphaNormalize True resolvedExpression))
 
 -- }}} Hash -------------------------------------------------------------------
 
@@ -752,7 +774,7 @@ defRepl = Repl
 repl :: AppNames -> Config -> Repl -> IO ()
 repl appNames config@Config{verbosity} Repl{..} =
     handleExceptions appNames config
-        (Dhall.Repl.repl characterSet explain)
+        (Dhall.repl characterSet explain)
   where
     explain = verbosity > Verbosity.Normal
 
@@ -780,6 +802,10 @@ data Exec = Exec
     -- > INTERPRETER_COMMAND [INTERPRETER_ARGUMENTS] SCRIPT [SCRIPT_ARGUMENTS]
     --
     -- Where @SCRIPT@ is a file into which 'expression' was written.
+
+    , allowImports :: Bool
+    , onlySecureImpors :: Bool
+    , semanticCache :: SemanticCacheMode
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
@@ -789,19 +815,45 @@ defExec input = Exec
     { input
     , interpret = Nothing
     , arguments = []
+    , allowImports = True
+    , onlySecureImpors = True
+    , semanticCache = UseSemanticCache
     }
 
 exec :: AppNames -> Config -> Exec -> IO ()
 exec appNames@AppNames{usedName} config Exec{..} =
     handleExceptions appNames config do
         cacheDir <- getXdgDirectory XdgCache (usedName <> "-dhall-exec")
-        expression <- case input of
-            InputExpression e -> pure e
-            _ -> error (usedName <> "dhall-exec: Impossible case")
 
-        content <- Dhall.input Dhall.auto expression
+        content <- do
+            e <- resolveImports allowImports onlySecureImpors =<< case input of
+                InputFile file ->
+                    Text.readFile file >>= parseExpr file (takeDirectory file)
+
+                InputExpression expr ->
+                    parseExpr "(expression)" "." expr
+
+                InputStdin ->
+                    error (usedName <> "dhall-exec: Impossible case")
+
+            let Dhall.Decoder{expected, extract} = Dhall.auto @Text
+
+                expectedText =
+                    Pretty.renderStrict (Dhall.layout (pretty expected))
+
+            _ <- Dhall.throws $ Dhall.typeOf case e of
+                    Dhall.Note src@Dhall.Src{srcText} _ ->
+                        Dhall.Note
+                            src { Dhall.srcText =
+                                    srcText <> " : " <> expectedText
+                                }
+                            (Dhall.Annot e expected)
+                    _ ->
+                        Dhall.Annot e expected
+
+            Dhall.throws $ validationToEither (extract (Dhall.normalize e))
+
         let checksum = Crypto.hash (Text.encodeUtf8 content)
-
         withScript cacheDir checksum \executable possiblyHandle -> do
             for_ possiblyHandle \h -> do
                 -- TODO: We can get rid of hSeek when we switch to an
@@ -831,6 +883,10 @@ exec appNames@AppNames{usedName} config Exec{..} =
                     pure (Text.unpack interpreterCommand, arguments', True)
   where
     execute (cmd, args, searchPath) = executeFile cmd searchPath args Nothing
+
+    parseExpr f c txt =
+        (,) <$> Dhall.throws (Dhall.exprFromText f txt)
+            <*> pure (mkImportStatus c semanticCache)
 
     withScript
         :: FilePath
@@ -873,6 +929,7 @@ data BashMode = BashExpressionMode | BashStatementMode ByteString
 data Bash = Bash
     { input :: Input
     , allowImports :: Bool
+    , onlySecureImpors :: Bool
     , semanticCache :: SemanticCacheMode
     , mode :: BashMode
     , output :: Output
@@ -886,11 +943,12 @@ instance HasOutput Bash where
 
 defBash :: Bash
 defBash = Bash
-    { input = InputStdin
-    , allowImports = True
-    , semanticCache = UseSemanticCache
+    { allowImports = True
+    , input = InputStdin
     , mode = BashExpressionMode
+    , onlySecureImpors = False
     , output = OutputStdout
+    , semanticCache = UseSemanticCache
     }
 
 bash :: AppNames -> Config -> Bash -> IO ()
@@ -900,22 +958,16 @@ bash appNames config Bash{..} = handleExceptions appNames config do
     (expression, status) <- readExpression semanticCache input
 
     resolvedExpression <- do
-        expr <- if allowImports
-            then
-                State.evalStateT (Dhall.Import.loadWith expression) status
-            else
-                Dhall.Import.assertNoImports expression
-
-        _ <- Dhall.Core.throws (Dhall.TypeCheck.typeOf expr)
-
-        pure expr
+        e <- resolveImports allowImports onlySecureImpors (expression, status)
+        _ <- Dhall.throws (Dhall.typeOf e)
+        pure e
 
     r <- case mode of
         BashExpressionMode ->
-            Dhall.Core.throws (Bash.dhallToExpression resolvedExpression)
+            Dhall.throws (Dhall.Bash.dhallToExpression resolvedExpression)
 
         BashStatementMode name ->
-            Dhall.Core.throws (Bash.dhallToStatement resolvedExpression name)
+            Dhall.throws (Dhall.Bash.dhallToStatement resolvedExpression name)
 
     withOutputHandle input output ByteString.hPutStr r
 
@@ -930,6 +982,7 @@ data ToText = ToText
     { input :: Input
     , output :: Output
     , allowImports :: Bool
+    , onlySecureImpors :: Bool
     , semanticCache :: SemanticCacheMode
     , mode :: ToTextMode
     , outputDelimiter :: Char
@@ -943,12 +996,13 @@ instance HasOutput ToText where
 
 defToText :: ToText
 defToText = ToText
-    { input = InputStdin
-    , output = OutputStdout
-    , allowImports = True
-    , semanticCache = UseSemanticCache
+    { allowImports = True
+    , input = InputStdin
     , mode = PlainTextMode
+    , onlySecureImpors = False
+    , output = OutputStdout
     , outputDelimiter = '\n'
+    , semanticCache = UseSemanticCache
     }
 
 toText :: AppNames -> Config -> ToText -> IO ()
@@ -959,17 +1013,10 @@ toText appNames config ToText{..} = handleExceptions appNames config do
 
     let dhallInput :: Dhall.Decoder a -> IO a
         dhallInput Dhall.Decoder{..} = do
-            expr <- if allowImports
-                then
-                    State.evalStateT (Dhall.Import.loadWith expression) status
-                else
-                    Dhall.Import.assertNoImports expression
-
-            _ <- Dhall.Core.throws
-                (Dhall.TypeCheck.typeOf (Dhall.Core.Annot expr expected))
-
-            Dhall.Core.throws
-                $ validationToEither (extract (Dhall.Core.normalize expr))
+            e <- resolveImports allowImports onlySecureImpors
+                (expression, status)
+            _ <- Dhall.throws (Dhall.typeOf (Dhall.Annot e expected))
+            Dhall.throws $ validationToEither (extract (Dhall.normalize e))
 
     case mode of
         PlainTextMode ->
@@ -996,6 +1043,7 @@ toText appNames config ToText{..} = handleExceptions appNames config do
 
 data Filter = Filter
     { allowImports :: Bool
+    , onlySecureImpors :: Bool
     , alpha :: Bool
     , annotate :: Bool
     , expression :: Text
@@ -1015,6 +1063,7 @@ instance HasOutput Filter where
 defFilter :: Text -> Filter
 defFilter expression = Filter
     { allowImports = True
+    , onlySecureImpors = False
     , alpha = False
     , annotate = False
     , expression
@@ -1027,15 +1076,14 @@ defFilter expression = Filter
 
 filter :: AppNames -> Config -> Filter -> IO ()
 filter appNames config Filter{..} = handleExceptions appNames config do
-
     IO.setLocaleEncoding IO.utf8
 
     (inVar, inVarType) <- readExpression semanticCache input
-        >>= resolveImports allowImports
+        >>= resolveImports allowImports onlySecureImpors
         >>= \value -> do
             annotation <- typeOf value
             pure
-                ( Dhall.Core.Binding
+                ( Dhall.Binding
                     { variable = "input"
                     , annotation = Just (Nothing, annotation)
                     , value
@@ -1043,7 +1091,7 @@ filter appNames config Filter{..} = handleExceptions appNames config do
                     , bindingSrc1 = Nothing
                     , bindingSrc2 = Nothing
                     }
-                , Dhall.Core.Binding
+                , Dhall.Binding
                     { variable = "Input"
                     , annotation = Nothing
                     , value = annotation
@@ -1054,50 +1102,39 @@ filter appNames config Filter{..} = handleExceptions appNames config do
                 )
 
     parseExpression expression >>= \expr -> do
-        expr' <- Dhall.Core.Let inVar . Dhall.Core.Let inVarType
-            <$> resolveImports True (expr, emptyStatus)
-        expr'' <- doTheLetThing allowImports semanticCache variables expr'
+        expr' <- Dhall.Let inVar . Dhall.Let inVarType
+            -- TODO: Respect the options here as well? Separate options?
+            <$> resolveImports True False (expr, emptyStatus)
+
+        expr''
+            <- doTheLetThing allowImports onlySecureImpors semanticCache
+                variables expr'
+
         processExpression expr'' >>= withOutputHandle' (hPutExpr config)
   where
     withOutputHandle' :: (Handle -> a -> IO ()) -> a -> IO ()
     withOutputHandle' = withOutputHandle input output
 
-    typeOf = Dhall.Core.throws . Dhall.TypeCheck.typeOf
+    typeOf = Dhall.throws . Dhall.typeOf
 
+    processExpression
+        :: (Dhall.Expr Dhall.Src Void)
+        -> IO (Dhall.Expr Dhall.Src Void)
     processExpression expr = do
         expressionType <- typeOf expr
-
         (resultExpression, inferredType) <- if showType
-            then
-                (expressionType,) <$> Dhall.Core.throws
-                    (Dhall.TypeCheck.typeOf expressionType)
-            else
-                pure (expr, expressionType)
+            then (expressionType,) <$> typeOf expressionType
+            else pure (expr, expressionType)
 
-        let normalizedExpression = Dhall.Core.normalize resultExpression
-
-            alphaNormalizedExpression =
-                if alpha
-                    then Dhall.Core.alphaNormalize normalizedExpression
-                    else normalizedExpression
+        let alphaNormalizedExpression = alphaNormalize alpha resultExpression
 
             annotatedExpression =
-                if annotate
-                    then Annot alphaNormalizedExpression inferredType
-                    else alphaNormalizedExpression
+                annotateExpression annotate alphaNormalizedExpression
+                    inferredType
 
         pure annotatedExpression
 
-    resolveImports
-        :: Bool
-        -> (Expr Src Import, Dhall.Import.Status)
-        -> IO (Expr Src Void)
-    resolveImports allowImports' (expr, status)
-      | allowImports' = State.evalStateT (Dhall.Import.loadWith expr) status
-      | otherwise     = Dhall.Import.assertNoImports expr
-
-    parseExpression =
-        Dhall.Core.throws . Dhall.Parser.exprFromText "(expression)"
+    parseExpression = Dhall.throws . Dhall.exprFromText "(expression)"
 
     emptyStatus = mkImportStatus "." semanticCache
 
@@ -1167,7 +1204,7 @@ data OutputEncoding
 readExpression
     :: SemanticCacheMode
     -> Input
-    -> IO (Expr Src Import, Dhall.Import.Status)
+    -> IO (Dhall.Expr Dhall.Src Dhall.Import, Dhall.Status)
 readExpression semanticCache = \case
     InputStdin ->
         Text.getContents >>= parseExpr "(stdin)" "."
@@ -1179,14 +1216,14 @@ readExpression semanticCache = \case
         parseExpr "(expression)" "." expr
   where
     parseExpr f c txt =
-        (,) <$> Dhall.Core.throws (Dhall.Parser.exprFromText f txt)
+        (,) <$> Dhall.throws (Dhall.exprFromText f txt)
             <*> pure (emptyStatus c)
 
     emptyStatus c = mkImportStatus c semanticCache
 
 readExpressionAndHeader
     :: Input
-    -> IO (Dhall.Parser.Header, Expr Src Import, FilePath)
+    -> IO (Dhall.Header, Dhall.Expr Dhall.Src Dhall.Import, FilePath)
 readExpressionAndHeader = \case
     InputStdin -> do
         (header, expression) <- Text.getContents
@@ -1202,7 +1239,7 @@ readExpressionAndHeader = \case
         (header, expression) <- parseExpr "(expression)" expr
         pure (header, expression, ".")
   where
-    parseExpr f = Dhall.Core.throws . Dhall.Parser.exprAndHeaderFromText f
+    parseExpr f = Dhall.throws . Dhall.exprAndHeaderFromText f
 
 withOutputHandle :: Input -> Output -> (Handle -> b -> IO a) -> b -> IO a
 withOutputHandle input = \case
@@ -1228,16 +1265,16 @@ withOutputHandle input = \case
 
 -- {{{ Semantic Cache ---------------------------------------------------------
 
--- | Same data type as 'Dhall.Import.SemanticCacheMode'.
+-- | Same data type as 'Dhall.SemanticCacheMode'.
 data SemanticCacheMode
     = IgnoreSemanticCache
     | UseSemanticCache
   deriving stock (Generic, Show)
 
-toDhallSemanticCacheMode :: SemanticCacheMode -> Dhall.Import.SemanticCacheMode
+toDhallSemanticCacheMode :: SemanticCacheMode -> Dhall.SemanticCacheMode
 toDhallSemanticCacheMode = \case
-    IgnoreSemanticCache -> Dhall.Import.IgnoreSemanticCache
-    UseSemanticCache    -> Dhall.Import.UseSemanticCache
+    IgnoreSemanticCache -> Dhall.IgnoreSemanticCache
+    UseSemanticCache    -> Dhall.UseSemanticCache
 
 setSemanticCacheMode
     :: HasField' "semanticCache" a SemanticCacheMode
@@ -1253,6 +1290,9 @@ setSemanticCacheMode = set (field' @"semanticCache")
 setAllowImports :: HasField' "allowImports" a Bool => Bool -> a -> a
 setAllowImports = set (field' @"allowImports")
 
+setOnlySecureImpors :: HasField' "onlySecureImpors" a Bool => Bool -> a -> a
+setOnlySecureImpors = set (field' @"onlySecureImpors")
+
 setAlpha :: HasField' "alpha" a Bool => Bool -> a -> a
 setAlpha = set (field' @"alpha")
 
@@ -1266,7 +1306,7 @@ renderDoc :: Config -> Handle -> Doc Dhall.Ann -> IO ()
 renderDoc Config{colourOutput} h doc =
     Dhall.hPutDoc colourOutput h (doc <> Pretty.line)
 
-hPutExpr :: Config -> Handle -> Expr Src Void -> IO ()
+hPutExpr :: Config -> Handle -> Dhall.Expr Dhall.Src Void -> IO ()
 hPutExpr Config{colourOutput} = Dhall.hPutExpr colourOutput characterSet
   where
     characterSet = Dhall.Unicode -- TODO: This should be configurable.
@@ -1336,28 +1376,33 @@ handleExceptions appNames config@Config{verbosity} =
   where
     explain = verbosity > Verbosity.Normal
 
-    handler0 :: TypeError Src Void -> IO ()
+    handler0 :: Dhall.TypeError Dhall.Src Void -> IO ()
     handler0 e = if explain
-        then throwDhallException' "" (DetailedTypeError e)
-        else throwDhallException' getDetailedErrorsMsg e
+        then
+            throwDhallException' "" (Dhall.DetailedTypeError e)
+        else
+            throwDhallException' getDetailedErrorsMsg e
 
-    handler1 :: Imported (TypeError Src Void) -> IO ()
-    handler1 (Imported ps e) = if explain
-        then throwDhallException' "" (Imported ps (DetailedTypeError e))
-        else throwDhallException' getDetailedErrorsMsg (Imported ps e)
+    handler1 :: Dhall.Imported (Dhall.TypeError Dhall.Src Void) -> IO ()
+    handler1 (Dhall.Imported ps e) = if explain
+        then
+            throwDhallException' ""
+                (Dhall.Imported ps (Dhall.DetailedTypeError e))
+        else
+            throwDhallException' getDetailedErrorsMsg (Dhall.Imported ps e)
 
     getDetailedErrorsMsg = "Use \"--verbosity=verbose\" for detailed errors."
 
-    handler2 :: SourcedException MissingImports -> IO ()
+    handler2 :: Dhall.SourcedException Dhall.MissingImports -> IO ()
     handler2 = throwDhallException' ""
 
-    handler3 :: ParseError -> IO ()
+    handler3 :: Dhall.ParseError -> IO ()
     handler3 = throwDhallException' ""
 
-    handler4 :: Bash.ExpressionError -> IO ()
+    handler4 :: Dhall.Bash.ExpressionError -> IO ()
     handler4 = throwDhallException' ""
 
-    handler5 :: Bash.StatementError -> IO ()
+    handler5 :: Dhall.Bash.StatementError -> IO ()
     handler5 = throwDhallException' ""
 
     handlerFinal :: SomeException -> IO ()
@@ -1391,21 +1436,25 @@ addVariable var a =
 
 doTheLetThing
     :: Bool
+    -> Bool
     -> SemanticCacheMode
     -> [Variable]
-    -> Expr Src Void
-    -> IO (Expr Src Void)
-doTheLetThing allowImports semanticCache = flip (foldrM let_)
+    -> Dhall.Expr Dhall.Src Void
+    -> IO (Dhall.Expr Dhall.Src Void)
+doTheLetThing allowImports onlySecureImpors semanticCache = flip (foldrM let_)
   where
-    let_ :: Variable -> Expr Src Void -> IO (Expr Src Void)
+    let_
+        :: Variable
+        -> Dhall.Expr Dhall.Src Void
+        -> IO (Dhall.Expr Dhall.Src Void)
     let_ Variable{variable, value = valueText} body = do
         -- We are parsing and resolving imports for each variable separately.
         -- It may be more efficient to do so once for the whole expression.
         parseExpression valueText >>= \expr -> do
-            value <- resolveImports expr
-            _ <- typeOf value
+            value <- resolveImports' expr
+            _ <- Dhall.throws (Dhall.typeOf value)
             pure
-                ( Dhall.Core.Binding
+                ( Dhall.Binding
                     { variable
                     , annotation = Nothing
                     , value
@@ -1413,27 +1462,68 @@ doTheLetThing allowImports semanticCache = flip (foldrM let_)
                     , bindingSrc1 = Nothing
                     , bindingSrc2 = Nothing
                     }
-                `Dhall.Core.Let` body
+                `Dhall.Let` body
                 )
 
     parseExpression =
         -- TODO: "(expression)" should mention variable name.
-        Dhall.Core.throws . Dhall.Parser.exprFromText "(expression)"
+        Dhall.throws . Dhall.exprFromText "(expression)"
 
-    resolveImports
-        :: Expr Src Import
-        -> IO (Expr Src Void)
-    resolveImports expr
-      | allowImports = State.evalStateT (Dhall.Import.loadWith expr) status
-      | otherwise    = Dhall.Import.assertNoImports expr
+    resolveImports'
+        :: Dhall.Expr Dhall.Src Dhall.Import
+        -> IO (Dhall.Expr Dhall.Src Void)
+    resolveImports' expr =
+        resolveImports allowImports onlySecureImpors (expr, status)
       where
         status = mkImportStatus "." semanticCache
 
-    typeOf = Dhall.Core.throws . Dhall.TypeCheck.typeOf
-
-mkImportStatus :: FilePath -> SemanticCacheMode -> Dhall.Import.Status
-mkImportStatus path semanticCache = (Dhall.Import.emptyStatus path)
-    { Dhall.Import._semanticCacheMode = toDhallSemanticCacheMode semanticCache
+mkImportStatus :: FilePath -> SemanticCacheMode -> Dhall.Status
+mkImportStatus path semanticCache = (Dhall.emptyStatus path)
+    { Dhall._semanticCacheMode = toDhallSemanticCacheMode semanticCache
     }
+
+resolveImports
+    :: Bool
+    -> Bool
+    -> (Dhall.Expr Dhall.Src Dhall.Import, Dhall.Status)
+    -> IO (Dhall.Expr Dhall.Src Void)
+resolveImports allowImports onlySecureImpors (expr, status)
+  | allowImports = do
+        when onlySecureImpors do
+            void $ flip Dhall.assertSecureImports expr \case
+                Dhall.Remote _ -> True
+                _ -> False
+
+        State.evalStateT (Dhall.loadWith expr) status
+
+  | otherwise =
+        Dhall.assertNoImports expr
+
+alphaNormalize
+    :: Eq a
+    => Bool
+    -- ^ If 'True' then perform alpha normalisation after normalisation.
+    -> Dhall.Expr s a
+    -> Dhall.Expr t a
+alphaNormalize alpha expr =
+    if alpha
+        then Dhall.alphaNormalize normalizedExpression
+        else normalizedExpression
+  where
+    normalizedExpression = Dhall.normalize expr
+
+annotateExpression
+    :: Bool
+    -- ^ Condition that if it's 'True' will cause the expression to be
+    -- annotated with a type signature.
+    -> Dhall.Expr s a
+    -- ^ Type annotation.
+    -> Dhall.Expr s a
+    -- ^ Expression to be annotated by a type signature if condition holds.
+    -> Dhall.Expr s a
+annotateExpression annotate expr typeExpr =
+    if annotate
+        then Dhall.Annot expr typeExpr
+        else expr
 
 -- }}} Helper Functions -------------------------------------------------------

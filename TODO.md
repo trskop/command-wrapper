@@ -95,12 +95,13 @@
 
     This will require Subcommand Protocol to be extended.
 
-*   **Better security**:
+*   (**DONE**) **Better security**:
 
-    -   Extend Dhall subcommands to have `--secure-url-imports`, or similar,
-        where URL imports would be required to be guarded by integrity hash.
+    -   (**DONE**) Extend Dhall subcommands to have `--secure-remote-imports`, or
+        similar, where URL imports would be required to be guarded by integrity
+        hash.
 
-    -   Not search `PATH` for subcommands.
+    -   (**DONE**) Not search `PATH` for subcommands.
 
 *   (**IN PROGRESS**) **Configurable/extensible `main`**:
 

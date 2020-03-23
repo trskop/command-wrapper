@@ -180,6 +180,7 @@ import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     , setAnnotate
     , setFreezePurpose
     , setInput
+    , setOnlySecureImpors
     , setSemanticCacheMode
     , setShowType
     , toText
@@ -310,6 +311,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , Options.dhallFlag switchToDhallMode
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many
+                    ( secureRemoteImportsImportsFlag
+                    <|> noSecureRemoteImportsImportsFlag
+                    )
                 <*> many (alphaFlag <|> noAlphaFlag)
                 <*> many (annotateFlag <|> noAnnotateFlag)
                 <*> many (typeFlag <|> noTypeFlag)
@@ -367,6 +372,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallBashFlag
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many
+                    ( secureRemoteImportsImportsFlag
+                    <|> noSecureRemoteImportsImportsFlag
+                    )
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> optional declareOption
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
@@ -376,7 +385,13 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallExecFlag
         <*> (expressionOption <|> inputOption Dhall.setInput)
         <*> ( dualFoldEndo
-                <$> optional
+                <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many
+                    ( secureRemoteImportsImportsFlag
+                    <|> noSecureRemoteImportsImportsFlag
+                    )
+                <*> many (cacheFlag <|> noCacheFlag)
+                <*> optional
                     ( setInterpreter
                         <$> interpreterOption
                         <*> many interpreterArgumentOption
@@ -387,6 +402,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     , dhallTextFlag
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many
+                    ( secureRemoteImportsImportsFlag
+                    <|> noSecureRemoteImportsImportsFlag
+                    )
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> many listFlag
                 <*> many
@@ -401,6 +420,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> Options.strArgument (Options.metavar "EXPRESSION")
         <*> ( dualFoldEndo
                 <$> many (allowImportsFlag <|> noAllowImportsFlag)
+                <*> many
+                    ( secureRemoteImportsImportsFlag
+                    <|> noSecureRemoteImportsImportsFlag
+                    )
                 <*> many (alphaFlag <|> noAlphaFlag)
                 <*> many (annotateFlag <|> noAnnotateFlag)
                 <*> many (typeFlag <|> noTypeFlag)
@@ -552,6 +575,18 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     noAllowImportsFlag =
         Options.flag' (Dhall.setAllowImports False)
         (Options.long "no-allow-imports")
+
+    secureRemoteImportsImportsFlag
+        :: HasField' "onlySecureImpors" a Bool => Options.Parser (a -> a)
+    secureRemoteImportsImportsFlag =
+        Options.flag' (Dhall.setOnlySecureImpors True)
+            (Options.long "secure-remote-imports")
+
+    noSecureRemoteImportsImportsFlag
+        :: HasField' "onlySecureImpors" a Bool => Options.Parser (a -> a)
+    noSecureRemoteImportsImportsFlag =
+        Options.flag' (Dhall.setOnlySecureImpors False)
+        (Options.long "no-secure-remote-imports")
 
     typeFlag :: HasField' "showType" a Bool => Options.Parser (Endo a)
     typeFlag = Options.flag' (setShowType True) (Options.long "type")
@@ -871,6 +906,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         [ "config"
             <+> longOption "dhall"
             <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "[no-]secure-remote-imports")
             <+> Pretty.brackets (longOption "[no-]alpha")
             <+> Pretty.brackets (longOption "[no-]annotate")
             <+> Pretty.brackets (longOption "[no-]cache")
@@ -887,6 +923,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "config"
             <+> longOption "dhall-filter"
             <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "[no-]secure-remote-imports")
             <+> Pretty.brackets (longOption "[no-]alpha")
             <+> Pretty.brackets (longOption "[no-]annotate")
             <+> Pretty.brackets (longOption "[no-]cache")
@@ -976,6 +1013,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "config"
             <+> longOption "dhall-bash"
             <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "[no-]secure-remote-imports")
             <+> Pretty.brackets (longOption "[no-]cache")
             <+> Pretty.brackets (longOptionWithArgument "declare" "NAME")
             <+> Pretty.brackets
@@ -987,6 +1025,7 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , "config"
             <+> longOption "dhall-text"
             <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "[no-]secure-remote-imports")
             <+> Pretty.brackets (longOption "[no-]cache")
             <+> Pretty.brackets
                 ( longOption "list"
@@ -1000,6 +1039,9 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
 
         , "config"
             <+> longOption "dhall-exec"
+            <+> Pretty.brackets (longOption "[no-]allow-imports")
+            <+> Pretty.brackets (longOption "[no-]secure-remote-imports")
+            <+> Pretty.brackets (longOption "[no-]cache")
             <+> Pretty.braces
                 ( longOptionWithArgument "expression" "EXPRESSION"
                 <> "|" <> longOptionWithArgument "input" "FILE"
@@ -1058,6 +1100,17 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
         , optionDescription ["--[no-]allow-imports"]
             [ Pretty.reflow "Controls whether imports in the input expression\
                 \ are allowed or not. By default imports are allowed."
+            ]
+
+        , optionDescription ["--[no-]secure-remote-imports"]
+            [ Pretty.reflow "Controls whether remote imports must be protected\
+                \ semantic hash or not. By default most commands allow\
+                \ unsecure remote imports. The only exception is"
+            , longOption "dhall-exec"
+            , Pretty.reflow "which requires secure remote imports by default.\
+                \ Be aware that local imports (files and environment variables\
+                \ are considered secure. If those are using unsafe sources\
+                \ this option won't stop them from doing so."
             ]
 
         , optionDescription ["--[no-]alpha"]
@@ -1567,7 +1620,6 @@ configSubcommandCompleter appNames cfg shell index words
         <> munless
             ( List.or
                 [ hadDhallDiff
-                , hadDhallExec
                 , hadDhallFormat
                 , hadDhallFreeze
                 , hadDhallHash
@@ -1584,10 +1636,12 @@ configSubcommandCompleter appNames cfg shell index words
                     , hadDhallBash
                     , hadDhallFilter
                     , hadDhallText
+                    , hadDhallExec
                     ]
                 ]
             )
             [ "--allow-imports", "--no-allow-imports"
+            , "--secure-remote-imports", "--no-secure-remote-imports"
             ]
         <> munless
             ( List.or
@@ -1857,7 +1911,6 @@ configSubcommandCompleter appNames cfg shell index words
         <> munless
             ( List.or
                 [ hadDhallDiff
-                , hadDhallExec
                 , hadDhallFormat
                 , hadDhallFreeze
                 , hadDhallLint
@@ -1873,6 +1926,7 @@ configSubcommandCompleter appNames cfg shell index words
                     , hadDhallHash
                     , hadDhallResolve
                     , hadDhallText
+                    , hadDhallExec
                     ]
                 ]
             )

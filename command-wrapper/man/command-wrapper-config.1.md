@@ -13,6 +13,7 @@ toolset configuration.
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 \[\--\[no-]allow-imports]
+\[\--\[no-]secure-remote-imports]
 \[\--\[no-]alpha]
 \[\--\[no-]annotate]
 \[\--\[no-]cache]
@@ -23,6 +24,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-filter
 \[\--\[no-]allow-imports]
+\[\--\[no-]secure-remote-imports]
 \[\--\[no-]alpha]
 \[\--\[no-]annotate]
 \[\--\[no-]cache]
@@ -64,6 +66,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-hash
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-bash
 \[\--\[no-]allow-imports]
+\[\--\[no-]secure-remote-imports]
 \[\--\[no-]cache]
 \[\--declare=*NAME*]
 \[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
@@ -71,12 +74,16 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-bash
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-text
 \[\--\[no-]allow-imports]
+\[\--\[no-]secure-remote-imports]
 \[\--\[no-]cache]
 \[\--list \[--nul\[l]]]
 \[\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*]
 \[\--output=*FILE*|\--output *FILE*|-o *FILE*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--dhall-exec
+\[\--\[no-]allow-imports]
+\[\--\[no-]secure-remote-imports]
+\[\--\[no-]cache]
 {\--expression=*EXPRESSION*|\--input=*FILE*|\--input *FILE*|-i *FILE*}
 \[{\--interpreter=*COMMAND*|\--interpreter *COMMAND*} \[{\--interpreter-argument=*ARGUMENT*|\--interpreter-argument *ARGUMENT*} ...]]
 [*ARGUMENT* ...]
@@ -306,6 +313,15 @@ We can organise `config` subcommand abilities into following categories:
 :   Controls whether imports in the input expression are allowed or not.  By
     default imports are allowed.  Can be specified multiple times, later
     instance is applied.
+
+\--\[no-]secure-remote-imports
+:   Controls whether remote imports must be protected semantic hash or not. By
+    default most commands allow unsecure remote imports. The only exception is
+    `--dhall-exec` which requires secure remote imports by default.
+
+    Be aware that local imports (files and environment variables are considered
+    secure.  If those are using unsafe sources this option won't stop them from
+    doing so.
 
 \--\[no-]alpha
 :   Perform α-normalisation of Dhall expression.  By default α-normalisation is
