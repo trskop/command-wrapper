@@ -78,7 +78,7 @@ let bashTemplate =
 
         -- The complexity related to `compopt -o nospace` is so that we do not
         -- insert space when the only completion is in the form of `--option=`
-        -- or `/some/path/`.
+        -- `/some/path/`, or `env:`, etc.
         --
         -- The stuff with `${COMP_WORDBREAKS//:}` and `compopt +o filenames` is
         -- to be able to complete URLs, e.g. `--url=http://localhost`, without
@@ -98,11 +98,7 @@ let bashTemplate =
                 )
                 compopt +o filenames
                 if (( ''${#COMPREPLY[@]} == 1 )); then
-                    if [[ "''${COMPREPLY[0]}" == "''${COMPREPLY[0]%=}=" \
-                       || "''${COMPREPLY[0]}" == */ \
-                       || "''${COMPREPLY[0]}" == 'env:' \
-                       ]]
-                    then
+                    if [[ "''${COMPREPLY[0]}" == *[=/:] ]]; then
                         compopt -o nospace
                     fi
                 else
