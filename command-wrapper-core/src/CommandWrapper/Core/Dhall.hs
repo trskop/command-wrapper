@@ -31,22 +31,36 @@ module CommandWrapper.Core.Dhall
     , hPut
     , hPutExpr
     , hPutDoc
+
+    -- * Secure Imports
+    , UnsecureImportResolutionDisabled(..)
+    , assertSecureImports
     )
   where
 
-import Prelude hiding ((<>))
+import Prelude (fromIntegral)
 
-import Control.Applicative (empty)
+import Control.Applicative (empty, pure)
+import Control.Exception (Exception)
 import Control.Monad (guard)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Bifunctor (bimap)
+import Data.Bool (Bool, not, otherwise)
 import Data.Coerce (coerce)
-import Data.Functor ((<&>))
-import Data.Maybe (fromMaybe)
-import Data.Semigroup ((<>))
-import Data.String (fromString)
+import Data.Either (Either(Left, Right), either)
+import Data.Foldable (null)
+import Data.Function (($), (.), const)
+import Data.Functor (Functor(fmap), (<$>), (<&>))
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe, maybe)
+import Data.Monoid (Monoid(mempty))
+import Data.Semigroup (Semigroup, (<>))
+import Data.String (String, fromString)
+import Data.Traversable (for)
 import Data.Void (Void)
+import Data.Word (Word)
 import GHC.Exts (IsList(fromList))
-import System.IO (Handle)
+import System.IO (Handle, IO)
+import Text.Show (Show(show))
 
 import qualified Data.ByteString as Strict (ByteString)
 import qualified Data.ByteString.Lazy as Lazy (ByteString)
@@ -87,7 +101,11 @@ import qualified Dhall.Core as Dhall
         , TextLit
         , Union
         )
+    , Import(Import, importHashed)
+    , ImportHashed(ImportHashed, hash, importType)
+    , ImportType
     , judgmentallyEqual
+    , throws
     )
 import qualified Dhall.Map as Dhall (Map)
 import qualified Dhall.Map as Dhall.Map (delete, lookup, singleton)
@@ -149,7 +167,6 @@ instance Semigroup (UnionType a) where
 
 instance Monoid (UnionType a) where
     mempty = coerce (mempty :: Dhall.Map Text (Either a (Dhall.Decoder a)))
-    mappend = (<>)
 
 -- | Parse a single constructor of a union.
 constructor :: Text -> Dhall.Decoder a -> UnionType a
@@ -263,3 +280,31 @@ hPutDoc colourOutput h doc = do
             else Pretty.unAnnotateS stream
 
 -- }}} I/O --------------------------------------------------------------------
+-- {{{ Secure Imports ---------------------------------------------------------
+
+-- | A call to `assertSecureImports` failed because there was at least one
+-- import import that wasn't protected by a hash.
+data UnsecureImportResolutionDisabled = UnsecureImportResolutionDisabled
+  deriving anyclass (Exception)
+
+instance Show UnsecureImportResolutionDisabled where
+    show _ = "\nUnsecure import resolution is disabled"
+
+-- | Assert than all imports adhere to security policy.
+assertSecureImports
+    :: MonadIO io
+    => (Dhall.ImportType -> Bool)
+    -- ^ Security policy for individual 'ImportType's.  When this function
+    -- returns 'True' it means that for that import type we require a Hash to
+    -- be provided.
+    -> Dhall.Expr Dhall.Src Dhall.Import
+    -> io (Dhall.Expr Dhall.Src Dhall.Import)
+assertSecureImports hashRequredFor expression = Dhall.throws
+    $ for expression \i@Dhall.Import{importHashed = Dhall.ImportHashed{..}} ->
+        if
+          | Nothing <- hash, not (hashRequredFor importType) ->
+                Left UnsecureImportResolutionDisabled
+          | otherwise ->
+                pure i
+
+-- {{{ Secure Imports ---------------------------------------------------------
