@@ -11,8 +11,9 @@
 --
 -- Data type that represents when desktop notifications should be raised.
 module CommandWrapper.Toolset.Config.NotifyWhen
---  (
---  )
+    ( NotifyWhen(..)
+    , interpretNotifyWhen
+    )
   where
 
 import Data.Eq (Eq)
@@ -23,12 +24,12 @@ import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import Text.Show (Show)
 
-import Data.Text (Text)
 import Dhall (FromDhall)
 import qualified Dhall
     ( FromDhall(autoWith)
     , InterpretOptions(InterpretOptions, constructorModifier)
     , Decoder
+    , defaultInterpretOptions
     , natural
     )
 
@@ -50,17 +51,17 @@ data NotifyWhen
     -- ^ Notify only if action took more than the specified number of seconds.
   deriving stock (Eq, Generic, Show)
 
-interpretNotifyWhen :: (Text -> Text) -> Dhall.Decoder NotifyWhen
-interpretNotifyWhen f = Dhall.union $ mconcat
-    [ Dhall.constructor0 (f "Never")      Never
-    , Dhall.constructor0 (f "Always")     Always
-    , Dhall.constructor0 (f "OnFailure")  OnFailure
-    , Dhall.constructor  (f "After")     (After <$> Dhall.natural)
-    ]
+interpretNotifyWhen :: Dhall.InterpretOptions -> Dhall.Decoder NotifyWhen
+interpretNotifyWhen Dhall.InterpretOptions{constructorModifier = f} =
+    Dhall.union $ mconcat
+        [ Dhall.constructor0 (f "Never")      Never
+        , Dhall.constructor0 (f "Always")     Always
+        , Dhall.constructor0 (f "OnFailure")  OnFailure
+        , Dhall.constructor  (f "After")     (After <$> Dhall.natural)
+        ]
 
 instance FromDhall NotifyWhen where
-    autoWith :: Dhall.InterpretOptions -> Dhall.Decoder NotifyWhen
-    autoWith Dhall.InterpretOptions{constructorModifier} =
-        interpretNotifyWhen constructorModifier
+--  autoWith :: Dhall.InputNormalizer -> Dhall.Decoder NotifyWhen
+    autoWith _ = interpretNotifyWhen Dhall.defaultInterpretOptions
 
 --inputNotifyWhen :: Dhall.Encoder NotifyWhen

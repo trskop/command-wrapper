@@ -15,7 +15,7 @@
 4.  Update commit and appropriate hashes in:
 
     ```
-    command-wrapper/src/CommandWrapper/Internal/Subcommand/Completion/DhallExpressions.hs
+    command-wrapper/src/CommandWrapper/Toolset/InternalSubcommand/Completion/DhallExpressions.hs
     ```
 
     Use hash of the commit created in the step 3.
@@ -48,7 +48,7 @@
 2.  Update standard version in:
 
     ```
-    command-wrapper/src/CommandWrapper/Internal.hs
+    command-wrapper/src/CommandWrapper/Toolset/InternalSubcommand.hs
     ```
 
 3.  Rebuild and run tests:
@@ -76,13 +76,13 @@
     `preludeV<major>_<minor>_<patch>Content` in:
 
     ```
-    command-wrapper/src/CommandWrapper/Internal/Subcommand/Completion/DhallExpressions.hs
+    command-wrapper/src/CommandWrapper/Toolset/InternalSubcommand/Completion/DhallExpressions.hs
     ```
 
 2.  Extend `DhallLibrary` enum in
 
     ```
-    command-wrapper/src/CommandWrapper/Internal/Subcommand/Completion/Libraries.hs
+    command-wrapper/src/CommandWrapper/Toolset/InternalSubcommand/Completion/Libraries.hs
     ```
 
     To include constructor `PreludeV<major>_<minor>_<patch>` and update
@@ -91,8 +91,8 @@
 3.  Extend `putDhallLibrary` to handle new cases in `DhallLibrary`.  GHC will
     warn you abot this if the previous step is done.
 
-4.  Introduce a new test case in `test/Main.hs` to make sure that the embedding
-    of new Dhall Prelude library behaves correctly.
+4.  Introduce a new test case in `command-wrapper/test/Main.hs` to make sure
+    that the embedding of new Dhall Prelude library behaves correctly.
 
 5.  Rebuild and run tests:
 

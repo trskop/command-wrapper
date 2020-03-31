@@ -56,8 +56,8 @@ dependencies:
 
   - case-insensitive
   - dhall >=1.28
-  # ^ Dhall Standard 12.0.0; Command Wrapper switched to {From,To}Dhall,
-  # Encoder, Decoder, etc. which is backwards incompatible with older versions.
+  # ^ Dhall Standard 15.0.0; Changes in `FromDhall`/`ToDhall` definitions that
+  # aren't bacward compatible.
   - endo >=0.3.0.1
   - generic-lens
   - optparse-applicative

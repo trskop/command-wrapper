@@ -19,7 +19,7 @@ module CommandWrapper.Toolset.Config.Command
 
 import Data.Bool (Bool)
 import Data.Eq ((==))
-import Data.Function ((.))
+import Data.Function ((.), id)
 import Data.Maybe (Maybe)
 import Data.String (String)
 import GHC.Generics (Generic)
@@ -31,7 +31,6 @@ import Dhall ((>$<), (>*<))
 import Dhall (FromDhall, ToDhall)
 import qualified Dhall
     ( Encoder
-    , InterpretOptions(InterpretOptions, fieldModifier)
     , RecordEncoder
     , ToDhall(injectWith)
     , encodeFieldWith
@@ -74,18 +73,21 @@ data Command = Command
   deriving anyclass (FromDhall)
 
 instance ToDhall Command where
-    injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.recordEncoder
+    injectWith inputNormalizer = Dhall.recordEncoder
         ( adapt
             >$< field "command" Dhall.inputString
             >*< field "arguments" (Dhall.inputList Dhall.inputString)
-            >*< field "environment" (Dhall.injectWith opts)
-            >*< field "searchPath" (Dhall.injectWith opts)
-            >*< field "workingDirectory"
-                (Dhall.inputMaybe Dhall.inputString)
+            >*< field "environment" (Dhall.injectWith inputNormalizer)
+            >*< field "searchPath" (Dhall.injectWith inputNormalizer)
+            >*< field "workingDirectory" (Dhall.inputMaybe Dhall.inputString)
         )
       where
         adapt Command{..} =
             (command, (arguments, (environment, (searchPath, workingDirectory))))
+
+        -- TODO: Switch to combinators, however hidden InputNormalizer won't
+        -- allow that to be done fully.
+        fieldModifier = id
 
         field :: Text -> Dhall.Encoder a -> Dhall.RecordEncoder a
         field = Dhall.encodeFieldWith . fieldModifier
@@ -99,14 +101,18 @@ data SimpleCommand = SimpleCommand
   deriving anyclass (FromDhall)
 
 instance ToDhall SimpleCommand where
-    injectWith opts@Dhall.InterpretOptions{fieldModifier} = Dhall.recordEncoder
+    injectWith inputNormalizer = Dhall.recordEncoder
         ( adapt
             >$< field "command" Dhall.inputString
             >*< field "arguments" (Dhall.inputList Dhall.inputString)
-            >*< field "environment" (Dhall.injectWith opts)
+            >*< field "environment" (Dhall.injectWith inputNormalizer)
         )
       where
         adapt SimpleCommand{..} = (command, (arguments, environment))
+
+        -- TODO: Switch to combinators, however hidden InputNormalizer won't
+        -- allow that to be done fully.
+        fieldModifier = id
 
         field :: Text -> Dhall.Encoder a -> Dhall.RecordEncoder a
         field = Dhall.encodeFieldWith . fieldModifier

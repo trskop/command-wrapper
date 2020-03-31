@@ -25,9 +25,9 @@ extra-deps:
 
   # Don't forget to upgrade Dhall Standard version in
   # ./src/CommandWrapper/Internal.hs when upgrading Dhall library.
-  - dhall-1.30.0
-  - dhall-bash-1.0.28
-  - dhall-json-1.6.2
+  - dhall-1.31.0
+  - dhall-bash-1.0.29
+  - dhall-json-1.6.3
   - aeson-yaml-1.0.6.0
 
 # Keeping the following in case of new Dhall release:

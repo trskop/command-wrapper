@@ -450,8 +450,7 @@
 
     Additional features:
 
-    -   Completion works in case of using `ExecNamedCommand=
-        Probably yes.
+    -   Completion works in case of using `ExecNamedCommand`.
     -   Better error message if we fail to deserialise any supported format,
         i.e. type.
 

@@ -19,6 +19,8 @@ module CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions
     , preludeV13_0_0Import
     , preludeV14_0_0Content
     , preludeV14_0_0Import
+    , preludeV15_0_0Content
+    , preludeV15_0_0Import
 
     -- * Command Wrapper Dhall Library
     , commandWrapperContent
@@ -78,6 +80,18 @@ preludeV14_0_0Content =
 preludeV14_0_0Import :: IsString s => s
 preludeV14_0_0Import =
     "https://prelude.dhall-lang.org/v14.0.0/package.dhall sha256:c1b3fc613aabfb64a9e17f6c0d70fe82016a030beedd79851730993e9083fde2"
+
+preludeV15_0_0Content :: IsString s => s
+preludeV15_0_0Content =
+#ifdef DHALL_PRELUDE_V15_0_0
+    DHALL_PRELUDE_V15_0_0
+#else
+    preludeV15_0_0Import
+#endif
+
+preludeV15_0_0Import :: IsString s => s
+preludeV15_0_0Import =
+    "https://prelude.dhall-lang.org/v15.0.0/package.dhall sha256:6b90326dc39ab738d7ed87b970ba675c496bed0194071b332840a87261649dcd"
 
 -- }}} Dhall Prelude Library --------------------------------------------------
 

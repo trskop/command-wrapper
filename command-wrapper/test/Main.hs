@@ -104,6 +104,7 @@ testDhallLibraries = concat
             actualHash @?= expectedHash
 
     , [Content, Import] <&> testDhallLibrary LatestPrelude
+    , [Content, Import] <&> testDhallLibrary PreludeV15_0_0
     , [Content, Import] <&> testDhallLibrary PreludeV14_0_0
     , [Content, Import] <&> testDhallLibrary PreludeV13_0_0
     , [Content, Import] <&> testDhallLibrary PreludeV12_0_0
@@ -131,7 +132,8 @@ testDhallLibrary lib importOrContent =
         PreludeV12_0_0     -> "v12.0.0"
         PreludeV13_0_0     -> "v13.0.0"
         PreludeV14_0_0     -> "v14.0.0"
-        LatestPrelude      -> "latest (v14.0.0)"
+        PreludeV15_0_0     -> "v15.0.0"
+        LatestPrelude      -> "latest (v15.0.0)"
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
@@ -139,7 +141,8 @@ testDhallLibrary lib importOrContent =
         PreludeV12_0_0     -> v12_0_0
         PreludeV13_0_0     -> v13_0_0
         PreludeV14_0_0     -> v14_0_0
-        LatestPrelude      -> v14_0_0
+        PreludeV15_0_0     -> v15_0_0
+        LatestPrelude      -> v15_0_0
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
@@ -153,6 +156,9 @@ testDhallLibrary lib importOrContent =
 
     v14_0_0 =
         "sha256:c1b3fc613aabfb64a9e17f6c0d70fe82016a030beedd79851730993e9083fde2"
+
+    v15_0_0 =
+        "sha256:6b90326dc39ab738d7ed87b970ba675c496bed0194071b332840a87261649dcd"
 
 callCommandWrapper
     :: HasCallStack
