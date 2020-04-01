@@ -10,8 +10,16 @@
 --
 -- Command description suitable for execution.
 module CommandWrapper.Toolset.Config.Command
-    ( Command(..)
+    (
+    -- * Command
+      Command(..)
+    , injectCommand
+
+    -- * Simple Command
     , SimpleCommand(..)
+    , injectSimpleCommand
+
+    -- * Named Command
     , NamedCommand(..)
     , isNamed
     )
@@ -19,7 +27,7 @@ module CommandWrapper.Toolset.Config.Command
 
 import Data.Bool (Bool)
 import Data.Eq ((==))
-import Data.Function ((.), id)
+import Data.Function ((.))
 import Data.Maybe (Maybe)
 import Data.String (String)
 import GHC.Generics (Generic)
@@ -31,8 +39,11 @@ import Dhall ((>$<), (>*<))
 import Dhall (FromDhall, ToDhall)
 import qualified Dhall
     ( Encoder
+    , InputNormalizer
+    , InterpretOptions(InterpretOptions, fieldModifier)
     , RecordEncoder
     , ToDhall(injectWith)
+    , defaultInterpretOptions
     , encodeFieldWith
     , recordEncoder
     )
@@ -73,7 +84,16 @@ data Command = Command
   deriving anyclass (FromDhall)
 
 instance ToDhall Command where
-    injectWith inputNormalizer = Dhall.recordEncoder
+    injectWith :: Dhall.InputNormalizer -> Dhall.Encoder Command
+    injectWith = injectCommand Dhall.defaultInterpretOptions
+    {-# INLINE injectWith #-}
+
+injectCommand
+    :: Dhall.InterpretOptions
+    -> Dhall.InputNormalizer
+    -> Dhall.Encoder Command
+injectCommand Dhall.InterpretOptions{fieldModifier} = \inputNormalizer ->
+    Dhall.recordEncoder
         ( adapt
             >$< field "command" Dhall.inputString
             >*< field "arguments" (Dhall.inputList Dhall.inputString)
@@ -81,16 +101,13 @@ instance ToDhall Command where
             >*< field "searchPath" (Dhall.injectWith inputNormalizer)
             >*< field "workingDirectory" (Dhall.inputMaybe Dhall.inputString)
         )
-      where
-        adapt Command{..} =
-            (command, (arguments, (environment, (searchPath, workingDirectory))))
+  where
+    adapt Command{..} =
+        (command, (arguments, (environment, (searchPath, workingDirectory))))
 
-        -- TODO: Switch to combinators, however hidden InputNormalizer won't
-        -- allow that to be done fully.
-        fieldModifier = id
-
-        field :: Text -> Dhall.Encoder a -> Dhall.RecordEncoder a
-        field = Dhall.encodeFieldWith . fieldModifier
+    field :: Text -> Dhall.Encoder a -> Dhall.RecordEncoder a
+    field = Dhall.encodeFieldWith . fieldModifier
+{-# INLINEABLE injectCommand #-}
 
 data SimpleCommand = SimpleCommand
     { command :: FilePath
@@ -101,18 +118,24 @@ data SimpleCommand = SimpleCommand
   deriving anyclass (FromDhall)
 
 instance ToDhall SimpleCommand where
-    injectWith inputNormalizer = Dhall.recordEncoder
+    injectWith :: Dhall.InputNormalizer -> Dhall.Encoder SimpleCommand
+    injectWith = injectSimpleCommand Dhall.defaultInterpretOptions
+    {-# INLINE injectWith #-}
+
+injectSimpleCommand
+    :: Dhall.InterpretOptions
+    -> Dhall.InputNormalizer
+    -> Dhall.Encoder SimpleCommand
+injectSimpleCommand Dhall.InterpretOptions{fieldModifier} = \inputNormalizer ->
+    Dhall.recordEncoder
         ( adapt
             >$< field "command" Dhall.inputString
             >*< field "arguments" (Dhall.inputList Dhall.inputString)
             >*< field "environment" (Dhall.injectWith inputNormalizer)
         )
-      where
-        adapt SimpleCommand{..} = (command, (arguments, environment))
+  where
+    adapt SimpleCommand{..} = (command, (arguments, environment))
 
-        -- TODO: Switch to combinators, however hidden InputNormalizer won't
-        -- allow that to be done fully.
-        fieldModifier = id
-
-        field :: Text -> Dhall.Encoder a -> Dhall.RecordEncoder a
-        field = Dhall.encodeFieldWith . fieldModifier
+    field :: Text -> Dhall.Encoder a -> Dhall.RecordEncoder a
+    field = Dhall.encodeFieldWith . fieldModifier
+{-# INLINEABLE injectSimpleCommand #-}

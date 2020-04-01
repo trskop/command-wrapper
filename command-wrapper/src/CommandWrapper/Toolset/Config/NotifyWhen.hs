@@ -27,6 +27,7 @@ import Text.Show (Show)
 import Dhall (FromDhall)
 import qualified Dhall
     ( FromDhall(autoWith)
+    , InputNormalizer
     , InterpretOptions(InterpretOptions, constructorModifier)
     , Decoder
     , defaultInterpretOptions
@@ -61,7 +62,7 @@ interpretNotifyWhen Dhall.InterpretOptions{constructorModifier = f} =
         ]
 
 instance FromDhall NotifyWhen where
---  autoWith :: Dhall.InputNormalizer -> Dhall.Decoder NotifyWhen
+    autoWith :: Dhall.InputNormalizer -> Dhall.Decoder NotifyWhen
     autoWith _ = interpretNotifyWhen Dhall.defaultInterpretOptions
 
 --inputNotifyWhen :: Dhall.Encoder NotifyWhen

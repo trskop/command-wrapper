@@ -40,12 +40,12 @@ packages:
   original:
     hackage: prettyprinter-1.6.1
 - completed:
-    hackage: dhall-1.31.0@sha256:6336eba19ea50c13f1d7b026aea8e1a70c2bee70001b40ae74c04fb48214d85d,33110
+    hackage: dhall-1.31.1@sha256:d85f60105624d63bee8b5ec6f442e55b2e9fcb978e4d6e2c828b0520f6c6ed70,33103
     pantry-tree:
-      size: 253740
-      sha256: 3382be2dc5de92f302beb3c105505c52d6e31960868d5c847a8a789b5d9a6fa8
+      size: 279753
+      sha256: df9ba13cb1d061879fb2d50465e2cf33a17aa5cf42670e88c0a4a8ad00903b6d
   original:
-    hackage: dhall-1.31.0
+    hackage: dhall-1.31.1
 - completed:
     hackage: dhall-bash-1.0.29@sha256:5b869d392672ab730d7488cecfe1a9a10756bb530f9c06dd33f25bb7e409c4f2,1783
     pantry-tree:

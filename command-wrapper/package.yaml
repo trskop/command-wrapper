@@ -73,7 +73,7 @@ dependencies:
   - comonad
   - containers
   - cryptonite
-  - dhall >=1.31
+  - dhall >=1.31.1
   # ^ Dhall Standard 15.0.0; Changes in `FromDhall`/`ToDhall` definitions that
   # aren't bacward compatible.
   - dhall-bash >=1.0.29

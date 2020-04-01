@@ -55,7 +55,7 @@ dependencies:
   - base
 
   - case-insensitive
-  - dhall >=1.28
+  - dhall >=1.31.1
   # ^ Dhall Standard 15.0.0; Changes in `FromDhall`/`ToDhall` definitions that
   # aren't bacward compatible.
   - endo >=0.3.0.1
