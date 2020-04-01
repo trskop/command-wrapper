@@ -187,6 +187,11 @@
         ```
 
 
+## Haskell Subcommand Library
+
+*   **Helpers for calling editor/pager/menu-tool/desktop-notifications/etc.**
+
+
 ## Internal Subcommands
 
 ### Completion
@@ -404,6 +409,12 @@
 
 *   (**DONE**) Be able to access manual pages inside `nix-shell` correctly.
     Resolved by using separate man path.
+
+*   Functionality equivalent or similar to `man -k`. Maybe something like:
+
+    ```
+    TOOLSET help --search {TERM|PATTERN}
+    ```
 
 
 ## Bundled External Subcommands
