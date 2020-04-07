@@ -27,7 +27,7 @@ import Data.Word (Word)
 import GHC.Generics (Generic)
 import Text.Show (Show)
 
-import Dhall (FromDhall)
+import Dhall (FromDhall, ToDhall)
 
 
 -- | Represents an alias of a subcommand invocation.
@@ -44,7 +44,7 @@ data Alias = Alias
     -- to this list.
     }
   deriving stock (Generic, Show)
-  deriving anyclass (FromDhall)
+  deriving anyclass (FromDhall, ToDhall)
 
 -- | Resolve aliases into subcommand invocations.  If passed subcommand name
 -- is not an alias then it is left untouched.

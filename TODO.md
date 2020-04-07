@@ -172,13 +172,22 @@
             [-o FILE|--output=FILE]
         ```
 
-    2.  Introduce:
+    2.  (**DONE**) Introduce a way how to get value of `MANPATH` used by a toolset.
+        So that we can add them to `MANPATH` in `.envrc`.
+
+        Original proposal:
 
         ```
         TOOLSET completion --query {--man-path}
         ```
 
-        So that we can add them to `MANPATH` in `.envrc`.
+        What was implemented:
+
+        ```
+        TOOLSET config --get | TOOLSET dhall-filter 'input.manPath'
+        ```
+
+        Implemented functionality is much more general.
 
     3.  Introduce:
 

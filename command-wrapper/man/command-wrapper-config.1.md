@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CONFIG(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 7th January 2020
+% 7th April 2020
 
 
 # NAME
@@ -95,6 +95,8 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--init
 \[\--libexec-dir\[ectory]=*DIRECTORY*|\--libexec-dir\[ectory] *DIRECTORY*]
 \[\--man-dir\[ectory]=*DIRECTORY*|\--man-dir\[ectory] *DIRECTORY*]
 
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config \--get
+
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] config {\--edit|-e}
 \[*FILE*|\--subcommand-config *SUBCOMMAND*]
 
@@ -166,6 +168,16 @@ We can organise `config` subcommand abilities into following categories:
     Functionality that will be added in the future:
 
     *   [dhall-json](http://hackage.haskell.org/package/dhall-json)
+
+**Get Configuration** (`--get`)
+:   Get effective configuration of current toolset in the form of Dhall
+    expression.  Usage examples:
+
+    ```Bash
+    # Get effective man path
+    TOOLSET_COMMAND config --get \
+    | TOOLSET_COMMAND config --dhall-filter 'input.manPath'
+    ```
 
 **Selection Menu** (`--menu`)
 :   Display input in a menu to select an item.  Usage examples:
@@ -498,6 +510,14 @@ We can organise `config` subcommand abilities into following categories:
 \--man-dir\[ectory]=*DIRECTORY*
 :   When specified allong with `--init` then it is assumed that manual pages
     will be stored in *DIRECTORY*.
+
+# GET OPTIONS
+
+\--get
+:   Get effective configuration of current toolset in the form of Dhall
+    expression. Provided value is superset of what is in the toolset
+    configuration file and *GLOBAL_OPTIONS*, such as
+    `--change-directory=`*DIRECTORY*, are taken into account.
 
 
 # EDIT OPTIONS

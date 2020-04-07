@@ -66,6 +66,7 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
     )
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import qualified Dhall (embed, inject)
 import qualified Mainplate (applySimpleDefaults)
 import qualified Options.Applicative as Options
     ( Parser
@@ -170,6 +171,7 @@ import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     , filter
     , format
     , freeze
+    , hPutExpr
     , hash
     , interpreter
     , lint
@@ -234,6 +236,7 @@ data ConfigMode a
     | DhallBash Dhall.Bash a
     | DhallText Dhall.ToText a
     | DhallFilter Dhall.Filter a
+    | Get GetOptions a
     | Help a
   deriving stock (Functor, Generic, Show)
 
@@ -244,6 +247,9 @@ config appNames options globalConfig =
             init appNames cfg opts
 
         ConfigLib _ -> pure ()
+
+        Get GetOptions{} cfg ->
+            Dhall.hPutExpr cfg stdout (Dhall.embed Dhall.inject globalConfig)
 
         Edit opts cfg ->
             edit appNames cfg opts
@@ -292,6 +298,15 @@ config appNames options globalConfig =
                 (configSubcommandHelp appNames config')
   where
     defaults = Mainplate.applySimpleDefaults (Help globalConfig)
+
+data GetOptions = GetOptions
+--  { input :: Input
+--  , output :: Output
+--  }
+  deriving stock (Generic, Show)
+
+defGetOptions :: GetOptions
+defGetOptions = GetOptions{}
 
 parseOptions
     :: AppNames
@@ -433,6 +448,26 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
+    , getFlag
+        <*> pure (mempty @(Endo GetOptions))
+--      <*> ( dualFoldEndo
+--              <$> many (allowImportsFlag <|> noAllowImportsFlag)
+--              <*> many
+--                  ( secureRemoteImportsImportsFlag
+--                  <|> noSecureRemoteImportsImportsFlag
+--                  )
+--              <*> many (alphaFlag <|> noAlphaFlag)
+--              <*> many (annotateFlag <|> noAnnotateFlag)
+--              <*> many (typeFlag <|> noTypeFlag)
+--              <*> many (cacheFlag <|> noCacheFlag)
+--              <*> many letOption
+--              <*> optional outputOption
+--              <*> ( expressionOption
+--                  <|> inputOption Dhall.setInput
+--                  <|> Options.strArgument (Options.metavar "EXPRESSION")
+--                  )
+--          )
+
     , editFlag
         <*> ( dualFoldEndo
             <$> optional
@@ -464,6 +499,9 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
     switchToInitMode :: Endo InitOptions -> Endo (ConfigMode Global.Config)
     switchToInitMode (Endo f) =
         switchTo (Init (f (defInitOptions usedName)) globalConfig)
+
+    switchToGetMode :: Endo GetOptions -> Endo (ConfigMode Global.Config)
+    switchToGetMode (Endo f) = switchTo (Get (f defGetOptions) globalConfig)
 
     switchToEditMode :: Endo EditOptions -> Endo (ConfigMode Global.Config)
     switchToEditMode (Endo f) = switchTo (Edit (f defEditOptions) globalConfig)
@@ -796,6 +834,10 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.toolsetOption Nothing <&> \toolsetName ->
             Endo \opts -> (opts :: InitOptions){toolsetName}
 
+    getFlag
+        :: Options.Parser (Endo GetOptions -> Endo (ConfigMode Global.Config))
+    getFlag = Options.flag mempty switchToGetMode (Options.long "get")
+
     editFlag
         :: Options.Parser (Endo EditOptions -> Endo (ConfigMode Global.Config))
     editFlag = Options.flag mempty switchToEditMode $ mconcat
@@ -1054,6 +1096,26 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                     )
                 )
             <+> Pretty.brackets (metavar "ARGUMENT" <+> "...")
+
+        -- TODO: We want config --get to behave more like config --dhall-filter
+        -- in the future.
+        , "config"
+            <+> longOption "get"
+--          <+> Pretty.brackets (longOption "[no-]allow-imports")
+--          <+> Pretty.brackets (longOption "[no-]secure-remote-imports")
+--          <+> Pretty.brackets (longOption "[no-]alpha")
+--          <+> Pretty.brackets (longOption "[no-]annotate")
+--          <+> Pretty.brackets (longOption "[no-]cache")
+--          <+> Pretty.brackets (longOption "[no-]type")
+--          <+> Pretty.brackets
+--              ( longOptionWithArgument "let" "NAME=EXPRESSION"
+--              )
+--          <+> Pretty.brackets (longOptionWithArgument "output" "FILE")
+--          <+> Pretty.brackets
+--              ( longOptionWithArgument "expression" "EXPRESSION"
+--              <> "|" <> longOptionWithArgument "input" "FILE"
+--              <> "|" <> metavar "EXPRESSION"
+--              )
 
         , "config"
             <+> longOption "edit"
@@ -1323,6 +1385,19 @@ configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             ]
         ]
 
+    , section "Get options:"
+        [ optionDescription ["--get"]
+            [ Pretty.reflow
+                "Get effective configuration of current toolset in the form of\
+                \ Dhall expression. Provided value is superset of what is in\
+                \ the toolset configuration file and"
+            , metavar "GLOBAL_OPTIONS" <> ","
+            , Pretty.reflow "such as"
+            , longOptionWithArgument "change-directory" "DIRECTORY" <> ","
+            , Pretty.reflow "are taken into account."
+            ]
+        ]
+
     , section "Edit options:"
         [ optionDescription ["--edit", "-e"]
             [ Pretty.reflow "Start editor to edit", metavar "FILE", "or"
@@ -1479,6 +1554,8 @@ configSubcommandCompleter appNames cfg shell index words
     wordsBeforePattern = List.take (fromIntegral index) words
     pat = fromMaybe "" $ atMay words (fromIntegral index)
 
+--  hadGet = ("--get" `List.elem` wordsBeforePattern)
+
     hadEdit =
         ("--edit" `List.elem` wordsBeforePattern)
         || ("-e" `List.elem` wordsBeforePattern)
@@ -1603,6 +1680,7 @@ configSubcommandCompleter appNames cfg shell index words
             , "--dhall-resolve"
             , "--dhall-text"
             , "--edit", "-e"
+            , "--get"
             , "--help", "-h"
             , "--init"
             , "--menu"

@@ -54,7 +54,7 @@ import GHC.Generics (Generic)
 import System.IO (FilePath, IO)
 import Text.Show (Show)
 
-import Dhall (FromDhall)
+import Dhall (FromDhall, ToDhall)
 import qualified System.FilePath as FilePath (getSearchPath)
 
 import CommandWrapper.Core.Config.Alias (Alias)
@@ -121,7 +121,7 @@ data Config = Config
     -- See 'ConfigPaths' for more details.
     }
   deriving stock (Generic, Show)
-  deriving anyclass (FromDhall, HasVerbosity)
+  deriving anyclass (FromDhall, ToDhall, HasVerbosity)
 
 -- | Used by 'def' smart constructor to avoid accidentally swapping 'manPath'
 -- and 'searchPath'..
@@ -203,7 +203,7 @@ data ConfigPaths = ConfigPaths
     , local :: Maybe FilePath
     }
   deriving stock (Generic, Show)
-  deriving anyclass (FromDhall)
+  deriving anyclass (FromDhall, ToDhall)
 
 -- | Smart constructor for default\/initial value of 'ConfigPaths'.
 defConfigPaths
