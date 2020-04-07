@@ -45,6 +45,9 @@
 , List =
       ./List/package.dhall sha256:0da943a277cb23c6474e3205a57d333736c5d964e99f18d3b0490199c9e10157
     ? ./List/package.dhall
+, NonEmpty =
+      ./NonEmpty/package.dhall sha256:804d816fa28521afc7a5907a56d1bf29c0b331a85330f8a3b83292efbab80274
+    ? ./NonEmpty/package.dhall
 , NotifyWhen =
       ./NotifyWhen/package.dhall sha256:9b0aa668c037d6c7f33eff10551dd07275d6f6d802b8fd686ab630ae36b4fec1
     ? ./NotifyWhen/package.dhall
@@ -89,21 +92,23 @@
         ./help/value sha256:5f1f3fcc9e13c5576bd0b75e8619aa8b02269a01c9d148c6a520602adba87527
       ? ./help/value
   }
-, utils.url =
-  { defaultPort =
-        ./url/defaultPort sha256:bfdc295856e05e3610d202d9c12f56f7c423de81cd6069f590786ca176b94df3
-      ? ./url/defaultPort
-  , emptyPath =
-        ./url/emptyPath sha256:f08ed5225480d827ff3ce74b756afa6330f66d974d6f0d6160d767b5c45642aa
-      ? ./url/emptyPath
-  , mk =
-        ./url/mk sha256:e9438a6467c75130cd3eb6dbfdfabc13a35b78f7cf5009de2564dd6799d429d0
-      ? ./url/mk
-  , port =
-        ./url/port sha256:d7e20173b3139c6c37b7b71a94a6ada30efe37db9e60ff9f25aa8292cc1d4502
-      ? ./url/port
-  , portToText =
-        ./url/portToText sha256:a1d2133ee6b8cd5a5f2bdbc439a80f4c0ceff48194617cd28c98a1a30ad917e3
-      ? ./url/portToText
+, utils =
+  { url =
+    { defaultPort =
+          ./url/defaultPort sha256:bfdc295856e05e3610d202d9c12f56f7c423de81cd6069f590786ca176b94df3
+        ? ./url/defaultPort
+    , emptyPath =
+          ./url/emptyPath sha256:f08ed5225480d827ff3ce74b756afa6330f66d974d6f0d6160d767b5c45642aa
+        ? ./url/emptyPath
+    , mk =
+          ./url/mk sha256:e9438a6467c75130cd3eb6dbfdfabc13a35b78f7cf5009de2564dd6799d429d0
+        ? ./url/mk
+    , port =
+          ./url/port sha256:d7e20173b3139c6c37b7b71a94a6ada30efe37db9e60ff9f25aa8292cc1d4502
+        ? ./url/port
+    , portToText =
+          ./url/portToText sha256:a1d2133ee6b8cd5a5f2bdbc439a80f4c0ceff48194617cd28c98a1a30ad917e3
+        ? ./url/portToText
+    }
   }
 }

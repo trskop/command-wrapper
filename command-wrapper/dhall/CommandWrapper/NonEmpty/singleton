@@ -1,0 +1,16 @@
+-- vim: filetype=dhall
+
+let NonEmpty =
+        ./Type sha256:e2e247455a858317e470e0e4affca8ac07f9f130570ece9cb7ac1f4ea3deb87f
+      ? ./Type
+
+let constructor =
+        ./constructor sha256:e907e9f13aa8b748c276592cd37ca6d67d9429cab9957355d14b9980ede3e6b7
+      ? ./constructor
+
+let singleton = λ(a : Type) → λ(head : a) → (constructor a)::{ head = head }
+
+let example0 =
+      assert : singleton Natural 0 ≡ (constructor Natural)::{ head = 0 }
+
+in  singleton : ∀(a : Type) → a → NonEmpty a

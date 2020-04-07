@@ -1,0 +1,39 @@
+-- vim: filetype=dhall
+
+let NonEmpty =
+        ./Type sha256:e2e247455a858317e470e0e4affca8ac07f9f130570ece9cb7ac1f4ea3deb87f
+      ? ./Type
+
+let headAndTail =
+        ../List/headAndTail sha256:9e5de1b61d63f7caf1b197df7eb0ca19f682e6c05b4e1f557cd5a88355b31b08
+      ? ../List/headAndTail
+
+let optional =
+      https://prelude.dhall-lang.org/v12.0.0/Optional/fold sha256:62139ff410ca84302acebe763a8a1794420dd472d907384c7fb80df2a2180302
+
+let fromList =
+        λ(a : Type)
+      → λ(list : List a)
+      → let x = headAndTail a list : { head : Optional a, tail : List a }
+        
+        in  optional
+              a
+              x.head
+              (Optional (NonEmpty a))
+              (λ(just : a) → Some { head = just, tail = x.tail })
+              (None (NonEmpty a))
+
+let example0 =
+      assert : fromList Natural ([] : List Natural) ≡ None (NonEmpty Natural)
+
+let example1 =
+        assert
+      :   fromList Natural [ 0 ]
+        ≡ Some ({ head = 0, tail = [] : List Natural } : NonEmpty Natural)
+
+let example2 =
+        assert
+      :   fromList Natural [ 0, 1, 2 ]
+        ≡ Some ({ head = 0, tail = [ 1, 2 ] } : NonEmpty Natural)
+
+in  fromList : ∀(a : Type) → List a → Optional (NonEmpty a)

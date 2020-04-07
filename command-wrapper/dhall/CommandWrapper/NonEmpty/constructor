@@ -1,0 +1,20 @@
+-- vim: filetype=dhall
+
+let NonEmpty =
+        ./Type sha256:e2e247455a858317e470e0e4affca8ac07f9f130570ece9cb7ac1f4ea3deb87f
+      ? ./Type
+
+let constructor =
+      λ(a : Type) → { Type = NonEmpty a, default = { tail = [] : List a } }
+
+let example0 =
+        assert
+      :   (constructor Natural)::{ head = 0 }
+        ≡ { head = 0, tail = [] : List Natural }
+
+let example1 =
+        assert
+      :   (constructor Natural)::{ head = 0, tail = [ 1, 2 ] }
+        ≡ { head = 0, tail = [ 1, 2 ] }
+
+in  constructor : ∀(a : Type) → { Type : Type, default : { tail : List a } }

@@ -1,0 +1,18 @@
+-- vim: filetype=dhall
+
+let NonEmpty =
+        ./Type sha256:e2e247455a858317e470e0e4affca8ac07f9f130570ece9cb7ac1f4ea3deb87f
+      ? ./Type
+
+let null =
+        https://prelude.dhall-lang.org/v12.0.0/List/null sha256:2338e39637e9a50d66ae1482c0ed559bbcc11e9442bfca8f8c176bbcd9c4fc80
+
+let isSingleton = λ(a : Type) → λ(nonEmpty : NonEmpty a) → null a nonEmpty.tail
+
+let example0 =
+      assert : isSingleton Natural { head = 0, tail = [] : List Natural } ≡ True
+
+let example1 =
+      assert : isSingleton Natural { head = 0, tail = [ 1, 2 ] } ≡ False
+
+in  isSingleton : ∀(a : Type) → NonEmpty a → Bool

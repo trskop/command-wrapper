@@ -1,0 +1,25 @@
+-- vim: filetype=dhall
+
+let NonEmpty =
+        ./Type sha256:e2e247455a858317e470e0e4affca8ac07f9f130570ece9cb7ac1f4ea3deb87f
+      ? ./Type
+
+let List/drop =
+        https://prelude.dhall-lang.org/v12.0.0/List/drop sha256:af983ba3ead494dd72beed05c0f3a17c36a4244adedf7ced502c6512196ed0cf
+
+let drop =
+        λ(n : Natural)
+      → λ(a : Type)
+      → λ(nonEmpty : NonEmpty a)
+      → List/drop n a ([ nonEmpty.head ] # nonEmpty.tail)
+
+let example0 =
+      assert : drop 0 Natural { head = 0, tail = [ 1, 2 ] } ≡ [ 0, 1, 2 ]
+
+let example1 = assert : drop 1 Natural { head = 0, tail = [ 1, 2 ] } ≡ [ 1, 2 ]
+
+let example2 =
+        assert
+      : drop 4 Natural { head = 0, tail = [ 1, 2 ] } ≡ ([] : List Natural)
+
+in  drop : Natural → ∀(a : Type) → NonEmpty a → List a
