@@ -1,8 +1,8 @@
 -- vim: filetype=dhall
 
-let List/head-and-tail =
-        ./head-and-tail sha256:9e5de1b61d63f7caf1b197df7eb0ca19f682e6c05b4e1f557cd5a88355b31b08
-      ? ./head-and-tail
+let List/headAndTail =
+        ./headAndTail sha256:9e5de1b61d63f7caf1b197df7eb0ca19f682e6c05b4e1f557cd5a88355b31b08
+      ? ./headAndTail
 
 in    λ(n : Natural)
     → λ(a : Type)
@@ -11,7 +11,7 @@ in    λ(n : Natural)
           (n + 1)
           { result : Optional a, rest : List a }
           (   λ(i : { result : Optional a, rest : List a })
-            → let j = List/head-and-tail a i.rest
+            → let j = List/headAndTail a i.rest
               
               in  { result = j.head, rest = j.tail }
           )

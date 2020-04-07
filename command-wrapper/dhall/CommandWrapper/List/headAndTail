@@ -1,0 +1,27 @@
+-- vim: filetype=dhall
+
+let fold =
+      https://prelude.dhall-lang.org/v12.0.0/List/fold sha256:10bb945c25ab3943bd9df5a32e633cbfae112b7d3af38591784687e436a8d814
+
+let optional =
+      https://prelude.dhall-lang.org/v12.0.0/Optional/fold sha256:62139ff410ca84302acebe763a8a1794420dd472d907384c7fb80df2a2180302
+
+let step =
+        λ(a : Type)
+      → λ(elem : a)
+      → λ(input : { head : Optional a, tail : List a })
+      → optional
+          a
+          input.head
+          { head : Optional a, tail : List a }
+          (λ(prev : a) → { head = Some elem, tail = [ prev ] # input.tail })
+          { head = Some elem, tail = input.tail }
+
+in    λ(a : Type)
+    → λ(list : List a)
+    → fold
+        a
+        list
+        { head : Optional a, tail : List a }
+        (step a)
+        { head = None a, tail = [] : List a }

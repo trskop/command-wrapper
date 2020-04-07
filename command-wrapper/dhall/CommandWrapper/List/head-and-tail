@@ -1,21 +1,6 @@
 -- vim: filetype=dhall
+--
+-- TODO: Remove this file once we can ditch bacwards compatibility.
 
-let step =
-        λ(a : Type)
-      → λ(elem : a)
-      → λ(input : { head : Optional a, tail : List a })
-      → Optional/fold
-          a
-          input.head
-          { head : Optional a, tail : List a }
-          (λ(prev : a) → { head = Some elem, tail = [ prev ] # input.tail })
-          { head = Some elem, tail = input.tail }
-
-in    λ(a : Type)
-    → λ(list : List a)
-    → List/fold
-        a
-        list
-        { head : Optional a, tail : List a }
-        (step a)
-        { head = None a, tail = [] : List a }
+  ./headAndTail sha256:9e5de1b61d63f7caf1b197df7eb0ca19f682e6c05b4e1f557cd5a88355b31b08
+? ./headAndTail
