@@ -5,7 +5,7 @@
 
 # NAME
 
-`command-wrapper-skel` -- Generate subcommand or configuration file skeleton
+`command-wrapper-skel` - Generate subcommand or configuration file skeleton
 for specific Command Wrapper environment, i.e. toolset.
 
 

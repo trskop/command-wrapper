@@ -21,7 +21,7 @@
   
   # NAME
   
-  `${subcommand.exe}` -- **TODO: Short description**
+  `${subcommand.exe}` - **TODO: Short description**
   
   
   # USAGE

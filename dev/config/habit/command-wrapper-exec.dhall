@@ -66,6 +66,12 @@ let commands =
           , description = Some "Build and install into ~/.local"
           , command = shake ([] : List Text)
           }
+        , ExecNamedCommand::{
+          , name = "install-man"
+          , description =
+              Some "Build and install the manual pages into ~/.local/share/man"
+          , command = shake [ "man" ]
+          }
         , let stack =
                 { options = Exec.stack.Options::{=}
                 , arguments = [] : List Text

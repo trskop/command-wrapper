@@ -134,12 +134,14 @@ main = do
 
 data ManDirs = ManDirs
     { man1Dir :: FilePath
+    , man5Dir :: FilePath
     , man7Dir :: FilePath
     }
 
 mkManDirs :: FilePath -> ManDirs
 mkManDirs dir = ManDirs
     { man1Dir = dir </> "man1"
+    , man5Dir = dir </> "man5"
     , man7Dir = dir </> "man7"
     }
 
@@ -176,6 +178,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
             , man1Dir </> "command-wrapper-help.1.gz"
             , man1Dir </> "command-wrapper-skel.1.gz"
             , man1Dir </> "command-wrapper-version.1.gz"
+            , man5Dir </> "command-wrapper-default.dhall.5.gz"
             , man7Dir </> "command-wrapper-bash-library.7.gz"
             , man7Dir </> "command-wrapper-direnv-library.7.gz"
             , man7Dir </> "command-wrapper-subcommand-protocol.7.gz"
@@ -184,6 +187,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
         manPagePatterns :: ManDirs -> [String]
         manPagePatterns ManDirs{..} =
             [ man1Dir </> "*.1.gz"
+            , man5Dir </> "*.5.gz"
             , man7Dir </> "*.7.gz"
             ]
 
@@ -193,6 +197,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
         manHtmlPatterns :: ManDirs -> [FilePath]
         manHtmlPatterns ManDirs{..} =
             [ man1Dir </> "*.1.html"
+            , man5Dir </> "*.5.html"
             , man7Dir </> "*.7.html"
             ]
 
@@ -204,6 +209,13 @@ shakeMain Directories{..} opts = shakeArgs opts do
             , dir </> "command-wrapper-skel"
             ]
 
+        staticHtmlManDirs :: ManDirs
+        staticHtmlManDirs = ManDirs
+            { man1Dir = staticDocDir
+            , man5Dir = staticDocDir
+            , man7Dir = staticDocDir
+            }
+
     want $ mconcat
         [ binaries libexecDir
         , ["man"]
@@ -213,7 +225,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
         need (manPages (mkManDirs manDir))
 
     "man-html" ~>
-        need (manHtml (ManDirs staticDocDir staticDocDir))
+        need (manHtml staticHtmlManDirs)
 
     "static" ~>
         need [staticTarball, staticTarball <.> "sha256sum"]
@@ -221,7 +233,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
     staticTarball %> \out -> do
         need $ mconcat
             [ manPages (mkManDirs staticManDir)
-            , manHtml (ManDirs staticDocDir staticDocDir)
+            , manHtml staticHtmlManDirs
             , binaries staticLibexecDir
             ]
 
@@ -332,7 +344,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
         cmd_ "pandoc --standalone --to=man" ["--output=" <> tempOut, src]
         cmd_ "gzip --force -9" [tempOut]
 
-    manHtmlPatterns (ManDirs staticDocDir staticDocDir) |%> \out -> do
+    manHtmlPatterns staticHtmlManDirs |%> \out -> do
         let src = "command-wrapper" </> "man" </> takeFileName out -<.> "md"
             dst = takeDirectory out
 

@@ -5,7 +5,7 @@
 
 # NAME
 
-`command-wrapper-exec` -- Execute predefined command with a user specified
+`command-wrapper-exec` - Execute predefined command with a user specified
 environment.
 
 

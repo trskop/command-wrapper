@@ -10,7 +10,8 @@
 --
 -- Implementation of internal command named @help@.
 module CommandWrapper.Toolset.InternalSubcommand.Help
-    ( help
+    ( HelpOptions(..)
+    , help
     , helpSubcommandHelp
     , helpSubcommandCompleter
     )
@@ -18,7 +19,7 @@ module CommandWrapper.Toolset.InternalSubcommand.Help
 
 import Prelude (fromIntegral)
 
-import Control.Applicative ((<*>), (<|>), optional, pure)
+import Control.Applicative ((<*>), (<|>), optional, pure, some)
 import Control.Monad ((>>=))
 import Data.Bool (Bool(False, True), otherwise)
 import qualified Data.Char as Char (toLower)
@@ -63,7 +64,6 @@ import qualified Options.Applicative as Options
     , defaultPrefs
     , flag
     , flag'
-    , help
     , info
     , long
     , metavar
@@ -98,7 +98,14 @@ import CommandWrapper.Core.Message
     , out
     )
 import CommandWrapper.Toolset.Config.Global
-    ( Config(Config, colourOutput, extraHelpMessage, manPath, verbosity)
+    ( Config
+        ( Config
+        , colourOutput
+        , extraHelpMessage
+        , ignoreAliases
+        , manPath
+        , verbosity
+        )
     , getAliases
     , getSearchPath
     )
@@ -119,78 +126,105 @@ data HelpMode a
     = MainHelp a
     | SubcommandHelp String a
     | ManPage (Maybe String) a
+    | Search [String] a
     | Aliases a
   deriving stock (Functor, Generic, Show)
 
-help
-    ::  ( String
+data HelpOptions = HelpOptions
+    { internalHelp
+        :: String
         -> Maybe (AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle))
-        )
     -- ^ Return help message to print if string argument is an internal
     -- subcommand.
     --
     -- TODO: Return something more structured.
-    -> (AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle))
+
+    , mainHelp :: AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle)
     -- ^ Main\/global help message for the toolset itself.
+
+    , internalSubcommands :: [String]
+    -- ^ List of internal subcommands.  Help subcommand itself has to be on the
+    -- list so that its name is not hardcoded.
+
+    , topics :: [String]
+    -- ^ Additional help topics that are not toolsets, internal subcommands, or
+    -- external subcommands.
+
+    , toManualPage :: String -> Maybe String
+    -- ^ Convert values of 'helpTopics' and 'internalSubcommands' into a manual
+    -- page names.
+    --
+    -- Invariant:
+    --
+    -- > forall s.
+    -- >   (s `elem` helpTopics || s `elem` internalSubcommands s)
+    -- >      === isJust (toManualPage s)
+    }
+
+help
+    :: HelpOptions
     -> AppNames
     -> [String]
     -> Config
     -> IO ()
-help internalHelp mainHelp appNames@AppNames{usedName} options config =
-    runMain (parseOptions appNames config options) defaults \case
-        MainHelp config' -> do
-            out verbosity colourOutput stdout (mainHelp appNames config')
+help HelpOptions{..} appNames@AppNames{usedName} options globalConfig =
+    runMain (parseOptions appNames globalConfig options) defaults \case
+        MainHelp config@Config{colourOutput, extraHelpMessage, verbosity} -> do
+            out verbosity colourOutput stdout (mainHelp appNames config)
             traverse_ putStrLn extraHelpMessage
 
-        SubcommandHelp cmd config' ->
+        SubcommandHelp cmd config@Config{colourOutput, verbosity} ->
             case internalHelp cmd of
                 Just mkMsg ->
-                    out verbosity colourOutput stdout (mkMsg appNames config')
+                    out verbosity colourOutput stdout (mkMsg appNames config)
 
                 Nothing ->
-                    External.executeCommand appNames config' cmd ["--help"]
+                    External.executeCommand appNames config cmd ["--help"]
 
-        ManPage topic config' -> do
-            let internalCommandManPage =
-                    ("command-wrapper-" <>) <$> topic
-
+        ManPage topic config -> do
             possiblyManualPageName <- case topic of
-                Nothing -> pure (Just usedName)
+                -- Manual page for the toolset itself.
+                Nothing ->
+                    pure (toManualPage usedName)
 
-                Just "bash-library" -> pure internalCommandManPage
-                Just "command-wrapper" -> pure (Just "command-wrapper")
-                Just "completion" -> pure internalCommandManPage
-                Just "config" -> pure internalCommandManPage
-                Just "direnv-library" -> pure internalCommandManPage
-                Just "help" -> pure internalCommandManPage
-                Just "subcommand-protocol" -> pure internalCommandManPage
-                Just "version" -> pure internalCommandManPage
+                Just s | pageName@(Just _) <- toManualPage s ->
+                    pure pageName
 
                 Just subcommandName ->
-                    findSubcommandManualPageName appNames config' subcommandName
+                    findSubcommandManualPageName appNames config subcommandName
 
             case possiblyManualPageName of
                 Nothing ->
                     pure () -- TODO: Error message.
 
-                Just manPageName -> do
-                    env <- if null manPath
-                        then
-                            pure Nothing
-                        else
-                            Just . setManPath <$> getEnvironment
+                Just manPageName ->
+                    manEnvironment config
+                        >>= executeFile "man" True [manPageName]
 
-                    executeFile "man" True [manPageName] env
+        Search expressions config -> do
+            manEnvironment config >>= executeFile "apropos" True expressions
 
         Aliases config' -> do
             listAliases appNames config'
   where
-    defaults = Mainplate.applySimpleDefaults (MainHelp config)
+    defaults = Mainplate.applySimpleDefaults (MainHelp globalConfig)
 
-    Config{colourOutput, extraHelpMessage, manPath, verbosity} = config
+    manEnvironment :: Config -> IO (Maybe [(String, String)])
+    manEnvironment config@Config{manPath}
+      | null manPath =
+            pure Nothing
+      | otherwise = do
+            debugPrintManPath config
+            Just . setManPath config <$> getEnvironment
 
-    setManPath :: [(String, String)] -> [(String, String)]
-    setManPath env =
+    debugPrintManPath :: Config -> IO ()
+    debugPrintManPath Config{colourOutput, manPath, verbosity} =
+        debugMsg (fromString usedName) verbosity colourOutput stderr
+        $ "Using following man path: "
+        <> fromString (show (List.intercalate ":" manPath))
+
+    setManPath :: Config -> [(String, String)] -> [(String, String)]
+    setManPath Config{manPath} env =
         -- We want to completely override MANPATH environment variable,
         -- otherwise we would have to handle all the interections, and
         -- possiblity of having MANPATH being too long.  At some point we may
@@ -241,6 +275,7 @@ parseOptions appNames config options =
         <$> optional
                 ( subcommandArg
                 <|> (manFlag <*> optional subcommandOrTopicArg)
+                <|> (searchFlag <*> some keywordOrRegexpArg)
                 <|> aliasesFlag
                 <|> Options.helpFlag (switchTo $ SubcommandHelp "help")
                 )
@@ -250,18 +285,22 @@ parseOptions appNames config options =
         MainHelp cfg -> f cfg
         SubcommandHelp _ cfg -> f cfg
         ManPage _ cfg -> f cfg
+        Search _ cfg -> f cfg
         Aliases cfg -> f cfg
 
     manFlag :: Options.Parser (Maybe String -> Endo (HelpMode Config))
-    manFlag =
-        Options.flag' (\n -> switchTo (ManPage n))
-            ( Options.long "man"
-            <> Options.help "Show manual page for a SUBCOMMAND or a TOPIC."
-            )
+    manFlag = Options.flag' (\n -> switchTo (ManPage n)) (Options.long "man")
+
+    searchFlag :: Options.Parser ([String] -> Endo (HelpMode Config))
+    searchFlag = Options.flag' (switchTo . Search) (Options.long "search")
 
     subcommandOrTopicArg :: Options.Parser String
     subcommandOrTopicArg =
         Options.strArgument (Options.metavar "SUBCOMMAND|TOPIC")
+
+    keywordOrRegexpArg :: Options.Parser String
+    keywordOrRegexpArg =
+        Options.strArgument (Options.metavar "{KEYWORD|REGEXP}")
 
     subcommandArg :: Options.Parser (Endo (HelpMode Config))
     subcommandArg =
@@ -291,6 +330,13 @@ helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 <> "|"
                 <> metavar "TOPIC"
                 )
+        , "help" <+> longOption "search"
+            <+> Pretty.braces
+                ( metavar "KEYWORD"
+                <> "|"
+                <> metavar "REGEXP"
+                )
+            <+> Pretty.brackets "..."
         , "help" <+> longOption "aliases"
         , "help" <+> helpOptions
         , helpOptions
@@ -306,6 +352,11 @@ helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             [ Pretty.reflow "Show manual page for"
             , metavar "SUBCOMMAND" <> "|" <> metavar "TOPIC"
             , Pretty.reflow "instead of short help message."
+            ]
+
+        , optionDescription ["--search {TOPIC|REGEXP} [...]"]
+            [ Pretty.reflow "Search documentation for specified"
+            , metavar "TOPIC" <> "|" <> metavar "REGEX" <> "."
             ]
 
         , optionDescription ["--aliases"]
@@ -324,20 +375,24 @@ helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
     ]
 
 helpSubcommandCompleter
-    :: AppNames
+    :: HelpOptions
+    -> AppNames
     -> Config
     -> Shell
     -> Word
     -> [String]
     -> IO [String]
-helpSubcommandCompleter appNames config _shell index words
+helpSubcommandCompleter HelpOptions{internalSubcommands, topics} appNames
+  config _shell index words
+  | hadMan      = (specialManPages <>) <$> subcmds True
+  | hadSearch   = (specialManPages <>) <$> subcmds False
   | hadAliases  = pure []
   | hadHelp     = pure []
   | hadTopic    = pure []
-  | hadDashDash = subcmds
-  | null pat    = (helpOptions' <>) <$> subcmds
+  | hadDashDash = subcmds False
+  | null pat    = (helpOptions' <>) <$> subcmds False
   | isOption    = pure $ List.filter (pat `List.isPrefixOf`) helpOptions'
-  | otherwise   = subcmds
+  | otherwise   = subcmds False
   where
     wordsBeforePattern = List.take (fromIntegral index) words
     hadDashDash = "--" `List.elem` wordsBeforePattern
@@ -346,32 +401,31 @@ helpSubcommandCompleter appNames config _shell index words
     hadMan = any (== "--man") wordsBeforePattern
     pat = fromMaybe "" $ atMay words (fromIntegral index)
     isOption = headMay pat == Just '-'
-    helpOptions' = ["--aliases", "--help", "-h", "--man", "--"]
-    subcmds =
-        ((if hadMan then specialManPages else []) <>)
-        <$> findSubcommands appNames config pat
+    helpOptions' = ["--aliases", "--help", "-h", "--man", "--search", "--"]
+    hadSearch = "--search" `List.elem` wordsBeforePattern
+
+    subcmds ignoreAliases =
+        findSubcommands internalSubcommands appNames config{ignoreAliases} pat
 
     specialManPages =
-        List.filter (fmap Char.toLower pat `List.isPrefixOf`)
-            [ "bash-library"
-            , "command-wrapper"
-            , "direnv-library"
-            , "subcommand-protocol"
-            ]
+        List.filter (fmap Char.toLower pat `List.isPrefixOf`) topics
 
     hadTopic = case lastMay wordsBeforePattern of
         Nothing -> False
         Just ('-' : _) -> False
         _ -> True
 
--- | Lookup external and internal subcommands matching pattern (prefix).
+-- | Lookup external and internal subcommands and aliases matching pattern
+-- (prefix).
 findSubcommands
-    :: AppNames
+    :: [String]
+    -- ^ Internal subcommand names.
+    -> AppNames
     -> Config
     -> String
     -- ^ Pattern (prefix) to match subcommand name against.
     -> IO [String]
-findSubcommands appNames config pat =
+findSubcommands internalSubcommands appNames config pat =
     -- TODO: Function 'findSubcommands' is also defined in
     -- CommandWrapper.Internal.Subcommand.Completion module.
     List.filter (fmap Char.toLower pat `List.isPrefixOf`) <$> getSubcommands
@@ -382,10 +436,8 @@ findSubcommands appNames config pat =
         extCmds <- External.findSubcommands appNames config
 
         let aliases = alias <$> getAliases config
-            -- TODO: Get rid of hardcoded list of internal subcommands.
-            internalCommands = ["help", "config", "completion", "version"]
 
-        pure (List.nub $ aliases <> internalCommands <> extCmds)
+        pure (List.nub $ aliases <> internalSubcommands <> extCmds)
 
 data AliasAnn
     = AliasName

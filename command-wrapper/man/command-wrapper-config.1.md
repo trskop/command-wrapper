@@ -5,7 +5,7 @@
 
 # NAME
 
-`command-wrapper-config` -- Initialise, query, and update Command Wrapper
+`command-wrapper-config` - Initialise, query, and update Command Wrapper
 toolset configuration.
 
 

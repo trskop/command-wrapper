@@ -5,7 +5,7 @@
 
 # NAME
 
-`command-wrapper-completion` -- Command line completion, editor, and IDE
+`command-wrapper-completion` - Command line completion, editor, and IDE
 support.
 
 

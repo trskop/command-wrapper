@@ -5,7 +5,8 @@
 
 # NAME
 
-Direnv library for Command Wrapper integration with [Direnv](https://direnv.net).
+`command-wrapper-direnv-library` - Direnv library for Command Wrapper
+integration with [Direnv](https://direnv.net).
 
 
 # DESCRIPTION

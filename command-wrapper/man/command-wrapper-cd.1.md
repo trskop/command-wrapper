@@ -5,7 +5,7 @@
 
 # NAME
 
-`command-wrapper-cd` -- Start a new subshell / Tmux window / terminal emulator
+`command-wrapper-cd` - Start a new subshell / Tmux window / terminal emulator
 in a selected directory.
 
 

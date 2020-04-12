@@ -5,7 +5,8 @@
 
 # NAME
 
-Protocol that must be respected by all external *Command Wrapper* subcommands.
+`command-wrapper-subcommand-protocol` - Protocol that must be respected by all
+external Command Wrapper subcommands.
 
 
 # DESCRIPTION

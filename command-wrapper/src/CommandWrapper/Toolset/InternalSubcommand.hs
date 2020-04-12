@@ -19,6 +19,7 @@ module CommandWrapper.Toolset.InternalSubcommand
     , command
 
     -- ** Help Command
+    , Subcommand.HelpOptions(..)
     , Subcommand.help
     , Subcommand.helpSubcommandCompleter
     , Subcommand.helpSubcommandHelp
@@ -49,9 +50,11 @@ module CommandWrapper.Toolset.InternalSubcommand
   where
 
 import Control.Applicative ((<*>), pure)
-import Data.Functor ((<$>))
+import Data.Functor ((<$>), (<&>), fmap)
 import qualified Data.List as List (lookup)
+import qualified Data.List.NonEmpty as NonEmpty (last, toList)
 import Data.Maybe (Maybe(..))
+import Data.Semigroup ((<>))
 import Data.String (String)
 import Data.Tuple (fst)
 import Data.Version (makeVersion)
@@ -62,7 +65,10 @@ import Text.Show (Show)
 import qualified Data.Text.Prettyprint.Doc as Pretty (Doc)
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
 
-import CommandWrapper.Core.Environment (AppNames, subcommandProtocolVersion)
+import CommandWrapper.Core.Environment
+    ( AppNames(AppNames, names)
+    , subcommandProtocolVersion
+    )
 import CommandWrapper.Core.Message (Result)
 import qualified CommandWrapper.Toolset.Config.Global as Global (Config)
 import qualified CommandWrapper.Toolset.InternalSubcommand.Completion as Subcommand
@@ -79,7 +85,8 @@ import qualified CommandWrapper.Toolset.InternalSubcommand.Config as Subcommand
     , configSubcommandHelp
     )
 import qualified CommandWrapper.Toolset.InternalSubcommand.Help as Subcommand
-    ( help
+    ( HelpOptions(..)
+    , help
     , helpSubcommandCompleter
     , helpSubcommandHelp
     )
@@ -126,9 +133,9 @@ run :: (AppNames -> Global.Config -> Pretty.Doc (Result Pretty.AnsiStyle))
     -> Command
     -> Global.Config
     -> IO ()
-run globalHelp appNames = \case
+run mainHelp appNames@AppNames{names} = \case
     HelpCommand options ->
-        help globalHelp appNames options
+        Subcommand.help helpOptions appNames options
 
     ConfigCommand options ->
         Subcommand.config appNames options
@@ -157,15 +164,51 @@ run globalHelp appNames = \case
 
     completionConfig = Subcommand.CompletionConfig
         { internalCompleter = \subcommandName ->
-            internalSubcommandCompleter <$> command subcommandName []
+            internalSubcommandCompleter helpOptions
+                <$> command subcommandName []
 
-        , internalSubcommands = fst <$> commands
+        , internalSubcommands
         }
 
-internalSubcommandCompleter :: Command -> Subcommand.Completer
-internalSubcommandCompleter = \case
+    helpOptions = Subcommand.HelpOptions
+        { internalHelp = \s ->
+            internalSubcommandHelp <$> command s []
+        , mainHelp
+        , internalSubcommands
+        , topics = fst <$> topicsToPages
+        , toManualPage = \s ->
+            List.lookup s (topicsToPages <> fmap stdTopic internalSubcommands)
+        }
+
+    internalSubcommands = fst <$> commands
+
+    -- Original command wrapper executable name.  This will most certainly be
+    -- `command-wrapper`.
+    stdPrefix = NonEmpty.last names
+
+    -- Most topic manual pages follow this convention:
+    stdTopic s = (s, stdPrefix <> "-" <> s)
+
+    topicsToPages =
+        -- TODO: At some point we would like to involve lookup of manual pages
+        -- instead of hardcoded list.  Not having it hardcoded inside `help`
+        -- subcommand is just the first step there.
+        [ stdTopic "bash-library"
+        , stdTopic "default.dhall"
+        , stdTopic "direnv-library"
+        , stdTopic "subcommand-protocol"
+        ]
+        -- These are toolset names. We want to allow them to be called
+        -- explicitly.
+        <> (NonEmpty.toList names <&> \s -> (s, s))
+
+internalSubcommandCompleter
+    :: Subcommand.HelpOptions
+    -> Command
+    -> Subcommand.Completer
+internalSubcommandCompleter helpOptions = \case
     HelpCommand _ ->
-        Subcommand.helpSubcommandCompleter
+        Subcommand.helpSubcommandCompleter helpOptions
 
     ConfigCommand _ ->
         Subcommand.configSubcommandCompleter
@@ -177,18 +220,6 @@ internalSubcommandCompleter = \case
         Subcommand.versionSubcommandCompleter
   where
     internalSubcommands = fst <$> commands
-
--- {{{ Help Command -----------------------------------------------------------
-
-help
-    :: (AppNames -> Global.Config -> Pretty.Doc (Result Pretty.AnsiStyle))
-    -> AppNames
-    -> [String]
-    -> Global.Config
-    -> IO ()
-help globalHelp = Subcommand.help internalSubcommandHelp' globalHelp
-  where
-    internalSubcommandHelp' s = internalSubcommandHelp <$> command s []
 
 internalSubcommandHelp
     :: Command
@@ -207,5 +238,3 @@ internalSubcommandHelp = \case
 
     VersionCommand _ ->
         Subcommand.versionSubcommandHelp
-
--- }}} Help Command -----------------------------------------------------------

@@ -347,13 +347,10 @@ function use_command_wrapper() {
             "${config_dir}/${toolset}" "${default_config_constructor}"
     fi
 
-    export COMMAND_WRAPPER_LOCAL_CONFIG_DIR="${config_dir}"
-
     # }}} Cached Dhall Configs ################################################
 
-    # TODO: Extend 'MANPATH' to include Command Wrapper and toolset manaual
-    # pages. Be aware that with Nix the MANPATH may overflow.
-    #
-    # This needs to be after exporting 'COMMAND_WRAPPER_LOCAL_CONFIG_DIR' to
-    # include project-specific manual pages.
+    # This will make toolset aware of project-level configuration.  We need to
+    # keep at the bottom so that above invocations of toolset will not fail
+    # while we may be building the project-level configuration.
+    export COMMAND_WRAPPER_LOCAL_CONFIG_DIR="${config_dir}"
 }

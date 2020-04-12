@@ -5,7 +5,7 @@
 
 # NAME
 
-`command-wrapper-version` -- Display version information.
+`command-wrapper-version` - Display version information.
 
 
 # USAGE

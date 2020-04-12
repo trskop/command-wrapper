@@ -5,7 +5,8 @@
 
 # NAME
 
-Bash library for Command Wrapper subcommands written as Bash scripts.
+`command-wrapper-bash-library` - Bash library for Command Wrapper subcommands
+written as Bash scripts.
 
 
 # DESCRIPTION

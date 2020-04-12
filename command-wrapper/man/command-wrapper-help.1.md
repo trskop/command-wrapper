@@ -1,11 +1,11 @@
 % COMMAND-WRAPPER-HELP(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 26th June 2019
+% 8th April 2020
 
 
 # NAME
 
-`command-wrapper-help` -- Display help message or manual page for Command
+`command-wrapper-help` - Display help message or manual page for Command
 Wrapper or one of its subcommands.
 
 
@@ -14,6 +14,8 @@ Wrapper or one of its subcommands.
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \[*SUBCOMMAND*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \--man \[*SUBCOMMAND*|*TOPIC*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \--search {*TOPIC*|*REGEXP*}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \--aliases
 
@@ -38,6 +40,29 @@ on colour settings.
 
 \--aliases
 :   List and describe available aliases.
+
+\--search {*TOPIC*|*REGEXP*}
+:   Search documentation for specified *TOPIC* or *REGEXP*.
+
+    For this to work we need to run `mandb` in a way that will index Command
+    Wrapper manual pages:
+
+    1.  Get Command Wrapper `MANPATH` (substitute `TOOLSET` to your toolset
+        name):
+
+        ```Bash
+        TOOLSET config --get \
+        | dhall-filter \
+            --let=Prelude="$(TOOLSET completion --library --dhall=prelude --import)" \
+            'Prelude.Text.concatSep ":" input.manPath'
+        ```
+
+    2.  Run `mandb` (substitute `COMMAND_WRAPPER_MANPATH` with the value we got
+        in step 1):
+
+        ```Bash
+        mandb --user-db COMMAND_WRAPPER_MANPATH
+        ```
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help help`.
