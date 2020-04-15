@@ -15,11 +15,10 @@
 module Main (main)
   where
 
-import Prelude ((-), fromIntegral)
+import Prelude ((-), fromIntegral, maxBound, minBound)
 
 import Control.Applicative ((<*>), empty, pure)
-import Control.Monad ((>>=), when)
-import Data.Bifunctor (bimap)
+import Control.Monad ((>=>), (>>=), when)
 import Data.Bool (Bool(False, True), (||), not, otherwise)
 import Data.Eq ((/=), (==))
 import Data.Foldable (any, asum, elem, foldMap, for_, length, mapM_, or)
@@ -42,17 +41,17 @@ import Data.Monoid (Endo(..), mconcat)
 import Data.Ord ((<=), compare)
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
-import Data.Tuple (fst)
 import Data.Word (Word)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
-import System.Environment (getArgs, getEnvironment)
+import System.Environment (getArgs)
 import System.Exit (ExitCode(ExitFailure, ExitSuccess), exitWith)
 import System.IO (FilePath, IO, putStrLn)
-import Text.Show (show)
+import Text.Show (Show, show)
 
 import qualified Data.CaseInsensitive as CaseInsensitive (mk)
-import qualified Data.Map.Strict as Map (delete, fromList, toList)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map (delete)
 import Data.Text (Text)
 import qualified Data.Text as Text (split, unpack)
 import Data.Text.Prettyprint.Doc (Doc, (<+>), pretty)
@@ -81,20 +80,14 @@ import qualified Options.Applicative as Options
     )
 import Safe (atMay, headMay, lastDef)
 import qualified System.Clock as Clock (Clock(Monotonic), TimeSpec, getTime)
-import System.Directory (setCurrentDirectory)
 import qualified System.Posix as Posix
     ( ProcessID
     , ProcessStatus(Exited, Stopped, Terminated)
-    , executeFile
     , forkProcess
     , getProcessStatus
     )
 import qualified Turtle (procs) -- Get rid of dependency on turtle, use process.
 
-import CommandWrapper.Core.Config.Environment (EnvironmentVariable(..))
-import qualified CommandWrapper.Core.Config.Environment as EnvironmentVariable
-    ( toTuple
-    )
 import CommandWrapper.Core.Config.Shell (Shell)
 import qualified CommandWrapper.Core.Config.Shell as Shell (parse)
 import CommandWrapper.Core.Completion.EnvironmentVariables
@@ -113,6 +106,12 @@ import CommandWrapper.Core.Completion.FileSystem
     , queryFileSystem
     )
 import qualified CommandWrapper.Core.Dhall as Dhall (hPut)
+import CommandWrapper.Core.Environment.Variable
+    ( defaultCommandWrapperPrefix
+    , getCommandWrapperToolsetVarName
+    , getCommandWrapperVarName
+    , isVariableRemovedBeforeInvokingExternalCommand
+    )
 import qualified CommandWrapper.Core.Help.Pretty as Help
 import CommandWrapper.Core.Message (defaultLayoutOptions, hPutDoc)
 import qualified CommandWrapper.Core.Options.Optparse as Options
@@ -132,8 +131,14 @@ import CommandWrapper.Subcommand.Prelude
     , subcommandParams
     , runSubcommand
     )
-import CommandWrapper.Toolset.Config.Command (Command(..), NamedCommand(..))
-import qualified CommandWrapper.Toolset.Config.Command as NamedCommand (isNamed)
+import CommandWrapper.Toolset.Config.Command
+    ( Command(..)
+    , ExecuteCommandError(..)
+    , NamedCommand(..)
+    , executeCommand
+    , isNamed
+    )
+--import qualified CommandWrapper.Toolset.Config.Command as NamedCommand (isNamed)
 
 import DhallInput (defaultDhallInputParams, dhallInput, fromDhallInput)
 
@@ -267,7 +272,7 @@ getCommand
     -> [Text]
     -> IO Command
 getCommand params@Params{verbosity, colour} commands expectedName arguments =
-    case List.find (NamedCommand.isNamed expectedName) commands of
+    case List.find (isNamed expectedName) commands of
         Nothing ->
             dieWith params stderr 126
                 $ fromString (show expectedName) <> ": Unknown COMMAND."
@@ -284,7 +289,7 @@ executeAndMonitorCommand :: Params -> MonitorOptions -> Command -> IO ()
 executeAndMonitorCommand params MonitorOptions{..} command
   | monitor = do
         getDuration <- startDuration
-        pid <- Posix.forkProcess (executeCommand command)
+        pid <- Posix.forkProcess (executeCommand' params command)
         exitCode <- getProcessStatus pid
         duration <- getDuration
         out params stdout
@@ -294,7 +299,7 @@ executeAndMonitorCommand params MonitorOptions{..} command
         exitWith exitCode
 
   | otherwise =
-        executeCommand command
+        executeCommand' params command
   where
     getProcessStatus :: Posix.ProcessID -> IO ExitCode
     getProcessStatus pid =
@@ -376,27 +381,31 @@ startDuration = do
   where
     getTime = Clock.getTime Clock.Monotonic
 
-executeCommand :: Command -> IO ()
-executeCommand Command{..} = do
-    for_ workingDirectory setCurrentDirectory
-    mkEnv environment >>= Posix.executeFile command searchPath arguments . Just
+executeCommand' :: Params -> Command -> IO ()
+executeCommand' params = executeCommand fixEnvironment >=> \case
+    FailedToSetCurrentDirectory dir e ->
+        dieWith params stderr 1 (showing dir <> ": " <> showing e)
+
+    FailedToExecuteCommand cmd' _ _ _ e ->
+        dieWith params stderr 126 (showing cmd' <> ": " <> showing e)
+
   where
-    mkEnv :: [EnvironmentVariable] -> IO [(String, String)]
-    mkEnv additionalVars = getEnvironment <&> \env ->
-        Map.toList (removeCommandwrapperVars env <> additionalVars')
-      where
-        additionalVars' =
-            Map.fromList (varToTuple <$> additionalVars)
+    showing :: Show a => a -> Text
+    showing = fromString . show
 
-        removeCommandwrapperVars env =
-            foldMap (Endo . Map.delete) commandWrapperVars
-                `appEndo` Map.fromList env
-          where
-            commandWrapperVars =
-                List.filter ("COMMAND_WRAPPER_" `List.isPrefixOf`) (fst <$> env)
+fixEnvironment :: Map String String -> Map String String
+fixEnvironment = appEndo
+    $ foldMap (Endo . Map.delete . Text.unpack)
+        (subcommandVariablesToRemove <> toolsetVariablesToRemove)
+  where
+    subcommandVariablesToRemove =
+        getCommandWrapperVarName defaultCommandWrapperPrefix
+        <$> [minBound .. maxBound]
 
-        varToTuple =
-            bimap Text.unpack Text.unpack . EnvironmentVariable.toTuple
+    toolsetVariablesToRemove =
+        getCommandWrapperToolsetVarName defaultCommandWrapperPrefix
+        <$> List.filter isVariableRemovedBeforeInvokingExternalCommand
+            [minBound .. maxBound]
 
 printAsDhall :: ToDhall a => Params -> a -> IO ()
 printAsDhall Params{colour} =
@@ -663,7 +672,8 @@ doCommandCompletion params config shell commandName index words =
         Nothing ->
             defaultCompletion
         Just mkCompletionCommand ->
-            executeCommandCompletion mkCompletionCommand shell index words
+            executeCommandCompletion params mkCompletionCommand shell index
+                words
   where
     -- TODO: Should this be the same default completion as shell does?
     defaultCompletion = pure ()
@@ -674,7 +684,7 @@ getCompletion
     -> String
     -> IO (Maybe (Shell -> Natural -> [Text] -> Command))
 getCompletion params Config{commands} commandName =
-    case List.find (NamedCommand.isNamed (fromString commandName)) commands of
+    case List.find (isNamed (fromString commandName)) commands of
         Nothing ->
             dieWith params stderr 1
                 ("'" <> fromString commandName <> "': Missing argument.")
@@ -683,15 +693,17 @@ getCompletion params Config{commands} commandName =
             pure completion
 
 executeCommandCompletion
-    :: (Shell -> Natural -> [Text] -> Command)
+    :: Params
+    -> (Shell -> Natural -> [Text] -> Command)
     -- ^ Function that constructs completion command, i.e. command that will be
     -- executed to provide completion.
     -> Shell
     -> Word
     -> [String]
     -> IO ()
-executeCommandCompletion mkCommand shell index words =
-    executeCommand (mkCommand shell (fromIntegral index) (fromString <$> words))
+executeCommandCompletion params mkCommand shell index words =
+    executeCommand' params
+        (mkCommand shell (fromIntegral index) (fromString <$> words))
 
 helpMsg :: ExecParams -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpMsg ExecParams{protocol = Params{name, subcommand}} = Pretty.vsep
