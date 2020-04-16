@@ -9,4 +9,7 @@
 , toCommand =
       ./toCommand sha256:ff662c1dfbf89934bf3caf69fab96d15f291b6e0dc65a467a465fe968159f723
     ? ./toCommand
+, fromCommand =
+      ./fromCommand sha256:605cc6a96fb1fdf1dbb7779bcd044f8b2ad94aa901e00d98337923326329b572
+    ? ./fromCommand
 }

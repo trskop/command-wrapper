@@ -105,7 +105,7 @@ urlBase = "https://raw.githubusercontent.com/trskop/command-wrapper/"
 
 commandWrapperHash :: IsString s => s
 commandWrapperHash =
-    "sha256:6ccf9cb286d33fe60d8d4d4fa2f48f91475207e5c2b51c27950962983db14310"
+    "sha256:0dc5741096c730cb5561d6eb355f0f838b75b45b95d119595c023ff424d1fd4a"
 
 commandWrapperContent :: (IsString s, Monoid s) => s
 commandWrapperContent =

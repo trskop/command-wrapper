@@ -1,0 +1,24 @@
+-- vim: filetype=dhall
+--
+-- Predicate that check if environment is empty.  It's just a specialised
+-- version of `null` for `List`.
+
+let Environment =
+        ./Type sha256:bfc2cb080bb0cac5a42a81beb707437389fa9c6f8e54ae8dd7ce09c6566140ee
+      ? ./Type
+
+let EnvironmentVariable =
+        ../EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
+      ? ../EnvironmentVariable/Type
+
+let List/null =
+      https://prelude.dhall-lang.org/v12.0.0/List/null sha256:2338e39637e9a50d66ae1482c0ed559bbcc11e9442bfca8f8c176bbcd9c4fc80
+
+let null = λ(e : Environment) → List/null EnvironmentVariable e
+
+let test0 = assert : null ([] : Environment) ≡ True
+
+let test1 =
+      assert : null ([ { name = "FOO", value = "foo" } ] : Environment) ≡ False
+
+in  null : Environment → Bool

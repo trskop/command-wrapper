@@ -8,9 +8,9 @@ let GlobalOptions/default =
         ./default sha256:fcc7c0bfd22e1c1cc54cfe6249340f56410e296a90da6720156af78b7b7365ca
       ? ./default
 
-let Environment =
-        ../../../CommandWrapper/Environment/package.dhall sha256:a948211dc39cc648f650c7dcf67e4352ffae2ec5f4f0254bef596d88e87cd946
-      ? ../../../CommandWrapper/Environment/package.dhall
+let emptyEnvironment =
+        ../../../CommandWrapper/Environment/empty sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
+      ? ../../../CommandWrapper/Environment/empty
 
 let optionalEnvironmentVariables =
         ../../utils/optionalEnvironmentVariables sha256:97689a41f6b15c075cf0cfef3adc169b77f5afea52c5dadf8666a553b8ef2022
@@ -41,6 +41,6 @@ let -- Default value should not pass any environment variables to underlying
     -- command.
     noArgumentsByDefault =
         assert
-      : GlobalOptions/toEnvironment GlobalOptions/default ≡ Environment.empty
+      : GlobalOptions/toEnvironment GlobalOptions/default ≡ emptyEnvironment
 
 in  GlobalOptions/toEnvironment

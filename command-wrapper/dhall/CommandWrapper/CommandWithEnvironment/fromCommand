@@ -1,0 +1,55 @@
+-- vim: filetype=dhall
+--
+-- Take value of `Command` type and produce `CommandWithEnvironment` with an
+-- empty environment.
+
+let CommandWithEnvironment =
+      { Type =
+            ./Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
+          ? ./Type
+      , default =
+            ./default sha256:18347f969a288f1651da7c421d6786167369adc1f9b93aa0421cde32666d47d4
+          ? ./default
+      }
+
+let Command =
+      { Type =
+            ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
+          ? ../Command/Type
+      , default =
+            ../Command/default sha256:45177da2a98a4e2d6b2e879caef7c2d7b6ea804feb18ed69577293ee8c7b283c
+          ? ../Command/default
+      }
+
+let emptyEnvironment =
+        ../Environment/empty sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
+      ? ../Environment/empty
+
+let fromCommand =
+        λ(command : Command.Type)
+      → CommandWithEnvironment::{
+        , command = command.command
+        , arguments = command.arguments
+        }
+
+let test0 =
+        assert
+      :   fromCommand Command::{ command = "foo" }
+        ≡ CommandWithEnvironment::{ command = "foo" }
+
+let test1 =
+        assert
+      :   fromCommand Command::{ command = "foo", arguments = [ "bar", "baz" ] }
+        ≡ CommandWithEnvironment::{
+          , command = "foo"
+          , arguments = [ "bar", "baz" ]
+          }
+
+let test2 =
+        assert
+      :   ( fromCommand
+              Command::{ command = "foo", arguments = [ "bar", "baz" ] }
+          ).environment
+        ≡ emptyEnvironment
+
+in  fromCommand : Command.Type → CommandWithEnvironment.Type

@@ -13,7 +13,7 @@
       ./Command/package.dhall sha256:9fe4745e50e55ee1670a26ae2476c655c3d52ea92e920911b093a567de2099fb
     ? ./Command/package.dhall
 , CommandWithEnvironment =
-      ./CommandWithEnvironment/package.dhall sha256:97ad640e7ac252d569805cbe324aa42d5ff46c7b8d323b216fbf8d9715ce12d6
+      ./CommandWithEnvironment/package.dhall sha256:274b4f450abe8835cace52f07cd6d50fc0b649ff2ffbcbf4c2258332c1ee5697
     ? ./CommandWithEnvironment/package.dhall
 , ConnectToDatabase =
       ./ConnectToDatabase/package.dhall sha256:a392e73ac310bdab2775458e638b656cf1a0acd38e1371ff8d6deb03acb52a94
@@ -22,7 +22,7 @@
       ./Editor/package.dhall sha256:ea947ca2fa9dec681385344190f8373da2d4ced8556cce9096c354f9265992f5
     ? ./Editor/package.dhall
 , Environment =
-      ./Environment/package.dhall sha256:a948211dc39cc648f650c7dcf67e4352ffae2ec5f4f0254bef596d88e87cd946
+      ./Environment/package.dhall sha256:fd6671bdf4aec8a9bf066dd15cd0b97c68d2b6d6170676aed7ce1248f9533db1
     ? ./Environment/package.dhall
 , EnvironmentVariable =
       ./EnvironmentVariable/package.dhall sha256:1250426124fe1a06fce13386a45e803655f7fe419fb372bd4a5157993350b199
@@ -93,22 +93,22 @@
       ? ./help/value
   }
 , utils =
-  { url =
-    { defaultPort =
-          ./url/defaultPort sha256:bfdc295856e05e3610d202d9c12f56f7c423de81cd6069f590786ca176b94df3
-        ? ./url/defaultPort
-    , emptyPath =
-          ./url/emptyPath sha256:f08ed5225480d827ff3ce74b756afa6330f66d974d6f0d6160d767b5c45642aa
-        ? ./url/emptyPath
-    , mk =
-          ./url/mk sha256:e9438a6467c75130cd3eb6dbfdfabc13a35b78f7cf5009de2564dd6799d429d0
-        ? ./url/mk
-    , port =
-          ./url/port sha256:d7e20173b3139c6c37b7b71a94a6ada30efe37db9e60ff9f25aa8292cc1d4502
-        ? ./url/port
-    , portToText =
-          ./url/portToText sha256:a1d2133ee6b8cd5a5f2bdbc439a80f4c0ceff48194617cd28c98a1a30ad917e3
-        ? ./url/portToText
+    { url =
+        { defaultPort =
+              ./url/defaultPort sha256:bfdc295856e05e3610d202d9c12f56f7c423de81cd6069f590786ca176b94df3
+            ? ./url/defaultPort
+        , emptyPath =
+              ./url/emptyPath sha256:f08ed5225480d827ff3ce74b756afa6330f66d974d6f0d6160d767b5c45642aa
+            ? ./url/emptyPath
+        , mk =
+              ./url/mk sha256:e9438a6467c75130cd3eb6dbfdfabc13a35b78f7cf5009de2564dd6799d429d0
+            ? ./url/mk
+        , port =
+              ./url/port sha256:d7e20173b3139c6c37b7b71a94a6ada30efe37db9e60ff9f25aa8292cc1d4502
+            ? ./url/port
+        , portToText =
+              ./url/portToText sha256:a1d2133ee6b8cd5a5f2bdbc439a80f4c0ceff48194617cd28c98a1a30ad917e3
+            ? ./url/portToText
+        }
     }
-  }
 }
