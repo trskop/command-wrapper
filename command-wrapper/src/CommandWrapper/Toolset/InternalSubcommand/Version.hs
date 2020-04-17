@@ -15,6 +15,7 @@ module CommandWrapper.Toolset.InternalSubcommand.Version
     , version
     , versionQQ
     , versionSubcommandCompleter
+    , versionSubcommandDescription
     , versionSubcommandHelp
     )
   where
@@ -221,12 +222,15 @@ parseOptions appNames config options =
         Options.internalSubcommandParse appNames config "version"
             Options.defaultPrefs (Options.info parser mempty) options
 
+versionSubcommandDescription :: String
+versionSubcommandDescription = "Display version information."
+
 versionSubcommandHelp
     :: AppNames
     -> Config
     -> Pretty.Doc (Result Pretty.AnsiStyle)
 versionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
-    [ Pretty.reflow "Display version information."
+    [ Pretty.reflow (fromString versionSubcommandDescription)
     , ""
 
     , usageSection usedName

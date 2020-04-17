@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-HELP(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 8th April 2020
+% 17th April 2020
 
 
 # NAME
@@ -17,7 +17,7 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \--man \[*SUBCOMMAND*|*TOPIC*]
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \--search {*TOPIC*|*REGEXP*}
 
-TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help \--aliases
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help {\--list|\--tree|\--aliases}
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] help {\--help|-h}
 
@@ -37,9 +37,6 @@ on colour settings.
 \--man \[*SUBCOMMAND*|*TOPIC*]
 :   Show manual page for *SUBCOMMAND*|*TOPIC* instead of short help message.  If
     neither is specified then manual page for current toolset is displayed.
-
-\--aliases
-:   List and describe available aliases.
 
 \--search {*TOPIC*|*REGEXP*}
 :   Search documentation for specified *TOPIC* or *REGEXP*.
@@ -63,6 +60,45 @@ on colour settings.
         ```Bash
         mandb --user-db COMMAND_WRAPPER_MANPATH
         ```
+
+\--list
+:   List and describe all available subcommands including aliases.
+
+\--tree
+:   List and describe all available subcommands including aliases in tree
+    representation using '.' character as a separator.
+
+    Let's say that we have following commands reported by `--list`:
+
+    ```
+    build.back-end
+    build.back-end.locally
+    build.back-end.locally
+    build.back-end.remotely
+    build.back-end.remotely
+    build.front-end
+    completion
+    config
+    help
+    ```
+
+    These would be displayed as a following tree:
+
+    ```
+    ├── build
+    │   ├── back-end
+    │   │   ├── locally
+    │   │   └── remotely
+    │   └── front-end
+    │       ├── locally
+    │       └── remotely
+    ├── completion
+    ├── config
+    └── help
+    ```
+
+\--aliases
+:   List and describe available aliases, otherwise it's the same as `--list`.
 
 \--help, -h
 :   Display help information and exit.  Same as `TOOLSET_COMMAND help help`.

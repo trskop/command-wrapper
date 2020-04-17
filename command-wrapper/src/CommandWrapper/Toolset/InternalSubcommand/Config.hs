@@ -12,6 +12,7 @@
 -- Implementation of internal command named @config@.
 module CommandWrapper.Toolset.InternalSubcommand.Config
     ( config
+    , configSubcommandDescription
     , configSubcommandHelp
     , configSubcommandCompleter
     )
@@ -935,13 +936,16 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         Options.internalSubcommandParse appNames globalConfig "config"
             Options.defaultPrefs (Options.info (asum parser) mempty) options
 
+configSubcommandDescription :: String
+configSubcommandDescription =
+    "Initialise, query, and update Command Wrapper toolset configuration."
+
 configSubcommandHelp
     :: AppNames
     -> Global.Config
     -> Pretty.Doc (Result Pretty.AnsiStyle)
 configSubcommandHelp AppNames{usedName} _config = Pretty.vsep
-    [ Pretty.reflow
-        "Initialise, query, and update Command Wrapper toolset configuration."
+    [ Pretty.reflow (fromString configSubcommandDescription)
     , ""
 
     , usageSection usedName

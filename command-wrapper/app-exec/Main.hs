@@ -20,25 +20,14 @@ import Prelude ((-), fromIntegral, maxBound, minBound)
 import Control.Applicative ((<*>), empty, pure)
 import Control.Monad ((>=>), (>>=), when)
 import Data.Bool (Bool(False, True), (||), not, otherwise)
-import Data.Eq ((/=), (==))
+import Data.Eq ((==))
 import Data.Foldable (any, asum, elem, foldMap, for_, length, mapM_, or)
-import Data.Function (($), (.), const, id, on)
+import Data.Function (($), (.), const, id)
 import Data.Functor ((<$>), (<&>), fmap)
-import qualified Data.List as List
-    ( drop
-    , filter
-    , find
-    , groupBy
-    , isPrefixOf
-    , nub
-    , repeat
-    , sortBy
-    , take
-    , zipWith
-    )
+import qualified Data.List as List (drop, filter, find, isPrefixOf, take)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe, maybe)
 import Data.Monoid (Endo(..), mconcat)
-import Data.Ord ((<=), compare)
+import Data.Ord ((<=))
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
 import Data.Word (Word)
@@ -53,17 +42,16 @@ import qualified Data.CaseInsensitive as CaseInsensitive (mk)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map (delete)
 import Data.Text (Text)
-import qualified Data.Text as Text (split, unpack)
+import qualified Data.Text as Text (unpack)
 import Data.Text.Prettyprint.Doc (Doc, (<+>), pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     ( AnsiStyle
-    , Color(Blue, Magenta, White)
+    , Color(Magenta, White)
     , color
     , colorDull
     )
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
-import Data.Tree (Forest, Tree(Node), unfoldForest)
 import Dhall (FromDhall, ToDhall)
 import qualified Dhall (auto, inject)
 import qualified Dhall.Pretty as Dhall (CharacterSet(Unicode))
@@ -138,7 +126,13 @@ import CommandWrapper.Toolset.Config.Command
     , executeCommand
     , isNamed
     )
---import qualified CommandWrapper.Toolset.Config.Command as NamedCommand (isNamed)
+import CommandWrapper.Toolset.InternalSubcommand.Help
+    ( SubcommandDescription(SubcommandDescription, name, description)
+    , TreeAnn(NodeDescription)
+    , TreeOptions(TreeOptions, delimiter, showDescription)
+    , commandTree
+    , treeAnnToAnsi
+    )
 
 import DhallInput (defaultDhallInputParams, dhallInput, fromDhallInput)
 
@@ -184,7 +178,10 @@ main = do
             listCommands protocol config ListOptions{showDescription = True}
 
         Tree ->
-            showCommandTree protocol config TreeOptions{}
+            showCommandTree protocol config TreeOptions
+                { delimiter = '.'
+                , showDescription = True
+                }
 
         DryRun ->
             getExecutableCommand protocol config commandAndItsArguments
@@ -463,55 +460,19 @@ listCommands Params{colour} Config{commands} ListOptions{..} =
         CommandName -> Pretty.color Pretty.Magenta
         CommandDescription -> Pretty.colorDull Pretty.White
 
-data TreeOptions = TreeOptions
-
-data TreeAnn = NodeName | LeafName
-
 showCommandTree :: Params -> Config -> TreeOptions -> IO ()
-showCommandTree Params{colour} Config{commands} TreeOptions{} =
-    putDoc (treeDoc <> Pretty.line)
+showCommandTree Params{colour} Config{commands} treeOptions =
+    putDoc (commandTree treeOptions descriptions <> Pretty.line)
   where
-    uniqueCommands :: [Text] =
-        List.nub ((name :: NamedCommand -> Text) <$> commands)
+    descriptions :: [SubcommandDescription Text (Maybe (Doc TreeAnn))]
+    descriptions = commands <&> \NamedCommand{name, description} ->
+        SubcommandDescription
+            { name = name
+            , description =
+                Pretty.annotate NodeDescription . pretty <$> description
+            }
 
-    names :: [[Text]] =
-        Text.split (== '.') <$> uniqueCommands
-
-    groupNames :: [[Text]] -> [[[Text]]] =
-        List.groupBy ((==) `on` headMay) . List.sortBy (compare `on` headMay)
-
-    forest :: Forest (Doc TreeAnn) = (`unfoldForest` groupNames names) \case
-        (n : r) : ns ->
-            let rs = groupNames $ r : fmap (List.drop 1) ns
-                isLeaf = [[]] `elem` rs
-                ann = Pretty.annotate (if isLeaf then LeafName else NodeName)
-
-             in ( ann (pretty n) <> if isLeaf then "*" else ""
-                , List.filter (/= [[]]) rs
-                )
-
-        _ -> ("", []) -- This should not happen.
-
-    draw :: Tree (Doc ann) -> [Doc ann]
-    draw (Node x ts0) = x : drawSubTrees ts0
-      where
-        drawSubTrees = \case
-            [] ->
-                []
-            [t] ->
-                shift "└── " "    " (draw t)
-            t : ts ->
-                shift "├── " "│   " (draw t) <> drawSubTrees ts
-
-        shift first other = List.zipWith (<>) (first : List.repeat other)
-
-    treeDoc = Pretty.vsep $ List.drop 1 (draw (Node "" forest))
-
-    putDoc = hPutDoc defaultLayoutOptions toAnsi colour stdout
-
-    toAnsi = \case
-        LeafName -> Pretty.color Pretty.Magenta
-        NodeName -> Pretty.color Pretty.Blue
+    putDoc = hPutDoc defaultLayoutOptions treeAnnToAnsi colour stdout
 
 parseOptions :: Options.Parser (Action -> Action)
 parseOptions = asum

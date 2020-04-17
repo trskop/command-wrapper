@@ -15,6 +15,7 @@
 module CommandWrapper.Toolset.InternalSubcommand.Completion
     ( completion
     , completionSubcommandCompleter
+    , completionSubcommandDescription
     , completionSubcommandHelp
 
     , CompletionConfig(..)
@@ -1359,12 +1360,16 @@ parseOptions appNames config arguments = do
         Options.internalSubcommandParse appNames config "completion"
             Options.defaultPrefs (Options.info parser mempty) options
 
+completionSubcommandDescription :: String
+completionSubcommandDescription =
+    "Command line completion, editor, and IDE support."
+
 completionSubcommandHelp
     :: AppNames
     -> Global.Config
     -> Pretty.Doc (Result Pretty.AnsiStyle)
 completionSubcommandHelp AppNames{usedName} _config = Pretty.vsep
-    [ Pretty.reflow "Command line completion, editor, and IDE support."
+    [ Pretty.reflow (fromString completionSubcommandDescription)
     , ""
 
     , usageSection usedName

@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-EXEC(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 21st March 2020
+% 17th April 2020
 
 
 # NAME
@@ -57,11 +57,11 @@ would look something like:
 ```
 ├── psql
 │   ├── development
-│   │   ├── cart*
-│   │   └── products*
+│   │   ├── cart
+│   │   └── products
 │   └── production
-│       ├── cart*
-│       └── products*
+│       ├── cart
+│       └── products
 └── ...
 ```
 
@@ -116,21 +116,14 @@ purpose scripting language like Bash.
 
     ```
     ├── build
-    │   ├── back-end*
-    │   │   ├── locally*
-    │   │   └── remotely*
-    │   └── front-end*
-    │       ├── locally*
-    │       └── remotely*
-    ├── debug*
-    └── echo*
-    ```
-
-    The star (`*`) character indicates which commands are executable, i.e. can
-    be called as:
-
-    ```
-    TOOLSET_COMMAND exec COMMAND [--] [COMMAND_ARGUMENTS]
+    │   ├── back-end
+    │   │   ├── locally
+    │   │   └── remotely
+    │   └── front-end
+    │       ├── locally
+    │       └── remotely
+    ├── debug
+    └── echo
     ```
 
 \--expression=*EXPRESSION*

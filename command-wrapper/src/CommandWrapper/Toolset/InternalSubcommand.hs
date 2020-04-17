@@ -20,8 +20,10 @@ module CommandWrapper.Toolset.InternalSubcommand
 
     -- ** Help Command
     , Subcommand.HelpOptions(..)
+    , Subcommand.SubcommandDescription(..)
     , Subcommand.help
     , Subcommand.helpSubcommandCompleter
+    , Subcommand.helpSubcommandDescription
     , Subcommand.helpSubcommandHelp
 
     -- ** Config Command
@@ -35,6 +37,7 @@ module CommandWrapper.Toolset.InternalSubcommand
     , Subcommand.InternalCompleter
     , Subcommand.completion
     , Subcommand.completionSubcommandCompleter
+    , Subcommand.completionSubcommandDescription
     , Subcommand.completionSubcommandHelp
 
     -- ** Version Command
@@ -42,6 +45,7 @@ module CommandWrapper.Toolset.InternalSubcommand
     , Subcommand.PrettyVersion(..)
     , Subcommand.version
     , Subcommand.versionSubcommandCompleter
+    , Subcommand.versionSubcommandDescription
     , Subcommand.versionSubcommandHelp
 
     -- * Generic Functions
@@ -56,7 +60,7 @@ import qualified Data.List.NonEmpty as NonEmpty (last, toList)
 import Data.Maybe (Maybe(..))
 import Data.Semigroup ((<>))
 import Data.String (String)
-import Data.Tuple (fst)
+import Data.Tuple (fst, snd)
 import Data.Version (makeVersion)
 import GHC.Generics (Generic)
 import System.IO (IO)
@@ -77,17 +81,21 @@ import qualified CommandWrapper.Toolset.InternalSubcommand.Completion as Subcomm
     , InternalCompleter
     , completion
     , completionSubcommandCompleter
+    , completionSubcommandDescription
     , completionSubcommandHelp
     )
 import qualified CommandWrapper.Toolset.InternalSubcommand.Config as Subcommand
     ( config
     , configSubcommandCompleter
+    , configSubcommandDescription
     , configSubcommandHelp
     )
 import qualified CommandWrapper.Toolset.InternalSubcommand.Help as Subcommand
     ( HelpOptions(..)
+    , SubcommandDescription(..)
     , help
     , helpSubcommandCompleter
+    , helpSubcommandDescription
     , helpSubcommandHelp
     )
 import qualified CommandWrapper.Toolset.InternalSubcommand.Version as Subcommand
@@ -96,6 +104,7 @@ import qualified CommandWrapper.Toolset.InternalSubcommand.Version as Subcommand
     , version
     , versionQQ
     , versionSubcommandCompleter
+    , versionSubcommandDescription
     , versionSubcommandHelp
     )
 import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
@@ -118,14 +127,22 @@ command
     -- ^ Subcommand arguments.
     -> Maybe Command
     -- ^ Return 'Nothing' if subcommand is not an internal command.
-command name args = List.lookup name commands <*> pure args
+command name args = fmap snd (List.lookup name commands) <*> pure args
 
-commands :: [(String, [String] -> Command)]
+commands :: [(String, (String, [String] -> Command))]
 commands =
-    [ ("completion", CompletionCommand)
-    , ("config", ConfigCommand)
-    , ("help", HelpCommand)
-    , ("version", VersionCommand)
+    [   ( "completion"
+        , (Subcommand.completionSubcommandDescription, CompletionCommand)
+        )
+    ,   ( "config"
+        , (Subcommand.configSubcommandDescription, ConfigCommand)
+        )
+    ,   ( "help"
+        , (Subcommand.helpSubcommandDescription, HelpCommand)
+        )
+    ,   ( "version"
+        , (Subcommand.versionSubcommandDescription, VersionCommand)
+        )
     ]
 
 run :: (AppNames -> Global.Config -> Pretty.Doc (Result Pretty.AnsiStyle))
@@ -164,10 +181,10 @@ run mainHelp appNames@AppNames{names} = \case
 
     completionConfig = Subcommand.CompletionConfig
         { internalCompleter = \subcommandName ->
-            internalSubcommandCompleter helpOptions
+            internalSubcommandCompleter internalSubcommandNames helpOptions
                 <$> command subcommandName []
 
-        , internalSubcommands
+        , internalSubcommands = internalSubcommandNames
         }
 
     helpOptions = Subcommand.HelpOptions
@@ -177,10 +194,14 @@ run mainHelp appNames@AppNames{names} = \case
         , internalSubcommands
         , topics = fst <$> topicsToPages
         , toManualPage = \s ->
-            List.lookup s (topicsToPages <> fmap stdTopic internalSubcommands)
+            List.lookup s
+                (topicsToPages <> fmap stdTopic internalSubcommandNames)
         }
 
-    internalSubcommands = fst <$> commands
+    internalSubcommandNames = fst <$> commands
+
+    internalSubcommands = commands <&> \(name, (description, _)) ->
+        Subcommand.SubcommandDescription{name, description}
 
     -- Original command wrapper executable name.  This will most certainly be
     -- `command-wrapper`.
@@ -203,10 +224,11 @@ run mainHelp appNames@AppNames{names} = \case
         <> (NonEmpty.toList names <&> \s -> (s, s))
 
 internalSubcommandCompleter
-    :: Subcommand.HelpOptions
+    :: [String]
+    -> Subcommand.HelpOptions
     -> Command
     -> Subcommand.Completer
-internalSubcommandCompleter helpOptions = \case
+internalSubcommandCompleter internalSubcommands helpOptions = \case
     HelpCommand _ ->
         Subcommand.helpSubcommandCompleter helpOptions
 
@@ -218,8 +240,6 @@ internalSubcommandCompleter helpOptions = \case
 
     VersionCommand _ ->
         Subcommand.versionSubcommandCompleter
-  where
-    internalSubcommands = fst <$> commands
 
 internalSubcommandHelp
     :: Command

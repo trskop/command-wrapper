@@ -11,53 +11,75 @@
 -- Implementation of internal command named @help@.
 module CommandWrapper.Toolset.InternalSubcommand.Help
     ( HelpOptions(..)
+    , SubcommandDescription(..)
     , help
+    , helpSubcommandDescription
     , helpSubcommandHelp
     , helpSubcommandCompleter
+
+    , TreeOptions(..)
+    , TreeAnn(..)
+    , treeAnnToAnsi
+    , commandTree
     )
   where
 
 import Prelude (fromIntegral)
 
-import Control.Applicative ((<*>), (<|>), optional, pure, some)
-import Control.Monad ((>>=))
-import Data.Bool (Bool(False, True), otherwise)
+import Control.Applicative ((*>), (<*>), (<|>), optional, pure, some)
+import Control.Monad ((>>=), guard)
+import Data.Bifunctor (Bifunctor(bimap), first)
+import Data.Bool (Bool(False, True), not, otherwise)
+import Data.Char (Char)
 import qualified Data.Char as Char (toLower)
-import Data.Eq ((==))
+import Data.Eq ((/=), (==))
 import Data.Foldable (any, null, traverse_)
 import Data.Function (($), (.), on)
-import Data.Functor (Functor, (<$>), (<&>), fmap)
+import Data.Functor (Functor, (<$), (<$>), (<&>), fmap)
 import qualified Data.List as List
     ( deleteBy
+    , drop
     , elem
     , filter
+    , groupBy
     , intercalate
     , isPrefixOf
     , nub
+    , nubBy
+    , null
+    , repeat
+    , sortBy
     , take
+    , takeWhile
+    , zipWith
     )
 import qualified Data.List.NonEmpty as NonEmpty (toList)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe, listToMaybe)
-import Data.Monoid (Endo(Endo), mempty)
+import Data.Monoid (Endo(Endo), mempty, mconcat)
+import Data.Ord (compare)
 import Data.Semigroup ((<>))
-import Data.String (String, fromString)
+import Data.String (String, fromString, lines, unwords)
+import Data.Traversable (for)
 import Data.Tuple (fst)
 import Data.Word (Word)
 import GHC.Generics (Generic)
 import System.Environment (getEnvironment)
-import System.IO (IO, putStrLn, stderr, stdout)
+import System.IO (Handle, IO, putStrLn, stderr, stdout)
 import Text.Show (Show, show)
 
 import Data.Monoid.Endo.Fold (foldEndo)
+import Data.Text (Text)
+import qualified Data.Text as Text (split)
 import Data.Text.Prettyprint.Doc (Doc, Pretty(pretty), (<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
     ( AnsiStyle
-    , Color(Magenta, White)
+    , Color(Blue, Magenta, White)
     , color
     , colorDull
     )
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
+import Data.Tree (Forest, Tree(Node), unfoldForest)
 import qualified Mainplate (applySimpleDefaults)
 import qualified Options.Applicative as Options
     ( Parser
@@ -72,6 +94,8 @@ import qualified Options.Applicative as Options
 import Safe (atMay, headMay, lastMay)
 import System.Directory (findExecutablesInDirectories)
 import System.Posix.Process (executeFile)
+import System.Process (CreateProcess(env), readCreateProcess)
+import qualified System.Process as Process (proc)
 
 import CommandWrapper.Core.Config.Alias
     ( Alias(Alias, alias, description)
@@ -89,6 +113,7 @@ import CommandWrapper.Core.Help.Pretty
     , subcommand
     , toolsetCommand
     , usageSection
+    , value
     )
 import CommandWrapper.Core.Message
     ( Result(..)
@@ -111,6 +136,7 @@ import CommandWrapper.Toolset.Config.Global
     )
 import qualified CommandWrapper.Toolset.ExternalSubcommand as External
     ( executeCommand
+    , executeCommandWith
     , findSubcommands
     )
 import CommandWrapper.Toolset.InternalSubcommand.Utils (runMain)
@@ -127,8 +153,53 @@ data HelpMode a
     | SubcommandHelp String a
     | ManPage (Maybe String) a
     | Search [String] a
-    | Aliases a
+    | List ListOptions a
   deriving stock (Functor, Generic, Show)
+
+data ListView
+    = PrettyList
+    | PrettyTree
+  deriving stock (Generic, Show)
+
+data ListOptions = ListOptions
+    { view :: ListView
+    , includeAliases :: Bool
+    , includeInternalSubcommands :: Bool
+    , includeExternalSubcommands :: Bool
+    , treeOptions :: TreeOptions
+    , output :: Handle
+    }
+  deriving stock (Generic, Show)
+
+defListOptions :: ListView -> ListOptions
+defListOptions view = ListOptions
+    { view
+    , includeAliases = True
+    , includeInternalSubcommands = True
+    , includeExternalSubcommands = True
+    , treeOptions = TreeOptions
+        { delimiter = '.'
+        , showDescription = True
+        }
+    , output = stdout
+    }
+
+data SubcommandDescription name description = SubcommandDescription
+    { name :: name
+    , description :: description
+    }
+  deriving stock (Functor, Generic, Show)
+
+instance Bifunctor SubcommandDescription where
+    bimap
+        :: (a -> b)
+        -> (c -> d)
+        -> SubcommandDescription a c
+        -> SubcommandDescription b d
+    bimap f g SubcommandDescription{name, description} = SubcommandDescription
+        { name = f name
+        , description = g description
+        }
 
 data HelpOptions = HelpOptions
     { internalHelp
@@ -142,7 +213,7 @@ data HelpOptions = HelpOptions
     , mainHelp :: AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle)
     -- ^ Main\/global help message for the toolset itself.
 
-    , internalSubcommands :: [String]
+    , internalSubcommands :: [SubcommandDescription String String]
     -- ^ List of internal subcommands.  Help subcommand itself has to be on the
     -- list so that its name is not hardcoded.
 
@@ -204,8 +275,12 @@ help HelpOptions{..} appNames@AppNames{usedName} options globalConfig =
         Search expressions config -> do
             manEnvironment config >>= executeFile "apropos" True expressions
 
-        Aliases config' -> do
-            listAliases appNames config'
+        List opts@ListOptions{view} config -> case view of
+            PrettyList ->
+                describeSubcommands internalSubcommands opts appNames config
+
+            PrettyTree ->
+                subcommandTree internalSubcommands opts appNames config
   where
     defaults = Mainplate.applySimpleDefaults (MainHelp globalConfig)
 
@@ -276,6 +351,8 @@ parseOptions appNames config options =
                 ( subcommandArg
                 <|> (manFlag <*> optional subcommandOrTopicArg)
                 <|> (searchFlag <*> some keywordOrRegexpArg)
+                <|> (listFlag <*> pure (mempty @(Endo ListOptions)))
+                <|> (treeFlag <*> pure (mempty @(Endo ListOptions)))
                 <|> aliasesFlag
                 <|> Options.helpFlag (switchTo $ SubcommandHelp "help")
                 )
@@ -286,7 +363,7 @@ parseOptions appNames config options =
         SubcommandHelp _ cfg -> f cfg
         ManPage _ cfg -> f cfg
         Search _ cfg -> f cfg
-        Aliases cfg -> f cfg
+        List _ cfg -> f cfg
 
     manFlag :: Options.Parser (Maybe String -> Endo (HelpMode Config))
     manFlag = Options.flag' (\n -> switchTo (ManPage n)) (Options.long "man")
@@ -310,16 +387,36 @@ parseOptions appNames config options =
 
     aliasesFlag :: Options.Parser (Endo (HelpMode Config))
     aliasesFlag =
-        Options.flag mempty (switchTo Aliases) (Options.long "aliases")
+        Options.flag mempty (switchTo aliasesMode) (Options.long "aliases")
+      where
+        aliasesMode = listMode PrettyList $ Endo \opts -> opts
+            { includeAliases = True
+            , includeExternalSubcommands = False
+            , includeInternalSubcommands = False
+            }
+
+    listFlag :: Options.Parser (Endo ListOptions -> Endo (HelpMode Config))
+    listFlag =
+        Options.flag' (switchTo . listMode PrettyList) (Options.long "list")
+
+    treeFlag :: Options.Parser (Endo ListOptions -> Endo (HelpMode Config))
+    treeFlag =
+        Options.flag' (switchTo . listMode PrettyTree) (Options.long "tree")
+
+    listMode :: ListView -> Endo ListOptions -> config -> HelpMode config
+    listMode view (Endo f) = List (f (defListOptions view))
 
     execParser parser =
         Options.internalSubcommandParse appNames config "help"
             Options.defaultPrefs (Options.info parser mempty) options
 
+helpSubcommandDescription :: String
+helpSubcommandDescription =
+    "Display help message for Commnad Wrapper or one of its subcommands."
+
 helpSubcommandHelp :: AppNames -> Config -> Pretty.Doc (Result Pretty.AnsiStyle)
 helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
-    [ Pretty.reflow
-        "Display help message for Commnad Wrapper or one of its subcommands."
+    [ Pretty.reflow (fromString helpSubcommandDescription)
     , ""
 
     , usageSection usedName
@@ -337,7 +434,14 @@ helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
                 <> metavar "REGEXP"
                 )
             <+> Pretty.brackets "..."
-        , "help" <+> longOption "aliases"
+        , "help"
+            <+> Pretty.braces
+                ( longOption "list"
+                <> "|"
+                <> longOption "tree"
+                <> "|"
+                <> longOption "aliases"
+                )
         , "help" <+> helpOptions
         , helpOptions
         ]
@@ -359,8 +463,23 @@ helpSubcommandHelp AppNames{usedName} _config = Pretty.vsep
             , metavar "TOPIC" <> "|" <> metavar "REGEX" <> "."
             ]
 
+        , optionDescription ["--list"]
+            [ Pretty.reflow
+                "List and describe all available subcommands including aliases."
+            ]
+
+        , optionDescription ["--tree"]
+            [ Pretty.reflow
+                "List and describe all available subcommands including\
+                \ aliases in tree representation using"
+            , "'" <> value "." <> "'"
+            , Pretty.reflow "character as a separator."
+            ]
+
         , optionDescription ["--aliases"]
-            [ Pretty.reflow "List and describe available aliases."
+            [ Pretty.reflow "List and describe available aliases, otherwise\
+                \ it's the same as"
+            , longOption "list" <> "."
             ]
 
         , optionDescription ["--help", "-h"]
@@ -384,25 +503,36 @@ helpSubcommandCompleter
     -> IO [String]
 helpSubcommandCompleter HelpOptions{internalSubcommands, topics} appNames
   config _shell index words
-  | hadMan      = (specialManPages <>) <$> subcmds True
-  | hadSearch   = (specialManPages <>) <$> subcmds False
-  | hadAliases  = pure []
-  | hadHelp     = pure []
-  | hadTopic    = pure []
-  | hadDashDash = subcmds False
-  | null pat    = (helpOptions' <>) <$> subcmds False
-  | isOption    = pure $ List.filter (pat `List.isPrefixOf`) helpOptions'
-  | otherwise   = subcmds False
+  | hadMan        = (specialManPages <>) <$> subcmds True
+  | hadSearch     = (specialManPages <>) <$> subcmds False
+  | hadListOrTree = pure []
+  | hadHelp       = pure []
+  | hadTopic      = pure []
+  | hadDashDash   = subcmds False
+  | null pat      = (helpOptions' <>) <$> subcmds False
+  | isOption      = pure $ List.filter (pat `List.isPrefixOf`) helpOptions'
+  | otherwise     = subcmds False
   where
     wordsBeforePattern = List.take (fromIntegral index) words
     hadDashDash = "--" `List.elem` wordsBeforePattern
-    hadAliases = "--aliases" `List.elem` wordsBeforePattern
     hadHelp = any (`List.elem` ["--help", "-h"]) wordsBeforePattern
     hadMan = any (== "--man") wordsBeforePattern
     pat = fromMaybe "" $ atMay words (fromIntegral index)
     isOption = headMay pat == Just '-'
-    helpOptions' = ["--aliases", "--help", "-h", "--man", "--search", "--"]
     hadSearch = "--search" `List.elem` wordsBeforePattern
+
+    hadListOrTree =
+        any (`List.elem` ["--aliases", "--list", "--tree"]) wordsBeforePattern
+
+    helpOptions' =
+        [ "--aliases"
+        , "--help", "-h"
+        , "--list"
+        , "--man"
+        , "--search"
+        , "--tree"
+        , "--"
+        ]
 
     subcmds ignoreAliases =
         findSubcommands internalSubcommands appNames config{ignoreAliases} pat
@@ -418,7 +548,7 @@ helpSubcommandCompleter HelpOptions{internalSubcommands, topics} appNames
 -- | Lookup external and internal subcommands and aliases matching pattern
 -- (prefix).
 findSubcommands
-    :: [String]
+    :: [SubcommandDescription String String]
     -- ^ Internal subcommand names.
     -> AppNames
     -> Config
@@ -428,7 +558,12 @@ findSubcommands
 findSubcommands internalSubcommands appNames config pat =
     -- TODO: Function 'findSubcommands' is also defined in
     -- CommandWrapper.Internal.Subcommand.Completion module.
-    List.filter (fmap Char.toLower pat `List.isPrefixOf`) <$> getSubcommands
+    if null pat
+        then
+            getSubcommands
+        else
+            List.filter (fmap Char.toLower pat `List.isPrefixOf`)
+            <$> getSubcommands
   where
     -- | List all available external and internal subcommands.
     getSubcommands :: IO [String]
@@ -437,23 +572,214 @@ findSubcommands internalSubcommands appNames config pat =
 
         let aliases = alias <$> getAliases config
 
-        pure (List.nub $ aliases <> internalSubcommands <> extCmds)
+        pure (List.nub $ aliases <> internalSubcommandNames <> extCmds)
 
-data AliasAnn
-    = AliasName
-    | AliasDescription
+    internalSubcommandNames =
+        internalSubcommands <&> \SubcommandDescription{name} -> name
 
-listAliases :: AppNames -> Config -> IO ()
-listAliases AppNames{} config@Config{colourOutput} =
-    putDoc $ Pretty.vsep (describe <$> getAliases config) <> Pretty.line
+getSubcommandDescriptions
+    :: [SubcommandDescription String String]
+    -> (SubcommandDescription String String -> a)
+    -> (Alias -> a)
+    -> ListOptions
+    -> AppNames
+    -> Config
+    -> IO [a]
+getSubcommandDescriptions
+  internalSubcommands
+  convertSubcommand
+  convertAlias
+  ListOptions{..}
+  appNames
+  config = do
+    externalSubcommands <- if includeExternalSubcommands
+        then describeExternalSubcommands appNames config
+        else pure []
+    pure $ mconcat
+        [ do
+            guard includeAliases
+            convertAlias <$> getAliases config
+
+        , do
+            guard includeInternalSubcommands
+            convertSubcommand <$> internalSubcommands
+
+        , do
+            guard includeExternalSubcommands
+            convertSubcommand <$> externalSubcommands
+        ]
+
+describeExternalSubcommands
+    :: AppNames
+    -> Config
+    -> IO [SubcommandDescription String String]
+describeExternalSubcommands appNames config = do
+    names <- External.findSubcommands appNames config
+    for names \name -> do
+        helpMessage <- External.executeCommandWith readProcess' appNames
+            config name ["--help"]
+
+        pure SubcommandDescription
+            { name
+            , description = unwords
+                $ List.takeWhile (not . List.null) (lines helpMessage)
+            }
   where
-    describe :: Alias -> Doc AliasAnn
-    describe Alias{alias, description} =
+    readProcess' exe _ args env =
+        readCreateProcess (Process.proc exe args){env} ""
+
+data SubcommandAnn
+    = AliasName
+    | SubcommandName
+    | Description
+
+describeSubcommands
+    :: [SubcommandDescription String String]
+    -> ListOptions
+    -> AppNames
+    -> Config
+    -> IO ()
+describeSubcommands internalSubcommands opts appNames config = do
+    descriptions <- getSubcommandDescriptions internalSubcommands
+        describeSubcommand describeAlias opts appNames config
+    hPutSubcommandDoc config opts (Pretty.vsep descriptions <> Pretty.line)
+  where
+    hPutSubcommandDoc :: Config -> ListOptions -> Doc SubcommandAnn -> IO ()
+    hPutSubcommandDoc Config{colourOutput} ListOptions{output} =
+        hPutDoc defaultLayoutOptions toAnsi colourOutput output
+      where
+        toAnsi :: SubcommandAnn -> Pretty.AnsiStyle
+        toAnsi = \case
+            AliasName -> Pretty.color Pretty.Magenta
+            SubcommandName -> Pretty.color Pretty.Magenta
+            Description -> Pretty.colorDull Pretty.White
+
+    describeAlias :: Alias -> Doc SubcommandAnn
+    describeAlias Alias{alias, description} =
         Pretty.annotate AliasName (fromString alias)
-        <+> Pretty.annotate AliasDescription (pretty description)
+        <+> Pretty.annotate Description "[alias]"
+        <+> Pretty.annotate Description (pretty description)
 
-    putDoc = hPutDoc defaultLayoutOptions toAnsi colourOutput stdout
+    describeSubcommand
+        :: SubcommandDescription  String String
+        -> Doc SubcommandAnn
+    describeSubcommand SubcommandDescription{name, description} =
+        Pretty.annotate SubcommandName (fromString name)
+        <+> Pretty.annotate Description (pretty description)
 
-    toAnsi = \case
-        AliasName -> Pretty.color Pretty.Magenta
-        AliasDescription -> Pretty.colorDull Pretty.White
+data TreeOptions = TreeOptions
+    { delimiter :: Char
+    , showDescription :: Bool
+    }
+  deriving stock (Generic, Show)
+
+data TreeAnn
+    = NodeName
+    | LeafNodeName
+    | NodeDescription
+
+treeAnnToAnsi :: TreeAnn -> Pretty.AnsiStyle
+treeAnnToAnsi = \case
+    LeafNodeName -> Pretty.color Pretty.Magenta
+    NodeName -> Pretty.color Pretty.Blue
+    NodeDescription -> Pretty.colorDull Pretty.White
+
+subcommandTree
+    :: [SubcommandDescription String String]
+    -> ListOptions
+    -> AppNames
+    -> Config
+    -> IO ()
+subcommandTree internalSubcommands opts@ListOptions{treeOptions} appNames
+  config = do
+    descriptions <- getSubcommandDescriptions internalSubcommands
+        convertSubcommand convertAlias opts appNames config
+    hPutTreeDoc config opts
+        (commandTree treeOptions descriptions <> Pretty.line)
+  where
+    convertAlias :: Alias -> SubcommandDescription Text (Maybe (Doc TreeAnn))
+    convertAlias Alias{alias, description} = SubcommandDescription
+        { name = fromString alias
+        , description = description >>= \s ->
+            Pretty.annotate NodeDescription (fromString s)
+                <$ guard (not (List.null s))
+        }
+
+    convertSubcommand
+        :: SubcommandDescription String String
+        -> SubcommandDescription Text (Maybe (Doc TreeAnn))
+    convertSubcommand SubcommandDescription{..} = SubcommandDescription
+        { name = fromString name
+        , description =
+            Pretty.annotate NodeDescription (fromString description)
+                <$ guard (not (List.null description))
+        }
+
+    hPutTreeDoc :: Config -> ListOptions -> Doc TreeAnn -> IO ()
+    hPutTreeDoc Config{colourOutput} ListOptions{output} =
+        hPutDoc defaultLayoutOptions treeAnnToAnsi colourOutput output
+
+commandTree
+    :: TreeOptions
+    -> [SubcommandDescription Text (Maybe (Doc TreeAnn))]
+    -> Doc TreeAnn
+commandTree TreeOptions{..} commands =
+    Pretty.vsep $ List.drop 1 (draw (Node "" forest))
+  where
+    uniqueCommands :: [SubcommandDescription Text (Maybe (Doc TreeAnn))]
+    uniqueCommands = List.nubBy ((==) `on` name) commands
+
+    names :: [SubcommandDescription [Text] (Maybe (Doc TreeAnn))]
+    names =
+        bimap (Text.split (== delimiter)) (guard showDescription *>)
+        <$> uniqueCommands
+
+    groupNames
+        :: [SubcommandDescription [Text] (Maybe (Doc TreeAnn))]
+        -> [[SubcommandDescription [Text] (Maybe (Doc TreeAnn))]]
+    groupNames =
+        List.groupBy ((==) `on` (headMay . name))
+            . List.sortBy (compare `on` (headMay . name))
+
+    forest :: Forest (Doc TreeAnn)
+    forest = (`unfoldForest` groupNames names) \case
+        -- n :: Text
+        -- r :: [Text]
+        -- description :: Maybe (Doc TreeAnn)
+        -- ns :: [SubcommandDescription [Text] (Maybe (Doc TreeAnn))]
+        SubcommandDescription{name = n : r, description} : ns ->
+            let rs :: [[SubcommandDescription [Text] (Maybe (Doc TreeAnn))]]
+                rs = groupNames
+                    $ SubcommandDescription{name = r, description}
+                    : fmap (first (List.drop 1)) ns
+
+                isLeaf :: Bool
+                isLeaf = [[]] `List.elem` fmap (fmap name) rs
+
+                ann :: Doc TreeAnn -> Doc TreeAnn
+                ann = Pretty.annotate if isLeaf
+                    then LeafNodeName
+                    else NodeName
+
+             in ( ann (pretty n) <> case description of
+                    Just d | isLeaf ->
+                        Pretty.space <> d
+                    _ ->
+                        mempty
+                , List.filter ((/= [[]]) . fmap name) rs
+                )
+
+        _ -> (mempty, []) -- This should not happen.
+
+    draw :: Tree (Doc ann) -> [Doc ann]
+    draw (Node x ts0) = x : drawSubTrees ts0
+      where
+        drawSubTrees = \case
+            [] ->
+                []
+            [t] ->
+                shift "└── " "    " (draw t)
+            t : ts ->
+                shift "├── " "│   " (draw t) <> drawSubTrees ts
+
+        shift first' other = List.zipWith (<>) (first' : List.repeat other)
