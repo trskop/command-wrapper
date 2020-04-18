@@ -7,6 +7,6 @@
       ./completion-script sha256:80d3eecf7ea99ec629c1acf0d852a50a80394d3ed18801f3af83a1190d70cd20
     ? ./completion-script
 , completion =
-      ./completion sha256:b2ef1dfe03c5b92c0c9282aceb48dba6bac2806cac4884838d2c31710c745abd
+      ./completion sha256:bd90bdd3426d3b25fa98ed17ced02a4a0c51d01e15263b38ba8cb1e141f347fd
     ? ./completion
 }

@@ -2,7 +2,8 @@
 
 let script =
       { url =
-          "https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc8/command-wrapper/dhall/Exec/youtube-dl/completion-script"
+          let version = "0.1.0.0-rc9"
+          in "https://raw.githubusercontent.com/trskop/command-wrapper/${version}/command-wrapper/dhall/Exec/youtube-dl/completion-script"
       , hash =
           "sha256:4944c2e5cf852aa4969dae360495e92a53a5530def414b0090d0a691dc3351e6"
       }

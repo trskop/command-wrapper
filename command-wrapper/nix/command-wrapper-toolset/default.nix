@@ -82,13 +82,13 @@ in stdenv.mkDerivation rec {
     fetchurl {
       url = let
         repoUrl = "https://github.com/trskop/command-wrapper";
-        version = "0.1.0.0-rc8";
+        version = "0.1.0.0-rc9";
       in "${repoUrl}/releases/download/${version}/command-wrapper-${version}.tar.xz";
 
       # This value can be taken from `${url}.sha256sum`, and converted using:
       #
       #   wget -q -O- "${url}" | cut -f1 -d' ' | xargs nix-hash --type sha256 --to-base32
-      sha256 = "15rw006qgjcrz35pki2kjlys8k9pghdhm0bx0mra61zn84fshp52";
+      sha256 = "0pmr3l0ck7057fc6qvpir5gmihqsbk2zfmmpj7cq8lwil4arhw97";
     };
 
   dontUnpack = true;

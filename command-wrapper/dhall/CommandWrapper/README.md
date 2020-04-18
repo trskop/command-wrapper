@@ -52,7 +52,7 @@ There multiple ways of importing this library:
 
     ```Dhall
     let CommandWrapper =
-          https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc6/command-wrapper/dhall/CommandWrapper/package.dhall
+          https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc9/command-wrapper/dhall/CommandWrapper/package.dhall
 
     in  CommandWrapper
     ```

@@ -17,6 +17,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -161,7 +162,7 @@ shakeMain Directories{..} opts = shakeArgs opts do
         staticManDir = staticOutDistShare </> "man"
         staticDocDir = staticOutDistShare </> "doc" </> "command-wrapper"
 
-        version = "0.1.0.0-rc8"
+        version = "0.1.0.0-rc9"
         staticTarball =
             staticOut </> "command-wrapper-" <> version <.> "tar.xz"
 
@@ -228,7 +229,11 @@ shakeMain Directories{..} opts = shakeArgs opts do
         need (manHtml staticHtmlManDirs)
 
     "static" ~>
-        need [staticTarball, staticTarball <.> "sha256sum"]
+        need
+            [ staticTarball
+            , staticTarball <.> "sha256sum"
+            , staticTarball <.> "sha256nix"
+            ]
 
     staticTarball %> \out -> do
         need $ mconcat
@@ -252,6 +257,12 @@ shakeMain Directories{..} opts = shakeArgs opts do
             dir = takeDirectory out
         need [src]
         cmd_ [Cwd dir, FileStdout out] "sha256sum" [takeFileName src]
+
+    staticTarball <.> "sha256nix" %> \out -> do
+        let src = out -<.> "sha256sum"
+        need [src]
+        Stdout (hash16 :: String) <- cmd (FileStdin src) "cut -f1" ["-d "]
+        cmd_ (FileStdout out) "nix-hash --type sha256 --to-base32" hash16
 
     "build" ~>
         cmd_ "stack" ["build", "--flag=command-wrapper:nix"]

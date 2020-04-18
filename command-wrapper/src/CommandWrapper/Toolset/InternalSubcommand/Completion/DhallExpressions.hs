@@ -118,7 +118,7 @@ commandWrapperImport =
 
 execHash :: IsString s => s
 execHash =
-    "sha256:9744c9541ded50fe428b69b637307ae4034c09ce527b4c42ead662cb499f3b4d"
+    "sha256:2d55aab0714cb4f4042be8605b7f23f330a7a3763b612f243fb6eea32535fdd5"
 
 execContent :: (IsString s, Monoid s) => s
 execContent =

@@ -2,7 +2,8 @@
 
 let script =
       { url =
-          "https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc8/command-wrapper/dhall/Exec/go-jira/completion-script"
+          let version = "0.1.0.0-rc9"
+          in "https://raw.githubusercontent.com/trskop/command-wrapper/${version}/command-wrapper/dhall/Exec/go-jira/completion-script"
       , hash =
           "sha256:a2bed0ae3a53770a6d69132921baf9610199303beeefe7c84db0d45666d4ea2b"
       }

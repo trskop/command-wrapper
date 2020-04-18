@@ -1,8 +1,11 @@
 -- vim: filetype=dhall
 
 let script =
-      { url = "https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc8/command-wrapper/dhall/Exec/direnv/completion-script"
-      , hash = "sha256:806c6f8632ddddedfd3c93330f26f074078bc26c4ffd91a232e589385f198c51"
+      { url =
+          let version = "0.1.0.0-rc9"
+          in "https://raw.githubusercontent.com/trskop/command-wrapper/${version}/command-wrapper/dhall/Exec/direnv/completion-script"
+      , hash =
+          "sha256:806c6f8632ddddedfd3c93330f26f074078bc26c4ffd91a232e589385f198c51"
       }
 
 let wrapper =

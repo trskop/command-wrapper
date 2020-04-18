@@ -16,7 +16,7 @@
       ./command sha256:93352cea1e6fc63905cfa717365d50324f427e2cd5df63a91c9af00c084e927e
     ? ./command
 , completion =
-      ./completion sha256:b8ddda6132da2d457ab1f28a0d22f5a845d34ba20c286f765668f472d30d685c
+      ./completion sha256:085456e9432223a8f7a24ae2745ffc21f4953256a5ffe097436324aefac59933
     ? ./completion
 , completion-script =
       ./completion-script sha256:79a6f96409191b948959c757703b94c3ebbb7cf5c86a013c769e23fc84bc7fd7
