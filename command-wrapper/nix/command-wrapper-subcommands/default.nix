@@ -103,14 +103,18 @@ in stdenv.mkDerivation rec {
 
       if [[ -e "./man/toolset-$subcommand.1.md.dhall" ]]; then
         dhall text > "./man/toolset-$subcommand.1.md" <<EOF
-        ./man/toolset-$subcommand.1.md.dhall
-          ${toolsetInfo}
-          { upper = "''${subcommand^^*}"
-          , command = "$subcommand"
-          , exe = "${toolset.name}-$subcommand"
-          }
-          "${author}"
-          "${date}"
+        let T = ./man/toolset-$subcommand.1.md.dhall
+        in  T.template
+              T.Options::{
+              , toolset = ${toolsetInfo}
+              , subcommand =
+                  { upper = "''${subcommand^^*}"
+                  , command = "$subcommand"
+                  , exe = "${toolset.name}-$subcommand"
+                  }
+              name = "${author}"
+              date = "${date}"
+              }
     EOF
       fi
 
