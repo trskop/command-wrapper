@@ -623,7 +623,7 @@ used by `man` run `manpath` command, which should print out something like:
     As an alternative, in Bash it's also possible to use following:
 
     ```Bash
-    ( exec -a yx command-wrapper "${ARGUMENTS[@]}" )
+    ( exec -a yx command-wrapper "${arguments[@]}" )
     ```
 
     The `( ... )` syntax creates a new subshell (basically calls `fork` and we
@@ -638,7 +638,7 @@ used by `man` run `manpath` command, which should print out something like:
     ```Bash
     #!/usr/bin/env bash
 
-    exec -a yx /path/to/command-wrapper
+    exec -a yx /path/to/command-wrapper "$@"
     ```
 
     The above approach allows us to set environment variables there as well.
@@ -714,7 +714,7 @@ used by `man` run `manpath` command, which should print out something like:
 
     # Don't forget to use `exec` here. Without it we would end up with an
     # extra, and unnecessary, `sh` process in the memory.
-    exec /opt/command-wrapper/libexec/command-wrapper/command-wrapper
+    exec /opt/command-wrapper/libexec/command-wrapper/command-wrapper "$@"
     ```
 
     Hopefully the above scenario makes it obvious that this is very useful for
