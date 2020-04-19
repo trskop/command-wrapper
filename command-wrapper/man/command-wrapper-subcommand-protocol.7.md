@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-SUBCOMMAND-PROTOCOL(7) Subcommand Protocol | v1.0.0
 % Peter Trsko
-% 28th February 2020
+% 19th April 2020
 
 
 # NAME
@@ -24,6 +24,9 @@ Each subcommand must support following options:
 :   Prints subcommand specific help message.  Help message must be printed to
     standard output, and command must terminate with exit code 0.  This option
     is invoked by Command Wrapper's `help` internal subcommand.
+
+    Structure of help message must follow a simple structure described in
+    **HELP MESSAGE** section.
 
     While having short option `-h` is not strictly necessary, this protocol
     mandates that it should be provided.  This way subcommands will have
@@ -358,6 +361,81 @@ For more information see also `command-wrapper-completion(1)` manual page or:
 
 ```
 TOOLSET_COMMAND help [--man] completion
+```
+
+
+# HELP MESSAGE
+
+Help message must follow this simple structure:
+
+```Dhall
+${shortDescription}
+
+${restOfHelpMessage}
+```
+
+Short command description (`${shortDescription}` in the above template) may
+span multiple lines and it must be followed by an empty line (no white space
+characters allowed on that empty line). This short description is then picked
+up by by Command Wrapper's `help` subcommand when invoked with `--list` or
+`--tree` option.
+
+Whenever possible subcommands should try sticking to this help message
+structure:
+
+```Dhall
+${shortDescription}
+
+${subcommandUsage}
+
+${descriptionOfOptionsAndArguments}
+
+${optionalLongerDescriptionAndImportantNotes}
+
+${optionalExamples}
+```
+
+Example of help message produced by `yx` toolset for `help` subcommand itself:
+
+```
+Display help message for Commnad Wrapper or one of its subcommands.
+
+Usage:
+
+  yx [GLOBAL_OPTIONS] help [SUBCOMMAND]
+  yx [GLOBAL_OPTIONS] help --man [SUBCOMMAND|TOPIC]
+  yx [GLOBAL_OPTIONS] help --search {KEYWORD|REGEXP} [...]
+  yx [GLOBAL_OPTIONS] help {--list|--tree|--aliases}
+  yx [GLOBAL_OPTIONS] help {--help|-h}
+  yx [GLOBAL_OPTIONS] {--help|-h}
+
+Options:
+
+  SUBCOMMAND
+      Name of an internal or external subcommand for which to show help
+      message.
+
+  --man [SUBCOMMAND|TOPIC]
+      Show manual page for SUBCOMMAND|TOPIC instead of short help message.
+
+  --search {TOPIC|REGEXP} [...]
+      Search documentation for specified TOPIC|REGEX.
+
+  --list
+      List and describe all available subcommands including aliases.
+
+  --tree
+      List and describe all available subcommands including aliases in tree
+      representation using '.' character as a separator.
+
+  --aliases
+      List and describe available aliases, otherwise it's the same as --list.
+
+  --help, -h
+      Print this help and exit. Same as 'yx help help'.
+
+  GLOBAL_OPTIONS
+      See output of 'yx help'.
 ```
 
 

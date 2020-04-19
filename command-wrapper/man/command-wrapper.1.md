@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 8th April 2020
+% 19th April 2020
 
 
 # NAME
@@ -565,13 +565,16 @@ used by `man` run `manpath` command, which should print out something like:
 
 `COMMAND_WRAPPER_SYSTEM_CONFIG_DIR`
 :   When Command Wrapper binary is compiled statically then it responds to this
-
     variable being set by introducing yet another level in configuration
     hierarchy.  Toolset configuration files in provided directory are read
     before the ones in `COMMAND_WRAPPER_USER_CONFIG_DIR`/`XDG_CONFIG_HOME`.
     Subcommand configuration files are tried only if they are not found in
     `COMMAND_WRAPPER_LOCAL_CONFIG_DIR`, `COMMAND_WRAPPER_USER_CONFIG_DIR`, and
     `XDG_CONFIG_HOME`, in that order.
+
+    See also documentation of `COMMAND_WRAPPER_FACADE`, which describes how
+    this variable can be used when packaging Command Wrapper for system package
+    manager.
 
     This variable is kept in the environment when external commands and
     external subcommands are executed.
@@ -617,20 +620,111 @@ used by `man` run `manpath` command, which should print out something like:
     Subcommand Protocol.  See also `command-wrapper-subcommand-protocol(7)` for
     more details on how subcommands are invoked.
 
+    As an alternative, in Bash it's also possible to use following:
+
+    ```Bash
+    ( exec -a yx command-wrapper "${ARGUMENTS[@]}" )
+    ```
+
+    The `( ... )` syntax creates a new subshell (basically calls `fork` and we
+    end up with a clone of current Bash process).  Inside the new shell we call
+    Command Wrapper with `yx` as its `argv[0]`.  Problem with this approach is
+    that it requires quite a lot of Bash knowledge to do correctly.  Especially
+    when combined with more complex constructs, variable visibility, and exit
+    code handling. However, this is a great approach when instead of symbolic
+    links for toolsets we want to use a script. E.g. toolset `yx` could be
+    stored as a script `~/bin/yx` with following content:
+
+    ```Bash
+    #!/usr/bin/env bash
+
+    exec -a yx /path/to/command-wrapper
+    ```
+
+    The above approach allows us to set environment variables there as well.
+    This can be useful when packaging toolsets to be installed with system
+    package manager.  In particular it can be used when constructing Nix
+    derivations for toolsets. See also documentation of
+    `COMMAND_WRAPPER_FACADE` that describes particularities of packaging
+    Command Wrapper.
+
 `COMMAND_WRAPPER_FACADE`
 :   Command Wrapper needs to know absolute file path to its underlying
     executable.  This is so that subcommands can be given a reliable way how
     to call Command Wrapper.  Setting this variable overrides default
     executable resolution and provided value is used instead.
 
-    Very useful in Nix derivations (Nix package definitions) when creating
-    wrapper scripts to pass Nix-specific environment.  See following links for
-    more information:
+    To illustrate the problem let's assume that we have a toolset named `yx`
+    and our `command-wrapper` binary, as well as its subcommands, manual pages,
+    and system-wide configuration, are installed in a non-standard way. For
+    example in `/opt`, however we don't want to hard-code those paths in
+    `command-wrapper` binary, and we don't want to complicate user-level
+    configuration by requiring it to contain all these details.  Here is an
+    example of our hypothetical directory structure:
+
+    ```
+    /opt/command-wrapper/
+    ├── bin/
+    │   └── command-wrapper  <-- This is a shell script described below.
+    │
+    ├── etc/
+    │   └── command-wrapper/
+    │       └── default.dhall  <-- Specifies location of subcommands and
+    │                              manual pages.
+    ├── libexec/
+    │   └── command-wrapper/
+    │       ├── command-wrapper   <-- Real Command Wrapper executable.
+    │       ├── command-wrapper-cd
+    │       ├── command-wrapper-exec
+    │       └── command-wrapper-skel
+    │
+    └── share/
+        └── man/
+            └── ...  <-- Details not important.
+    ```
+
+    The `/opt/bin/command-wrapper` script would look like:
+
+    ```Bash
+    #!/bin/sh
+
+    # These paths could be derived from the value of "$0", but there are
+    # caveats.  The value will have to be canonicalised and made into full
+    # path. Tools like `readlink` and `realpath` can be used for that purpose.
+    # Be aware that if this script is sourced then "$0" won't be reliable, and
+    # that mentioned tools behave differently on BSD systems, including MacOS.
+    # If using Bash instead of `sh` see documentation of `BASH_SOURCE`, which
+    # can be used reliably even in case of sourced script.
+
+    # Yes, we are pointing this this script. That way any nested Command
+    # Wrapper calls will use this script instead of directly calling
+    # `/opt/command-wrapper/libexec/command-wrapper/command-wrapper`, which
+    # would cause those calls to fail to load system-wide configuration.  See
+    # the exported value of `COMMAND_WRAPPER_SYSTEM_CONFIG_DIR`.
+    COMMAND_WRAPPER_FACADE='/opt/command-wrapper/bin/command-wrapper'
+    export COMMAND_WRAPPER_FACADE
+
+    # System-wide configuration is meant to be used by package managers to pass
+    # location of subcommands, documentation, etc.  This allows us to avoid
+    # hardcoding values as well as minimising the amount of extra configuration
+    # that needs to be passed via environment variables. For more information
+    # see documentation of `COMMAND_WRAPPER_SYSTEM_CONFIG_DIR`.
+    COMMAND_WRAPPER_SYSTEM_CONFIG_DIR='/opt/command-wrapper/etc'
+    export COMMAND_WRAPPER_SYSTEM_CONFIG_DIR
+
+    # Don't forget to use `exec` here. Without it we would end up with an
+    # extra, and unnecessary, `sh` process in the memory.
+    exec /opt/command-wrapper/libexec/command-wrapper/command-wrapper
+    ```
+
+    Hopefully the above scenario makes it obvious that this is very useful for
+    packaging Command Wrapper in general and for writing Nix derivations (Nix
+    package definitions), in particular.  When it comes to Nix derivations this
+    variable comes into play when creating wrapper scripts to pass Nix-specific
+    environment.  See following links for more information:
 
     *   [Nixpkgs Users and Contributors Guide: 6.6 Shell functions: makeWrapper](https://nixos.org/nixpkgs/manual/#fun-makeWrapper)
     *   [Nixpkgs Users and Contributors Guide: 6.6 Shell functions: wrapProgram](https://nixos.org/nixpkgs/manual/#fun-wrapProgram)
-
-    Environment variable is unset before external subcommand is executed.
 
     This environment variable is unset before external command or external
     subcommand is executed.  Having is present can interfere in what underlying
