@@ -701,7 +701,7 @@ subcommandTree internalSubcommands opts@ListOptions{treeOptions} appNames
     convertAlias Alias{alias, description} = SubcommandDescription
         { name = fromString alias
         , description = description >>= \s ->
-            Pretty.annotate NodeDescription (fromString s)
+            Pretty.annotate NodeDescription ("[alias]" <+> fromString s)
                 <$ guard (not (List.null s))
         }
 
