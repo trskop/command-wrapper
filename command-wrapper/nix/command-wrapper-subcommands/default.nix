@@ -18,8 +18,8 @@ let
   easy-dhall-nix = callPackage (fetchFromGitHub {
     owner = "justinwoo";
     repo = "easy-dhall-nix";
-    rev = "45f165d1272f86da99acd0bbf55890f1c5955956"; # Dhall 1.31.0
-    sha256 = "02ijp9wcddfza7qvasadzlmv8xadsypf867q4lx885czdq92khd0";
+    rev = "35bca5ba56b7b3f8684aa0afbb65608159beb5ce"; # Dhall 1.31.1
+    sha256 = "16l71qzzfkv4sbxl03r291nswsrkr3g13viqkma2s8r5vy9la3al";
   }) { };
 
   pandoc = stdenv.mkDerivation rec {
