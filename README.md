@@ -74,17 +74,6 @@ Protocol, which is described in its own manual page
 ](command-wrapper/man/command-wrapper-subcommand-protocol.7.md).
 
 
-## Design Principles
-
-*   Generalisation instead of abstractions whenever possible.
-
-*   Transparent abstractions when they are necessary.  Everything should be
-    there in the open to debug.
-
-*   Composable and simple design decisions. In other words, it doesn't have to
-    be easy, but there should be a way.
-
-
 ## Some Interesting Features
 
 *   Command Wrapper makes heavy use of [Dhall][Dhall homepage]
