@@ -168,30 +168,27 @@ Good toolset name should be:
 
 ### List Available Subcommands
 
-All available subcommands and aliases can be listed using:
+List available subcommands along with a short description:
 
 ```
-TOOLSET_COMMAND completion --query --subcommands
+TOOLSET_COMMAND help --list
+```
+
+Same thing but `.` character in command name will be used as a separator to
+give it a tree structure:
+
+```
+TOOLSET_COMMAND help --tree
 ```
 
 To list only subcommands, omitting aliases (see [Subcommand Aliases
 ](#subcommand-aliases) section), we can use following:
 
 ```
-TOOLSET_COMMAND --no-aliases completion --query --subcommands
+TOOLSET_COMMAND --no-aliases help {--list|--tree}
 ```
 
-The list printed by the above command includes internal and external
-subcommands.
-
-To list only aliases we can use either:
-
-```
-TOOLSET_COMMAND completion --query --subcommand-aliases
-```
-
-Or we can use `help` to print not only their names, but also their short
-descriptions:
+To show help for aliases only we can invoke following:
 
 ```
 TOOLSET_COMMAND help --aliases
@@ -203,14 +200,14 @@ Help for individual subcommands can be printed using
 TOOLSET_COMMAND help SUBCOMMAND
 ```
 
+Calling `TOOLSET_COMMAND help ALIAS` works as well, but it prints help for the
+subcommand that will be invoked, not the alias itself.
+
 If `SUBCOMMAND` has a manual page then following command will display it:
 
 ```
 TOOLSET_COMMAND help --man SUBCOMMAND
 ```
-
-Calling `TOOLSET_COMMAND help ALIAS` works as well, but it prints help for the
-subcommand that will be invoked, not the alias itself.
 
 
 ### Introducing New Subcommand
