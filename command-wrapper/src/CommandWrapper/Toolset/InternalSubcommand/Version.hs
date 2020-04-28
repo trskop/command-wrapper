@@ -326,7 +326,7 @@ versionSubcommandCompleter _appNames _config _shell index words
             ["--help", "-h", "--dhall", "--shell="]
         <> munless hadHelp ["-o", "--output="]
 
-    shellOptions = ("--shell=" <>) <$> ["bash", "fish"{-, "zsh"-}]
+    shellOptions = ("--shell=" <>) <$> ["bash", "fish", "zsh"]
 
     munless p x = if not p then x else mempty
 
