@@ -248,6 +248,86 @@ function die() {
     exit "${exitCode}"
 }
 
+# Compare two version numbers (sequence of dot separated digits).
+#
+# Usage:
+#
+#   testVersion VERSION OPERATION VERSION
+#
+# Arguments
+#
+#   VERSION
+#     Version number, i.e. sequence of dot-separated digits.  For example
+#     '1.0.1' or '0.123.01'.
+#
+#   OPERATION
+#     One of '<', '-lt', '>', '-gt', '<=', '-le', '>=', '-ge', '==', '-eq',
+#     '!=', and '-ne'.
+function testVersion() {
+    local -r lhsString="$1"; shift
+    local -r op="$1"; shift
+    local -r rhsString="$1"; shift
+
+    local -i ret=0
+    if [[ "${lhsString}" != "${rhsString}" ]]; then
+        local -a lhs
+        # shellcheck disable=2206
+        IFS='.' lhs=(${lhsString})
+
+        local -a rhs
+        # shellcheck disable=2206
+        IFS='.' rhs=(${rhsString})
+
+        if (( ${#lhs[@]} < ${#rhs[@]} )); then
+            for (( i=${#lhs[@]}; i < ${#rhs[@]}; i++ )); do
+                lhs[$i]=0
+            done
+        else
+            for (( i=${#rhs[@]}; i < ${#lhs[@]}; i++ )); do
+                rhs[$i]=0
+            done
+        fi
+
+        for (( i=0; i < ${#lhs[@]}; i++ )); do
+            if (( 10#${lhs[$i]} == 10#${rhs[$i]} )); then
+                # Inconclusive, we need to test further.
+                continue;
+            elif (( 10#${lhs[$i]} < 10#${rhs[$i]} )); then
+                ret=-1
+                break;
+            elif (( 10#${lhs[$i]} > 10#${rhs[$i]} )); then
+                ret=1
+                break;
+            fi
+        done
+    fi
+
+    case "${op}" in
+        '<'|'-lt')
+            (( ret < 0 ))
+            ;;
+        '>'|'-gt')
+            (( ret > 0 ))
+            ;;
+        '<='|'-le')
+            (( ret <= 0 ))
+            ;;
+        '>='|'-ge')
+            (( ret >= 0 ))
+            ;;
+        '=='|'-eq')
+            (( ret == 0 ))
+            ;;
+        '!='|'-ne')
+            (( ret != 0 ))
+            ;;
+        *)
+            error '%s: Unexpected operator' "${op}"
+            return 2
+            ;;
+    esac
+}
+
 # Test that version is greater or equal than a specified version bound
 # (VERSION >= MIN_BOUND_VERSION).
 #
@@ -259,41 +339,11 @@ function die() {
 #
 #   testVersionMinBound 0.1 0.2 # $? = 1 (false)
 #   testVersionMinBound 0.3 0.2 # $? = 0 (true)
-testVersionMinBound() {
+function testVersionMinBound() {
     local -r version="$1"; shift
     local -r minVersion="$1"; shift
 
-    local -a actualVersion
-    # shellcheck disable=2206
-    IFS='.' actualVersion=(${version})
-
-    local -a bound
-    # shellcheck disable=2206
-    IFS='.' bound=(${minVersion})
-
-    if (( ${#bound[@]} < ${#actualVersion[@]} )); then
-        for (( i=${#bound[@]}; i < ${#actualVersion[@]}; i++ )); do
-            bound[$i]=0
-        done
-    else
-        for (( i=${#actualVersion[@]}; i < ${#bound[@]}; i++ )); do
-            actualVersion[$i]=0
-        done
-    fi
-
-    for (( i=0; i < ${#bound[@]}; i++ )); do
-        if (( 10#${bound[$i]} == 10#${actualVersion[$i]} )); then
-            # Inconclusive, we need to test further.
-            continue;
-        elif (( 10#${bound[$i]} < 10#${actualVersion[$i]} )); then
-            # We are safely above of MIN_VERSION.
-            return 0
-        elif (( 10#${bound[$i]} > 10#${actualVersion[$i]} )); then
-            return 1
-        fi
-    done
-
-    return 0
+    testVersion "${version}" -ge "${minVersion}"
 }
 
 # Check that the Command Wrapper environment variables, as defined in
@@ -325,6 +375,11 @@ function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
     else
         local -r minVersion="1.0.0"  # Initial version of subcommand protocol.
     fi
+    if (( $# )); then
+        local -r maxVersion="$1"; shift
+    else
+        local -r maxVersion='1.0.1'
+    fi
 
     if  [[ -z "${COMMAND_WRAPPER_EXE}" ]]; then
         die 2 'COMMAND_WRAPPER_EXE: %s: %s' \
@@ -336,7 +391,8 @@ function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
         die 2 'COMMAND_WRAPPER_VERSION: %s: %s' \
             'Missing environment variable' \
             'This command must be executed inside command-wrapper environment.'
-    elif ! testVersionMinBound "${COMMAND_WRAPPER_VERSION}" "${minVersion}"
+    elif testVersion "${COMMAND_WRAPPER_VERSION}" -ge "${minVersion}" \
+        && testVersion "${COMMAND_WRAPPER_VERSION}" -lt "${maxVersion}"
     then
         die 2 'COMMAND_WRAPPER_VERSION: %s: %s. %s: %s.' \
             "${COMMAND_WRAPPER_VERSION}" \
@@ -443,7 +499,10 @@ function toolset() {
     # what subcommand script expects.
     COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" \
         "${COMMAND_WRAPPER_EXE}" \
-        --no-aliases "$@"
+            --verbosity="${COMMAND_WRAPPER_VERBOSITY}" \
+            --colour="${COMMAND_WRAPPER_COLOUR}" \
+            --no-aliases \
+            "$@"
 }
 
 # Dhall interpreter.
@@ -459,12 +518,7 @@ function toolset() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall "$@"
+    toolset config --dhall "$@"
 }
 
 # Dhall interpreter that puts Dhall input expression into the scope of
@@ -481,12 +535,7 @@ function dhall() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-filter() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-filter "$@"
+    toolset config --dhall-filter "$@"
 }
 
 # Format Dhall expression.
@@ -499,12 +548,7 @@ function dhall-filter() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-format() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-format "$@"
+    toolset config --dhall-format "$@"
 }
 
 # Add integrity checks to import statements of a Dhall expression.
@@ -519,12 +563,7 @@ function dhall-format() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-freeze() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-freeze "$@"
+    toolset config --dhall-freeze "$@"
 }
 
 # Compute semantic hashes for Dhall expressions.
@@ -538,12 +577,7 @@ function dhall-freeze() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-hash() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-hash "$@"
+    toolset config --dhall-hash "$@"
 }
 
 # Compile Dhall expression into Bash expression or statement.
@@ -563,7 +597,7 @@ function dhall-to-bash() {
     #
     # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
     # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-bash "$@"
+    toolset config --dhall-bash "$@"
 }
 
 # Compile Dhall expression into Bash expression or statement.
@@ -578,12 +612,7 @@ function dhall-to-bash() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-to-text() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-text "$@"
+    toolset config --dhall-text "$@"
 }
 
 # Render Dhall expression as Text and execute the result.
@@ -597,12 +626,7 @@ function dhall-to-text() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-exec() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    "${COMMAND_WRAPPER_EXE}" --no-aliases config --dhall-exec "$@"
+    toolset config --dhall-exec "$@"
 }
 
 # Display selection menu.  Selected value is printed to standard output.
@@ -613,14 +637,7 @@ function dhall-exec() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function edit-file() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # In the future edit functionality may become configurable, which would
-    # make it depend on which toolset it is invoked via, hence setting the
-    # value of `COMMAND_WRAPPER_INVOKE_AS`.
-    COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" \
-        "${COMMAND_WRAPPER_EXE}" --no-aliases config --edit "$@"
+    toolset config --edit "$@"
 }
 
 # Display selection menu.  Selected value is printed to standard output.
@@ -631,14 +648,7 @@ function edit-file() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function select-menu() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # In the future menu functionality may become configurable, which would
-    # make it depend on which toolset it is invoked via, hence setting the
-    # value of `COMMAND_WRAPPER_INVOKE_AS`.
-    COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" \
-        "${COMMAND_WRAPPER_EXE}" --no-aliases config --menu "$@"
+    toolset --no-aliases config --menu "$@"
 }
 
 # Primitive completion queries for when we don't want to use Bash's `compgen`,
@@ -666,13 +676,7 @@ function select-menu() {
 #
 # See `TOOLSET help [--man] completion` for more details.
 function completion-query() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # Some of the completed values may depend on what toolset is used, hence
-    # setting the value of `COMMAND_WRAPPER_INVOKE_AS`.
-    COMMAND_WRAPPER_INVOKE_AS="${COMMAND_WRAPPER_NAME}" \
-        "${COMMAND_WRAPPER_EXE}" --no-aliases completion --query "$@"
+    toolset completion --query "$@"
 }
 
 # Print Dhall expression that describes how this subcommand should be invoked
