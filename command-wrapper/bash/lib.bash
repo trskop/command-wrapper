@@ -328,24 +328,6 @@ function testVersion() {
     esac
 }
 
-# Test that version is greater or equal than a specified version bound
-# (VERSION >= MIN_BOUND_VERSION).
-#
-# Usage:
-#
-#   testVersionMinBound VERSION MIN_BOUND_VERSION
-#
-# Examples:
-#
-#   testVersionMinBound 0.1 0.2 # $? = 1 (false)
-#   testVersionMinBound 0.3 0.2 # $? = 0 (true)
-function testVersionMinBound() {
-    local -r version="$1"; shift
-    local -r minVersion="$1"; shift
-
-    testVersion "${version}" -ge "${minVersion}"
-}
-
 # Check that the Command Wrapper environment variables, as defined in
 # Subcommand Protocol, were passed to us.  If any of them is missing then this
 # this function will terminate the the subcommand with exit code 2, and
@@ -391,13 +373,15 @@ function dieIfExecutedOutsideOfCommandWrapperEnvironment() {
         die 2 'COMMAND_WRAPPER_VERSION: %s: %s' \
             'Missing environment variable' \
             'This command must be executed inside command-wrapper environment.'
-    elif testVersion "${COMMAND_WRAPPER_VERSION}" -ge "${minVersion}" \
-        && testVersion "${COMMAND_WRAPPER_VERSION}" -lt "${maxVersion}"
+    elif testVersion "${COMMAND_WRAPPER_VERSION}" -lt "${minVersion}" \
+        && testVersion "${COMMAND_WRAPPER_VERSION}" -ge "${maxVersion}"
     then
-        die 2 'COMMAND_WRAPPER_VERSION: %s: %s. %s: %s.' \
+        die 2 'COMMAND_WRAPPER_VERSION: %s: %s. %s: %s and %s.' \
             "${COMMAND_WRAPPER_VERSION}" \
             'Unsupported Subcommand protocol version by this subcommand' \
-            'Minimum required version is' "${minVersion}"
+            'Supported version range is' \
+            "greater or equal to ${minVersion}" \
+            "less than ${maxVersion}"
     fi
 
     if  [[ -z "${COMMAND_WRAPPER_NAME}" ]]; then
