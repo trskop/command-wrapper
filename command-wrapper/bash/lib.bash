@@ -489,6 +489,34 @@ function toolset() {
             "$@"
 }
 
+# Run underlying Command Wrapper executable without passing toolset name and
+# disabling any user-level and project-level configuration.
+#
+# Usage
+#
+#   raw-command-wrapper [GLOBAL_OPTIONS] SUBCOMMAND [--] [SUBCOMMAND_ARGUMENTS]
+#   raw-command-wrapper {--help|-h}
+#   raw-command-wrapper {--version|-V}
+#
+# See `command-wrapper(1)` for details.
+raw-command-wrapper() {
+    # Setting `COMMAND_WRAPPER_USER_CONFIG_DIR` and
+    # `COMMAND_WRAPPER_LOCAL_CONFIG_DIR` to `/dev/null` prevents Command
+    # Wrapper for using user-level and local (AKA project-level) configuration.
+    # This way only internal subcommands and external subcommands installed in
+    # `command-wrapper` namespace will be available.
+    #
+    # Reason for using '--no-aliases' is to prevent aliases interfering with
+    # what subcommand script expects.
+    COMMAND_WRAPPER_USER_CONFIG_DIR=/dev/null \
+    COMMAND_WRAPPER_LOCAL_CONFIG_DIR=/dev/null \
+        "${COMMAND_WRAPPER_EXE}" \
+            --verbosity="${COMMAND_WRAPPER_VERBOSITY}" \
+            --colour="${COMMAND_WRAPPER_COLOUR}" \
+            --no-aliases \
+            "$@"
+}
+
 # Dhall interpreter.
 #
 # Usage:
@@ -502,7 +530,7 @@ function toolset() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall() {
-    toolset config --dhall "$@"
+    raw-command-wrapper config --dhall "$@"
 }
 
 # Dhall interpreter that puts Dhall input expression into the scope of
@@ -519,7 +547,7 @@ function dhall() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-filter() {
-    toolset config --dhall-filter "$@"
+    raw-command-wrapper config --dhall-filter "$@"
 }
 
 # Format Dhall expression.
@@ -532,7 +560,7 @@ function dhall-filter() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-format() {
-    toolset config --dhall-format "$@"
+    raw-command-wrapper config --dhall-format "$@"
 }
 
 # Add integrity checks to import statements of a Dhall expression.
@@ -547,7 +575,7 @@ function dhall-format() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-freeze() {
-    toolset config --dhall-freeze "$@"
+    raw-command-wrapper config --dhall-freeze "$@"
 }
 
 # Compute semantic hashes for Dhall expressions.
@@ -561,7 +589,7 @@ function dhall-freeze() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-hash() {
-    toolset config --dhall-hash "$@"
+    raw-command-wrapper config --dhall-hash "$@"
 }
 
 # Compile Dhall expression into Bash expression or statement.
@@ -576,12 +604,7 @@ function dhall-hash() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-to-bash() {
-    # Reason for using '--no-aliases' is to prevent aliases interfering with
-    # what subcommand script expects.
-    #
-    # We aren't passing `COMMAND_WRAPPER_INVOKE_AS` to avoid dependency on
-    # specific toolset configuration.
-    toolset config --dhall-bash "$@"
+    raw-command-wrapper config --dhall-bash "$@"
 }
 
 # Compile Dhall expression into Bash expression or statement.
@@ -596,7 +619,7 @@ function dhall-to-bash() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-to-text() {
-    toolset config --dhall-text "$@"
+    raw-command-wrapper config --dhall-text "$@"
 }
 
 # Render Dhall expression as Text and execute the result.
@@ -610,7 +633,7 @@ function dhall-to-text() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function dhall-exec() {
-    toolset config --dhall-exec "$@"
+    raw-command-wrapper config --dhall-exec "$@"
 }
 
 # Display selection menu.  Selected value is printed to standard output.
@@ -621,6 +644,9 @@ function dhall-exec() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function edit-file() {
+    # Reason for using `toolset` instead of `raw-command-wrapper` is that we
+    # want to take into account user preferences. (Not yet implemented by
+    # Command Wrapper.)
     toolset config --edit "$@"
 }
 
@@ -632,6 +658,9 @@ function edit-file() {
 #
 # See `TOOLSET help [--man] config` for more details.
 function select-menu() {
+    # Reason for using `toolset` instead of `raw-command-wrapper` is that we
+    # want to take into account user preferences. (Not yet implemented by
+    # Command Wrapper.)
     toolset --no-aliases config --menu "$@"
 }
 
@@ -660,6 +689,8 @@ function select-menu() {
 #
 # See `TOOLSET help [--man] completion` for more details.
 function completion-query() {
+    # Reason for using `toolset` instead of `raw-command-wrapper` is that we
+    # want to take into account current configuration.
     toolset completion --query "$@"
 }
 
