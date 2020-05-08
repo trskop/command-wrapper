@@ -1,21 +1,29 @@
 # Usage example:
 #
-# ```
+# ```Nix
 # { pkgs ? import <nixpkgs> { } }:
-# 
-# pkgs.callPackage ./nix/command-wrapper-toolset { toolset = "yx"; }
+#
+# rec {
+#   command-wrapper = pkgs.callPackage ./nix/command-wrapper { };
+#
+#   toolset = pkgs.callPackage ./nix/command-wrapper-toolset {
+#     toolset = "yx";
+#     inherit command-wrapper;
+#   };
+# }
 # ```
 
-{ stdenv, fetchurl, makeWrapper, lib, toolset, subcommands ? [ ] }:
+{ stdenv, fetchurl, makeWrapper, lib, command-wrapper, toolset
+, toolsetVersion ? "1.0.0", subcommands ? [ ] }:
 
 let
-  toolsetVersion = "1.0.0";
+  version = toolsetVersion;
 
   toolsetSubcommands = map (pkg:
     pkg {
       name = toolset;
       manpage = toolset;
-      version = toolsetVersion;
+      inherit version;
     }) subcommands;
 
   toList = subDir: paths:
@@ -27,69 +35,17 @@ let
           (builtins.filter (x: x != null) paths))) + ''" ] : List Text'';
 
   defaultConfig = paths: ''
-    CommandWrapper.ToolsetConfig::{
-    , aliases =
-          [ CommandWrapper.SubcommandAlias::{
-            , alias = "h"
-            , description = Some "Shorthand for \"help\"."
-            , command = "help"
-            }
-          , CommandWrapper.SubcommandAlias::{
-            , alias = "man"
-            , description = Some "Shorthand for \"help --man\"."
-            , command = "help"
-            , arguments = [ "--man" ]
-            }
-          ]
-        # Prelude.List.map
-            Text
-            CommandWrapper.SubcommandAlias.Type
-            (   λ(_ : Text)
-              → CommandWrapper.SubcommandAlias::{
-                , alias = "dhall''${_}"
-                , description = Some "Shorthand for \"config --dhall''${_}\"."
-                , command = "config"
-                , arguments = [ "--dhall''${_}" ]
-                }
-            )
-            [ ""
-            , "-bash"
-            , "-diff"
-            , "-exec"
-            , "-filter"
-            , "-format"
-            , "-freeze"
-            , "-hash"
-            , "-lint"
-            , "-repl"
-            , "-resolve"
-            , "-text"
-            ]
-    , searchPath =
-          [ "''${out}/libexec/command-wrapper" ]
-        # (${toList "libexec/${toolset}" paths})
+    global // {
+    , searchPath = global.searchPath # (${toList "libexec/${toolset}" paths})
     , manPath = [ "''${out}/share/man" ] # (${toList "share/man" paths})
     }
   '';
 
 in stdenv.mkDerivation rec {
-  name = "command-wrapper-toolset-${toolset}";
-  version = toolsetVersion;
+  name = "command-wrapper-toolset-${toolset}-${version}";
+  inherit version;
 
-  src =
-    # At the moment only Linux executables are provided.
-    assert stdenv.isLinux;
-    fetchurl {
-      url = let
-        repoUrl = "https://github.com/trskop/command-wrapper";
-        version = "0.1.0.0-rc9";
-      in "${repoUrl}/releases/download/${version}/command-wrapper-${version}.tar.xz";
-
-      # This value can be taken from `${url}.sha256sum`, and converted using:
-      #
-      #   wget -q -O- "${url}" | cut -f1 -d' ' | xargs nix-hash --type sha256 --to-base32
-      sha256 = "0pmr3l0ck7057fc6qvpir5gmihqsbk2zfmmpj7cq8lwil4arhw97";
-    };
+  src = null;
 
   dontUnpack = true;
   dontConfigure = true;
@@ -98,20 +54,27 @@ in stdenv.mkDerivation rec {
   dontPatchELF = true;
   noAuditTmpdir = true;
 
-  buildInputs = [ makeWrapper ] ++ toolsetSubcommands;
+  buildInputs = [ command-wrapper makeWrapper ] ++ toolsetSubcommands;
 
   installPhase = ''
-    mkdir -p "$out/bin" "$out/etc/command-wrapper"
-    tar -C "$out" -xf "$src" --strip-components=1
-    chmod u+w "$out/share"
+    declare -r -a directories=(
+      "$out/bin"
+      "$out/etc/command-wrapper"
+      # "$out/etc/habit"
+      # "$out/share/man/man1"
+    )
+    mkdir -p "''${directories[@]}"
 
-    makeWrapper "$out/libexec/command-wrapper/command-wrapper" \
+    declare -r commandWrapper="${command-wrapper}/libexec/command-wrapper/command-wrapper"
+    declare -r commandWrapperConfigDir="${command-wrapper}/etc/command-wrapper"
+
+    makeWrapper "''${commandWrapper}" \
       "$out/bin/command-wrapper" \
       --set TERMINFO_DIRS "/etc/terminfo:/lib/terminfo:/usr/share/terminfo" \
       --set COMMAND_WRAPPER_SYSTEM_CONFIG_DIR "$out/etc" \
       --set COMMAND_WRAPPER_FACADE "$out/bin/command-wrapper"
 
-    makeWrapper "$out/libexec/command-wrapper/command-wrapper" \
+    makeWrapper "''${commandWrapper}" \
       "$out/bin/${toolset}" \
       --argv0 "${toolset}" \
       --set TERMINFO_DIRS "/etc/terminfo:/lib/terminfo:/usr/share/terminfo" \
@@ -119,51 +82,32 @@ in stdenv.mkDerivation rec {
       --set COMMAND_WRAPPER_FACADE "$out/bin/command-wrapper"
 
     declare -r -A completions=(
-      [bash]="$out/share/bash-completion/completions/command-wrapper.bash"
-      [fish]="$out/share/fish/vendor_completions.d/command-wrapper.fish"
-      [zsh]="$out/share/zsh/vendor_completions/_command-wrapper"
+      [bash]="$out/share/bash-completion/completions/${toolset}.bash"
+      [fish]="$out/share/fish/vendor_completions.d/${toolset}.fish"
+      [zsh]="$out/share/zsh/vendor_completions/_${toolset}"
     )
 
     for shell in "''${!completions[@]}"; do
       completionFile="''${completions[''${shell}]}"
       completionDir="$(dirname "''${completionFile}")"
       mkdir -p "''${completionDir}"
-      "$out/libexec/command-wrapper/command-wrapper" \
+      "''${commandWrapper}" \
         completion --script --shell="''${shell}" \
         --toolset="${toolset}" \
         --executable="$out/bin/command-wrapper" \
         --output="''${completionFile}"
     done
 
-    declare -r -A dhallLibraries=(
-      [command-wrapper]="$out/etc/command-wrapper/lib/CommandWrapper"
-      [exec]="$out/etc/command-wrapper/lib/Exec"
-      [prelude]="$out/etc/command-wrapper/lib/Prelude"
-    )
-
-    for lib in "''${!dhallLibraries[@]}"; do
-      libraryFile="''${dhallLibraries[''${lib}]}"
-      libraryDir="$(dirname "''${libraryFile}")"
-      mkdir -p "''${libraryDir}"
-      "$out/libexec/command-wrapper/command-wrapper" \
-        completion --library --dhall="''${lib}" --import \
-        > "''${libraryFile}"
-    done
-
-    "$out/libexec/command-wrapper/command-wrapper" \
-        completion --library --dhall=command-wrapper --content \
-        --output=./CommandWrapper
-    "$out/libexec/command-wrapper/command-wrapper" \
-        completion --library --dhall=prelude --content \
-        --output=./Prelude
     mkdir -p "$out/etc/command-wrapper/default"
-    "$out/libexec/command-wrapper/command-wrapper" config --dhall \
-      --let="CommandWrapper=./CommandWrapper" --let="Prelude=./Prelude" \
+    "''${commandWrapper}" config --dhall \
+      --let="CommandWrapper=''${commandWrapperConfigDir}/lib/CommandWrapper/package.dhall" \
+      --let="Prelude=''${commandWrapperConfigDir}/lib/Prelude/package.dhall" \
+      --let="global=''${commandWrapperConfigDir}/default.dhall" \
       --let="out=\"$out\"" \
       --output="$out/etc/command-wrapper/default/constructor.dhall" <<'EOF'
     ${defaultConfig toolsetSubcommands}
     EOF
-    "$out/libexec/command-wrapper/command-wrapper" config --dhall-freeze \
+    "''${commandWrapper}" config --dhall-freeze \
       --no-remote-only --for-security \
       --expression="$out/etc/command-wrapper/default/constructor.dhall" \
       --output="$out/etc/command-wrapper/default.dhall"

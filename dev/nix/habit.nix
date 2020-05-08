@@ -1,8 +1,12 @@
 { pkgs ? import <nixpkgs> { } }:
 
 rec {
+  command-wrapper =
+    pkgs.callPackage ../../command-wrapper/nix/command-wrapper { };
+
   toolset = pkgs.callPackage ../../command-wrapper/nix/command-wrapper-toolset {
     toolset = "habit";
+    inherit command-wrapper;
   };
 
   buildInputs = [ toolset ];
@@ -11,16 +15,18 @@ rec {
   # be provided here then they would be configured by `use_command_wrapper()`.
   # The advantage of defining them here is that there is less work for `.envrc`
   # to do.
-  env = {
-    COMMAND_WRAPPER_LIB = "${toolset}/etc/command-wrapper/lib/CommandWrapper";
-    COMMAND_WRAPPER_EXEC_LIB = "${toolset}/etc/command-wrapper/lib/Exec";
-    COMMAND_WRAPPER_PRELUDE_LIB = "${toolset}/etc/command-wrapper/lib/Prelude";
+  env = let
+    dhallLibDir = "${command-wrapper}/etc/command-wrapper/lib";
+    toolsetShare = "${toolset}/share";
+  in {
+    COMMAND_WRAPPER_LIB = "${dhallLibDir}/CommandWrapper/package.dhall";
+    COMMAND_WRAPPER_EXEC_LIB = "${dhallLibDir}/Exec/package.dhall";
+    COMMAND_WRAPPER_PRELUDE_LIB = "${dhallLibDir}/Prelude/package.dhall";
 
     HABIT_BASH_COMPLETION =
-      "${toolset}/share/bash-completion/completions/command-wrapper.bash";
+      "${toolsetShare}/bash-completion/completions/habit.bash";
     HABIT_FISH_COMPLETION =
-      "${toolset}/share/fish/vendor_completions.d/command-wrapper.fish";
-    HABIT_ZSH_COMPLETION =
-      "${toolset}/share/zsh/vendor_completions/_command-wrapper";
+      "${toolsetShare}/fish/vendor_completions.d/habit.fish";
+    HABIT_ZSH_COMPLETION = "${toolsetShare}/zsh/vendor_completions/_habit";
   };
 }

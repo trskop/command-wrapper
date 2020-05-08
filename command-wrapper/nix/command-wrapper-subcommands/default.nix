@@ -1,15 +1,21 @@
 # Usage example:
 #
-# ```
+# ```Nix
 # { pkgs ? import <nixpkgs> { } }:
 #
-# toolset = pkgs.callPackage ./nix/command-wrapper-toolset {
-#   toolset = "yx";
+# rec {
+#   command-wrapper = pkgs.callPackage ./nix/command-wrapper { };
+#
 #   subcommands = [
 #     (toolset:
 #       pkgs.callPackage ./nix/command-wrapper-subcommand { inherit toolset; })
 #   ];
-# };
+#
+#   toolset = pkgs.callPackage ./nix/command-wrapper-toolset {
+#     toolset = "yx";
+#     inherit command-wrapper subcommands;
+#   };
+# }
 # ```
 
 { stdenv, callPackage, fetchurl, fetchFromGitHub, makeWrapper, lib, toolset }:
