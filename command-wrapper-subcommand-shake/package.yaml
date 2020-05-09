@@ -2,8 +2,14 @@ name: &this command-wrapper-subcommand-shake
 version: 0.1.0.0
 synopsis: |
   Command wrapper for building modular toolsets with uniform UI: Subcommand in Shake
+
 description: |
-  Command wrapper for building modular toolsets with uniform UI: Subcommand in Shake
+  Command wrapper for building modular toolsets with uniform UI: Subcommand in
+  Shake
+
+  See [GitHub README](https://github.com/trskop/command-wrapper#readme) for
+  more information.
+
 github: trskop/command-wrapper
 license: BSD3
 license-file: LICENSE
@@ -52,7 +58,9 @@ dependencies:
   - command-wrapper-core
   - command-wrapper-subcommand
 
-  - base
+  - base >=4.12 && <5
+  # ^ Version 4.12.0.0 is bundled with 8.6.*, we support GHC 8.6.5 for static
+  # build.
 
   - generic-lens
   - shake

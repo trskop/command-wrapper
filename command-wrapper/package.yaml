@@ -4,6 +4,10 @@ synopsis: |
   Command wrapper for building modular toolsets with uniform UI
 description: |
   Command wrapper for building modular toolsets with uniform UI
+
+  See [GitHub README](https://github.com/trskop/command-wrapper#readme) for
+  more information.
+
 github: trskop/command-wrapper
 license: BSD3
 license-file: LICENSE
@@ -29,6 +33,9 @@ extra-source-files:
   - dhall/*
   - dhall/**/*
   - man/*.md
+  - nix/**/*.dhall
+  - nix/**/*.nix
+  - nix/README.md
 
 default-extensions:
   - BlockArguments
@@ -60,7 +67,9 @@ default-extensions:
 dependencies:
   - command-wrapper-core
 
-  - base
+  - base >=4.12 && <5
+  # ^ Version 4.12.0.0 is bundled with 8.6.*, we support GHC 8.6.5 for static
+  # build.
 
   - aeson
   - aeson-pretty
