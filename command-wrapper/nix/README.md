@@ -1,4 +1,16 @@
-# Directory Structure
+# Command Wrapper Derivation
+
+Example derivation in [`command-wrapper/default.nix`
+](./command-wrapper/default.nix) installs Command Wrapper itself along with
+documentation and basic subcommands.  Usage example:
+
+```Nix
+{ pkgs ? import <nixpkgs> { } }:
+
+pkgs.callPackage ./nix/command-wrapper { }
+```
+
+Installation directory structure:
 
 ```
 /nix/store/${hash}-command-wrapper-${version}/
@@ -52,6 +64,26 @@
             └── command-wrapper-subcommand-protocol.7.gz
 ```
 
+
+# Toolset Derivation
+
+Example derivation in [`command-wrapper/default.nix`
+](./command-wrapper-toolset/default.nix) installs a toolset built on top of
+[Command Wrapper Derivation](#command-wrapper-derivation).  Usage example:
+
+```Nix
+{ pkgs ? import <nixpkgs> { } }:
+
+let command-wrapper = pkgs.callPackage ./nix/command-wrapper { };
+
+in pkgs.callPackage ./nix/command-wrapper-toolset {
+  toolset = "yx";
+  inherit command-wrapper;
+}
+```
+
+Installation directory structure:
+
 ```
 /nix/store/${hash}-command-wrapper-toolset-${toolset}-${version}/
 ├── bin/
@@ -66,7 +98,7 @@
 │           └── default.dhall -- Imports default/constructor.dhall
 ├── libexec/
 │   ├── command-wrapper/
-│   │   └── command-wrapper-*
+│   │   └── command-wrapper  -- Command Wrapper facade, see command-wrapper(1)
 │   └── ${toolset}/
 │       └── ${toolset}-*
 └── share/
@@ -87,23 +119,4 @@
     └── zsh/
         └── vendor_completions/
             └── _${toolset}
-```
-
-With the above directory structure Command Wrapper needs to be configured to
-lookup for subcommands in the:
-
-```
-/nix/store/${hash}-command-wrapper-toolset-${toolset}/libexec/command-wrapper
-```
-
-For manual pages in:
-
-```
-/nix/store/${hash}-command-wrapper-toolset-${toolset}/share/man
-```
-
-And for its configuration in:
-
-```
-/nix/store/${hash}-command-wrapper-toolset-${toolset}/etc
 ```
