@@ -1,7 +1,7 @@
 # Directory Structure
 
 ```
-/nix/store/${hash}-command-wrapper/
+/nix/store/${hash}-command-wrapper-${version}/
 ├── etc/
 │   └── command-wrapper/
 │       ├── command-wrapper/
@@ -53,7 +53,7 @@
 ```
 
 ```
-/nix/store/${hash}-command-wrapper-toolset-${toolset}/
+/nix/store/${hash}-command-wrapper-toolset-${toolset}-${version}/
 ├── bin/
 │   └── ${toolset}
 ├── etc/
@@ -66,7 +66,7 @@
 │           └── default.dhall -- Imports default/constructor.dhall
 ├── libexec/
 │   ├── command-wrapper/
-│   │   └── command-wrapper  -- Nix-style wrapper scripts for /nix/store/${hash}-command-wrapper/libexec/command-wrapper/command-wrapper
+│   │   └── command-wrapper-*
 │   └── ${toolset}/
 │       └── ${toolset}-*
 └── share/

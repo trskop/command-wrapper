@@ -104,6 +104,8 @@ import CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions
     , preludeV14_0_0Import
     , preludeV15_0_0Content
     , preludeV15_0_0Import
+    , preludeV16_0_0Content
+    , preludeV16_0_0Import
     , shellCompletionTemplate
     )
 
@@ -293,6 +295,7 @@ putDirenvLibrary subcmd appNames config importOrContent = \case
 
 data DhallLibrary
     = LatestPrelude
+    | PreludeV16_0_0
     | PreludeV15_0_0
     | PreludeV14_0_0
     | PreludeV13_0_0
@@ -308,6 +311,7 @@ parseDhallLibrary = \case
     "prelude-v13.0.0" -> Just PreludeV13_0_0
     "prelude-v14.0.0" -> Just PreludeV14_0_0
     "prelude-v15.0.0" -> Just PreludeV15_0_0
+    "prelude-v16.0.0" -> Just PreludeV16_0_0
     "command-wrapper" -> Just CommandWrapper
     "exec"            -> Just CommandWrapperExec
     _                 -> Nothing
@@ -319,6 +323,7 @@ showDhallLibrary = \case
     PreludeV13_0_0     -> "prelude-v13.0.0"
     PreludeV14_0_0     -> "prelude-v14.0.0"
     PreludeV15_0_0     -> "prelude-v15.0.0"
+    PreludeV16_0_0     -> "prelude-v16.0.0"
     CommandWrapper     -> "command-wrapper"
     CommandWrapperExec -> "exec"
 
@@ -363,11 +368,17 @@ putDhallLibrary config dhallLib importOrContent = \case
         (PreludeV15_0_0, Import) ->
             Text.hPutStrLn h preludeV15_0_0Import
 
+        (PreludeV16_0_0, Content) ->
+            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV16_0_0Content)
+
+        (PreludeV16_0_0, Import) ->
+            Text.hPutStrLn h preludeV16_0_0Import
+
         (LatestPrelude, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV15_0_0Content)
+            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV16_0_0Content)
 
         (LatestPrelude, Import) ->
-            Text.hPutStrLn h preludeV15_0_0Import
+            Text.hPutStrLn h preludeV16_0_0Import
 
         -- IMPORTANT!
         --

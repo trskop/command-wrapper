@@ -40,26 +40,26 @@ packages:
   original:
     hackage: prettyprinter-1.6.1
 - completed:
-    hackage: dhall-1.31.1@sha256:d85f60105624d63bee8b5ec6f442e55b2e9fcb978e4d6e2c828b0520f6c6ed70,33103
+    hackage: dhall-1.32.0@sha256:fbc63ca82b1b3992b2a0a80f88296279d41816d8c7fe72c6f8526f28b75c786b,33352
     pantry-tree:
-      size: 279753
-      sha256: df9ba13cb1d061879fb2d50465e2cf33a17aa5cf42670e88c0a4a8ad00903b6d
+      size: 284132
+      sha256: 2beb33a51a5330026022af2021ed2f74a075a8bb48997b7ed4ed4c402fa72a34
   original:
-    hackage: dhall-1.31.1
+    hackage: dhall-1.32.0
 - completed:
-    hackage: dhall-bash-1.0.29@sha256:5b869d392672ab730d7488cecfe1a9a10756bb530f9c06dd33f25bb7e409c4f2,1783
+    hackage: dhall-bash-1.0.30@sha256:e234788d287711592c1b97d16fdebfc435aa9ee779dbfae43869ba56e2cc8453,1848
     pantry-tree:
       size: 266
-      sha256: fb50c6ddeac5e6271eef15da468088315ec2fe85b261c52c3b8d5c181bbb8892
+      sha256: df8e91d57121cfd8fc4f269ccc5eb7096409cd9c7826a7797fa162992ed08757
   original:
-    hackage: dhall-bash-1.0.29
+    hackage: dhall-bash-1.0.30
 - completed:
-    hackage: dhall-json-1.6.3@sha256:6d052b86027f14c9342cc54acb32c10b3fe1ac24353f5e389ca5b3719ea95160,4087
+    hackage: dhall-json-1.6.4@sha256:0096d910f0f15c7ad73ceecc04861491d51e7596914d9fb503dc31c1b91cd5b2,4469
     pantry-tree:
-      size: 3990
-      sha256: 54502db384f8e0df2950b458aaaddea70835b6ce7f87712180914e6a342d5475
+      size: 4122
+      sha256: d0510e7238f0077a2c685db466cd475ac8b88d5acb27ed0db1d6fe6783a68393
   original:
-    hackage: dhall-json-1.6.3
+    hackage: dhall-json-1.6.4
 - completed:
     hackage: aeson-yaml-1.0.6.0@sha256:bdf6d67265d9a3e251122fa53d2f0f19e0b9865d928e5d6efb77d4754ca3f6cb,1975
     pantry-tree:
@@ -111,7 +111,7 @@ packages:
     commit: 003e0c7c32628ee27332becfab92b62cad194163
 snapshots:
 - completed:
-    size: 494638
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/11.yaml
-    sha256: 5747328cdcbb8fe9c96fc048b5566167c80dd176a41b52d3b363058e3cc1dc5d
-  original: lts-15.11
+    size: 494635
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/12.yaml
+    sha256: a71c4293d8f461f455ff0d9815dfe4ab2f1adacd7e0bbc9a218f46ced8c4929a
+  original: lts-15.12

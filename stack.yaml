@@ -8,7 +8,7 @@
 #resolver: lts-14.27
 
 # GHC 8.8.3
-resolver: lts-15.11
+resolver: lts-15.12
 
 packages:
   - './command-wrapper-core/'
@@ -25,9 +25,9 @@ extra-deps:
 
   # Don't forget to upgrade Dhall Standard version in
   # ./src/CommandWrapper/Internal.hs when upgrading Dhall library.
-  - dhall-1.31.1
-  - dhall-bash-1.0.29
-  - dhall-json-1.6.3
+  - dhall-1.32.0
+  - dhall-bash-1.0.30
+  - dhall-json-1.6.4
   - aeson-yaml-1.0.6.0
 
 # Keeping the following in case of new Dhall release:
