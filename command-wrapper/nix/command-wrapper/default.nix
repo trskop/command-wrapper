@@ -26,6 +26,7 @@ stdenv.mkDerivation rec {
     };
 
   defaultConfig = builtins.readFile ./default.dhall;
+  mkEnvironmentVariablesDhall = builtins.readFile ./environment-variables.dhall;
 
   dontUnpack = true;
   dontConfigure = true;
@@ -42,8 +43,9 @@ stdenv.mkDerivation rec {
     chmod u+w "$out/share"
 
     declare -r commandWrapper="$out/libexec/command-wrapper/command-wrapper"
-
     declare -r dhallLibDir="$out/etc/command-wrapper/lib"
+
+    # These values have to match what's in environment-variables.dhall
     declare -r -A dhallLibraries=(
       [command-wrapper]="''${dhallLibDir}/CommandWrapper"
       [exec]="''${dhallLibDir}/Exec"
@@ -77,5 +79,13 @@ stdenv.mkDerivation rec {
       --no-remote-only --for-security \
       --expression="$out/etc/command-wrapper/default/constructor.dhall" \
       --output="$out/etc/command-wrapper/default.dhall"
+
+    "''${commandWrapper}" config --dhall \
+      --let="CommandWrapper=''${dhallLibDir}/CommandWrapper/package.dhall" \
+      --let="Prelude=''${dhallLibDir}/Prelude/package.dhall" \
+      --let="dhallLibDir=\"''${dhallLibDir}\"" \
+      --output="$out/etc/command-wrapper/environment-variables.dhall" <<'EOF'
+    ${mkEnvironmentVariablesDhall}
+    EOF
   '';
 }

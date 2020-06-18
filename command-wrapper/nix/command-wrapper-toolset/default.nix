@@ -75,6 +75,9 @@ in stdenv.mkDerivation rec {
 
   src = ./.;
 
+  mkEnvironmentVariablesDhall = builtins.readFile ./environment-variables.dhall;
+  toolsetEnvPrefix = lib.replaceStrings ["-"] ["_"] (lib.toUpper toolset);
+
   dontConfigure = true;
   dontBuild = true;
   dontStrip = true;
@@ -120,10 +123,32 @@ in stdenv.mkDerivation rec {
       --set COMMAND_WRAPPER_SYSTEM_CONFIG_DIR "$out/etc" \
       --set COMMAND_WRAPPER_FACADE "''${facade}"
 
+    {
+      "''${commandWrapper}" config --dhall \
+        --let='toolset="${toolset}"' \
+        --let='TOOLSET="${toolsetEnvPrefix}"' \
+        --let="out=\"$out\"" \
+        <<'EOF'
+    ${mkEnvironmentVariablesDhall}
+    EOF
+    } \
+    | "''${commandWrapper}" config --dhall-text \
+      --output='./environment-variables.dhall.temp'
+    "''${commandWrapper}" config --dhall \
+      --let="CommandWrapper=''${commandWrapperConfigDir}/lib/CommandWrapper/package.dhall" \
+      --let="Prelude=''${commandWrapperConfigDir}/lib/Prelude/package.dhall" \
+      --let="Global=''${commandWrapperConfigDir}/environment-variables.dhall" \
+      --output="$out/etc/command-wrapper/environment-variables.dhall" \
+      < './environment-variables.dhall.temp'
+
+    source <(
+      "''${commandWrapper}" config --dhall-bash --declare=environmentVariables \
+      <<< "($out/etc/command-wrapper/environment-variables.dhall)::{=}"
+    )
     declare -r -A completions=(
-      [bash]="$out/share/bash-completion/completions/${toolset}.bash"
-      [fish]="$out/share/fish/vendor_completions.d/${toolset}.fish"
-      [zsh]="$out/share/zsh/vendor_completions/_${toolset}"
+      [bash]="''${environmentVariables["${toolsetEnvPrefix}_BASH_COMPLETION"]}"
+      [fish]="''${environmentVariables["${toolsetEnvPrefix}_FISH_COMPLETION"]}"
+      [zsh]="''${environmentVariables["${toolsetEnvPrefix}_ZSH_COMPLETION"]}"
     )
 
     for shell in "''${!completions[@]}"; do
