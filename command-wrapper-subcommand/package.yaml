@@ -61,9 +61,8 @@ dependencies:
   # build.
 
   - case-insensitive
-  - dhall >=1.31.1
-  # ^ Dhall Standard 15.0.0; Changes in `FromDhall`/`ToDhall` definitions that
-  # aren't bacward compatible.
+  - dhall >=1.33.1
+  # ^ Dhall Standard 17.0.0; deprecated Optional/fold; introduced Expector.
   - endo >=0.3.0.1
   - generic-lens
   - optparse-applicative

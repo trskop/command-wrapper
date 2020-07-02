@@ -17,7 +17,7 @@ let Shell =
       ? ../Shell/Type
 
 let ExecCommand =
-        ../ExecCommand/package.dhall sha256:5e72316f3386371404b71cb105caed6f6bab740f3f1478b7e00e620bedeedd4d
+        ../ExecCommand/package.dhall sha256:3d1f1db23e794116bfc80efad94a291087792b0a96d8f5be5b1c9276657d0663
       ? ../ExecCommand/package.dhall
 
 let ExecNamedCommand =
@@ -28,32 +28,31 @@ let default =
       { description = None Text
       , completion =
           None
-            (   ∀(shell : Shell)
-              → ∀(index : Natural)
-              → ∀(arguments : List Text)
-              → ExecCommand.Type
+            ( ∀(shell : Shell) →
+              ∀(index : Natural) →
+              ∀(arguments : List Text) →
+                ExecCommand.Type
             )
       , notifyWhen = None NotifyWhen
       }
 
 let consistency =
         assert
-      :   { Type = ExecNamedCommand, default = default }::{
+      :   { Type = ExecNamedCommand, default }::{
           , name = "echo"
           , command =
-                λ(_ : Verbosity)
-              → λ(_ : ColourOutput)
-              → λ(_ : List Text)
-              → ExecCommand::{ command = "echo", arguments = _ }
+              λ(_ : Verbosity) →
+              λ(_ : ColourOutput) →
+              λ(_ : List Text) →
+                ExecCommand::{ command = "echo", arguments = _ }
           }
-        ≡ (   default
-            ⫽ { name = "echo"
-              , command =
-                    λ(_ : Verbosity)
-                  → λ(_ : ColourOutput)
-                  → λ(_ : List Text)
-                  → ExecCommand::{ command = "echo", arguments = _ }
-              }
-          )
+        ≡   default
+          ⫽ { name = "echo"
+            , command =
+                λ(_ : Verbosity) →
+                λ(_ : ColourOutput) →
+                λ(_ : List Text) →
+                  ExecCommand::{ command = "echo", arguments = _ }
+            }
 
 in  default

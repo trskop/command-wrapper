@@ -22,23 +22,23 @@ let Shell =
       ? ../../CommandWrapper/Shell/Type
 
 let List/index =
-        ../../CommandWrapper/List/index sha256:275705f96ae6d2a2e2194489a9a3c9798fa9e7d6f7ff6847077d46efa3519e15
+        ../../CommandWrapper/List/index sha256:ef2a9b5ac2dcebc7bbde771c911903af6a41099ea8ffdb2dabe8538277afec4d
       ? ../../CommandWrapper/List/index
 
 let Optional/from =
-        ../../CommandWrapper/Optional/from sha256:8f802473931b605422b545d7b81de20dbecb38f2ae63950c13f5381865a7f012
+        ../../CommandWrapper/Optional/from sha256:5bd665b0d6605c374b3c4a7e2e2bd3b9c1e39323d41441149ed5e30d86e889ad
       ? ../../CommandWrapper/Optional/from
 
-in    λ(toolset : Text)
-    → λ(wordlist : List Text)
-    → λ(_ : Shell)
-    → λ(index : Natural)
-    → λ(words : List Text)
-    → ExecCommand::{
+in  λ(toolset : Text) →
+    λ(wordlist : List Text) →
+    λ(_ : Shell) →
+    λ(index : Natural) →
+    λ(words : List Text) →
+      ExecCommand::{
       , command = toolset
       , arguments =
           let pattern = Optional/from Text "" (List/index index Text words)
-
+          
           in    [ "--no-aliases"
                 , "--silent"
                 , "completion"

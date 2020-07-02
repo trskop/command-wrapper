@@ -128,7 +128,7 @@ in  ''
         # shellcheck disable=SC2222
         {
             ${completion}
-
+    
             ${entryPoint}
         }
     

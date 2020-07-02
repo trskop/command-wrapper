@@ -26,30 +26,33 @@ let Options =
       ? ./Options/Type
 
 let Options/toArguments =
-        ./Options/toArguments sha256:bf62e9b045237cd1c083ca58b9d562ac7612e7f8437135a190ec5e18c8e73c18
+        ./Options/toArguments sha256:c37d391b7c6c7f1f914837a89a77506f2394ccbe91e01766be7c87cd205a225c
       ? ./Options/toArguments
 
-in    λ(options : Options)
-    → λ ( connectTo
-        : { user : Optional Text, host : Text, port : Optional Natural }
-        )
-    → λ(environment : Environment)
-    → λ(extraOptions : List Text)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(options : Options) →
+    λ ( connectTo
+      : { user : Optional Text, host : Text, port : Optional Natural }
+      ) →
+    λ(environment : Environment) →
+    λ(extraOptions : List Text) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "ssh"
       , arguments =
             Options/toArguments options
-          # Optional/fold
+          # optionalFold
               Natural
               connectTo.port
               (List Text)
               (λ(_ : Natural) → [ "-p", Natural/show _ ])
               ([] : List Text)
           # extraOptions
-          # [ Optional/fold
+          # [ optionalFold
                 Text
                 connectTo.user
                 Text
@@ -58,5 +61,5 @@ in    λ(options : Options)
             ]
           # [ "--" ]
           # arguments
-      , environment = environment
+      , environment
       }

@@ -21,21 +21,20 @@ let ColourOutput =
         ../../CommandWrapper/ColourOutput/Type sha256:0ef91a3f044406ee80fc20f26127b448a0e98f46c46ec024457023d2aded8543
       ? ../../CommandWrapper/ColourOutput/Type
 
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
 
 let emptyArguments = [] : List Text
 
-in    λ(changeDirectory : Optional Text)
-    → λ(prefixArguments : List Text)
-    → λ(_ : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+in  λ(changeDirectory : Optional Text) →
+    λ(prefixArguments : List Text) →
+    λ(_ : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "yarn"
       , arguments =
-            Optional/fold
+            optionalFold
               Text
               changeDirectory
               (List Text)

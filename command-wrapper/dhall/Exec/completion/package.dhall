@@ -7,12 +7,12 @@
       ./optparse-applicative sha256:00d877d341515117d8f20b93d7119bd0342ece43d2202e01f470db73f162cb44
     ? ./optparse-applicative
 , wordlist =
-      ./wordlist sha256:6984c0f59b61ea8feed634bde8ced6f88fed27ecdf2fe89ac4467d626c370a8b
+      ./wordlist sha256:efdcacf3484aa556c5d4419e63483fb364dcb855dacf96a691ccbfef80a4d154
     ? ./wordlist
 , wrapper =
       ./wrapper sha256:2581cfe8c184898fe6b04aedad5ad9c1be34154b3a795ecab17ee19c899e5c8b
     ? ./wrapper
 , bash-completion-script-wrapper =
-      ./bash-completion-script-wrapper/package.dhall sha256:ef8edc2d55aae2dfa91e8d7aa858befd1d8f107bcb2cc260eb26bc0be840c46d
+      ./bash-completion-script-wrapper/package.dhall sha256:8f7fbe97c657d747d7cb0eb6de8d671cc37a9262196db66af236fc03f6ae2278
     ? ./bash-completion-script-wrapper/package.dhall
 }

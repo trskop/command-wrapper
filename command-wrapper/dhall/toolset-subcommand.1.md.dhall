@@ -19,8 +19,8 @@ let Options =
       }
 
 let template =
-        λ(options : Options.Type)
-      → ''
+      λ(options : Options.Type) →
+        ''
         % ${options.toolset.upper}-${options.subcommand.upper}(1) ${options.toolset.name} Toolset ${options.toolset.version} | ${options.toolset.name} Toolset
         % ${options.name}
         % ${options.date}

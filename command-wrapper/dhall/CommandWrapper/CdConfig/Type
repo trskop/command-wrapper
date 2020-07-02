@@ -19,9 +19,9 @@ let CdConfig
       , shell : Optional Text
       , terminalEmulator :
           Optional
-            (   ∀(directory : Text)
-              → ∀(command : Optional Command)
-              → CommandWithEnvironment
+            ( ∀(directory : Text) →
+              ∀(command : Optional Command) →
+                CommandWithEnvironment
             )
       }
 

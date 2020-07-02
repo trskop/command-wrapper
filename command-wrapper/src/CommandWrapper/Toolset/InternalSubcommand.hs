@@ -176,7 +176,7 @@ run mainHelp appNames@AppNames{names} = \case
         -- This is a hacky way how to print Dhall Standard that Dhall library
         -- is using.  Unfortunately there is no nicer alternative at the
         -- moment.
-        , dhallStandard = Subcommand.PrettyVersion (makeVersion [16, 0, 0])
+        , dhallStandard = Subcommand.PrettyVersion (makeVersion [17, 0, 0])
         }
 
     completionConfig = Subcommand.CompletionConfig

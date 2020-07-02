@@ -33,85 +33,90 @@ packages:
   original:
     hackage: verbosity-0.4.0.0
 - completed:
-    hackage: prettyprinter-1.6.1@sha256:11876ec94a79048e1d2942a99bfaa6f2be5222eafeedac6a9545673a79465009,5459
+    hackage: prettyprinter-1.6.2@sha256:d9fa76aebce33c5c179a66128dfb5639e9257325d11c68569c6574dd8e112cde,5459
     pantry-tree:
       size: 2194
-      sha256: b8ddc48e267da0bc8da3082929b478df80c3c986865394f93e7bc7631c0031cf
+      sha256: d84bf9b50055f5fff831f48b447737eb41bfff144352b6a0c6dee08b43d04d96
   original:
-    hackage: prettyprinter-1.6.1
+    hackage: prettyprinter-1.6.2
 - completed:
-    hackage: dhall-1.32.0@sha256:fbc63ca82b1b3992b2a0a80f88296279d41816d8c7fe72c6f8526f28b75c786b,33352
+    hackage: dhall-1.33.1@sha256:642dea3b0d9154eafb7967589817048bcd1b2f08cf0df44a8cddf476d032c08a,33324
     pantry-tree:
-      size: 284132
-      sha256: 2beb33a51a5330026022af2021ed2f74a075a8bb48997b7ed4ed4c402fa72a34
+      size: 283503
+      sha256: e5e07c5fa0c75a5098b9470741a0b0c50d484495e1c1e3e38bc262d4123a490f
   original:
-    hackage: dhall-1.32.0
+    hackage: dhall-1.33.1
 - completed:
-    hackage: dhall-bash-1.0.30@sha256:e234788d287711592c1b97d16fdebfc435aa9ee779dbfae43869ba56e2cc8453,1848
+    hackage: dhall-bash-1.0.31@sha256:cd99fe329f03315269fee2e0562f2dc2ec1d6227ea42af445374458e143e4eb7,1848
     pantry-tree:
       size: 266
-      sha256: df8e91d57121cfd8fc4f269ccc5eb7096409cd9c7826a7797fa162992ed08757
+      sha256: 4aeef2237acdf70c54b718e57dfe61b8cfadba25280bde904460a07d9b4073eb
   original:
-    hackage: dhall-bash-1.0.30
+    hackage: dhall-bash-1.0.31
 - completed:
-    hackage: dhall-json-1.6.4@sha256:0096d910f0f15c7ad73ceecc04861491d51e7596914d9fb503dc31c1b91cd5b2,4469
+    hackage: dhall-json-1.7.0@sha256:1512b0783407796f610ad4954fa13abe0e484b7f4f6f5488cb0e25062f2379f5,4597
     pantry-tree:
-      size: 4122
-      sha256: d0510e7238f0077a2c685db466cd475ac8b88d5acb27ed0db1d6fe6783a68393
+      size: 5299
+      sha256: 135873df71073467f68c07ef30c2284bb00ee479d96a29a11afef3cc551e1538
   original:
-    hackage: dhall-json-1.6.4
+    hackage: dhall-json-1.7.0
 - completed:
-    hackage: aeson-yaml-1.0.6.0@sha256:bdf6d67265d9a3e251122fa53d2f0f19e0b9865d928e5d6efb77d4754ca3f6cb,1975
+    hackage: aeson-yaml-1.1.0.0@sha256:36cfdda776a43b0aa0e108c4632e0f007fa5c651e7294c57cbe2a508191808c4,1975
     pantry-tree:
       size: 451
-      sha256: 959322f98d04221b5680efafb75a9009fd3c5a2d737d46330be9c466091619f7
+      sha256: ef06a97bc0974a4a3d78623ff25c22e82d6962eb7cdc6e1a72e16f8d02557f45
   original:
-    hackage: aeson-yaml-1.0.6.0
+    hackage: aeson-yaml-1.1.0.0
 - completed:
-    cabal-file:
-      size: 2396
-      sha256: b6ae849b61ecb266c73a4313034afb253efb55e93449ac5d288a794d040cdbe7
+    hackage: repline-0.4.0.0@sha256:3324479e497d27c40c3d4762bffc52058f9921621d20d2947dcf9a554b94cd0d,2253
+    pantry-tree:
+      size: 564
+      sha256: bff43f9a5b0a212c29c12e2e22b528d9071b2a7d13489ce5bdc54ae9eac853cf
+  original:
+    hackage: repline-0.4.0.0
+- completed:
+    hackage: haskeline-0.8.0.0@sha256:0630452b759a5b40e0e3e7ca2ef4b0d55d5161d95e8d7b0dd3cf55888971437f,5440
+    pantry-tree:
+      size: 3013
+      sha256: 235d9b78cb87e21651fd36421c30ff4e0638e463fac7ec8b70887db06c3ff88f
+  original:
+    hackage: haskeline-0.8.0.0
+- completed:
     name: host-and-port
     version: 0.0.1.0
     git: https://github.com/trskop/host-and-port.git
     pantry-tree:
-      size: 815
-      sha256: f338f7c749df41bd203ea29954d740bd75e682362686a6b97a1f0ce3f79efc29
-    commit: 67a38bd04c7385542706da7d80822b1a35e76322
+      size: 1441
+      sha256: 82b0e7c5c53f46c27e01340d13613f503653ae7f5b7e4a7faa59106270ca400d
+    commit: f0ac77ce78887dbce9a140cf39ea6af801dd2438
   original:
     git: https://github.com/trskop/host-and-port.git
-    commit: 67a38bd04c7385542706da7d80822b1a35e76322
+    commit: f0ac77ce78887dbce9a140cf39ea6af801dd2438
 - completed:
-    cabal-file:
-      size: 2046
-      sha256: 242daa559f7971649439ed47c47b7d947cdbd1df6912e8ae142604984749a291
     name: mainplate
     version: 0.0.1.0
     git: https://github.com/trskop/mainplate.git
     pantry-tree:
-      size: 2031
-      sha256: 003139778b8640ee5af478006a63786a293e0b9a5b2814b1d91bb9a9941a0905
-    commit: b6ac83b01434031522893bb4906ef4971c3d6e3f
+      size: 2193
+      sha256: 9b67304242400d5ea10b3418b944f367d593a555f4e2f3b0c04404eed9cb743d
+    commit: 6ed414df4a5f649a2b773f12487de79792a9861c
   original:
     git: https://github.com/trskop/mainplate.git
-    commit: b6ac83b01434031522893bb4906ef4971c3d6e3f
+    commit: 6ed414df4a5f649a2b773f12487de79792a9861c
 - completed:
-    cabal-file:
-      size: 1473
-      sha256: 7a69e28a52a5c9d4bf98c95ea2c256b74025afda9b349df932a183f91c45bc4c
     name: open-in-editor
     version: 0.1.0.0
     git: https://github.com/trskop/open-in-editor.git
     pantry-tree:
-      size: 817
-      sha256: 9aed723b3590b92e89b644e394d682bc0b83215163bc5b56b047f05d27a0e95f
-    commit: 003e0c7c32628ee27332becfab92b62cad194163
+      size: 941
+      sha256: 27b2f4d8ed1e3d1ace888212cb9bdc8a03f67d9b502ac8053db4b0b5f8b30cdf
+    commit: b8db3c09e1e05d4b61fa028c8d1a3ee8dc4b4ba8
   original:
     git: https://github.com/trskop/open-in-editor.git
-    commit: 003e0c7c32628ee27332becfab92b62cad194163
+    commit: b8db3c09e1e05d4b61fa028c8d1a3ee8dc4b4ba8
 snapshots:
 - completed:
-    size: 494635
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/12.yaml
-    sha256: a71c4293d8f461f455ff0d9815dfe4ab2f1adacd7e0bbc9a218f46ced8c4929a
-  original: lts-15.12
+    size: 496120
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/16.yaml
+    sha256: cf30623a2c147f51eecc8f9d6440f5d1b671af21380505e633faff32b565f3d5
+  original: lts-15.16

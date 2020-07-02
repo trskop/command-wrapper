@@ -4,10 +4,6 @@ let Editor =
         ../Editor/Type sha256:c23fce3a760911fd7d8822dffdd537cfb45d1095f44a091d6fb2c7115cd735b0
       ? ../Editor/Type
 
-let FileTemplate =
-        ../FileTemplate/Type sha256:3a6737fe50049fbc72985543a09ca8911602b4800139e6140a813e4378eba9d7
-      ? ../FileTemplate/Type
-
 let SkelLanguage =
         ./SkelLanguage sha256:9756f293780a9da48ed4c81914fd65f64ad1b2bbd1006ebafe3eded645806790
       ? ./SkelLanguage

@@ -11,9 +11,9 @@ let ColourOutput/fold =
       ? ../../CommandWrapper/ColourOutput/fold
 
 let colourOutputOptions
-    :   { Always : List Text, Auto : List Text, Never : List Text }
-      → ColourOutput
-      → List Text
+    : { Always : List Text, Auto : List Text, Never : List Text } →
+      ColourOutput →
+        List Text
     = ColourOutput/fold (List Text)
 
 let example =

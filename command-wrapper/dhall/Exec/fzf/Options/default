@@ -39,11 +39,11 @@ let Options/default =
       , historySize = None Natural
       , previewCommand = None Text
       , previewWindowOptions =
-          { position = None < Up | Down | Left | Right >
-          , size = None < Lines : Natural | Percentage : Natural >
-          , wrapLines = False
-          , startHidden = False
-          }
+        { position = None < Up | Down | Left | Right >
+        , size = None < Lines : Natural | Percentage : Natural >
+        , wrapLines = False
+        , startHidden = False
+        }
       , query = None Text
       , select1 = None Bool
       , exit0 = None Bool

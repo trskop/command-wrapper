@@ -8,7 +8,7 @@ let constructor =
         ./constructor sha256:e907e9f13aa8b748c276592cd37ca6d67d9429cab9957355d14b9980ede3e6b7
       ? ./constructor
 
-let singleton = λ(a : Type) → λ(head : a) → (constructor a)::{ head = head }
+let singleton = λ(a : Type) → λ(head : a) → (constructor a)::{ head }
 
 let example0 =
       assert : singleton Natural 0 ≡ (constructor Natural)::{ head = 0 }

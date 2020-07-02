@@ -17,17 +17,6 @@ let Verbosity =
         ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
       ? ../../CommandWrapper/Verbosity/Type
 
-let EnvironmentVariable =
-        ../../CommandWrapper/EnvironmentVariable/Type sha256:b8c3c0c4ceb36ba4e6674df5de20ad1d97e120b93b9ce9914a41d0036770dcc4
-      ? ../../CommandWrapper/EnvironmentVariable/Type
-
-let ColourOutput/toText =
-        ( ../../CommandWrapper/ColourOutput/package.dhall sha256:ab063b4e29e5237c1bbb2c4ed07ed3cc80096c9cd2f9978d727d81ac1f1c8c68
-        ).toText
-      ? (   ../../CommandWrapper/ColourOutput/package.dhall sha256:8fd5555f273cd4424f8fe2003154c4e36ea657bb5a2642d3677c4756b14c32e8
-          ? ../../CommandWrapper/ColourOutput/package.dhall
-        ).toText
-
 let Verbosity/fold =
         ../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
       ? ../../CommandWrapper/Verbosity/fold
@@ -50,15 +39,15 @@ let Options =
       ? ./Options/Type
 
 let Options/toArguments =
-        ./Options/toArguments sha256:2ec13c92b49f2238b0b0af9df65174c4bdc1bfba5baac87d568f08cb54bba1a5
+        ./Options/toArguments sha256:378f10f92fda1dedf67914020e2bd332e1fff495b9a32dc15a1a01ef0e82a30b
       ? ./Options/toArguments
 
-in    λ(options : Options)
-    → λ(args : List Text)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+in  λ(options : Options) →
+    λ(args : List Text) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "stack"
       , arguments =
             verbosityOption verbosity

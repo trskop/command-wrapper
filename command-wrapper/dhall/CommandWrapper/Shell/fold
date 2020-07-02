@@ -4,7 +4,7 @@ let Shell =
         ./Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
       ? ./Type
 
-in    λ(r : Type)
-    → λ(mapping : { Bash : r, Fish : r, Zsh : r })
-    → λ(shell : Shell)
-    → merge mapping shell
+in  λ(r : Type) →
+    λ(mapping : { Bash : r, Fish : r, Zsh : r }) →
+    λ(shell : Shell) →
+      merge mapping shell

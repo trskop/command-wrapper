@@ -4,10 +4,9 @@ let Action =
         ./Type sha256:ebe44424cf93ffc0e67bbc651e5fea563e1f88a5b9a2bac59589adb0228b193d
       ? ./Type
 
-let toArguments
-    : ∀(action : Action) → List Text
-    =   λ(action : Action)
-      →   [     "--action="
+let toArguments =
+      λ(action : Action) →
+          [     "--action="
             ++  merge
                   { View = "view"
                   , Cat = "cat"
@@ -20,4 +19,4 @@ let toArguments
           ]
         : List Text
 
-in  toArguments
+in  toArguments : ∀(action : Action) → List Text

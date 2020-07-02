@@ -26,14 +26,14 @@ let Options =
       ? ./Options/Type
 
 let Options/toArguments =
-        ./Options/toArguments sha256:5e0c4a63e79bf06eda49498ddab67df471a6c03fe827006682475d549a0301ef
+        ./Options/toArguments sha256:3c9a02e06f92fd798cd65e4c21a430c902abdc8f0d8a54d696f236cf5b754902
       ? ./Options/toArguments
 
-in    λ(options : Options)
-    → λ(_ : Verbosity)
-    → λ(_ : ColourOutput)
-    → λ(extraArguments : List Text)
-    → ExecCommand::{
+in  λ(options : Options) →
+    λ(_ : Verbosity) →
+    λ(_ : ColourOutput) →
+    λ(extraArguments : List Text) →
+      ExecCommand::{
       , command = "fzy"
       , arguments = Options/toArguments options # extraArguments
       }

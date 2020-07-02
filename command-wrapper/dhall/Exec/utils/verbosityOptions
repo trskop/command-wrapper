@@ -11,13 +11,13 @@ let Verbosity/fold =
       ? ../../CommandWrapper/Verbosity/fold
 
 let verbosityOptions
-    :   { Silent : List Text
-        , Normal : List Text
-        , Verbose : List Text
-        , Annoying : List Text
-        }
-      → Verbosity
-      → List Text
+    : { Silent : List Text
+      , Normal : List Text
+      , Verbose : List Text
+      , Annoying : List Text
+      } →
+      Verbosity →
+        List Text
     = Verbosity/fold (List Text)
 
 let example =

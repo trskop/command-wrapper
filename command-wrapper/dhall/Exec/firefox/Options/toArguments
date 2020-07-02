@@ -1,7 +1,7 @@
 -- vim: filetype=dhall
 
 let concatMap =
-      https://prelude.dhall-lang.org/v12.0.0/List/concatMap sha256:3b2167061d11fda1e4f6de0522cbe83e0d5ac4ef5ddf6bb0b2064470c5d3fb64
+      https://prelude.dhall-lang.org/v17.0.0/List/concatMap sha256:3b2167061d11fda1e4f6de0522cbe83e0d5ac4ef5ddf6bb0b2064470c5d3fb64
 
 let Options =
         ./Type sha256:4218eca485cf5468c78dd8b7e1efdc27f2e8520c8fa1ac421063d28fa0d97f3d
@@ -31,14 +31,17 @@ let Open/toArguments =
         ../Open/toArguments sha256:0295987ff77f174d5935f3b501ec05c620513cd1973d64ca56fee62f1650005a
       ? ../Open/toArguments
 
-in    λ(options : Options)
-    →   Optional/fold
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(options : Options) →
+        optionalFold
           Profile
           options.profile
           (List Text)
           Profile/toArguments
           ([] : List Text)
-      # Optional/fold
+      # optionalFold
           Remote
           options.remote
           (List Text)

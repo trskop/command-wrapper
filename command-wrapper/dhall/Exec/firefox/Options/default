@@ -19,6 +19,6 @@ let Options =
 let default =
       { profile = None Profile, remote = None Remote, open = [] : List Open }
 
-let consistency = { Type = Options, default = default }::{=} ≡ default
+let consistency = assert : { Type = Options, default }::{=} ≡ default
 
 in  default

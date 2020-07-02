@@ -16,6 +16,7 @@ import Prelude
 
 import Control.Monad (unless)
 import Data.Functor ((<&>))
+import Data.Foldable (for_)
 import Data.Maybe (fromJust)
 import System.Exit (ExitCode(..))
 import System.IO (hClose, hGetContents, hPutStr)
@@ -23,9 +24,10 @@ import System.IO (hClose, hGetContents, hPutStr)
 import Control.DeepSeq (deepseq)
 import Data.CallStack (HasCallStack)
 import Test.Tasty (TestTree, defaultMain, localOption, testGroup)
-import Test.Tasty.HUnit ((@?=), testCase, assertFailure)
+import Test.Tasty.HUnit ((@?=), testCase, assertEqual, assertFailure)
 import Test.Tasty.Options (parseValue)
 import Test.Tasty.Program (CatchStderr, testProgram)
+import System.FilePath.Glob (glob)
 import System.Process (runInteractiveProcess, waitForProcess)
 
 import CommandWrapper.Toolset.InternalSubcommand.Completion.Libraries
@@ -51,7 +53,15 @@ main = defaultMain $ testGroup "CommandWrapper.Tests"
 
 testDhallLibraries :: [TestTree]
 testDhallLibraries = concat
-    [ [ testCase "CommandWrapper lib is hashed correctly" do
+    [ [ testCase "package.dhall files are consistent" do
+            files <- glob "dhall/**/package.dhall"
+            for_ files \packageDhall -> do
+                actualHash <- dhallHash ["--no-cache", "--input=" <> packageDhall] ""
+                expectedHash <- dhallHash ["--input=" <> packageDhall] ""
+
+                assertEqual packageDhall expectedHash actualHash
+
+      , testCase "CommandWrapper lib is hashed correctly" do
             let pkgFile = "./dhall/CommandWrapper/package.dhall"
             actualHash <- dhallHash ["--no-cache", "--input=" <> pkgFile] ""
             expectedHash <- dhallHash ["--input=" <> pkgFile] ""
@@ -104,11 +114,7 @@ testDhallLibraries = concat
             actualHash @?= expectedHash
 
     , [Content, Import] <&> testDhallLibrary LatestPrelude
-    , [Content, Import] <&> testDhallLibrary PreludeV16_0_0
-    , [Content, Import] <&> testDhallLibrary PreludeV15_0_0
-    , [Content, Import] <&> testDhallLibrary PreludeV14_0_0
-    , [Content, Import] <&> testDhallLibrary PreludeV13_0_0
-    , [Content, Import] <&> testDhallLibrary PreludeV12_0_0
+    , [Content, Import] <&> testDhallLibrary PreludeV17_0_0
     ]
 
 dhallLibOption :: DhallLibrary -> String
@@ -130,41 +136,21 @@ testDhallLibrary lib importOrContent =
         (actualHash <> "\n") @?= expectedHash
   where
     libName = (\v -> unwords ["Prelude", v, show importOrContent]) case lib of
-        PreludeV12_0_0     -> "v12.0.0"
-        PreludeV13_0_0     -> "v13.0.0"
-        PreludeV14_0_0     -> "v14.0.0"
-        PreludeV15_0_0     -> "v15.0.0"
-        PreludeV16_0_0     -> "v16.0.0"
-        LatestPrelude      -> "latest (v16.0.0)"
+        PreludeV17_0_0     -> "v17.0.0"
+        LatestPrelude      -> "latest (v17.0.0)"
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
     actualHash = case lib of
-        PreludeV12_0_0     -> v12_0_0
-        PreludeV13_0_0     -> v13_0_0
-        PreludeV14_0_0     -> v14_0_0
-        PreludeV15_0_0     -> v15_0_0
-        PreludeV16_0_0     -> v16_0_0
-        LatestPrelude      -> v16_0_0
+        PreludeV17_0_0     -> v17_0_0
+        LatestPrelude      -> v17_0_0
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
     notTestable =  error ("Not designed to test this library " <> show lib)
 
-    v12_0_0 =
-        "sha256:aea6817682359ae1939f3a15926b84ad5763c24a3740103202d2eaaea4d01f4c"
-
-    v13_0_0 =
-        "sha256:4aa8581954f7734d09b7b21fddbf5d8df901a44b54b4ef26ea71db92de0b1a12"
-
-    v14_0_0 =
-        "sha256:c1b3fc613aabfb64a9e17f6c0d70fe82016a030beedd79851730993e9083fde2"
-
-    v15_0_0 =
-        "sha256:6b90326dc39ab738d7ed87b970ba675c496bed0194071b332840a87261649dcd"
-
-    v16_0_0 =
-        "sha256:7e2b87add393288298baabc73119601182d04630b9989bdb9ac0822dc0863b38"
+    v17_0_0 =
+        "sha256:10db3c919c25e9046833df897a8ffe2701dc390fa0893d958c3430524be5a43e"
 
 callCommandWrapper
     :: HasCallStack

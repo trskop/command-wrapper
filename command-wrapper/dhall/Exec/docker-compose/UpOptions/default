@@ -6,7 +6,6 @@ let UpOptions =
 
 let default = { noColour = False, buildImages = None Bool, detach = False }
 
-let consistency =
-      assert : { Type = UpOptions, default = default }::{=} ≡ default
+let consistency = assert : { Type = UpOptions, default }::{=} ≡ default
 
 in  default

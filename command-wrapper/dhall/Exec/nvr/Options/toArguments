@@ -17,14 +17,14 @@ let Action/toArguments =
       ? ../Action/toArguments
 
 let optionalOptions =
-        ../../utils/optionalOptions sha256:f9626a1ef8209d45703cc7ac05aee40c9e96f5ccc2c406cdbd68eafd6d3234f0
+        ../../utils/optionalOptions sha256:51a1fbb37ceddab8f0ff0ef0fe2cd910af960bd447c6bcbc01b23426c0ee74f8
       ? ../../utils/optionalOptions
 
 let noArguments = [] : List Text
 
 let Options/toArguments =
-        λ(opts : Options)
-      →   (if opts.silent then [ "-s" ] else noArguments)
+      λ(opts : Options) →
+          (if opts.silent then [ "-s" ] else noArguments)
         # (if opts.nostart then [ "--nostart" ] else noArguments)
         # (if opts.diffMode then [ "-d" ] else noArguments)
         # (if opts.previousWindow then [ "-l" ] else noArguments)
@@ -45,11 +45,8 @@ let test0 =
             { Type = Options, default = Options/default }::{
             , silent = True
             , nostart = True
-            , action =
-                Some
-                  ( Action.Split
-                      { vertical = True, files = [ "./foo", "./bar" ] }
-                  )
+            , action = Some
+                (Action.Split { vertical = True, files = [ "./foo", "./bar" ] })
             }
         ≡ [ "-s", "--nostart", "-O", "./foo", "./bar" ]
 

@@ -5,7 +5,7 @@ let NonEmpty =
       ? ./Type
 
 let null =
-        https://prelude.dhall-lang.org/v12.0.0/List/null sha256:2338e39637e9a50d66ae1482c0ed559bbcc11e9442bfca8f8c176bbcd9c4fc80
+      https://prelude.dhall-lang.org/v17.0.0/List/null sha256:2338e39637e9a50d66ae1482c0ed559bbcc11e9442bfca8f8c176bbcd9c4fc80
 
 let isSingleton = λ(a : Type) → λ(nonEmpty : NonEmpty a) → null a nonEmpty.tail
 

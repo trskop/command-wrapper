@@ -26,8 +26,8 @@ let emptyEnvironment =
       ? ../Environment/empty
 
 let fromCommand =
-        λ(command : Command.Type)
-      → CommandWithEnvironment::{
+      λ(command : Command.Type) →
+        CommandWithEnvironment::{
         , command = command.command
         , arguments = command.arguments
         }

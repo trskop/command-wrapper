@@ -12,7 +12,6 @@ let default =
       , workingDirectory = None Text
       }
 
-let consistency =
-      assert : { Type = ExecOptions, default = default }::{=} ≡ default
+let consistency = assert : { Type = ExecOptions, default }::{=} ≡ default
 
 in  default

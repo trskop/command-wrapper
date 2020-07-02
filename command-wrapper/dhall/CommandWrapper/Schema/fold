@@ -5,13 +5,13 @@ let Schema =
       ? ./Type
 
 let foldSchema
-    :   ∀(r : Type)
-      → ∀(handler : { Http : r, Https : r })
-      → ∀(schema : Schema)
-      → r
-    =   λ(r : Type)
-      → λ(handler : { Http : r, Https : r })
-      → λ(schema : Schema)
-      → merge handler schema
+    : ∀(r : Type) →
+      ∀(handler : { Http : r, Https : r }) →
+      ∀(schema : Schema) →
+        r
+    = λ(r : Type) →
+      λ(handler : { Http : r, Https : r }) →
+      λ(schema : Schema) →
+        merge handler schema
 
 in  foldSchema

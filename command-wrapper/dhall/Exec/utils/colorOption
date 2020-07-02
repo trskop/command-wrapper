@@ -14,8 +14,8 @@ let ColourOutput/toText =
 
 let colorOption
     : ColourOutput → Text
-    =   λ(colourOutput : ColourOutput)
-      → "--color=${ColourOutput/toText colourOutput}"
+    = λ(colourOutput : ColourOutput) →
+        "--color=${ColourOutput/toText colourOutput}"
 
 let example0 = assert : colorOption ColourOutput.Always ≡ "--color=always"
 

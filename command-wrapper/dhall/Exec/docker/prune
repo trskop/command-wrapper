@@ -31,19 +31,19 @@ let GlobalOptions
       ? ./GlobalOptions/Type
 
 let GlobalOptions/toArguments =
-        ./GlobalOptions/toArguments sha256:150c73831857ece522d3f066554ad2883e36ceb2f98bf85947c8eacf0e09cb0b
+        ./GlobalOptions/toArguments sha256:fcbb4e1a71fe47521226f224f04c34a148da87867c3f39c7a75b3b83bc005a77
       ? ./GlobalOptions/toArguments
 
-in    λ(globalOptions : GlobalOptions)
-    → λ(environment : Environment)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+in  λ(globalOptions : GlobalOptions) →
+    λ(environment : Environment) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "docker"
       , arguments =
             GlobalOptions/toArguments globalOptions
           # [ "system", "prune", "--volumes" ]
           # arguments
-      , environment = environment
+      , environment
       }

@@ -7,7 +7,7 @@
       ./constructor sha256:e907e9f13aa8b748c276592cd37ca6d67d9429cab9957355d14b9980ede3e6b7
     ? ./constructor
 , fromList =
-      ./fromList sha256:34433341afa0d4b487710beca4c74853a839cd610d2cf3281c4da62bab3969ef
+      ./fromList sha256:30c3106910f497054ab5e99ab6400c09112f962c88517852d79cd853ea7284c3
     ? ./fromList
 , toList =
       ./toList sha256:0977fe14b77232a4451dcf409c43df4589c4b3cdde7b613aab8df183be1b53f5

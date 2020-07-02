@@ -13,18 +13,21 @@ let ConnectTo =
       ? ../ConnectTo/Type
 
 let ConnectTo/toText =
-        λ(connectTo : ConnectTo)
-      → "${connectTo.host}:${Natural/show connectTo.port}"
+      λ(connectTo : ConnectTo) →
+        "${connectTo.host}:${Natural/show connectTo.port}"
+
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
 
 let hostAndPort =
-        λ(_ : { host : Optional Text, port : Natural })
-      →     Optional/fold Text _.host Text (λ(_ : Text) → _ ++ ":") ""
+      λ(_ : { host : Optional Text, port : Natural }) →
+            optionalFold Text _.host Text (λ(_ : Text) → _ ++ ":") ""
         ++  Natural/show _.port
 
 let toArguments =
-        λ(option : Text)
-      → λ(forwarding : ForwardingOptions)
-      → [ option
+      λ(option : Text) →
+      λ(forwarding : ForwardingOptions) →
+        [ option
         ,     merge
                 { HostAndPort = hostAndPort
                 , UnixSocket = λ(_ : { path : Text }) → _.path

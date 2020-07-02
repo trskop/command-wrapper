@@ -3,8 +3,8 @@
 -- Generate `~/.bashrc` snippet that caches Command Wrapper completion script.
 -- See top-level `README.md` file for more information.
 
-  λ(toolsetNames : List Text)
-→ let toolsets =
+λ(toolsetNames : List Text) →
+  let toolsets =
         List/fold
           Text
           toolsetNames

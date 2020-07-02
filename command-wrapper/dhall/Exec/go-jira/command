@@ -32,11 +32,11 @@ let Options/toArguments =
         ./Options/toArguments sha256:9e5ab9eea52620285634c86b4be5aee37f28147b5c6efeaf287d23e86994c15b
       ? ./Options/toArguments
 
-in    λ(options : Options)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+in  λ(options : Options) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "jira"
       , arguments = Options/toArguments options verbosity # arguments
       , environment = [ { name = "JIRA_API_TOKEN", value = options.token } ]

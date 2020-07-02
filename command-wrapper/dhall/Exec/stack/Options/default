@@ -6,6 +6,6 @@ let Options =
 
 let default = { workingDirectory = None Text, stackYaml = None Text }
 
-let consistency = assert : { Type = Options, default = default }::{=} ≡ default
+let consistency = assert : { Type = Options, default }::{=} ≡ default
 
 in  default

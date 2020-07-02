@@ -1,6 +1,6 @@
 -- vim: filetype=dhall
 
 { command =
-      ./command sha256:9a607a50f5fd61ade2ca13027c4ca95d293f2969981d23e3ec5ad01c33bbf320
+      ./command sha256:147b9ddf23bc9baf13d7d32eaeef609d380ea196c7767694ef3667cfc73065a7
     ? ./command
 }

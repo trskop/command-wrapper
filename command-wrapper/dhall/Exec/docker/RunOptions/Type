@@ -6,4 +6,4 @@ let ExecOptions =
 
 let RunOptions = ExecOptions ⩓ { remove : Bool }
 
-in  RunOptions
+in  RunOptions : Type

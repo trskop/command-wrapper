@@ -9,7 +9,7 @@ let SubcommandAlias =
       ? ../SubcommandAlias/Type
 
 let List/map =
-      https://prelude.dhall-lang.org/v12.0.0/List/map sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680
+      https://prelude.dhall-lang.org/v17.0.0/List/map sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680
 
 let namedCommandToAlias =
         ./namedCommandToAlias sha256:b20a98d13a84f3866aee69661df9bc640c934260fcba6add4d0a1491ecc708fa

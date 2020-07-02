@@ -35,7 +35,6 @@ let default =
         }
       : ToolsetConfig
 
-let consistency =
-      assert : { Type = ToolsetConfig, default = default }::{=} ≡ default
+let consistency = assert : { Type = ToolsetConfig, default }::{=} ≡ default
 
 in  default

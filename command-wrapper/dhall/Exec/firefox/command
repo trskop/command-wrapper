@@ -29,16 +29,16 @@ let Options =
       ? ./Options/Type
 
 let Options/toArguments =
-        ./Options/toArguments sha256:c72d89caaf8ea05f1a94f7881714dd81e6731a068b5bf00e9abfda530fcbf42f
+        ./Options/toArguments sha256:388f94620728e293ffd5d6c74b4205d8b7fc506ff522093cfd3b04ae7105bad9
       ? ./Options/toArguments
 
-in    λ(options : Options)
-    → λ(environment : Environment)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+in  λ(options : Options) →
+    λ(environment : Environment) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "firefox"
       , arguments = Options/toArguments options # arguments
-      , environment = environment
+      , environment
       }

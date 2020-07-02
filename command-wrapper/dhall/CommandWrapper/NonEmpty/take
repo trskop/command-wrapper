@@ -5,21 +5,21 @@ let NonEmpty =
       ? ./Type
 
 let List/take =
-        https://prelude.dhall-lang.org/v12.0.0/List/take sha256:b3e08ee8c3a5bf3d8ccee6b2b2008fbb8e51e7373aef6f1af67ad10078c9fbfa
+      https://prelude.dhall-lang.org/v17.0.0/List/take sha256:b3e08ee8c3a5bf3d8ccee6b2b2008fbb8e51e7373aef6f1af67ad10078c9fbfa
 
 let take =
-        λ(n : Natural)
-      → λ(a : Type)
-      → λ(nonEmpty : NonEmpty a)
-      → List/take n a ([ nonEmpty.head ] # nonEmpty.tail)
+      λ(n : Natural) →
+      λ(a : Type) →
+      λ(nonEmpty : NonEmpty a) →
+        List/take n a ([ nonEmpty.head ] # nonEmpty.tail)
 
 let example0 =
-      assert : take 0 Natural { head = 0, tail = [ 1, 2 ] } ≡ ([] : List Natural)
+        assert
+      : take 0 Natural { head = 0, tail = [ 1, 2 ] } ≡ ([] : List Natural)
 
 let example1 = assert : take 1 Natural { head = 0, tail = [ 1, 2 ] } ≡ [ 0 ]
 
 let example2 =
-        assert
-      : take 4 Natural { head = 0, tail = [ 1, 2 ] } ≡ [0, 1, 2]
+      assert : take 4 Natural { head = 0, tail = [ 1, 2 ] } ≡ [ 0, 1, 2 ]
 
 in  take : Natural → ∀(a : Type) → NonEmpty a → List a

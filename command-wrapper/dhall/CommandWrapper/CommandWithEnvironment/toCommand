@@ -13,5 +13,5 @@ let Command
     =   ../Command/Type sha256:81b4cf2d0952d4a805a40ef1ccc82b28a1d339586f2d44c565ee263457696219
       ? ../Command/Type
 
-in    λ(commandWithEnvironment : CommandWithEnvironment)
-    → commandWithEnvironment.{ command, arguments } : Command
+in  λ(commandWithEnvironment : CommandWithEnvironment) →
+      commandWithEnvironment.{ command, arguments } : Command

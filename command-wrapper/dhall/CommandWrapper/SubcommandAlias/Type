@@ -1,14 +1,10 @@
 -- vim: filetype=dhall
 
 let SubcommandAlias =
-      { alias :
-          Text
-      , description :
-          Optional Text
-      , command :
-          Text
-      , arguments :
-          List Text
+      { alias : Text
+      , description : Optional Text
+      , command : Text
+      , arguments : List Text
       }
 
 in  SubcommandAlias : Type

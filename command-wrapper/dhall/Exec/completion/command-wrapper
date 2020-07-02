@@ -24,16 +24,16 @@ let Shell/toText =
         ../../CommandWrapper/Shell/toText sha256:ac2b3762009ee945aac998034d4b44cb47fff0593df4547c9423dd62e54e92d4
       ? ../../CommandWrapper/Shell/toText
 
-in    λ(command : Text)
-    → λ(prefixArguments : List Text)
-    → λ(shell : Shell)
-    → λ(index : Natural)
-    → λ(words : List Text)
-    → ExecCommand::{
-      , command = command
+in  λ(command : Text) →
+    λ(prefixArguments : List Text) →
+    λ(shell : Shell) →
+    λ(index : Natural) →
+    λ(words : List Text) →
+      ExecCommand::{
+      , command
       , arguments =
           let adjustedIndex = index + List/length Text prefixArguments
-
+          
           in    [ "--index=${Natural/show adjustedIndex}"
                 , "--shell=${Shell/toText shell}"
                 , "--"

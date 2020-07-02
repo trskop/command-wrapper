@@ -12,9 +12,9 @@ let Options =
         ./Type sha256:135e4bd85be7cebe6763f6f468474cf4a0ca24e225b872e30a253278af02bb65
       ? ./Type
 
-in    λ(options : Options)
-    → λ(verbosity : Verbosity)
-    →   [ "--endpoint=${options.baseUrl}"
+in  λ(options : Options) →
+    λ(verbosity : Verbosity) →
+        [ "--endpoint=${options.baseUrl}"
         , "--login=${options.login}"
         , "--user=${options.user}"
         ]

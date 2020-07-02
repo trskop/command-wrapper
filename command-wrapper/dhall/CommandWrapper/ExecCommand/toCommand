@@ -15,6 +15,6 @@ let ExecCommand/toCommandWithEnvironment =
         ./toCommandWithEnvironment sha256:1c3d6b32396f8767987634599628371e4fa85b28bdcde1cf0f40e96e182c1097
       ? ./toCommandWithEnvironment
 
-in    λ(execCommand : ExecCommand)
-    → CommandWithEnvironment/toCommand
+in  λ(execCommand : ExecCommand) →
+      CommandWithEnvironment/toCommand
         (ExecCommand/toCommandWithEnvironment execCommand)

@@ -6,11 +6,11 @@ let RunOptions
       ? ./Type
 
 let ExecOptions/toArguments =
-        ../ExecOptions/toArguments sha256:cdea112398e5a0ecd70ab2aad318031d9bad79fab0c7fecb884b4ca90bb2d908
+        ../ExecOptions/toArguments sha256:d3b35fd99f4a36bcdf97f4ea9a96992893d1d74a83f0ea08d741ebff1a572ff3
       ? ../ExecOptions/toArguments
 
-in    λ(runOptions : RunOptions)
-    →   ExecOptions/toArguments
+in  λ(runOptions : RunOptions) →
+        ExecOptions/toArguments
           runOptions.{ interactive
                      , allocateTty
                      , detach

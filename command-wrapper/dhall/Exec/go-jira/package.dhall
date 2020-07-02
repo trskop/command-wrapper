@@ -7,7 +7,7 @@
       ./command sha256:70f772523190a0cad3cb091b8858fd9b2c9f7e20847da74e1b9a74f2f0cbf245
     ? ./command
 , completion =
-      ./completion sha256:b8ee7d3516c521d9d2c1843473fbd78bca231a199902559d752213bf7629e3e2
+      ./completion sha256:7ded0352e285f40854412724a8bb38d7395ee3f7be045f821d797f496d1d0488
     ? ./completion
 , completion-script =
       ./completion-script sha256:a2bed0ae3a53770a6d69132921baf9610199303beeefe7c84db0d45666d4ea2b

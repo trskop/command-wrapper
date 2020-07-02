@@ -24,22 +24,22 @@ let ExecNamedCommand =
         ./Type sha256:5a8ecb546232bfbe14f28a0987ccee220496c1790ee0a3ad3ed108bcc424ea11
       ? ./Type
 
-in    λ(name : Text)
-    → λ ( command
-        :   ∀(verbosity : Verbosity)
-          → ∀(colourOutput : ColourOutput)
-          → ∀(arguments : List Text)
-          → ExecCommand
-        )
-    →   { name = name
+in  λ(name : Text) →
+    λ ( command
+      : ∀(verbosity : Verbosity) →
+        ∀(colourOutput : ColourOutput) →
+        ∀(arguments : List Text) →
+          ExecCommand
+      ) →
+        { name
         , description = None Text
-        , command = command
+        , command
         , completion =
             None
-              (   ∀(shell : Shell)
-                → ∀(index : Natural)
-                → ∀(arguments : List Text)
-                → ExecCommand
+              ( ∀(shell : Shell) →
+                ∀(index : Natural) →
+                ∀(arguments : List Text) →
+                  ExecCommand
               )
         , notifyWhen = None NotifyWhen
         }

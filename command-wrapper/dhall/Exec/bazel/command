@@ -26,8 +26,8 @@ let Verbosity/fold =
       ? ../../CommandWrapper/Verbosity/fold
 
 let List/head-and-tail =
-        ../../CommandWrapper/List/head-and-tail sha256:9e5de1b61d63f7caf1b197df7eb0ca19f682e6c05b4e1f557cd5a88355b31b08
-      ? ../../CommandWrapper/List/head-and-tail
+        ../../CommandWrapper/List/headAndTail sha256:06d3b92abb0790387092bf6db0ff9fc20299a898bb9e9a8e34373ad92b5ed86d
+      ? ../../CommandWrapper/List/headAndTail
 
 let verbosityOptions =
       Verbosity/fold
@@ -36,30 +36,33 @@ let verbosityOptions =
         , Normal = [] : List Text
         , Verbose = [ "--logging=5", "--explain" ]
         , Annoying =
-            [ "--logging=6"
-            , "--explain"
-            , "--verbose_explanations"
-            , "--verbose_failures"
-            ]
+          [ "--logging=6"
+          , "--explain"
+          , "--verbose_explanations"
+          , "--verbose_failures"
+          ]
         }
 
-in    λ(workingDirectory : Optional Text)
-    → λ(args : List Text)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(extraArgs : List Text)
-    → ExecCommand::{
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(workingDirectory : Optional Text) →
+    λ(args : List Text) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(extraArgs : List Text) →
+      ExecCommand::{
       , command = "bazel"
       , arguments =
           let arguments = List/head-and-tail Text (args # extraArgs)
-
+          
           in    verbosityOptions verbosity
-              # Optional/fold
+              # optionalFold
                   Text
                   arguments.head
                   (List Text)
                   (λ(cmd : Text) → [ cmd, colorOption colourOutput ])
                   ([] : List Text)
               # arguments.tail
-      , workingDirectory = workingDirectory
+      , workingDirectory
       }

@@ -20,24 +20,27 @@ let command =
         ./command sha256:337315e737384fccddbed939a7fe71fbe01563407fffcfc67a182c81fd2707ed
       ? ./command
 
-in    λ(directory : Optional Text)
-    → λ(mkCommand : Verbosity → ColourOutput → List Text → ExecCommand)
-    → λ(environment : Environment)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(extraArguments : List Text)
-    →   command
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(directory : Optional Text) →
+    λ(mkCommand : Verbosity → ColourOutput → List Text → ExecCommand) →
+    λ(environment : Environment) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(extraArguments : List Text) →
+        command
           directory
           ( let dir =
-                  Optional/fold
+                  optionalFold
                     Text
                     directory
                     (List Text)
                     (λ(d : Text) → [ d ])
                     ([] : List Text)
-
+            
             let cmd = mkCommand verbosity colourOutput extraArguments
-
+            
             in  [ "exec" ] # dir # [ cmd.command ] # cmd.arguments
           )
           environment

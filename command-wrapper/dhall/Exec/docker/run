@@ -36,32 +36,32 @@ let RunOptions =
       ? ./RunOptions/Type
 
 let GlobalOptions/toArguments =
-        ./GlobalOptions/toArguments sha256:150c73831857ece522d3f066554ad2883e36ceb2f98bf85947c8eacf0e09cb0b
+        ./GlobalOptions/toArguments sha256:fcbb4e1a71fe47521226f224f04c34a148da87867c3f39c7a75b3b83bc005a77
       ? ./GlobalOptions/toArguments
 
 let RunOptions/toArguments =
-        ./RunOptions/toArguments sha256:5fdea1f964ab7b935cf9a80e0f375fe0d0e75c3459a0bb3200d4492ee12d2895
+        ./RunOptions/toArguments sha256:42402e1e83293cd7be653a20b70d6013f0cce7d05d5a3c342266cab96bcce296
       ? ./RunOptions/toArguments
 
 let Environment/toArguments =
         ./Environment/toArguments sha256:d0426badaef8cd6535378bbd9b5caf073e2b7d794eae541a454ebcba4cb52531
       ? ./Environment/toArguments
 
-in    λ(container : Text)
-    → λ(globalOptions : GlobalOptions)
-    → λ(runOptions : RunOptions)
-    → λ ( mkCommand
-        :   ∀(environment : Environment)
-          → ∀(verbosity : Verbosity)
-          → ∀(colourOutput : ColourOutput)
-          → ∀(arguments : List Text)
-          → ExecCommand.Type
-        )
-    → λ(environment : Environment)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → let command = mkCommand environment verbosity colourOutput arguments
+in  λ(container : Text) →
+    λ(globalOptions : GlobalOptions) →
+    λ(runOptions : RunOptions) →
+    λ ( mkCommand
+      : ∀(environment : Environment) →
+        ∀(verbosity : Verbosity) →
+        ∀(colourOutput : ColourOutput) →
+        ∀(arguments : List Text) →
+          ExecCommand.Type
+      ) →
+    λ(environment : Environment) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      let command = mkCommand environment verbosity colourOutput arguments
       
       in  ExecCommand::{
           , command = "docker"

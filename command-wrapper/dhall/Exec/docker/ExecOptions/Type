@@ -8,4 +8,4 @@ let DockerExecOptions =
       , workingDirectory : Optional Text
       }
 
-in  DockerExecOptions
+in  DockerExecOptions : Type

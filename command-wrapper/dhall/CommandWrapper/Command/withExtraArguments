@@ -5,9 +5,9 @@ let Command =
       ? ./Type
 
 let withExtraArguments =
-        λ(command : Command)
-      → λ(arguments : List Text)
-      →   { command = command.command
+      λ(command : Command) →
+      λ(arguments : List Text) →
+          { command = command.command
           , arguments = command.arguments # arguments
           }
         : Command

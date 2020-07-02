@@ -28,7 +28,7 @@ import Data.Bifunctor (first)
 import Data.Bool (Bool(True), otherwise)
 import Data.Either (Either(Left, Right))
 import Data.Foldable (foldr1)
-import Data.Function (($), flip)
+import Data.Function (($), (.), flip)
 import Data.Functor ((<$), (<$>), fmap)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (Maybe(Nothing))
@@ -138,22 +138,25 @@ parseDhallInputResolveImportsAndTypeCheck DhallInputParams{..} =
 data Error s
     = TypeError (Dhall.TypeError s Void)
     | ExtractErrors (Dhall.ExtractErrors s Void)
+    | ExpectedErrors Dhall.ExpectedTypeErrors
 
 parse
     :: Dhall.Decoder a
     -> Dhall.Expr Dhall.Src Void
     -> Either (Error Dhall.Src) a
 parse Dhall.Decoder{..} expr = do
+    expected' <- first ExpectedErrors (validationToEither expected)
     _ <- first TypeError $ Dhall.typeOf case expr of
         Dhall.Note src@Dhall.Src{srcText} _ ->
-            Dhall.Note src{Dhall.srcText = srcText <> " : " <> expectedText}
-                (Dhall.Annot expr expected)
+            Dhall.Note
+                src{Dhall.srcText = srcText <> " : " <> renderExpr expected'}
+                (Dhall.Annot expr expected')
         _ ->
-            Dhall.Annot expr expected
+            Dhall.Annot expr expected'
 
     first ExtractErrors (validationToEither (extract (Dhall.normalize expr)))
   where
-    expectedText = Pretty.renderStrict (Dhall.layout (Pretty.pretty expected))
+    renderExpr = Pretty.renderStrict . Dhall.layout . Pretty.pretty
 
 data DhallInputParams = DhallInputParams
     { expression :: Text
@@ -216,6 +219,9 @@ dhallInput input = do
                 throwIO e'
 
             ExtractErrors e' ->
+                throwIO e'
+
+            ExpectedErrors e' ->
                 throwIO e'
 
         Right a ->

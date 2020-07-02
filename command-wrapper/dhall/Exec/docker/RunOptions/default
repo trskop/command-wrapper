@@ -10,7 +10,6 @@ let RunOptions =
 
 let default = defaultExecOptions ∧ { remove = False } : RunOptions
 
-let consistency =
-      assert : { Type = RunOptions, default = default }::{=} ≡ default
+let consistency = assert : { Type = RunOptions, default }::{=} ≡ default
 
 in  default

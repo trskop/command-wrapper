@@ -9,7 +9,7 @@ let Options/default =
       ? ./default
 
 let optionalOptions =
-        ../../utils/optionalOptions sha256:f9626a1ef8209d45703cc7ac05aee40c9e96f5ccc2c406cdbd68eafd6d3234f0
+        ../../utils/optionalOptions sha256:51a1fbb37ceddab8f0ff0ef0fe2cd910af960bd447c6bcbc01b23426c0ee74f8
       ? ../../utils/optionalOptions
 
 let Natural/greaterThanEqual =
@@ -18,15 +18,11 @@ let Natural/greaterThanEqual =
 let noArguments = [] : List Text
 
 let Options/toArguments =
-        λ(_ : Options)
-      →   (       if Natural/isZero _.lines
-
+      λ(_ : Options) →
+          ( if    Natural/isZero _.lines
             then  noArguments
-
             else  if Natural/greaterThanEqual _.lines 3
-
             then  [ "--lines=${Natural/show _.lines}" ]
-
             else  [ "--lines=3" ]
           )
         # optionalOptions Text (λ(t : Text) → [ "--prompt=${t}" ]) _.prompt
@@ -37,10 +33,8 @@ let Options/toArguments =
             Text
             (λ(s : Text) → [ "--show-matches=${s}" ])
             _.showMatches
-        # (       if Natural/isZero _.workers
-
+        # ( if    Natural/isZero _.workers
             then  noArguments
-
             else  [ "--workers=${Natural/show _.workers}" ]
           )
 

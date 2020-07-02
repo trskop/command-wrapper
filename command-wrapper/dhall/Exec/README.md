@@ -61,7 +61,7 @@ There multiple ways of importing this library:
 
     ```Dhall
     let Exec =
-          https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc9/command-wrapper/dhall/Exec/package.dhall
+          https://raw.githubusercontent.com/trskop/command-wrapper/0.1.0.0-rc10/command-wrapper/dhall/Exec/package.dhall
 
     in  Exec
     ```

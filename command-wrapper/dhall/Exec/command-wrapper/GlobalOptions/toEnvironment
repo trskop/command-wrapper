@@ -13,15 +13,15 @@ let emptyEnvironment =
       ? ../../../CommandWrapper/Environment/empty
 
 let optionalEnvironmentVariables =
-        ../../utils/optionalEnvironmentVariables sha256:97689a41f6b15c075cf0cfef3adc169b77f5afea52c5dadf8666a553b8ef2022
+        ../../utils/optionalEnvironmentVariables sha256:2565c61b55b84de6e75b663f3561c806bcebc193ff662c644150dc46ebe05c0b
       ? ../../utils/optionalEnvironmentVariables
 
 let GlobalOptions/toEnvironment =
-        λ(options : GlobalOptions)
-      →   optionalEnvironmentVariables
+      λ(options : GlobalOptions) →
+          optionalEnvironmentVariables
             Text
-            (   λ(_ : Text)
-              → [ { name = "COMMAND_WRAPPER_INVOKE_AS", value = _ } ]
+            ( λ(_ : Text) →
+                [ { name = "COMMAND_WRAPPER_INVOKE_AS", value = _ } ]
             )
             options.invokeAs
         # optionalEnvironmentVariables

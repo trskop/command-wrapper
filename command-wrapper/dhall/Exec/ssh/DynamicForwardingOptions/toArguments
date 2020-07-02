@@ -8,12 +8,15 @@ let default =
         ./default sha256:c80d7d2fddac6d33d118c485dde6ec80332bf59174b83cfb5b85318ad631ea01
       ? ./default
 
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
 let toArguments
     : Text → DynamicForwardingOptions → List Text
-    =   λ(option : Text)
-      → λ(dynamicForwarding : DynamicForwardingOptions)
-      → [ option
-        ,     Optional/fold
+    = λ(option : Text) →
+      λ(dynamicForwarding : DynamicForwardingOptions) →
+        [ option
+        ,     optionalFold
                 Text
                 dynamicForwarding.bindTo
                 Text
@@ -26,16 +29,14 @@ let example0 =
         assert
       :   toArguments
             "-D"
-            { Type = DynamicForwardingOptions, default = default }::{
-            , listenOn = 8080
-            }
+            { Type = DynamicForwardingOptions, default }::{ listenOn = 8080 }
         ≡ [ "-D", "8080" ]
 
 let example1 =
         assert
       :   toArguments
             "-D"
-            { Type = DynamicForwardingOptions, default = default }::{
+            { Type = DynamicForwardingOptions, default }::{
             , bindTo = Some "localhost"
             , listenOn = 8080
             }

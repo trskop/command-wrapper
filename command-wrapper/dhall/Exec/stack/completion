@@ -13,15 +13,18 @@ let Options =
       ? ./Options/Type
 
 let Options/toArguments =
-        ./Options/toArguments sha256:2ec13c92b49f2238b0b0af9df65174c4bdc1bfba5baac87d568f08cb54bba1a5
+        ./Options/toArguments sha256:378f10f92fda1dedf67914020e2bd332e1fff495b9a32dc15a1a01ef0e82a30b
       ? ./Options/toArguments
 
-in    λ(options : Options)
-    → λ(arguments : List Text)
-    → λ(shell : Shell)
-    → λ(index : Natural)
-    → λ(words : List Text)
-    → let completionCommand =
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(options : Options) →
+    λ(arguments : List Text) →
+    λ(shell : Shell) →
+    λ(index : Natural) →
+    λ(words : List Text) →
+      let completionCommand =
             optparse-applicative
               "stack"
               (Options/toArguments options # arguments)
@@ -31,7 +34,7 @@ in    λ(options : Options)
       
       in    completionCommand
           ⫽ { workingDirectory =
-                Optional/fold
+                optionalFold
                   Text
                   options.workingDirectory
                   (Optional Text)

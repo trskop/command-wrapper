@@ -26,16 +26,16 @@ let Options =
       ? ./Options/Type
 
 let Options/toArguments =
-        ./Options/toArguments sha256:4e02c8d0b182ce03cff09774c2756eb79a1d2d52786f03dadf613e13b0f89312
+        ./Options/toArguments sha256:b9875a38af38e1c4b0f805895183a12f1f9cd5b27c24ac5f58147f754bfb7aa4
       ? ./Options/toArguments
 
-in    λ(workingDirectory : Optional Text)
-    → λ(options : Options)
-    → λ(_ : Verbosity)
-    → λ(_ : ColourOutput)
-    → λ(extraArguments : List Text)
-    → ExecCommand::{
+in  λ(workingDirectory : Optional Text) →
+    λ(options : Options) →
+    λ(_ : Verbosity) →
+    λ(_ : ColourOutput) →
+    λ(extraArguments : List Text) →
+      ExecCommand::{
       , command = "fzf"
       , arguments = Options/toArguments options # extraArguments
-      , workingDirectory = workingDirectory
+      , workingDirectory
       }

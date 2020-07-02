@@ -838,8 +838,10 @@ exec appNames@AppNames{usedName} config Exec{..} =
 
             let Dhall.Decoder{expected, extract} = Dhall.auto @Text
 
-                expectedText =
-                    Pretty.renderStrict (Dhall.layout (pretty expected))
+            expected' <- Dhall.throws (validationToEither expected)
+
+            let expectedText =
+                    Pretty.renderStrict (Dhall.layout (pretty expected'))
 
             _ <- Dhall.throws $ Dhall.typeOf case e of
                     Dhall.Note src@Dhall.Src{srcText} _ ->
@@ -847,9 +849,9 @@ exec appNames@AppNames{usedName} config Exec{..} =
                             src { Dhall.srcText =
                                     srcText <> " : " <> expectedText
                                 }
-                            (Dhall.Annot e expected)
+                            (Dhall.Annot e expected')
                     _ ->
-                        Dhall.Annot e expected
+                        Dhall.Annot e expected'
 
             Dhall.throws $ validationToEither (extract (Dhall.normalize e))
 
@@ -1015,7 +1017,8 @@ toText appNames config ToText{..} = handleExceptions appNames config do
         dhallInput Dhall.Decoder{..} = do
             e <- resolveImports allowImports onlySecureImpors
                 (expression, status)
-            _ <- Dhall.throws (Dhall.typeOf (Dhall.Annot e expected))
+            expected' <- Dhall.throws (validationToEither expected)
+            _ <- Dhall.throws (Dhall.typeOf (Dhall.Annot e expected'))
             Dhall.throws $ validationToEither (extract (Dhall.normalize e))
 
     case mode of

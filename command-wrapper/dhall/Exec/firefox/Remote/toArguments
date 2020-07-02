@@ -4,7 +4,7 @@ let Remote =
         ./Type sha256:f4db3526d25d60b7f0f09d1acc91534567990b5bab8514aaf64573b86648f10e
       ? ./Type
 
-in    λ(_ : Remote)
-    → merge
+in  λ(_ : Remote) →
+      merge
         { NoRemote = [ "--no-remote" ], NewInstance = [ "--new-instance" ] }
         _

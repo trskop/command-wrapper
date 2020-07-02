@@ -1,3 +1,5 @@
 -- vim: filetype=dhall
 
-https://raw.githubusercontent.com/trskop/open-in-editor/master/dhall/Editor/standard sha256:11bcf3592cb87b16c514e587f8b9828cccce71a2b87ddc9f460b6f51b096fcd9
+(   ./package.dhall sha256:bffb77e129724406d2b21de0e756f2720b936ec9d2756568382fab12f9116722
+  ? ./package.dhall
+).standard

@@ -25,12 +25,12 @@ let Command/show =
         ./Command/show sha256:802eda931b470db5c62b8c19260b9da1c87f5ea05ef5317ee241d87d9bc05961
       ? ./Command/show
 
-in    λ(command : Command)
-    → λ(arguments : List Text)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(extraArguments : List Text)
-    → ExecCommand::{
+in  λ(command : Command) →
+    λ(arguments : List Text) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(extraArguments : List Text) →
+      ExecCommand::{
       , command = Command/show command
       , arguments = arguments # extraArguments
       }

@@ -8,9 +8,7 @@ let default = { bindTo = None Text }
 
 let consistency =
         assert
-      :   { Type = DynamicForwardingOptions, default = default }::{
-          , listenOn = 8080
-          }
-        ≡ (default ∧ { listenOn = 8080 })
+      :   { Type = DynamicForwardingOptions, default }::{ listenOn = 8080 }
+        ≡ default ∧ { listenOn = 8080 }
 
 in  default

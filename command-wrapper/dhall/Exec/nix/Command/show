@@ -4,8 +4,8 @@ let Command =
         ./Type sha256:dc2b111daadb4265396dc562b757f208189242a884e704a4298686ce8984af27
       ? ./Type
 
-in    λ(command : Command)
-    → merge
+in  λ(command : Command) →
+      merge
         { nix = "nix"
         , nix-build = "nix-build"
         , nix-channel = "nix-channel"

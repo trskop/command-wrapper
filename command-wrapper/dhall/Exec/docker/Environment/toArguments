@@ -8,13 +8,13 @@ let Environment =
         ./Type sha256:bfc2cb080bb0cac5a42a81beb707437389fa9c6f8e54ae8dd7ce09c6566140ee
       ? ./Type
 
-in    λ(environment : Environment)
-    → List/fold
+in  λ(environment : Environment) →
+      List/fold
         EnvironmentVariable
         environment
         (List Text)
-        (   λ(var : EnvironmentVariable)
-          → λ(accum : List Text)
-          → [ "--env", "${var.name}=${var.value}" ] # accum
+        ( λ(var : EnvironmentVariable) →
+          λ(accum : List Text) →
+            [ "--env", "${var.name}=${var.value}" ] # accum
         )
         ([] : List Text)

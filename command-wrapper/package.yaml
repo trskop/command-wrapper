@@ -82,9 +82,8 @@ dependencies:
   - comonad
   - containers
   - cryptonite
-  - dhall >=1.31.1
-  # ^ Dhall Standard 15.0.0; Changes in `FromDhall`/`ToDhall` definitions that
-  # aren't bacward compatible.
+  - dhall >=1.33.1
+  # ^ Dhall Standard 17.0.0; deprecated Optional/fold; introduced Expector.
   - dhall-bash >=1.0.29
   # ^ First version supporting dhall-1.31.
 # - dhall-json >=1.6.3
@@ -233,6 +232,7 @@ tests:
     dependencies:
       - *this
 
+      - Glob >=0.10.0 && <1
       - call-stack
       - deepseq
       - tasty

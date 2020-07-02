@@ -7,12 +7,12 @@
       ./Type sha256:0801c7f67dd1a47360ee4727176658af658d850aed28a3c3832ad279067f994a
     ? ./Type
 , gnome-terminal =
-      ./gnome-terminal sha256:8541df930464fb40a2b098a58364303b3b39896c54b3f384bb53e27648330837
+      ./gnome-terminal sha256:63ab557caff51470ed179f905d6c62de15008feb1b0288603432d9b512c4105b
     ? ./gnome-terminal
 , kitty =
-      ./kitty sha256:8bd440fe1fb54754b67d384ba3d52f2dc38a5ccffe358e75b7d863a362aa7576
+      ./kitty sha256:2fa5e611718be0eca0898f626ec16015f2d40d2b0959b0d62420ee6d01f385dd
     ? ./kitty
 , urxvt =
-      ./urxvt sha256:a2a5f3204af9888a219f457ddf2040777564e3c420ee8e6554234ef08056fd91
+      ./urxvt sha256:9b60c0f6e641afde980d307d986d29ae32c593d4af50b31b8ea5a20cf21eb1e2
     ? ./urxvt
 }

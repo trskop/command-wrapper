@@ -4,8 +4,11 @@ let Options =
         ./Type sha256:b2526c288d5a0419d362c1375b879214396f6d1f6cd88b0416545724fd661b26
       ? ./Type
 
-in    λ(options : Options)
-    → Optional/fold
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(options : Options) →
+      optionalFold
         Text
         options.stackYaml
         (List Text)

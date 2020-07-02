@@ -16,9 +16,7 @@ let default = Command/default ∧ { environment = Environment/empty }
 
 let consistency =
         assert
-      :   { Type = CommandWithEnvironment, default = default }::{
-          , command = "foo"
-          }
-        ≡ (default ∧ { command = "foo" })
+      :   { Type = CommandWithEnvironment, default }::{ command = "foo" }
+        ≡ default ∧ { command = "foo" }
 
 in  default

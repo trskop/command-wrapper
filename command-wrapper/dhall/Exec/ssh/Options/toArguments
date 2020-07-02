@@ -9,20 +9,23 @@ let Forwarding =
       ? ../Forwarding/Type
 
 let Forwarding/toArguments =
-        ../Forwarding/toArguments sha256:8212a864503905e0846d068eb7f08ecf7c205f3c85b4689eafad9db19fd4b898
+        ../Forwarding/toArguments sha256:af2cf2ac82c79b95b7d5b5f9ff40a27dc87369b69e41c48b1414eb32662090d8
       ? ../Forwarding/toArguments
 
 let List/concatMap =
-      https://prelude.dhall-lang.org/v12.0.0/List/concatMap sha256:3b2167061d11fda1e4f6de0522cbe83e0d5ac4ef5ddf6bb0b2064470c5d3fb64
+      https://prelude.dhall-lang.org/v17.0.0/List/concatMap sha256:3b2167061d11fda1e4f6de0522cbe83e0d5ac4ef5ddf6bb0b2064470c5d3fb64
+
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
 
 let optional =
-        λ(a : Type)
-      → λ(o : Optional a)
-      → λ(f : a → List Text)
-      → Optional/fold a o (List Text) f ([] : List Text)
+      λ(a : Type) →
+      λ(o : Optional a) →
+      λ(f : a → List Text) →
+        optionalFold a o (List Text) f ([] : List Text)
 
-in    λ(options : Options)
-    →   optional Text options.identityFile (λ(_ : Text) → [ "-i", _ ])
+in  λ(options : Options) →
+        optional Text options.identityFile (λ(_ : Text) → [ "-i", _ ])
       # List/concatMap
           Forwarding
           Text

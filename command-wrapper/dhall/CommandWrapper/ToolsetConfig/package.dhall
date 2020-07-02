@@ -13,7 +13,7 @@
       ./emptySearchPath sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
     ? ./emptySearchPath
 , addSubcommandAliases =
-      ./addSubcommandAliases sha256:e69c4452bb4f2e77d057ab37e5d960a2e58f33b016f8b216cca9821052ae9868
+      ./addSubcommandAliases sha256:2247141827b8330a1f60f04cce67eaa4c8a9bc13d135a71bd2281afff2387004
     ? ./addSubcommandAliases
 , emptyManPath =
       ./emptyManPath sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449

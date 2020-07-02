@@ -17,6 +17,6 @@ let default =
       , preventReadingOfStdin = False
       }
 
-let consistency = assert : { Type = Options, default = default }::{=} ≡ default
+let consistency = assert : { Type = Options, default }::{=} ≡ default
 
 in  default

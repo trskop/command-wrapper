@@ -49,13 +49,13 @@ import Data.Bool (Bool, otherwise)
 import Data.Coerce (coerce)
 import Data.Either (Either(Left, Right), either)
 import Data.Foldable (null)
-import Data.Function (($), (.), const)
+import Data.Function (($), (.))
 import Data.Functor (Functor(fmap), (<$>), (<&>))
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe, maybe)
 import Data.Monoid (Monoid(mempty))
 import Data.Semigroup (Semigroup, (<>))
 import Data.String (String, fromString)
-import Data.Traversable (for)
+import Data.Traversable (for, traverse)
 import Data.Void (Void)
 import Data.Word (Word)
 import GHC.Exts (IsList(fromList))
@@ -64,6 +64,7 @@ import Text.Show (Show(show))
 
 import qualified Data.ByteString as Strict (ByteString)
 import qualified Data.ByteString.Lazy as Lazy (ByteString)
+import Data.Either.Validation as Validation (Validation(Failure, Success))
 import Data.Text (Text)
 import qualified Data.Text.Encoding as Strict.Text (encodeUtf8)
 import qualified Data.Text.Lazy.Encoding as Lazy.Text (encodeUtf8)
@@ -81,6 +82,7 @@ import qualified Dhall
     ( Decoder(Decoder, expected, extract)
     , Encoder(Encoder, declared, embed)
     , Extractor
+    , Expector
     , lazyText
     , natural
     , strictText
@@ -181,22 +183,36 @@ constructor0 key value = UnionType (Dhall.Map.singleton key (Left value))
 union :: forall a. UnionType a -> Dhall.Decoder a
 union (UnionType constructors) = Dhall.Decoder
     { extract  = extractF
-    , expected = Dhall.Union expect
+    , expected = Dhall.Union <$> expected
     }
   where
-    expect =
-        either (const Nothing) (notEmptyRecord . Dhall.expected)
-            <$> constructors
+    expected
+        :: Dhall.Expector (Dhall.Map Text (Maybe (Dhall.Expr Dhall.Src Void)))
+    expected = toExpected constructors
+
+    toExpected
+        :: Dhall.Map Text (Either a (Dhall.Decoder a))
+        -> Dhall.Expector (Dhall.Map Text (Maybe (Dhall.Expr Dhall.Src Void)))
+    toExpected = traverse \case
+        Left _ ->
+            pure Nothing
+        Right expr ->
+            notEmptyRecord <$> Dhall.expected expr
 
     unexpectedConstructor
         :: Dhall.Expr Dhall.Src Void
         -> Dhall.Extractor Dhall.Src Void a
-    unexpectedConstructor = Dhall.typeError (Dhall.Union expect)
+    unexpectedConstructor = do
+        Dhall.typeError (Dhall.Union <$> expected)
 
     extractF
         :: Dhall.Expr Dhall.Src Void
         -> Dhall.Extractor Dhall.Src Void a
     extractF e0 = fromMaybe (unexpectedConstructor e0) do
+        expect <- case expected of
+            Failure _ -> Nothing
+            Success r -> pure r
+
         (field, e1, rest) <- extractUnionConstructor e0
 
         t <- Dhall.Map.lookup field constructors

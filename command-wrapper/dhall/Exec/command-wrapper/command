@@ -6,7 +6,7 @@
 -- ```
 
 let GlobalOptions =
-        ./GlobalOptions/package.dhall sha256:9fd9054401b8aa5fdd448fb454ddc08e1d2c8696dd4560f7e7933af395fe0501
+        ./GlobalOptions/package.dhall sha256:5c50274c1e8693b4424d10d7668f5775d098810393e0d37354282f761d2483da
       ? ./GlobalOptions/package.dhall
 
 let ExecCommand =
@@ -26,25 +26,28 @@ let Verbosity =
         ../../CommandWrapper/Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
       ? ../../CommandWrapper/Verbosity/Type
 
-in    λ(toolset : Text)
-    → λ(options : GlobalOptions.Type)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(toolset : Text) →
+    λ(options : GlobalOptions.Type) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = toolset
       , arguments =
             GlobalOptions.toArguments
               (   options
                 ⫽ { verbosity =
-                      Optional/fold
+                      optionalFold
                         Verbosity
                         options.verbosity
                         (Optional Verbosity)
                         (λ(_ : Verbosity) → Some _)
                         (Some verbosity)
                   , colour =
-                      Optional/fold
+                      optionalFold
                         ColourOutput
                         options.colour
                         (Optional ColourOutput)

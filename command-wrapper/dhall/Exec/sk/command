@@ -26,16 +26,16 @@ let Options =
       ? ./Options/Type
 
 let Options/toArguments =
-        ./Options/toArguments sha256:fa358b9dc3999069b883f3cc9b217f609a2c6dff1ece57f27a26fa5062792365
+        ./Options/toArguments sha256:a311b4dc7d7cbc550c4c6a48ef8fe6e57691c7eeb1f1f57575557c088353759e
       ? ./Options/toArguments
 
-in    λ(workingDirectory : Optional Text)
-    → λ(options : Options)
-    → λ(_ : Verbosity)
-    → λ(_ : ColourOutput)
-    → λ(extraArguments : List Text)
-    → ExecCommand::{
+in  λ(workingDirectory : Optional Text) →
+    λ(options : Options) →
+    λ(_ : Verbosity) →
+    λ(_ : ColourOutput) →
+    λ(extraArguments : List Text) →
+      ExecCommand::{
       , command = "sk"
       , arguments = Options/toArguments options # extraArguments
-      , workingDirectory = workingDirectory
+      , workingDirectory
       }

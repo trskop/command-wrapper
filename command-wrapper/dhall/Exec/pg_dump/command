@@ -29,12 +29,12 @@ let ConnectToDatabase =
         ../../CommandWrapper/ConnectToDatabase/Type sha256:49946ad4b88108992adba47d0b212add49946772d8d8dca8b48ddb2b92635b46
       ? ../../CommandWrapper/ConnectToDatabase/Type
 
-in    λ(connect : ConnectToDatabase)
-    → λ(environment : Environment)
-    → λ(verbosity : Verbosity)
-    → λ(_ : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+in  λ(connect : ConnectToDatabase) →
+    λ(environment : Environment) →
+    λ(verbosity : Verbosity) →
+    λ(_ : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "pg_dump"
       , arguments =
             Verbosity/fold
@@ -50,5 +50,5 @@ in    λ(connect : ConnectToDatabase)
             , "--dbname=${connect.database}"
             ]
           # arguments
-      , environment = environment
+      , environment
       }

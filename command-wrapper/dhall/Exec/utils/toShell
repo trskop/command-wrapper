@@ -39,20 +39,21 @@ let EnvironmentVariable/toText =
       ? ../../CommandWrapper/EnvironmentVariable/toText
 
 let List/map =
-      https://prelude.dhall-lang.org/v12.0.0/List/map sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680
+      https://prelude.dhall-lang.org/v17.0.0/List/map sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680
 
 let List/null =
-      https://prelude.dhall-lang.org/v12.0.0/List/null sha256:2338e39637e9a50d66ae1482c0ed559bbcc11e9442bfca8f8c176bbcd9c4fc80
+      https://prelude.dhall-lang.org/v17.0.0/List/null sha256:2338e39637e9a50d66ae1482c0ed559bbcc11e9442bfca8f8c176bbcd9c4fc80
 
 let Text/concatMapSep =
-      https://prelude.dhall-lang.org/v12.0.0/Text/concatMapSep sha256:c272aca80a607bc5963d1fcb38819e7e0d3e72ac4d02b1183b1afb6a91340840
+      https://prelude.dhall-lang.org/v17.0.0/Text/concatMapSep sha256:c272aca80a607bc5963d1fcb38819e7e0d3e72ac4d02b1183b1afb6a91340840
 
-let -- Alternative would be to use `env --chdir=${dir}` instead, but how
-    -- portable is it?
-    withWorkingDirectory =
-        λ(dir : Optional Text)
-      → λ(cmd : Text)
-      → Optional/fold
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+let withWorkingDirectory =
+      λ(dir : Optional Text) →
+      λ(cmd : Text) →
+        optionalFold
           Text
           dir
           Text
@@ -60,13 +61,11 @@ let -- Alternative would be to use `env --chdir=${dir}` instead, but how
           cmd
 
 let toShell =
-        λ(cmd : ExecCommand.Type)
-      →     withWorkingDirectory
+      λ(cmd : ExecCommand.Type) →
+            withWorkingDirectory
               cmd.workingDirectory
-              (     (       if List/null EnvironmentVariable cmd.environment
-
+              (     ( if    List/null EnvironmentVariable cmd.environment
                       then  ""
-
                       else  "env "
                     )
                 ++  Text/concatMapSep

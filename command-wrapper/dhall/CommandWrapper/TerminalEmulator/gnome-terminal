@@ -28,28 +28,26 @@ let emptyArguments =
         ../Command/emptyArguments sha256:6da0c98142d1168ac9d6080b7853d2b59b97d42079e1b2f121daf449b3b2e449
       ? ../Command/emptyArguments
 
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
 let directoryOption =
-        λ(directory : Optional Text)
-      → λ(mkDirectoryOption : Text → List Text)
-      → Optional/fold
-          Text
-          directory
-          (List Text)
-          mkDirectoryOption
-          emptyArguments
+      λ(directory : Optional Text) →
+      λ(mkDirectoryOption : Text → List Text) →
+        optionalFold Text directory (List Text) mkDirectoryOption emptyArguments
 
 let executeCommandOptions =
-        λ(cmd : Optional Command.Type)
-      → λ(mkCmdOptions : Command.Type → List Text)
-      → Optional/fold Command.Type cmd (List Text) mkCmdOptions emptyArguments
+      λ(cmd : Optional Command.Type) →
+      λ(mkCmdOptions : Command.Type → List Text) →
+        optionalFold Command.Type cmd (List Text) mkCmdOptions emptyArguments
 
 let withOptions =
-        λ(termCmd : Text)
-      → λ(mkDirectoryOption : Text → List Text)
-      → λ(mkCmdOptions : Command.Type → List Text)
-      → λ(directory : Optional Text)
-      → λ(cmd : Optional Command.Type)
-      →     Command.withExtraArguments
+      λ(termCmd : Text) →
+      λ(mkDirectoryOption : Text → List Text) →
+      λ(mkCmdOptions : Command.Type → List Text) →
+      λ(directory : Optional Text) →
+      λ(cmd : Optional Command.Type) →
+            Command.withExtraArguments
               Command::{ command = termCmd }
               (   directoryOption directory mkDirectoryOption
                 # executeCommandOptions cmd mkCmdOptions

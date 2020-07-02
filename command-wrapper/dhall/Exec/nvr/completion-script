@@ -1,7 +1,7 @@
 -- vim: filetype=dhall
 
 let bash-completion-script-wrapper =
-        ../completion/bash-completion-script-wrapper/package.dhall sha256:ef8edc2d55aae2dfa91e8d7aa858befd1d8f107bcb2cc260eb26bc0be840c46d
+        ../completion/bash-completion-script-wrapper/package.dhall sha256:8f7fbe97c657d747d7cb0eb6de8d671cc37a9262196db66af236fc03f6ae2278
       ? ../completion/bash-completion-script-wrapper/package.dhall
 
 let wrappedCompletionScript =

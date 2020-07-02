@@ -29,11 +29,14 @@
 let export =
       λ(name : Text) → λ(value : Text) → "${name}='${value}'; export ${name}"
 
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
 let optionalExport =
         λ(name : Text)
       → λ(default : Text)
       → λ(value : Optional Text)
-      → Optional/fold
+      → optionalFold
           Text
           value
           Text
@@ -83,6 +86,7 @@ let template =
         ''
 
 let example0 =
+assert :
         template Options::{ commandWrapperExecutable = "/some/executable" }
       ≡ ''
         #!/bin/sh
@@ -95,6 +99,7 @@ let example0 =
         ''
 
 let example1 =
+assert :
         template
           Options::{
           , commandWrapperExecutable = "/some/executable"
@@ -112,6 +117,7 @@ let example1 =
         ''
 
 let example2 =
+assert :
         template
           Options::{
           , commandWrapperExecutable = "/some/executable"

@@ -1,7 +1,7 @@
 -- vim: filetype=dhall
 
 { Options =
-      ./Options/package.dhall sha256:bc4282f67b1eb6845e0b534d067f79c9532cd66bfbff3ea0727ef251eaec390a
+      ./Options/package.dhall sha256:8fb57c0027ea1085bdc4218cb822c1b4ee5ed46ded4a68b25bf0f92d76857252
     ? ./Options/package.dhall
 , Profile =
       ./Profile/package.dhall sha256:35dad17584418559d8fb0aeef20b0d30fa9f1531e796529aecdd4d0c64343cf4
@@ -13,6 +13,6 @@
       ./Open/package.dhall sha256:63eaffa659febaf6950dcfa7a40147772d1cf5c4286f40937e8c7bc904ad968f
     ? ./Open/package.dhall
 , command =
-      ./command sha256:ac3514b5830ee98bc181b15f5d92a3d3ddc8fba044572d1eb62083f1dc15d9b0
+      ./command sha256:9e66863cd004fe6d5037c4c15bd71865cb676c5d1e922b6fa1d6e7b827b6859f
     ? ./command
 }

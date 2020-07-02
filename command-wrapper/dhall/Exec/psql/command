@@ -33,14 +33,17 @@ let Verbosity/fold =
         ../../CommandWrapper/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
       ? ../../CommandWrapper/Verbosity/fold
 
-in    λ(pgpassFile : Optional Text)
-    → λ(psqlrcFile : Optional Text)
-    → λ(connect : ConnectToDatabase)
-    → λ(environment : Environment)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(pgpassFile : Optional Text) →
+    λ(psqlrcFile : Optional Text) →
+    λ(connect : ConnectToDatabase) →
+    λ(environment : Environment) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "psql"
       , arguments =
             Verbosity/fold
@@ -55,7 +58,7 @@ in    λ(pgpassFile : Optional Text)
             , "--username=${connect.username}"
             , "--dbname=${connect.database}"
             ]
-          # Optional/fold
+          # optionalFold
               Natural
               connect.port
               (List Text)
@@ -64,13 +67,13 @@ in    λ(pgpassFile : Optional Text)
           # arguments
       , environment =
             environment
-          # Optional/fold
+          # optionalFold
               Text
               pgpassFile
               Environment
               (λ(file : Text) → [ { name = "PGPASSFILE", value = file } ])
               Environment/empty
-          # Optional/fold
+          # optionalFold
               Text
               psqlrcFile
               Environment

@@ -1,7 +1,3 @@
-{ Type =
-      ./Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
-    ? ./Type
-, fold =
-      ./fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
-    ? ./fold
-}
+-- vim: filetype=dhall
+
+https://raw.githubusercontent.com/trskop/verbosity/25f761a2768e4293ab66d2eff13323c9fc7051aa/dhall/Verbosity/package.dhall sha256:488f95a5a27b82653c5a759b592b08e16940d1698dcf956fcbd9c153cb2547f2

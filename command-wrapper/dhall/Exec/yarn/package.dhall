@@ -1,12 +1,12 @@
 -- vim: filetype=dhall
 
 { command =
-      ./command sha256:8a65a86e3bbbbf5edf62a9a0b77a1fc16635d33f146b1a4bc25f7e3420b15145
+      ./command sha256:fc4efbd4c08da0e7e9c49d4f48e7fa9fccc8603f43786505ba28b854736eb679
     ? ./command
 , completion-script =
       ./completion-script sha256:80d3eecf7ea99ec629c1acf0d852a50a80394d3ed18801f3af83a1190d70cd20
     ? ./completion-script
 , completion =
-      ./completion sha256:bd90bdd3426d3b25fa98ed17ced02a4a0c51d01e15263b38ba8cb1e141f347fd
+      ./completion sha256:3911e49709666ce1d575eb3575e9943f5c32678e34daf528b6deb234f9093b4f
     ? ./completion
 }

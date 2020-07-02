@@ -12,16 +12,15 @@ let default = { port = defaultPort }
 
 let consistency =
         assert
-      :   { Type = ConnectToDatabase, default = default }::{
+      :   { Type = ConnectToDatabase, default }::{
           , hostname = "localhost"
           , database = "my-service-db"
           , username = "my-service"
           }
-        ≡ (   default
-            ⫽ { hostname = "localhost"
-              , database = "my-service-db"
-              , username = "my-service"
-              }
-          )
+        ≡   default
+          ⫽ { hostname = "localhost"
+            , database = "my-service-db"
+            , username = "my-service"
+            }
 
 in  default

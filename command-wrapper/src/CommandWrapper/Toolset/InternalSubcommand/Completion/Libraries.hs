@@ -96,16 +96,8 @@ import CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions
     , commandWrapperImport
     , execContent
     , execImport
-    , preludeV12_0_0Content
-    , preludeV12_0_0Import
-    , preludeV13_0_0Content
-    , preludeV13_0_0Import
-    , preludeV14_0_0Content
-    , preludeV14_0_0Import
-    , preludeV15_0_0Content
-    , preludeV15_0_0Import
-    , preludeV16_0_0Content
-    , preludeV16_0_0Import
+    , preludeV17_0_0Content
+    , preludeV17_0_0Import
     , shellCompletionTemplate
     )
 
@@ -295,11 +287,7 @@ putDirenvLibrary subcmd appNames config importOrContent = \case
 
 data DhallLibrary
     = LatestPrelude
-    | PreludeV16_0_0
-    | PreludeV15_0_0
-    | PreludeV14_0_0
-    | PreludeV13_0_0
-    | PreludeV12_0_0
+    | PreludeV17_0_0
     | CommandWrapper
     | CommandWrapperExec
   deriving stock (Bounded, Enum, Generic, Show)
@@ -307,11 +295,7 @@ data DhallLibrary
 parseDhallLibrary :: (Eq s, IsString s) => s -> Maybe DhallLibrary
 parseDhallLibrary = \case
     "prelude"         -> Just LatestPrelude
-    "prelude-v12.0.0" -> Just PreludeV12_0_0
-    "prelude-v13.0.0" -> Just PreludeV13_0_0
-    "prelude-v14.0.0" -> Just PreludeV14_0_0
-    "prelude-v15.0.0" -> Just PreludeV15_0_0
-    "prelude-v16.0.0" -> Just PreludeV16_0_0
+    "prelude-v17.0.0" -> Just PreludeV17_0_0
     "command-wrapper" -> Just CommandWrapper
     "exec"            -> Just CommandWrapperExec
     _                 -> Nothing
@@ -319,11 +303,7 @@ parseDhallLibrary = \case
 showDhallLibrary :: IsString s => DhallLibrary -> s
 showDhallLibrary = \case
     LatestPrelude      -> "prelude"
-    PreludeV12_0_0     -> "prelude-v12.0.0"
-    PreludeV13_0_0     -> "prelude-v13.0.0"
-    PreludeV14_0_0     -> "prelude-v14.0.0"
-    PreludeV15_0_0     -> "prelude-v15.0.0"
-    PreludeV16_0_0     -> "prelude-v16.0.0"
+    PreludeV17_0_0     -> "prelude-v17.0.0"
     CommandWrapper     -> "command-wrapper"
     CommandWrapperExec -> "exec"
 
@@ -344,41 +324,17 @@ putDhallLibrary config dhallLib importOrContent = \case
     hPutExpr = Dhall.hPutExpr config
 
     hPutDhallLibrary h = case (dhallLib, importOrContent) of
-        (PreludeV12_0_0, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV12_0_0Content)
+        (PreludeV17_0_0, Content) ->
+            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV17_0_0Content)
 
-        (PreludeV12_0_0, Import) ->
-            Text.hPutStrLn h preludeV12_0_0Import
-
-        (PreludeV13_0_0, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV13_0_0Content)
-
-        (PreludeV13_0_0, Import) ->
-            Text.hPutStrLn h preludeV13_0_0Import
-
-        (PreludeV14_0_0, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV14_0_0Content)
-
-        (PreludeV14_0_0, Import) ->
-            Text.hPutStrLn h preludeV14_0_0Import
-
-        (PreludeV15_0_0, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV15_0_0Content)
-
-        (PreludeV15_0_0, Import) ->
-            Text.hPutStrLn h preludeV15_0_0Import
-
-        (PreludeV16_0_0, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV16_0_0Content)
-
-        (PreludeV16_0_0, Import) ->
-            Text.hPutStrLn h preludeV16_0_0Import
+        (PreludeV17_0_0, Import) ->
+            Text.hPutStrLn h preludeV17_0_0Import
 
         (LatestPrelude, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV16_0_0Content)
+            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV17_0_0Content)
 
         (LatestPrelude, Import) ->
-            Text.hPutStrLn h preludeV16_0_0Import
+            Text.hPutStrLn h preludeV17_0_0Import
 
         -- IMPORTANT!
         --

@@ -5,16 +5,16 @@ let NonEmpty =
       ? ./Type
 
 let headAndTail =
-        ../List/headAndTail sha256:9e5de1b61d63f7caf1b197df7eb0ca19f682e6c05b4e1f557cd5a88355b31b08
+        ../List/headAndTail sha256:06d3b92abb0790387092bf6db0ff9fc20299a898bb9e9a8e34373ad92b5ed86d
       ? ../List/headAndTail
 
 let optional =
-      https://prelude.dhall-lang.org/v12.0.0/Optional/fold sha256:62139ff410ca84302acebe763a8a1794420dd472d907384c7fb80df2a2180302
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
 
 let fromList =
-        λ(a : Type)
-      → λ(list : List a)
-      → let x = headAndTail a list : { head : Optional a, tail : List a }
+      λ(a : Type) →
+      λ(list : List a) →
+        let x = headAndTail a list : { head : Optional a, tail : List a }
         
         in  optional
               a

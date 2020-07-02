@@ -5,7 +5,7 @@ let Forwarding =
       ? ./Type
 
 let ForwardingOptions/toArguments =
-        ../ForwardingOptions/toArguments sha256:4ad4ff6aa06e29b32d9801204229437cde0621f1bb259aeae39d58227679e748
+        ../ForwardingOptions/toArguments sha256:70919deed071696eb9f4a592f91a5329d211d1fcc35e1358fde5e8824ba31c9a
       ? ../ForwardingOptions/toArguments
 
 let DynamicForwardingOptions =
@@ -18,12 +18,12 @@ let DynamicForwardingOptions =
       }
 
 let DynamicForwardingOptions/toArguments =
-        ../DynamicForwardingOptions/toArguments sha256:76ccb64ee4ccfd114ce338a69504edea8a8ed21dda4df4eb0df9b73b6656d7d8
+        ../DynamicForwardingOptions/toArguments sha256:ccb7a2991cd8dcf56f69ed5960573559cbc2c1a237b73ab5d9864ef5ab0a5277
       ? ../DynamicForwardingOptions/toArguments
 
 let toArguments =
-        λ(forwarding : Forwarding)
-      → merge
+      λ(forwarding : Forwarding) →
+        merge
           { Local = ForwardingOptions/toArguments "-L"
           , Remote = ForwardingOptions/toArguments "-R"
           , Dynamic = DynamicForwardingOptions/toArguments "-D"

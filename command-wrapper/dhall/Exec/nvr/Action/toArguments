@@ -5,17 +5,17 @@ let Action =
       ? ./Type
 
 let Action/toArguments =
-        λ(action : Action)
-      → merge
+      λ(action : Action) →
+        merge
           { Remote =
-                λ ( opts
-                  : { openInTab : Bool
-                    , wait : Bool
-                    , silent : Bool
-                    , files : List Text
-                    }
-                  )
-              →   [     "--remote"
+              λ ( opts
+                : { openInTab : Bool
+                  , wait : Bool
+                  , silent : Bool
+                  , files : List Text
+                  }
+                ) →
+                  [     "--remote"
                     ++  (if opts.openInTab then "-tab" else "")
                     ++  (if opts.wait then "-wait" else "")
                     ++  (if opts.silent then "-silent" else "")
@@ -25,8 +25,8 @@ let Action/toArguments =
           , RemoteExpression =
               λ(expression : Text) → [ "--remote-expr", expression ]
           , Split =
-                λ(opts : { vertical : Bool, files : List Text })
-              → [ if opts.vertical then "-O" else "-o" ] # opts.files
+              λ(opts : { vertical : Bool, files : List Text }) →
+                [ if opts.vertical then "-O" else "-o" ] # opts.files
           , TabEdit = λ(files : List Text) → [ "-p" ] # files
           , JumpToTag = λ(tag : Text) → [ "-t", tag ]
           , ReadErrorFile = λ(file : Text) → [ "-q", file ]

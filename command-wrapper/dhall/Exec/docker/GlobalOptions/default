@@ -7,7 +7,6 @@ let GlobalOptions =
 let default =
       { host = [] : List Text, logLevel = None Text, config = None Text }
 
-let consistency =
-      assert : { Type = GlobalOptions, default = default }::{=} ≡ default
+let consistency = assert : { Type = GlobalOptions, default }::{=} ≡ default
 
 in  default

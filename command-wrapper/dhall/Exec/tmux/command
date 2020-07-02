@@ -3,6 +3,8 @@
 -- ```
 -- TERM=TERMINAL tmux [-f CONFIG] [ARGUMENTS]
 -- ```
+--
+-- TODO: Handle verbosity and pass `-v` option appropriate number of times.
 
 let ExecCommand =
       { Type =
@@ -29,19 +31,20 @@ let Environment/empty =
         ../../CommandWrapper/Environment/empty sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
       ? ../../CommandWrapper/Environment/empty
 
-in    λ(term : Optional Text)
-    → λ(tmuxConfig : Optional Text)
-    → λ(workingDirectory : Optional Text)
-    → λ(environment : Environment)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(term : Optional Text) →
+    λ(tmuxConfig : Optional Text) →
+    λ(workingDirectory : Optional Text) →
+    λ(environment : Environment) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "tmux"
       , arguments =
-          -- TODO: Handle verbosity and pass `-v` option appropriate number
-          -- of times.
-            Optional/fold
+            optionalFold
               Text
               tmuxConfig
               (List Text)
@@ -50,11 +53,11 @@ in    λ(term : Optional Text)
           # arguments
       , environment =
             environment
-          # Optional/fold
+          # optionalFold
               Text
               term
               Environment
-              (λ(value : Text) → [ { name = "TERM", value = value } ])
+              (λ(value : Text) → [ { name = "TERM", value } ])
               Environment/empty
-      , workingDirectory = workingDirectory
+      , workingDirectory
       }

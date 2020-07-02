@@ -1,6 +1,0 @@
--- vim: filetype=dhall
---
--- TODO: Remove this file once we can ditch bacwards compatibility.
-
-  ./headAndTail sha256:9e5de1b61d63f7caf1b197df7eb0ca19f682e6c05b4e1f557cd5a88355b31b08
-? ./headAndTail

@@ -10,7 +10,6 @@ let default =
       , removeOrphanContainers = False
       }
 
-let consistency =
-      assert : { Type = DownOptions, default = default }::{=} ≡ default
+let consistency = assert : { Type = DownOptions, default }::{=} ≡ default
 
 in  default

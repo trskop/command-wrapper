@@ -28,14 +28,14 @@ let colourOutputOptions
       )
         { Always = [ "--color-output" ]
         , Auto = [] : List Text
-        , Never = ["--monochrome-output"]
+        , Never = [ "--monochrome-output" ]
         }
 
-in    λ(arguments : List Text)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(extraArguments : List Text)
-    → ExecCommand::{
+in  λ(arguments : List Text) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(extraArguments : List Text) →
+      ExecCommand::{
       , command = "jq"
       , arguments =
           colourOutputOptions colourOutput # arguments # extraArguments

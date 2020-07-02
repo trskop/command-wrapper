@@ -25,21 +25,21 @@ let ColourOutput/toText =
       ? ../../../CommandWrapper/ColourOutput/toText
 
 let optionalOptions =
-        ../../utils/optionalOptions sha256:f9626a1ef8209d45703cc7ac05aee40c9e96f5ccc2c406cdbd68eafd6d3234f0
+        ../../utils/optionalOptions sha256:51a1fbb37ceddab8f0ff0ef0fe2cd910af960bd447c6bcbc01b23426c0ee74f8
       ? ../../utils/optionalOptions
 
 let optionalFlags =
-        ../../utils/optionalFlags sha256:dbb96b960dad5036585e8d0de1d15204a281d519ac9f59b33697100d62b5798c
+        ../../utils/optionalFlags sha256:0dba774441dd92889f9a2a9819a6bca5ad7d1d891fbac9fa5c284367ca9fec33
       ? ../../utils/optionalFlags
 
 let noArguments = [] : List Text
 
 let GlobalOptions/toArguments =
-        λ(options : GlobalOptions)
-      →   optionalOptions
+      λ(options : GlobalOptions) →
+          optionalOptions
             Verbosity
-            (   λ(verbosity : Verbosity)
-              → [     "--verbosity="
+            ( λ(verbosity : Verbosity) →
+                [     "--verbosity="
                   ++  Verbosity/fold
                         Text
                         { Silent = "silent"
@@ -53,8 +53,8 @@ let GlobalOptions/toArguments =
             options.verbosity
         # optionalOptions
             ColourOutput
-            (   λ(colour : ColourOutput)
-              → [ "--colour=${ColourOutput/toText colour}" ]
+            ( λ(colour : ColourOutput) →
+                [ "--colour=${ColourOutput/toText colour}" ]
             )
             options.colour
         # optionalFlags [ "--aliases" ] [ "--no-aliases" ] options.allowAliases

@@ -2,10 +2,11 @@
 
 let script =
       { url =
-          let version = "0.1.0.0-rc9"
-          in "https://raw.githubusercontent.com/trskop/command-wrapper/${version}/command-wrapper/dhall/Exec/nix/completion-script"
+          let version = "0.1.0.0-rc10"
+          
+          in  "https://raw.githubusercontent.com/trskop/command-wrapper/${version}/command-wrapper/dhall/Exec/nix/completion-script"
       , hash =
-          "sha256:4a79f8b86f6ace664d44b60d10e6b1494a64dd339e071979fd3bcbf4d73d9e1c"
+          "sha256:00fdde2edd648423b17322313697f69b3f148559048237acedc7d75bd29b3a81"
       }
 
 let Command =
@@ -20,10 +21,10 @@ let wrapper =
         ../completion/wrapper sha256:2581cfe8c184898fe6b04aedad5ad9c1be34154b3a795ecab17ee19c899e5c8b
       ? ../completion/wrapper
 
-in    λ(toolset : Text)
-    → λ(command : Command)
-    → wrapper
-        { toolset = toolset
+in  λ(toolset : Text) →
+    λ(command : Command) →
+      wrapper
+        { toolset
         , expression = "${script.url} ${script.hash}"
         , command = Command/show command
         }

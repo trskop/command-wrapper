@@ -23,32 +23,32 @@ let Shell/toText =
       ? ../../CommandWrapper/Shell/toText
 
 let mkArguments =
-        λ(shell : Shell)
-      → λ(index : Natural)
-      → λ(words : List Text)
-      →   [ "--index=${Natural/show index}"
+      λ(shell : Shell) →
+      λ(index : Natural) →
+      λ(words : List Text) →
+          [ "--index=${Natural/show index}"
           , "--shell=${Shell/toText shell}"
           , "--"
           ]
         # words
 
-in    λ(options : { toolset : Text, expression : Text, command : Text })
-    → λ(workingDirectory : Optional Text)
-    → λ(prefixArguments : List Text)
-    → λ(shell : Shell)
-    → λ(index : Natural)
-    → λ(words : List Text)
-    → ExecCommand::{
+in  λ(options : { toolset : Text, expression : Text, command : Text }) →
+    λ(workingDirectory : Optional Text) →
+    λ(prefixArguments : List Text) →
+    λ(shell : Shell) →
+    λ(index : Natural) →
+    λ(words : List Text) →
+      ExecCommand::{
       , command = options.toolset
       , arguments =
           let adjusted-index = index + List/length Text prefixArguments
-
+          
           let arguments =
                 mkArguments
                   shell
                   adjusted-index
                   ([ options.command ] # prefixArguments # words)
-
+          
           in    [ "--no-aliases"
                 , "--silent"
                 , "completion"
@@ -58,5 +58,5 @@ in    λ(options : { toolset : Text, expression : Text, command : Text })
                 , "--"
                 ]
               # arguments
-      , workingDirectory = workingDirectory
+      , workingDirectory
       }

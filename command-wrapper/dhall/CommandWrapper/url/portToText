@@ -1,6 +1,7 @@
-λ(port : Optional Natural)
-→ Optional/fold Natural port Text
-  (λ(p : Natural) → ":${Natural/show p}")
-  ""
-
 -- vim: filetype=dhall
+
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(port : Optional Natural) →
+      optionalFold Natural port Text (λ(p : Natural) → ":${Natural/show p}") ""

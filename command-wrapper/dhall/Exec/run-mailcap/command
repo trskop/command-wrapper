@@ -33,13 +33,13 @@ let Action/toArguments =
         ./Action/toArguments sha256:94a66162f51c2e7f7ab7143e5d130dd789a04e7cd31dbefbfddaab60db852666
       ? ./Action/toArguments
 
-in    λ(action : Action)
-    → λ(environment : Environment)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+in  λ(action : Action) →
+    λ(environment : Environment) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "run-mailcap"
       , arguments = Action/toArguments action # arguments
-      , environment = environment
+      , environment
       }

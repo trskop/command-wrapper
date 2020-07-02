@@ -21,7 +21,7 @@ let default =
 
 let consistency =
         assert
-      :   { Type = ExecCommand, default = default }::{ command = "echo" }
-        ≡ (default ∧ { command = "echo" })
+      :   { Type = ExecCommand, default }::{ command = "echo" }
+        ≡ default ∧ { command = "echo" }
 
 in  default

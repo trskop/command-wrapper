@@ -2,7 +2,9 @@
 
 let script =
       { url =
-          "https://raw.githubusercontent.com/trskop/command-wrapper/da4299ae22b24ee6c60bf8f3c1f3a5d38102e379/dhall/Exec/nvr/completion-script"
+          let version = "0.1.0.0-rc10"
+          
+          in  "https://raw.githubusercontent.com/trskop/command-wrapper/${version}/command-wrapper/dhall/Exec/nvr/completion-script"
       , hash =
           "sha256:699491f149108814be8d08f8c23263fb40de7572df821482b4fd3d8f94fcdd85"
       }
@@ -11,9 +13,9 @@ let wrapper =
         ../completion/wrapper sha256:2581cfe8c184898fe6b04aedad5ad9c1be34154b3a795ecab17ee19c899e5c8b
       ? ../completion/wrapper
 
-in    λ(toolset : Text)
-    → wrapper
-        { toolset = toolset
+in  λ(toolset : Text) →
+      wrapper
+        { toolset
         , expression = "${script.url} ${script.hash}"
         , command = "nvr"
         }

@@ -41,17 +41,17 @@ let ColourOutput/toArguments =
         , Never = [ "--no-color" ]
         }
 
-in    λ(workingDirectory : Optional Text)
-    → λ(arguments : List Text)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(extraArguments : List Text)
-    → ExecCommand::{
+in  λ(workingDirectory : Optional Text) →
+    λ(arguments : List Text) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(extraArguments : List Text) →
+      ExecCommand::{
       , command = "youtube-dl"
       , arguments =
             ColourOutput/toArguments colourOutput
           # Verbosity/toArguments verbosity
           # arguments
           # extraArguments
-      , workingDirectory = workingDirectory
+      , workingDirectory
       }

@@ -5,23 +5,26 @@ let GlobalOptions
     =   ./Type sha256:88e6fa8fe07e5d00621b8c6de87f845d885fd4c2fc9be493cdd8a66ddfa7f524
       ? ./Type
 
-in    λ(globalOptions : GlobalOptions)
-    →   List/fold
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
+in  λ(globalOptions : GlobalOptions) →
+        List/fold
           Text
           globalOptions.host
           (List Text)
-          (   λ(host : Text)
-            → λ(options : List Text)
-            → options # [ "--host", host ]
+          ( λ(host : Text) →
+            λ(options : List Text) →
+              options # [ "--host", host ]
           )
           ([] : List Text)
-      # Optional/fold
+      # optionalFold
           Text
           globalOptions.logLevel
           (List Text)
           (λ(config : Text) → [ "--config", config ])
           ([] : List Text)
-      # Optional/fold
+      # optionalFold
           Text
           globalOptions.config
           (List Text)

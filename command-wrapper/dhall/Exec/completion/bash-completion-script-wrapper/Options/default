@@ -17,6 +17,6 @@ let consistency =
           , completionFor = "foo"
           , entryPoint = "_foo"
           }
-        ≡ (Options/default ⫽ { completionFor = "foo", entryPoint = "_foo" })
+        ≡ Options/default ⫽ { completionFor = "foo", entryPoint = "_foo" }
 
 in  Options/default

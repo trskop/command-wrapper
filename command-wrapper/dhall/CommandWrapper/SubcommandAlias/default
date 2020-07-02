@@ -8,10 +8,10 @@ let default = { description = None Text, arguments = [] : List Text }
 
 let consistency =
         assert
-      :   { Type = SubcommandAlias, default = default }::{
+      :   { Type = SubcommandAlias, default }::{
           , alias = "echo"
           , command = "echo"
           }
-        ≡ (default ⫽ { alias = "echo", command = "echo" })
+        ≡ default ⫽ { alias = "echo", command = "echo" }
 
 in  default

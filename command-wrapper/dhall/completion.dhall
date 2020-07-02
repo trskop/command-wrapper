@@ -47,27 +47,30 @@
 -- `--verbosity=silent` so that error messages do not interfere with
 -- completion.
 
+let optionalFold =
+      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+
 let bashTemplate =
-        λ(name : Text)
-      → λ(toolset : Text)
-      → λ(command : Text)
-      → λ(subcommand : Optional Text)
-      → λ(names : List Text)
-      → let subcommandOption =
-              Optional/fold
+      λ(name : Text) →
+      λ(toolset : Text) →
+      λ(command : Text) →
+      λ(subcommand : Optional Text) →
+      λ(names : List Text) →
+        let subcommandOption =
+              optionalFold
                 Text
                 subcommand
                 Text
-                (   λ(cmd : Text)
-                  → ''
+                ( λ(cmd : Text) →
+                    ''
                     \
                     ${"            "}--subcommand="${cmd}" ''
                 )
                 ""
-
+        
         let complete =
               λ(cmd : Text) → "complete -o filenames -F '_${name}' '${cmd}'"
-
+        
         let completeNames =
               List/fold
                 Text
@@ -75,14 +78,7 @@ let bashTemplate =
                 Text
                 (λ(alias : Text) → λ(t : Text) → complete alias ++ "\n" ++ t)
                 ""
-
-        -- The complexity related to `compopt -o nospace` is so that we do not
-        -- insert space when the only completion is in the form of `--option=`
-        -- `/some/path/`, or `env:`, etc.
-        --
-        -- The stuff with `${COMP_WORDBREAKS//:}` and `compopt +o filenames` is
-        -- to be able to complete URLs, e.g. `--url=http://localhost`, without
-        -- Bash interpreting it differently.
+        
         in  ''
             function _${name}()
             {
@@ -105,28 +101,28 @@ let bashTemplate =
                     compopt -o nospace
                 fi
             }
-
+            
             ${completeNames}
             ''
 
 let fishTemplate =
-        λ(name : Text)
-      → λ(toolset : Text)
-      → λ(command : Text)
-      → λ(subcommand : Optional Text)
-      → λ(names : List Text)
-      → let subcommandOption =
-              Optional/fold
+      λ(name : Text) →
+      λ(toolset : Text) →
+      λ(command : Text) →
+      λ(subcommand : Optional Text) →
+      λ(names : List Text) →
+        let subcommandOption =
+              optionalFold
                 Text
                 subcommand
                 Text
                 (λ(cmd : Text) → "--subcommand='${cmd}' ")
                 ""
-
+        
         let complete =
-                λ(cmd : Text)
-              → "complete --no-files --command \"${cmd}\" --arguments '(_${name})'"
-
+              λ(cmd : Text) →
+                "complete --no-files --command \"${cmd}\" --arguments '(_${name})'"
+        
         let completeNames =
               List/fold
                 Text
@@ -134,7 +130,7 @@ let fishTemplate =
                 Text
                 (λ(alias : Text) → λ(t : Text) → complete alias ++ "\n" ++ t)
                 ""
-
+        
         in  ''
             function _${name}
                 set -l cl (commandline --tokenize --current-process)
@@ -150,30 +146,30 @@ let fishTemplate =
                   end
                 end
             end
-
+            
             ${completeNames}
             ''
 
 let zshTemplate =
-        λ(name : Text)
-      → λ(toolset : Text)
-      → λ(command : Text)
-      → λ(subcommand : Optional Text)
-      → λ(names : List Text)
-      → let subcommandOption =
-              Optional/fold
+      λ(name : Text) →
+      λ(toolset : Text) →
+      λ(command : Text) →
+      λ(subcommand : Optional Text) →
+      λ(names : List Text) →
+        let subcommandOption =
+              optionalFold
                 Text
                 subcommand
                 Text
-                (   λ(cmd : Text)
-                  → ''
+                ( λ(cmd : Text) →
+                    ''
                     \
                     ${"        "}--subcommand="${cmd}" ''
                 )
                 ""
-
+        
         let complete = λ(cmd : Text) → "compdef '_${name}' '${cmd}'"
-
+        
         let completeNames =
               List/fold
                 Text
@@ -181,14 +177,14 @@ let zshTemplate =
                 Text
                 (λ(alias : Text) → λ(t : Text) → complete alias ++ "\n" ++ t)
                 ""
-
+        
         in  ''
             function _${name} {
-
+            
             local completions
             local word
             local index=$((CURRENT - 1))
-
+            
             IFS=$'\n' completions=($(
                 COMMAND_WRAPPER_INVOKE_AS='${toolset}' "${command}" --verbosity=silent \
                     completion \
@@ -196,13 +192,13 @@ let zshTemplate =
                     --shell=zsh \
                     -- "''${words[@]}"
             ))
-
+            
             for word in $completions; do
               local -a parts
-
+            
               # Split the line at a tab if there is one.
               IFS=$'\t' parts=($( echo $word ))
-
+            
               if [[ -n $parts[2] ]]; then
                  if [[ $word[1] == "-" ]]; then
                    local desc=("$parts[1] ($parts[2])")
@@ -216,31 +212,31 @@ let zshTemplate =
               fi
             done
             }
-
+            
             ${completeNames}
             ''
 
-in    λ(shell : < Bash | Fish | Zsh >)
-    → λ(toolsetName : Text)
-    → λ(executable : Text)
-    → λ(subcommand : Optional Text)
-    → λ(aliases : List Text)
-    → let name =
-            Optional/fold
+in  λ(shell : < Bash | Fish | Zsh >) →
+    λ(toolsetName : Text) →
+    λ(executable : Text) →
+    λ(subcommand : Optional Text) →
+    λ(aliases : List Text) →
+      let name =
+            optionalFold
               Text
               subcommand
               Text
               (λ(cmd : Text) → "${toolsetName}_${cmd}")
               toolsetName
-
+      
       let names =
-            Optional/fold
+            optionalFold
               Text
               subcommand
               (List Text)
               (λ(_ : Text) → aliases)
               ([ toolsetName ] # aliases)
-
+      
       in  merge
             { Bash = bashTemplate name toolsetName executable subcommand names
             , Fish = fishTemplate name toolsetName executable subcommand names

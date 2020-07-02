@@ -1,3 +1,5 @@
 -- vim: filetype=dhall
 
-https://raw.githubusercontent.com/trskop/verbosity/9dd482bfbd767c2a79e5bdec8e3d0bd4812b75c0/dhall/Verbosity/fold sha256:4dac2c264a2531d569ad0e5f712a1cd2d17b51ecdc502cc72f19937bf4733b1e
+(   ./package.dhall sha256:488f95a5a27b82653c5a759b592b08e16940d1698dcf956fcbd9c153cb2547f2
+  ? ./package.dhall
+).fold

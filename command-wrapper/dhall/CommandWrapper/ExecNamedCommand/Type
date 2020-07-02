@@ -1,10 +1,5 @@
 -- vim: filetype=dhall
 
-let CommandWithEnvironment
-    : Type
-    =   ../CommandWithEnvironment/Type sha256:6034bb390016ddb1e5bb4a2a3b35a89819bf5ef606615376efca9d1159a21674
-      ? ../CommandWithEnvironment/Type
-
 let Verbosity
     : Type
     =   ../Verbosity/Type sha256:f009a39a49b1ee65651e9510778e7d72ff96820f4702a955e8f47682d72995c6
@@ -33,16 +28,16 @@ let NotifyWhen
 in  { name : Text
     , description : Optional Text
     , command :
-          ∀(verbosity : Verbosity)
-        → ∀(colourOutput : ColourOutput)
-        → ∀(arguments : List Text)
-        → ExecCommand
+        ∀(verbosity : Verbosity) →
+        ∀(colourOutput : ColourOutput) →
+        ∀(arguments : List Text) →
+          ExecCommand
     , completion :
         Optional
-          (   ∀(shell : Shell)
-            → ∀(index : Natural)
-            → ∀(arguments : List Text)
-            → ExecCommand
+          ( ∀(shell : Shell) →
+            ∀(index : Natural) →
+            ∀(arguments : List Text) →
+              ExecCommand
           )
     , notifyWhen : Optional NotifyWhen
     }

@@ -5,13 +5,13 @@ let NonEmpty =
       ? ./Type
 
 let List/drop =
-        https://prelude.dhall-lang.org/v12.0.0/List/drop sha256:af983ba3ead494dd72beed05c0f3a17c36a4244adedf7ced502c6512196ed0cf
+      https://prelude.dhall-lang.org/v17.0.0/List/drop sha256:af983ba3ead494dd72beed05c0f3a17c36a4244adedf7ced502c6512196ed0cf
 
 let drop =
-        λ(n : Natural)
-      → λ(a : Type)
-      → λ(nonEmpty : NonEmpty a)
-      → List/drop n a ([ nonEmpty.head ] # nonEmpty.tail)
+      λ(n : Natural) →
+      λ(a : Type) →
+      λ(nonEmpty : NonEmpty a) →
+        List/drop n a ([ nonEmpty.head ] # nonEmpty.tail)
 
 let example0 =
       assert : drop 0 Natural { head = 0, tail = [ 1, 2 ] } ≡ [ 0, 1, 2 ]

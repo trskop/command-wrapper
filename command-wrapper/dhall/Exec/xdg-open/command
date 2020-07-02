@@ -26,15 +26,15 @@ let Environment =
       ? ../../CommandWrapper/Environment/Type
 
 let Optional/toList =
-      https://prelude.dhall-lang.org/v12.0.0/Optional/toList sha256:390fe99619e9a25e71a253a2b33011f9e5fa26a7d990795205543d1edd72ce5b
+      https://prelude.dhall-lang.org/v17.0.0/Optional/toList sha256:d78f160c619119ef12389e48a629ce293d69f7624c8d016b7a4767ab400344c4
 
-in    λ(fileOrUrl : Optional Text)
-    → λ(environment : Environment)
-    → λ(verbosity : Verbosity)
-    → λ(colourOutput : ColourOutput)
-    → λ(arguments : List Text)
-    → ExecCommand::{
+in  λ(fileOrUrl : Optional Text) →
+    λ(environment : Environment) →
+    λ(verbosity : Verbosity) →
+    λ(colourOutput : ColourOutput) →
+    λ(arguments : List Text) →
+      ExecCommand::{
       , command = "xdg-open"
       , arguments = Optional/toList Text fileOrUrl # arguments
-      , environment = environment
+      , environment
       }
