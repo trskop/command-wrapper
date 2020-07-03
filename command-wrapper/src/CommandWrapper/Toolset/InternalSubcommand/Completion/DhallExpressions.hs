@@ -56,7 +56,7 @@ preludeV17_0_0Import =
 -- {{{ Command Wrapper and Exec Libraries -------------------------------------
 
 commit :: IsString s => s
-commit = "0.1.0.0-rc9"
+commit = "0.1.0.0-rc10"
 
 urlBase :: IsString s => s
 urlBase = "https://raw.githubusercontent.com/trskop/command-wrapper/"

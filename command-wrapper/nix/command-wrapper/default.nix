@@ -9,7 +9,7 @@
 { stdenv, fetchurl, makeWrapper, lib }:
 
 stdenv.mkDerivation rec {
-  version = "0.1.0.0-rc9";
+  version = "0.1.0.0-rc10";
   name = "command-wrapper-${version}";
 
   src =
@@ -19,10 +19,8 @@ stdenv.mkDerivation rec {
       url = let repoUrl = "https://github.com/trskop/command-wrapper";
       in "${repoUrl}/releases/download/${version}/command-wrapper-${version}.tar.xz";
 
-      # This value can be taken from `${url}.sha256sum`, and converted using:
-      #
-      #   wget -q -O- "${url}" | cut -f1 -d' ' | xargs nix-hash --type sha256 --to-base32
-      sha256 = "0pmr3l0ck7057fc6qvpir5gmihqsbk2zfmmpj7cq8lwil4arhw97";
+      # This value can be taken from `${url}.sha256nix`:
+      sha256 = "1pymcp4xaxp59rg28kaz4p0n30flczwn6461wvnpl8czmrkvp7yp";
     };
 
   defaultConfig = builtins.readFile ./default.dhall;
