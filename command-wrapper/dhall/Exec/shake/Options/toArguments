@@ -1,0 +1,91 @@
+-- vim: filetype=dhall
+
+let Options =
+      { Type =
+            ./Type sha256:e714ae1559cab0cc5d318c7c1a0f2a441962600702cdb934683ff629f94e2a3e
+          ? ./Type
+      , default =
+            ./default sha256:02b0533cbc1281919eaa7bd898d76543f1546c4f23bf9f1dc084ce22bfcdd299
+          ? ./default
+      }
+
+let ShakeVerbosity = ../ShakeVerbosity/package.dhall
+
+let CompactOutput = ../CompactOutput/package.dhall
+
+let optionalFlags =
+        ../../utils/optionalFlags sha256:0dba774441dd92889f9a2a9819a6bca5ad7d1d891fbac9fa5c284367ca9fec33
+      ? ../../utils/optionalFlags
+
+let optionalOptions =
+        ../../utils/optionalOptions sha256:51a1fbb37ceddab8f0ff0ef0fe2cd910af960bd447c6bcbc01b23426c0ee74f8
+      ? ../../utils/optionalOptions
+
+let Nat/isZero =
+        https://prelude.dhall-lang.org/v17.0.0/Natural/isZero sha256:1be98236800ed2d5cff44f16ca02b34b0c37dfa239d9e0d63d9d2c6eeae3d1d1
+      ? https://prelude.dhall-lang.org/v17.0.0/Natural/isZero
+
+let Nat/show =
+        https://prelude.dhall-lang.org/v17.0.0/Natural/show sha256:684ed560ad86f438efdea229eca122c29e8e14f397ed32ec97148d578ca5aa21
+      ? https://prelude.dhall-lang.org/v17.0.0/Natural/show
+
+let noArguments = [] : List Text
+
+let toArguments =
+      λ(defaultShakeVerbosity : ShakeVerbosity.Type) →
+      λ(opts : Options.Type) →
+          (if opts.noBuild then [ "--no-build" ] else noArguments)
+        # optionalOptions
+            Text
+            (λ(dir : Text) → [ "--directory=${dir}" ])
+            opts.directory
+        # (if opts.colour then [ "--colour" ] else noArguments)
+        # optionalOptions
+            CompactOutput.Type
+            ( λ(arg : CompactOutput.Type) →
+                [ "--compact=${CompactOutput.toText arg}" ]
+            )
+            opts.compactOutput
+        # optionalOptions
+            Natural
+            ( λ(n : Natural) →
+                if    Nat/isZero n
+                then  [ "--jobs" ]
+                else  [ "--jobs=${Nat/show n}" ]
+            )
+            opts.jobs
+        # optionalFlags [ "--keep-going" ] [ "--no-keep-going" ] opts.keepGoing
+        # (if opts.skipCommands then [ "--skip-commands" ] else noArguments)
+        # optionalOptions
+            ShakeVerbosity.Type
+            (ShakeVerbosity.toArguments defaultShakeVerbosity)
+            opts.verbosity
+        # optionalFlags
+            [ "--print-directory" ]
+            [ "--no-print-directory" ]
+            opts.printDirectory
+        # (if opts.noTime then [ "--no-time" ] else noArguments)
+        # (if opts.timings then [ "--timings" ] else noArguments)
+
+let test0 =
+        assert
+      :   toArguments
+            ShakeVerbosity.default
+            Options::{
+            , noBuild = True
+            , directory = Some "/path/to/directory/"
+            , colour = True
+            , compactOutput = Some CompactOutput.Type.Auto
+            , jobs = Some 0
+            , keepGoing = Some False
+            }
+        ≡ [ "--no-build"
+          , "--directory=/path/to/directory/"
+          , "--colour"
+          , "--compact=auto"
+          , "--jobs"
+          , "--no-keep-going"
+          ]
+
+in    toArguments
+    : ∀(defaultShakeVerbosity : ShakeVerbosity.Type) → Options.Type → List Text

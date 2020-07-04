@@ -1,0 +1,31 @@
+-- vim: filetype=dhall
+
+let Options =
+        ./Type sha256:e714ae1559cab0cc5d318c7c1a0f2a441962600702cdb934683ff629f94e2a3e
+      ? ./Type
+
+let ShakeVerbosity =
+        ../ShakeVerbosity/Type sha256:85aa28a8ed92e7924805f4501411c185014af50a9f3227b27fdaa17e495a68af
+      ? ../ShakeVerbosity/Type
+
+let CompactOutput =
+        ../CompactOutput/Type sha256:3f7e82ca4628384d6df93a0c6b8813d1d38a438b096695cb219c24ffae9cc87b
+      ? ../CompactOutput/Type
+
+let default =
+      { noBuild = False
+      , directory = None Text
+      , colour = False
+      , compactOutput = None CompactOutput
+      , jobs = None Natural
+      , keepGoing = None Bool
+      , skipCommands = False
+      , verbosity = None ShakeVerbosity
+      , printDirectory = None Bool
+      , noTime = False
+      , timings = False
+      }
+
+let consistency = assert : { Type = Options, default }::{=} ≡ default
+
+in  default

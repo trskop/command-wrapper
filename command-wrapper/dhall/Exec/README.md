@@ -4,10 +4,10 @@ Library of utilities for Command Wrapper's `exec` subcommand.  Mostly smart
 constructors for building `ExecCommand` builders of type:
 
 ```
-  λ(verbosity : Verbosity)
-→ λ(colourOutput : ColourOutput)
-→ λ(arguments : List Text)
-→ ExecCommand
+λ(verbosity : Verbosity) →
+λ(colourOutput : ColourOutput) →
+λ(arguments : List Text) →
+  ExecCommand
 ```
 
 ## Table of Contents
@@ -103,8 +103,9 @@ Smart constructor for following commands/tools is provided:
 *   [`pg_dump`](./pg_dump)
 *   [`psql`](./psql)
 *   [`run-mailcap`](./run-mailcap)
-*   [`ssh`](./ssh)
+*   [`shake`](./shake) – Shake-based build systems.
 *   [`sk`](./sk) – Skim is a fuzzy text selector.
+*   [`ssh`](./ssh)
 *   [`stack`](./stack) – Cross-platform program for developing Haskell projects.
 *   [`tmux`](./tmux) – Terminal multiplexer.
 *   [`xdg-open`](./xdg-open)
@@ -122,8 +123,7 @@ in [`completion`](./completion) directory:
     Wrapper-style UI on top.  As template it has following type signature:
 
     ```Dhall
-      ∀(opts : Options)
-    → Text
+    ∀(opts : Options) → Text
     ```
 
     Type `Options` is defined and documented in
@@ -144,12 +144,12 @@ in [`completion`](./completion) directory:
     following type:
 
     ```Dhall
-      ∀(command : Text)
-    → ∀(prefixArguments : List Text)
-    → ∀(shell : Shell)
-    → ∀(index : Natural)
-    → ∀(words : List Text)
-    → ExecCommand
+    ∀(command : Text) →
+    ∀(prefixArguments : List Text) →
+    ∀(shell : Shell) →
+    ∀(index : Natural) →
+    ∀(words : List Text) →
+      ExecCommand
     ```
 
     And it generates following command:
@@ -165,12 +165,12 @@ in [`completion`](./completion) directory:
     convention and has the following type:
 
     ```Dhall
-      ∀(command : Text)
-    → ∀(prefixArguments : List Text)
-    → ∀(shell : Shell)
-    → ∀(index : Natural)
-    → ∀(words : List Text)
-    → ExecCommand
+    ∀(command : Text) →
+    ∀(prefixArguments : List Text) →
+    ∀(shell : Shell) →
+    ∀(index : Natural) →
+    ∀(words : List Text) →
+      ExecCommand
     ```
 
     And it generates following command:
@@ -185,12 +185,12 @@ in [`completion`](./completion) directory:
     has following type:
 
     ```Dhall
-      ∀(toolset : Text)
-    → ∀(wordlist : List Text)
-    → ∀(shell : Shell)
-    → ∀(index : Natural)
-    → ∀(words : List Text)
-    → ExecCommand
+    ∀(toolset : Text) →
+    ∀(wordlist : List Text) →
+    ∀(shell : Shell) →
+    ∀(index : Natural) →
+    ∀(words : List Text) →
+      ExecCommand
     ```
 
     And it generates following command:
@@ -245,8 +245,8 @@ Some useful utilities can be found in [`utils`](./utils):
     `ColourOutput` value into command line options.  Usage example:
 
      ```Dhall
-       colourOutputOptions
-         { Always = [ "-C" ], Auto = [] : List Text, Never = [ "-M" ] }
+      colourOutputOptions
+        { Always = [ "-C" ], Auto = [] : List Text, Never = [ "-M" ] }
     : ColourOutput → List Text
      ```
 

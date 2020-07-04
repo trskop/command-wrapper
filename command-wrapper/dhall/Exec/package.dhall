@@ -53,6 +53,9 @@
 , run-mailcap =
       ./run-mailcap/package.dhall sha256:86ae21c3007712c87f519297d036135c33c9bf23bd89008b8134ee1907940d88
     ? ./run-mailcap/package.dhall
+, shake =
+      ./shake/package.dhall sha256:b1e5996ed63293292e54b01163ba0d251d5baa75cb9dfc47085f7402e7770bed
+    ? ./shake/package.dhall
 , sk =
       ./sk/package.dhall sha256:ff1d4f30e9bb06ef48b73a6838ab467d589734899e9f1dfb24cc6d72bc02b9e6
     ? ./sk/package.dhall
