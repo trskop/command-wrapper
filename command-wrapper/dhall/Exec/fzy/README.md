@@ -8,10 +8,10 @@ advanced scoring algorithm.  <https://github.com/jhawthorn/fzy>
 
 ```Dhall
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
 let Exec =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/Exec/package.dhall
 
 let fzy-in-direnv =
       let workDirectory = Some "/my/work/dir"

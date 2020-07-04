@@ -14,10 +14,10 @@ Neovim-remote allows:
 
 ```Dhall
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
 let Exec =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/Exec/package.dhall
 
 let nvr =
       CommandWrapper.ExecNamedCommand::{
@@ -28,13 +28,12 @@ let nvr =
             Exec.nvr.Options::{
             , silent = True
             , serverName = Some "${env:XDG_RUNTIME_DIR as Text}/neovim.socket"
-            , action =
-                Some
-                  ( Exec.nvr.Action.Type.Split
-                      { vertical = True, files = [] : List Text }
-                  )
+            , action = Some
+                ( Exec.nvr.Action.Type.Split
+                    { vertical = True, files = [] : List Text }
+                )
             }
       }
 
-in  nvr
+in  nvr : CommandWrapper.ExecNamedCommand.Type
 ```

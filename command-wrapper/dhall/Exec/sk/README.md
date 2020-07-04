@@ -8,10 +8,10 @@ in Rust. [github.com/lotabout/skim](https://github.com/lotabout/skim)
 
 ```Dhall
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
 let Exec =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/Exec/package.dhall
 
 let skim =
       let workDirectory = Some "/my/work/dir"
@@ -23,17 +23,15 @@ let skim =
               Exec.sk.command
                 workDirectory
                 Exec.sk.Options::{
-                , layout =
-                    Some
-                      < BottomOfTheScreen
-                      | TopOfTheScreen
-                      | TopOfTheScreenPromptAtTheBottom
-                      >.TopOfTheScreen
-                , height =
-                    Some
-                      (< Lines : Natural | Percentage : Natural >.Percentage 40)
+                , layout = Some
+                    < BottomOfTheScreen
+                    | TopOfTheScreen
+                    | TopOfTheScreenPromptAtTheBottom
+                    >.TopOfTheScreen
+                , height = Some
+                    (< Lines : Natural | Percentage : Natural >.Percentage 40)
                 }
           }
 
-in  skim
+in  skim : CommandWrapper.ExecNamedCommand.Type
 ```

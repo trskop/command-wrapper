@@ -8,10 +8,10 @@ Fzf (`fzf`) is a general-purpose command-line fuzzy finder.
 
 ```Dhall
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
 let Exec =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/Exec/package.dhall
 
 let fzf =
       let workDirectory = Some "/my/work/dir"

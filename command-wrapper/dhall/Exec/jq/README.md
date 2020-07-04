@@ -7,22 +7,22 @@ Command-line JSON processor <https://stedolan.github.io/jq/>.
 
 ```Dhall
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
 let Exec =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/Exec/package.dhall
 
 let toolset = env:COMMAND_WRAPPER_EXE as Text ? "yx"
 
 let jq =
       let -- Command line arguments passed to `jq`.
-          arguments = CommandWrapper.Command.emptyArguments
+          arguments =
+            CommandWrapper.Command.emptyArguments
 
       in  CommandWrapper.ExecNamedCommand::{
           , name = "jq"
           , command = Exec.jq.command arguments
-          , completion =
-              Some (Exec.jq.completion toolset (None Text) arguments)
+          , completion = Some (Exec.jq.completion toolset (None Text) arguments)
           }
 
 in  [ jq ] : List CommandWrapper.ExecNamedCommand.Type

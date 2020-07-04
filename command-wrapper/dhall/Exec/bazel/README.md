@@ -1,16 +1,20 @@
 # Bazel
 
-Build automation tool <https://bazel.build/>.
+Bazel is a build automation tool.
+
+Homepage: [bazel.build](https://bazel.build/)
+
+GitHub organisation: [github.com/bazelbuild](https://github.com/bazelbuild)
 
 
 ## Usage Example
 
 ```Dhall
 let CommandWrapper =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/CommandWrapper/package.dhall
 
 let Exec =
-      https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall
+      https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/Exec/package.dhall
 
 let toolset = env:COMMAND_WRAPPER_EXE as Text ? "yx"
 
@@ -22,8 +26,8 @@ let bazel-build-work =
       in  CommandWrapper.ExecNamedCommand::{
           , name = "work.build"
           , command = Exec.bazel.command workingDirectory arguments
-          , completion =
-              Some (Exec.bazel.completion toolset workingDirectory arguments)
+          , completion = Some
+              (Exec.bazel.completion toolset workingDirectory arguments)
           }
 
 in  [ bazel-build-work ] : List CommandWrapper.ExecNamedCommand.Type
