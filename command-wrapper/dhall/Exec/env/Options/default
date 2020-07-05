@@ -1,0 +1,19 @@
+-- vim: filetype=dhall
+
+let emptyEnvironment =
+        ../../../CommandWrapper/Environment/empty sha256:cd98ff0deea70057d59baf060c91fba887fc149198b7998ba6581a08c4793a6e
+      ? ../../../CommandWrapper/Environment/empty
+
+let Options =
+        ./Type sha256:e7f1c7efc903b4e3bd08a7a9cbff0bd56d7f5062e98e881dd93523d2ae874b27
+      ? ./Type
+
+let default =
+      { ignoreEnvironment = False
+      , define = emptyEnvironment
+      , undefine = [] : List Text
+      }
+
+let consistency = assert : { Type = Options, default }::{=} ≡ default
+
+in  default

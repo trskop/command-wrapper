@@ -23,6 +23,9 @@
 , docker-compose =
       ./docker-compose/package.dhall sha256:92cf1e3af4bd8fa17af7d3bc71d112eee092f4989573bfb64647d50811507cad
     ? ./docker-compose/package.dhall
+, env =
+      ./env/package.dhall sha256:64a11ad3e1dbb71ebef8b4da50099048bb28d5c54f8467127c42b1035625ce22
+    ? ./env/package.dhall
 , firefox =
       ./firefox/package.dhall sha256:a3ce24f911e9e10fd6951be4601db8143a2feb7abfc2256aea23eae06fb50224
     ? ./firefox/package.dhall
