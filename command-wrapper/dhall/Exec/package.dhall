@@ -42,7 +42,7 @@
       ./jq/package.dhall sha256:36b918283caa0db9bf4ae8415cd089046040fd3a0d487b67c3ac597f25fea0d7
     ? ./jq/package.dhall
 , nix =
-      ./nix/package.dhall sha256:10d324e502d5a68957d288703381636628313ab394356cd85da51b896b36071e
+      ./nix/package.dhall sha256:5639ea202b2f759cbdc0d9cb6ef30187436d1f2720ad4815253f4a5111ff92c5
     ? ./nix/package.dhall
 , nvr =
       ./nvr/package.dhall sha256:930aec8341a97865603cb0b8e7dd000d1193cb301b3f266033c0452cb740a9e8
