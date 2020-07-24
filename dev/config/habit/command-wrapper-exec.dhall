@@ -2,9 +2,8 @@ let CommandWrapper = ../lib/CommandWrapper
 
 let ExecNamedCommand = CommandWrapper.ExecNamedCommand
 
-let ExecCommand = CommandWrapper.ExecCommand
-
-let Exec = ../lib/Exec
+let Exec =
+      https://raw.githubusercontent.com/trskop/command-wrapper/ec8e3de9cca65b0b9762621213fcbae6164a6ea1/command-wrapper/dhall/Exec/package.dhall sha256:f156fac2386640f20df7a0a6dccc5d33e31a7563ef0615ca52cc67218d94ce6c
 
 let Options = ./options.dhall
 
@@ -14,34 +13,22 @@ let ColourOutput = CommandWrapper.ColourOutput
 
 let options = Options::{=}
 
-let hostPath = env:DIRENV_HOST_PATH as Text
+let hostPath =
+        env:DIRENV_HOST_PATH sha256:d99c4daf3a10e7052d4c19df09a9c0d34f13fa4eb854679c3e9a159f81bbb88b as Text
+      ? env:DIRENV_HOST_PATH as Text
 
 let withHostPath =
-        λ(cmd : ExecCommand.Type)
-      → ExecCommand::{
-        , command = "env"
-        , arguments = [ "PATH=${hostPath}", cmd.command ] # cmd.arguments
-        , workingDirectory = Some options.projectRoot
-        }
+      Exec.env.command Exec.env.Options::{define = [ {name = "PATH", value = hostPath }]}
 
 let shake =
-        λ(arguments : List Text)
-      → λ(_ : Verbosity.Type)
-      → λ(colour : ColourOutput.Type)
-      → λ(extraArguments : List Text)
-      → withHostPath
-          ExecCommand::{
-          , command = "${options.projectRoot}/Shakefile.hs"
-          , arguments =
-                Exec.utils.colourOutputOptions
-                  { Always = [ "--colour" ]
-                  , Auto = [ "--colour" ]
-                  , Never = [] : List Text
-                  }
-                  colour
-              # arguments
-              # extraArguments
-          }
+      λ(arguments : List Text) →
+        withHostPath
+          ( Exec.shake.command
+              "${options.projectRoot}/Shakefile.hs"
+              Exec.shake.Options::{directory = Some options.projectRoot}
+              CommandWrapper.Environment.empty
+              arguments
+          )
 
 let commands =
         [ ExecNamedCommand::{
@@ -51,8 +38,7 @@ let commands =
           }
         , ExecNamedCommand::{
           , name = "build-static"
-          , description =
-              Some
+          , description = Some
               "Build static binaries inside Docker and package them for release"
           , command = shake [ "static" ]
           }
@@ -68,8 +54,8 @@ let commands =
           }
         , ExecNamedCommand::{
           , name = "install-man"
-          , description =
-              Some "Build and install the manual pages into ~/.local/share/man"
+          , description = Some
+              "Build and install the manual pages into ~/.local/share/man"
           , command = shake [ "man" ]
           }
         , let stack =
@@ -81,32 +67,32 @@ let commands =
               , name = "stack"
               , description = Some "Invoke stack with project-specific settings"
               , command =
-                    λ(verbosity : Verbosity.Type)
-                  → λ(colour : ColourOutput.Type)
-                  → λ(arguments : List Text)
-                  → withHostPath
+                    withHostPath
                       ( Exec.stack.command
                           stack.options
                           stack.arguments
-                          verbosity
-                          colour
-                          arguments
                       )
               , completion = Some
-                  (   λ(shell : CommandWrapper.Shell.Type)
-                    → λ(index : Natural)
-                    → λ(words : List Text)
-                    → withHostPath
-                        ( Exec.stack.completion
-                            stack.options
-                            stack.arguments
-                            shell
-                            index
-                            ([ "stack" ] # words)
+                  ( λ(shell : CommandWrapper.Shell.Type) →
+                    λ(index : Natural) →
+                    λ(words : List Text) →
+                      withHostPath
+                        ( λ(_ : Verbosity.Type) →
+                          λ(_ : ColourOutput.Type) →
+                          λ(_ : List Text) →
+                            Exec.stack.completion
+                              stack.options
+                              stack.arguments
+                              shell
+                              index
+                              ([ "stack" ] # words)
                         )
+                        Verbosity.Type.Silent
+                        ColourOutput.Type.Never
+                        ([] : List Text)
                   )
               }
         ]
       : List ExecNamedCommand.Type
 
-in  CommandWrapper.ExecConfig::{ commands = commands }
+in  CommandWrapper.ExecConfig::{ commands }

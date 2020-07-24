@@ -3,6 +3,9 @@
 -- ```
 -- docker-compose GLOBAL_OPTIONS [ACTION] [ARGUMENTS]
 -- ```
+--
+-- TODO:
+-- * Verbosity should be respected by passing appropriate `--log-leve=LEVEL`.
 
 let ExecCommand =
       { Type =
@@ -23,28 +26,21 @@ let Verbosity =
 
 let emptyArguments = [] : List Text
 
-let DownOptions/toArguments =
-        ./DownOptions/toArguments sha256:b617689d9b96bb63ebac9a915ab2f8bcfa3f270830602d6fc90f3834892b658c
-      ? ./DownOptions/toArguments
-
-let UpOptions/toArguments =
-        ./UpOptions/toArguments sha256:97e6ac449b50162a0fc65959acb43792c85175065f24932585d110e4d8957ebe
-      ? ./UpOptions/toArguments
-
 let Action =
         ./Action/Type sha256:e88f3cc3042912a2d9a24b75f93865227edbf368a70f5a8bb10f137abc8063c2
       ? ./Action/Type
 
+let Action/toArguments =
+        ./Action/toArguments sha256:2a3a9916f76a8cb19fec302d836f00f0cabc503206fbcaeef99b55082cfaa8f0
+      ? ./Action/toArguments
+
 let GlobalOptions =
-        ./GlobalOptions/Type sha256:53cba1247c3b9afd5a2a200a7ee7b819b7b7180a109fa8d46258dbc1ee496853
+        ./GlobalOptions/Type sha256:82c559b2efa14b05efa1644a6ac53852c45823fd1395f1aa223fd8f9aa549b5c
       ? ./GlobalOptions/Type
 
 let GlobalOptions/toArguments =
-        ./GlobalOptions/toArguments sha256:11704b75be6ea8b64350c345a8dab20ba40f2a2ba260f563d152a10d95073654
+        ./GlobalOptions/toArguments sha256:902d7feef94fbc8bc2346e7ddbe21cdb3694421b555c4152ca8fc049917fe6ce
       ? ./GlobalOptions/toArguments
-
-let optionalFold =
-      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
 
 in  λ(options : GlobalOptions) →
     λ(action : Optional (ColourOutput → Action)) →
@@ -55,17 +51,14 @@ in  λ(options : GlobalOptions) →
       , command = "docker-compose"
       , arguments =
             GlobalOptions/toArguments options
-          # optionalFold
-              (ColourOutput → Action)
+          # merge
+              { None = emptyArguments
+              , Some =
+                  λ(mkAction : ColourOutput → Action) →
+                    Action/toArguments (mkAction colourOutput)
+              }
               action
-              (List Text)
-              ( λ(mkAction : ColourOutput → Action) →
-                  merge
-                    { Down = DownOptions/toArguments
-                    , Up = UpOptions/toArguments
-                    }
-                    (mkAction colourOutput)
-              )
-              emptyArguments
           # arguments
+      , environment = options.environment
+      , workingDirectory = options.workingDirectory
       }
