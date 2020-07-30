@@ -1,9 +1,9 @@
 -- vim: filetype=dhall
 
 { Options =
-      ./Options/package.dhall sha256:3ca1c4384ff0beb90e4d417cd4eeff1b8a6cf655bd0307f473d57b3c956d4007
+      ./Options/package.dhall sha256:8ff31a81e6728a1fe6485eebedf31db89afbb738fb9644e9f3ae00e50a58247f
     ? ./Options/package.dhall
 , command =
-      ./command sha256:05ecf234e66ec1efb02630906a2b3f6ec910d17b2b57911c6d997d82e7e6fa0e
-    ? ./command
+      ./command.dhall sha256:45cc2dfc9e61c3c4ca6495e19b9515efd4ce45333397acd02037a6f8e2bf0f86
+    ? ./command.dhall
 }

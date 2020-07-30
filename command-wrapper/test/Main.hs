@@ -27,6 +27,7 @@ import Test.Tasty (TestTree, defaultMain, localOption, testGroup)
 import Test.Tasty.HUnit ((@?=), testCase, assertEqual, assertFailure)
 import Test.Tasty.Options (parseValue)
 import Test.Tasty.Program (CatchStderr, testProgram)
+import System.FilePath ((-<.>))
 import System.FilePath.Glob (glob)
 import System.Process (runInteractiveProcess, waitForProcess)
 
@@ -53,13 +54,30 @@ main = defaultMain $ testGroup "CommandWrapper.Tests"
 
 testDhallLibraries :: [TestTree]
 testDhallLibraries = concat
-    [ [ testCase "package.dhall files are consistent" do
+    [   -- Checks that import hashes are consistent with what is actually
+        -- present in the repository.
+      [ testCase "package.dhall files are consistent" do
             files <- glob "dhall/**/package.dhall"
             for_ files \packageDhall -> do
                 actualHash <- dhallHash ["--no-cache", "--input=" <> packageDhall] ""
                 expectedHash <- dhallHash ["--input=" <> packageDhall] ""
 
                 assertEqual packageDhall expectedHash actualHash
+
+        -- Every "completion-script.dhall" has corresponding
+        -- "completion-script.hash.dhall" file, both are then imported by
+        -- "completion.dhall". This way we can check that the script that we
+        -- are referring to in "completion.dhall" is the same one as is present
+        -- in the repository.
+      , testCase "completion-script.hash.dhall files are consistent" do
+            files <- glob "completion-script.dhall"
+            for_ files \completionScript -> do
+                actualHash <- dhallHash
+                    ["--no-cache", "--input=" <> completionScript] ""
+                expectedHash <- dhallText
+                    ["--input=" <> (completionScript -<.> "hash.dhall")] ""
+
+                assertEqual completionScript expectedHash actualHash
 
       , testCase "CommandWrapper lib is hashed correctly" do
             let pkgFile = "./dhall/CommandWrapper/package.dhall"
@@ -192,7 +210,15 @@ dhallHash
     => [String]
     -> String
     -> IO String
-dhallHash args = callCommandWrapper (["config", "--dhall-hash"] <> args)
+dhallHash args = fmap (takeWhile (/= '\n'))
+    .  callCommandWrapper (["config", "--dhall-hash"] <> args)
+
+dhallText
+    :: HasCallStack
+    => [String]
+    -> String
+    -> IO String
+dhallText args = callCommandWrapper (["config", "--dhall-text"] <> args)
 
 testBashSubcommandLibrary :: TestTree
 testBashSubcommandLibrary =

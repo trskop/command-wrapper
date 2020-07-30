@@ -21,7 +21,7 @@ let jq =
 
       in  CommandWrapper.ExecNamedCommand::{
           , name = "jq"
-          , command = Exec.jq.command arguments
+          , command = Exec.jq.command Exec.jq.Options::{=} arguments
           , completion = Some (Exec.jq.completion toolset (None Text) arguments)
           }
 

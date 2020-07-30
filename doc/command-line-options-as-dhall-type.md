@@ -4,6 +4,130 @@ This How To describes basic ways how command line options can be represented as
 typed values in Dhall. This allows us to construct command lines for execution
 in more type-safe way.
 
+## Representing Command
+
+When we have a command that has syntax like this:
+
+```
+COMMAND [OPTIONS] [ARGUMENTS]
+```
+
+Then we can define a Command Wrapper style smart constructor which would
+usually have type signature similar to this one:
+
+```Dhall
+  someCommand
+: Options.Type →
+  ∀(extraOptions : List Text) →
+  CommandWrapper.Verbosity.Type →
+  CommandWrapper.ColourOutput.Type →
+  ∀(arguments : List Text) →
+    CommandWrapper.ExecCommand.Type
+```
+
+Where:
+
+*   `Options.Type` is a command specific type representing it's options in the
+    form of a record. See later sections on how the representation looks like.
+
+*   `extraOptions : List Text` are other options that aren't representable by
+    `Options.Type` type. Kind of an escape hatch on one and allows us to
+    prepend arguments to what user supplied on command line.
+
+*   `CommandWrapper.Verbosity.Type` and `CommandWrapper.ColourOutput.Type` are
+    taken from Command Wrapper's global options.  This makes sure that we at
+    least consider how these values should be passed to the command. When done
+    properly we can suddenly control colours and verbosity globally with the
+    Command Wrapper toolset options giving us nice consistent UI.
+
+*   `arguments : List Text` that the user provided when the command was
+    invoked.
+
+This can be interpreted using pseudo-shell syntax as:
+
+```
+COMMAND [OPTIONS] [EXTRA_OPTIONS] [VERBOSITY_OPTION] [COLOUR_OPTION] [ARGUMENTS]
+```
+
+Usually `VERBOSITY_OPTION` and `COLOUR_OPTION` are folded into `OPTIONS` giving
+us:
+
+```
+COMMAND [OPTIONS] [EXTRA_OPTIONS] [ARGUMENTS]
+```
+
+When constructing `Options` for a specific command we should always provide
+`default` to be able to use `::` operator:
+
+```Dhall
+someCommand
+  Options::{ workingDirectory = Some "/path/to/directory" }
+  ([] : List Text)
+```
+
+Always consider adding following fields to `Options.Type` that aren't always
+represented as options, but may be passed to `CommandWrapper.ExecCommand.Type`:
+
+*   `workingDirectory : Optional Text` which changes causes directory change
+    before command is executed.
+
+*   `environment : CommandWrapper.Environment.Type` which is a list of
+    environment variable definitions that are usually set before the command is
+    executed.
+
+Some commands have different syntax:
+
+```
+COMMAND [COMMON_OPTIONS] [SUBCOMMAND [SUBCOMMAND_OPTIONS]] [ARGUMENTS]
+```
+
+In this case we may want to define smart constructor for it with type signature
+that looks something like this:
+
+```Dhall
+  someCommand
+: Options.Type →
+  Optional Subcommand.Type →
+  ∀(extraOptions : List Text) →
+  CommandWrapper.Verbosity.Type →
+  CommandWrapper.ColourOutput.Type →
+  ∀(arguments : List Text) →
+    CommandWrapper.ExecCommand.Type
+```
+
+Where `Subcommand.Type` is a union type (also known as sum type) that looks
+something like this:
+
+```Dhall
+let Subcommand =
+      < Subcommand0 : Subcommand0Options.Type
+      | Subcommand1 : Subcommand1Options.Type
+      -- ...
+      | SubcommandN : SubcommandNOptions.Type
+      >
+
+let toArguments =
+      λ(_ : Subcommand) →
+        merge
+          { Subcommand0 =
+              λ(options : Subcommand0Options.Type) →
+                [ "subcommand0" ] # Subcommand0Options.toArguments options
+          , Subcommand1 =
+              λ(options : Subcommand1Options.Type) →
+                [ "subcommand1" ] # Subcommand1Options.toArguments options
+          -- ...
+          , SubcommandN =
+              λ(options : SubcommandNOptions.Type) →
+                [ "subcommandN" ] # SubcommandNOptions.toArguments options
+          }
+          _
+
+in  { Type = Subcommand, toArguments }
+```
+
+Option types for individual subcommands should behave in a similar way as
+common `Options.Type`.
+
 
 ## Representing Command Line Arguments
 

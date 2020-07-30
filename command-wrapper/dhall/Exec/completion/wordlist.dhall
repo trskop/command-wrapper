@@ -1,0 +1,60 @@
+-- vim: filetype=dhall
+--
+-- Simple command line completion that uses Bash's `compgen` to complete one of
+-- the specified words.  Generated command looks like:
+--
+-- ```
+-- TOOLSET --no-aliases --silent completion --query --words
+--     --pattern="${words[${index}]}'" -- "${wordlist[@]}"
+-- ```
+
+let ExecCommand =
+      { Type =
+            ../../CommandWrapper/ExecCommand/Type sha256:6ece797a2c269b469da41f12ec2d7206846cac65183ae8213cce1b6d59f2b02b
+          ? ../../CommandWrapper/ExecCommand/Type
+      , default =
+            ../../CommandWrapper/ExecCommand/default sha256:c3a088ca2b090c91d5d630c4e01f4b4fbd0136f5bb1251f6828698e5180685b2
+          ? ../../CommandWrapper/ExecCommand/default
+      }
+
+let Shell =
+        ../../CommandWrapper/Shell/Type sha256:f61ef033bfb850ef4bf0c3d0d18c69d1b15b38cc9e3df4a1abea334b89ed5555
+      ? ../../CommandWrapper/Shell/Type
+
+let List/index =
+        ../../CommandWrapper/List/index sha256:ef2a9b5ac2dcebc7bbde771c911903af6a41099ea8ffdb2dabe8538277afec4d
+      ? ../../CommandWrapper/List/index
+
+let Optional/from =
+        ../../CommandWrapper/Optional/from sha256:5bd665b0d6605c374b3c4a7e2e2bd3b9c1e39323d41441149ed5e30d86e889ad
+      ? ../../CommandWrapper/Optional/from
+
+let completion =
+      λ(toolset : Text) →
+      λ(wordlist : List Text) →
+      λ(_ : Shell) →
+      λ(index : Natural) →
+      λ(words : List Text) →
+        ExecCommand::{
+        , command = toolset
+        , arguments =
+            let pattern = Optional/from Text "" (List/index index Text words)
+
+            in    [ "--no-aliases"
+                  , "--silent"
+                  , "completion"
+                  , "--query"
+                  , "--words"
+                  , "--pattern=${pattern}"
+                  , "--"
+                  ]
+                # wordlist
+        }
+
+in    completion
+    : ∀(toolset : Text) →
+      ∀(wordlist : List Text) →
+      Shell →
+      ∀(index : Natural) →
+      ∀(words : List Text) →
+        ExecCommand.Type

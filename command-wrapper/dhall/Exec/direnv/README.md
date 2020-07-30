@@ -22,8 +22,6 @@ let toolset = env:COMMAND_WRAPPER_EXE as Text ? "yx"
 let bazel-in-direnv =
       let arguments = CommandWrapper.Command.emptyArguments
 
-      let environment = CommandWrapper.Environment.empty
-
       let direnvDirectory = Some "/my/work/repo"
 
       let workingDirectory = direnvDirectory
@@ -33,9 +31,8 @@ let bazel-in-direnv =
           , description = Some "Run Bazel inside direnv."
           , command =
               Exec.direnv.exec
-                direnvDirectory
+                Exec.direnv.Options::{ workingDirectory = direnvDirectory }
                 (Exec.bazel.command workingDirectory arguments)
-                environment
           , completion = Some
               (Exec.bazel.completion toolset workingDirectory arguments)
           }

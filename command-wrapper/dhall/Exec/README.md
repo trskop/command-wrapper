@@ -105,7 +105,7 @@ Smart constructor for following commands/tools is provided:
 *   [`run-mailcap`](./run-mailcap)
 *   [`shake`](./shake) – Shake-based build systems.
 *   [`sk`](./sk) – Skim is a fuzzy text selector.
-*   [`ssh`](./ssh)
+*   [`ssh`](./ssh) – OpenSSH client.
 *   [`stack`](./stack) – Cross-platform program for developing Haskell projects.
 *   [`tmux`](./tmux) – Terminal multiplexer.
 *   [`xdg-open`](./xdg-open)
@@ -113,12 +113,19 @@ Smart constructor for following commands/tools is provided:
 *   [`youtube-dl`](./youtube-dl) – Command-line program to download videos
 
 
+## Useful and Shared Types
+
+*   [`CommonOptions`](./CommonOptions)
+
+*   [`ProxySettings`](./ProxySettings)
+
+
 ## Command Line Completion Helpers
 
 Helper functions and scripts for command line completion of Exec commands are
-in [`completion`](./completion) directory:
+in [`completion/`](./completion) directory:
 
-*   [`completion/bash-completion-script-wrapper`](./completion/bash-completion-script-wrapper)
+*   [`completion/bash-completion-script-wrapper.dhall`](./completion/bash-completion-script-wrapper.dhall)
     – Takes standard Bash completion file in a script that provides Command
     Wrapper-style UI on top.  As template it has following type signature:
 
@@ -127,8 +134,8 @@ in [`completion`](./completion) directory:
     ```
 
     Type `Options` is defined and documented in
-    [`completion/bash-completion-script-wrapper/Options/Type`
-    ](./completion/bash-completion-script-wrapper/Options/Type).
+    [`completion/bash-completion-script-wrapper/Options/Type.dhall`
+    ](./completion/bash-completion-script-wrapper/Options/Type.dhall).
 
     Generated script has following calling convention:
 
@@ -136,12 +143,12 @@ in [`completion`](./completion) directory:
     COMMAND [--index=NUM] [--shell=SHELL] [-- [WORD ...]]
     ```
 
-    Together with [`completion/wrapper`](./completion/wrapper) it allows
-    reusing existing Bash completion script.
+    Together with [`completion/wrapper.dhall`](./completion/wrapper.dhall) it
+    allows reusing existing Bash completion script.
 
-*   [`completion/command-wrapper`](./completion/command-wrapper) – Call command
-    line completion with Command Wrapper style API. The Dhall function has the
-    following type:
+*   [`completion/command-wrapper.dhall`](./completion/command-wrapper.dhall) –
+    Call command line completion with Command Wrapper style API. The Dhall
+    function has the following type:
 
     ```Dhall
     ∀(command : Text) →
@@ -158,8 +165,8 @@ in [`completion`](./completion) directory:
     COMMAND --index=INDEX --shell=SHELL -- [PREFIX_ARGUMENT ...] [WORD ...]
     ```
 
-*   [`completion/optparse-applicative`](./completion/optparse-applicative) –
-    Command line interfaces built with [optparse-applicative
+*   [`completion/optparse-applicative.dhall`](./completion/optparse-applicative.dhall)
+    – Command line interfaces built with [optparse-applicative
     ](https://hackage.haskell.org/package/optparse-applicative) library have
     command line completion baked in.  This function understands its calling
     convention and has the following type:
@@ -180,9 +187,9 @@ in [`completion`](./completion) directory:
         [--bash-completion-word=WORD ...]
     ```
 
-*   [`completion/wordlist`](./completion/wordlist) – Simple command line
-    completion that uses specified wordlist for completion.  Provided function
-    has following type:
+*   [`completion/wordlist.dhall`](./completion/wordlist.dhall) – Simple command
+    line completion that uses specified wordlist for completion.  Provided
+    function has following type:
 
     ```Dhall
     ∀(toolset : Text) →
@@ -200,8 +207,8 @@ in [`completion`](./completion) directory:
         -- [WORD ...]
     ```
 
-*   [`completion/wrapper`](./completion/wrapper) – Allows implementing command
-    line completion via:
+*   [`completion/wrapper.dhall`](./completion/wrapper.dhall) – Allows
+    implementing command line completion via:
 
     ```
     TOOLSET --no-aliases --silent completion --wrapper --expression=EXPRESSION
@@ -221,19 +228,15 @@ in [`completion`](./completion) directory:
     TOOLSET help [--man] completion
     ```
 
-*   [`completion/scripts`](./completion/scripts) – Bunch of completion scripts
-    ready to be used via [`completion/wrapper`](./completion/wrapper).
-
-    See [`completion/scripts`](./completion/scripts) for more information.
-
 
 ## Other Utilities
 
-Some useful utilities can be found in [`utils`](./utils):
+Some useful utilities can be found in [`utils/`](./utils):
 
-*   [`utils/colorOption`](./utils/colorOption) – Convert `ColourOutput` value
-    into `--color={always|auto|never}` command line option.  A lot of command
-    line options support `--color=WHEN` option, especially GNU applications.
+*   [`utils/colorOption.dhall`](./utils/colorOption.dhall) – Convert
+    `ColourOutput` value into `--color={always|auto|never}` command line
+    option.  A lot of command line options support `--color=WHEN` option,
+    especially GNU applications.
 
     See [`utils/colorOption`](./utils/colorOption) for a usage example.
 
@@ -241,8 +244,8 @@ Some useful utilities can be found in [`utils`](./utils):
     used if command supports something other than `--color={always|auto|never}`
     option.
 
-*   [`utils/colourOutputOptions`](./utils/colourOutputOptions) – Convert
-    `ColourOutput` value into command line options.  Usage example:
+*   [`utils/colourOutputOptions.dhall`](./utils/colourOutputOptions.dhall) –
+    Convert `ColourOutput` value into command line options.  Usage example:
 
      ```Dhall
       colourOutputOptions
@@ -250,7 +253,7 @@ Some useful utilities can be found in [`utils`](./utils):
     : ColourOutput → List Text
      ```
 
-*   [`utils/optionalEnvironmentVariables`](./utils/optionalEnvironmentVariables)
+*   [`utils/optionalEnvironmentVariables.dhall`](./utils/optionalEnvironmentVariables.dhall)
     – Convert an `Optional` value into environment variables, or empty list if
     it's `None`.
 
@@ -261,7 +264,7 @@ Some useful utilities can be found in [`utils`](./utils):
     : Optional Text → Environment
     ```
 
-*   [`utils/optionalFlags`](./utils/optionalFlags) – Convert an `Optional`
+*   [`utils/optionalFlags.dhall`](./utils/optionalFlags.dhall) – Convert an `Optional`
     value into command line options, or empty list if it's `None`.
 
     ```Dhall
@@ -269,8 +272,8 @@ Some useful utilities can be found in [`utils`](./utils):
     : Optional Bool → List Text
     ```
 
-*   [`utils/optionalOptions`](./utils/optionalOptions) – Convert an `Optional`
-    value into command line options, or empty list if it's `None`.
+*   [`utils/optionalOptions.dhall`](./utils/optionalOptions.dhall) – Convert an
+    `Optional` value into command line options, or empty list if it's `None`.
 
     ```Dhall
       optionalOptions
@@ -280,12 +283,12 @@ Some useful utilities can be found in [`utils`](./utils):
     : Optional Text → List Text
     ```
 
-*   [`utils/toShell`](./utils/toShell) – Convert output of
+*   [`utils/toShell.dhall.dhall`](./utils/toShell.dhall) – Convert output of
     `TOOLSET exec --print COMMAND` into command that can be executed on command
     line.  See [`utils/toShell`](./utils/toShell) for examples.
 
-*   [`utils/verbosityOptions`](./utils/verbosityOptions) – Convert `Verbosity`
-    value into command line options.  Usage example:
+*   [`utils/verbosityOptions.dhall`](./utils/verbosityOptions.dhall) – Convert
+    `Verbosity` value into command line options.  Usage example:
 
     ```Dhall
       verbosityOptions

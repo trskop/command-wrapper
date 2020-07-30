@@ -13,10 +13,6 @@ let CommandWrapper =
 let Exec =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/Exec/package.dhall
 
-let toolset = env:COMMAND_WRAPPER_EXE as Text ? "yx"
-
-let Environment/empty = CommandWrapper.Environment.empty
-
 let psql =
       let -- Custom PGPASSFILE:
           pgpassFile =
@@ -34,11 +30,16 @@ let psql =
             , username = "developer"
             }
 
+      let extraOptions = [] : List Text
+
       in  CommandWrapper.ExecNamedCommand::{
           , name = "psql.development"
           , description = Some "Connect to local development PostgreSQL DB."
           , command =
-              Exec.psql.command pgpassFile psqlrcFile connect Environment/empty
+              Exec.psql.command
+                Exec.psql.Options::{ pgpassFile, psqlrcFile }
+                (Some connect)
+                extraOptions
           }
 
 in  [ psql ] : List CommandWrapper.ExecNamedCommand.Type

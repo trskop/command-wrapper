@@ -1,15 +1,15 @@
 -- vim: filetype=dhall
 
 { Options =
-      ./Options/package.dhall sha256:af57e1763ede1a58d4690512a4fd5cb38a8ecd29db6803ba99a645de1b419869
+      ./Options/package.dhall sha256:e0bd7ba7835adf0dd851c5fddf4e86f9e39712a802f161f4d79ccf6f733bd227
     ? ./Options/package.dhall
 , command =
-      ./command sha256:70f772523190a0cad3cb091b8858fd9b2c9f7e20847da74e1b9a74f2f0cbf245
-    ? ./command
+      ./command.dhall sha256:eb99d7ed2460056cd487ac1445e33974bc9f1ae8f423a5c0a1522ea69940b3f9
+    ? ./command.dhall
 , completion =
-      ./completion sha256:7ded0352e285f40854412724a8bb38d7395ee3f7be045f821d797f496d1d0488
-    ? ./completion
+      ./completion.dhall sha256:b7ff485d5e63f889f0f29469626948c65a4575563ec4c4ccdfc9fbe6b80d4dd1
+    ? ./completion.dhall
 , completion-script =
-      ./completion-script sha256:a2bed0ae3a53770a6d69132921baf9610199303beeefe7c84db0d45666d4ea2b
-    ? ./completion-script
+      ./completion-script.dhall sha256:a2bed0ae3a53770a6d69132921baf9610199303beeefe7c84db0d45666d4ea2b
+    ? ./completion-script.dhall
 }

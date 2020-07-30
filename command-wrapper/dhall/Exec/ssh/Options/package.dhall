@@ -1,12 +1,15 @@
 -- vim: filetype=dhall
 
 { Type =
-      ./Type sha256:47f3b65966d3c1b11183ae79b2d435931af9d26f334ebe04fa303233423f708f
-    ? ./Type
+      ./Type.dhall sha256:5c7701e806aeb7526088ef25f1233f2237342a4b1fd617a028f1258983d5202c
+    ? ./Type.dhall
 , default =
-      ./default sha256:0f1fd740c4c18336a6e024f9d2868b6079b28da5d7d07f98a6cb57285e0ee9fb
-    ? ./default
+      ./default.dhall sha256:607cce48bb9e32e0d36aca288ca9b7aef0377d7c64f09f22e5445fd846782320
+    ? ./default.dhall
 , toArguments =
-      ./toArguments sha256:c37d391b7c6c7f1f914837a89a77506f2394ccbe91e01766be7c87cd205a225c
-    ? ./toArguments
+      ./toArguments.dhall sha256:c7b19e37a053afab7bf7dd27531f833958cb660298366b97ed858a36161c8c19
+    ? ./toArguments.dhall
+, toEnvironment =
+      ./toEnvironment.dhall sha256:fa880d8d2d2d481f5f344b12e4617c0d034577c3fdf30b7b58fe922683428e8f
+    ? ./toEnvironment.dhall
 }

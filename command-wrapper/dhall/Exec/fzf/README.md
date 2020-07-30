@@ -14,26 +14,22 @@ let Exec =
       https://raw.githubusercontent.com/trskop/command-wrapper/master/command-wrapper/dhall/Exec/package.dhall
 
 let fzf =
-      let workDirectory = Some "/my/work/dir"
-
-      in  CommandWrapper.ExecNamedCommand::{
-          , name = "fzf"
-          , description = Some "Run 'fzf'"
-          , command =
-              Exec.fzf.command
-                workDirectory
-                Exec.fzf.Options::{
-                , layout =
-                    Some
-                      < BottomOfTheScreen
-                      | TopOfTheScreen
-                      | TopOfTheScreenPromptAtTheBottom
-                      >.TopOfTheScreen
-                , height =
-                    Some
-                      (< Lines : Natural | Percentage : Natural >.Percentage 40)
-                }
-          }
+      CommandWrapper.ExecNamedCommand::{
+      , name = "fzf"
+      , description = Some "Run 'fzf'"
+      , command =
+          Exec.fzf.command
+            Exec.fzf.Options::{
+            , layout = Some
+                < BottomOfTheScreen
+                | TopOfTheScreen
+                | TopOfTheScreenPromptAtTheBottom
+                >.TopOfTheScreen
+            , height = Some
+                (< Lines : Natural | Percentage : Natural >.Percentage 40)
+            , workingDirectory = Some "/my/work/dir"
+            }
+      }
 
 in  fzf
 ```

@@ -47,17 +47,20 @@ let nixCommandToExecNamedCommand =
       λ(nix-command : Exec.nix.Command.Type) →
         let name = Exec.nix.Command.show nix-command
 
+        let noArguments = [] : List Text
+
         in  CommandWrapper.ExecNamedCommand::{
             , name
             , description = Some
                 "Just invoke '${name}', but with command-line completion."
-            , command = Exec.nix.command nix-command ([] : List Text)
+            , command =
+                Exec.nix.command Exec.nix.Options::{=} nix-command noArguments
             , completion = Some
                 ( Exec.nix.completion
                     toolset
                     nix-command
                     (None Text)
-                    ([] : List Text)
+                    noArguments
                 )
             }
 

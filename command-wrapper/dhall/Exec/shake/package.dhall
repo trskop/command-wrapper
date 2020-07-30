@@ -3,7 +3,7 @@
 -- TODO: Command-line completion
 
 { Options =
-      ./Options/package.dhall sha256:0f997e41c6f1713a8c99f6af99fbdd67973de6651efa2d7464d5085168f19a1f
+      ./Options/package.dhall sha256:624ef494d005346cadebdf9c5c6600e2a35e5f1d4c51123437d938cfc9359c49
     ? ./Options/package.dhall
 , CompactOutput =
       ./CompactOutput/package.dhall sha256:b461366e726abb1c388290a6110f2b790f06590e11520069f13d2bcadc585e9b
@@ -12,6 +12,6 @@
       ./ShakeVerbosity/package.dhall sha256:3d0bf0eede2a1cc535bb505f3980db0a6757565bf82891c161ce60cff11d4363
     ? ./ShakeVerbosity/package.dhall
 , command =
-      ./command sha256:68af3115d319bbfd3f2e045277ebd2b04dc94c82ec1027e7b76ee1ff16c9edc6
-    ? ./command
+      ./command.dhall sha256:37776d180763824e6e77898f15f94e35b3f717b63eed621eacffb3bb11cd6dd2
+    ? ./command.dhall
 }

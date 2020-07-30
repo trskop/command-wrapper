@@ -1,15 +1,15 @@
 -- vim: filetype=dhall
 
 { Type =
-      ./Type sha256:2db64f6364ae0f19c6950ce41c5407f1172ec2d2c9a011522d575aae2a5986b5
-    ? ./Type
+      ./Type.dhall sha256:f060f3aa27210e24ea2ff0fd222b3c0d4c376f79077d376c3b40596ad7d3d74a
+    ? ./Type.dhall
 , default =
-      ./default sha256:b938ff617d5bb809fc207331f5b2f9a0bd3841fd448f4ed0b6fe49c2a2d6bd68
-    ? ./default
+      ./default.dhall sha256:ecfa3148efb09aa997b99ed97df7f7f1e0184e251b56d9c5407021d35d008fdd
+    ? ./default.dhall
 , toArguments =
-      ./toArguments sha256:d3b35fd99f4a36bcdf97f4ea9a96992893d1d74a83f0ea08d741ebff1a572ff3
-    ? ./toArguments
+      ./toArguments.dhall sha256:6537d30b5f6d9aa6bcd5526659273deb224f4296cdc565b0b3d948b92d67e1b2
+    ? ./toArguments.dhall
 , interactive =
-      ./interactive sha256:d08a8b2f010ba5606d40da95161b95de4a71891ad2363e42b896fca96e3efb2b
-    ? ./interactive
+      ./interactive.dhall sha256:fb70fe482f04a1bd4a2b3e639328356b1212dc118a1015e646ad0de93fd95823
+    ? ./interactive.dhall
 }

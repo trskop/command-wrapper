@@ -1,9 +1,0 @@
--- vim: filetype=dhall
-
-let ExecOptions =
-        ../ExecOptions/Type sha256:2db64f6364ae0f19c6950ce41c5407f1172ec2d2c9a011522d575aae2a5986b5
-      ? ../ExecOptions/Type
-
-let RunOptions = ExecOptions ⩓ { remove : Bool }
-
-in  RunOptions : Type

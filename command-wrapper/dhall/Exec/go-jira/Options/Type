@@ -1,3 +1,0 @@
--- vim: filetype=dhall
-
-{ baseUrl : Text, login : Text, user : Text, token : Text }

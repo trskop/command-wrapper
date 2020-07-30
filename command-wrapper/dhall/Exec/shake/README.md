@@ -33,7 +33,6 @@ let build =
             , printDirectory = Some True
             }
             CommandWrapper.Command.emptyArguments -- No extra arguments
-            CommandWrapper.Environment.empty -- No extra environment variables
       }
 
 in  build : CommandWrapper.ExecNamedCommand.Type

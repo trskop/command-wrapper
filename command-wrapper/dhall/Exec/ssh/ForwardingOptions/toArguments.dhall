@@ -1,0 +1,65 @@
+-- vim: filetype=dhall
+
+let ForwardingOptions =
+        ./Type.dhall sha256:ef6300632529b203c5a24b33d92ed0c5c4d05cd0c72655ce768271a2e6950f9f
+      ? ./Type.dhall
+
+let ListenOn =
+        ../ListenOn/Type.dhall sha256:8f9d7c5e14dcc61cb0437a17ec268328d44a9b1aa1c130c1a9b48e55644c8d0e
+      ? ../ListenOn/Type.dhall
+
+let ConnectTo =
+        ../ConnectTo/Type.dhall sha256:e8382f5875b4a311bd30919586963a291cd2827be369dbad7cc6247212f2f96d
+      ? ../ConnectTo/Type.dhall
+
+let ConnectTo/toText =
+      λ(connectTo : ConnectTo) →
+        "${connectTo.host}:${Natural/show connectTo.port}"
+
+let hostAndPort =
+      λ(_ : { host : Optional Text, port : Natural }) →
+            merge { None = "", Some = λ(_ : Text) → _ ++ ":" } _.host
+        ++  Natural/show _.port
+
+let toArguments =
+      λ(option : Text) →
+      λ(forwarding : ForwardingOptions) →
+        [ option
+        ,     merge
+                { HostAndPort = hostAndPort
+                , UnixSocket = λ(_ : { path : Text }) → _.path
+                }
+                forwarding.listenOn
+          ++  ":"
+          ++  ConnectTo/toText forwarding.connectTo
+        ]
+
+let example0 =
+        assert
+      :   toArguments
+            "-L"
+            { listenOn =
+                ListenOn.HostAndPort { host = Some "localhost", port = 80 }
+            , connectTo = { host = "localhost", port = 80 }
+            }
+        ≡ [ "-L", "localhost:80:localhost:80" ]
+
+let example1 =
+        assert
+      :   toArguments
+            "-L"
+            { listenOn = ListenOn.HostAndPort { host = None Text, port = 80 }
+            , connectTo = { host = "localhost", port = 80 }
+            }
+        ≡ [ "-L", "80:localhost:80" ]
+
+let example2 =
+        assert
+      :   toArguments
+            "-L"
+            { listenOn = ListenOn.UnixSocket { path = "/some/file" }
+            , connectTo = { host = "localhost", port = 80 }
+            }
+        ≡ [ "-L", "/some/file:localhost:80" ]
+
+in  toArguments
