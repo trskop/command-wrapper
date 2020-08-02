@@ -98,7 +98,7 @@ import System.Process (CreateProcess(env), readCreateProcess)
 import qualified System.Process as Process (proc)
 
 import CommandWrapper.Core.Config.Alias
-    ( Alias(Alias, alias, description)
+    ( Alias(Alias, alias, command, description)
     , applyAlias
     )
 import CommandWrapper.Core.Config.Shell (Shell)
@@ -655,10 +655,12 @@ describeSubcommands internalSubcommands opts appNames config = do
             Description -> Pretty.colorDull Pretty.White
 
     describeAlias :: Alias -> Doc SubcommandAnn
-    describeAlias Alias{alias, description} =
+    describeAlias Alias{alias, command, description} =
         Pretty.annotate AliasName (fromString alias)
-        <+> Pretty.annotate Description "[alias]"
-        <+> Pretty.annotate Description (pretty description)
+        <+> (   Pretty.annotate Description "[alias for '"
+            <>  Pretty.annotate SubcommandName (fromString command)
+            <>  Pretty.annotate Description ("']" <+> pretty description)
+            )
 
     describeSubcommand
         :: SubcommandDescription  String String
@@ -698,11 +700,13 @@ subcommandTree internalSubcommands opts@ListOptions{treeOptions} appNames
         (commandTree treeOptions descriptions <> Pretty.line)
   where
     convertAlias :: Alias -> SubcommandDescription Text (Maybe (Doc TreeAnn))
-    convertAlias Alias{alias, description} = SubcommandDescription
+    convertAlias Alias{alias, command, description} = SubcommandDescription
         { name = fromString alias
         , description = description >>= \s ->
-            Pretty.annotate NodeDescription ("[alias]" <+> fromString s)
-                <$ guard (not (List.null s))
+            (   Pretty.annotate NodeDescription "[alias for '"
+            <>  Pretty.annotate LeafNodeName (fromString command)
+            <>  Pretty.annotate NodeDescription ("']" <+> fromString s)
+            ) <$ guard (not (List.null s))
         }
 
     convertSubcommand
