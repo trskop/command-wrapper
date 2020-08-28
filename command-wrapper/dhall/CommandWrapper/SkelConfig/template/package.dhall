@@ -1,12 +1,12 @@
 -- vim: filetype=dhall
 
 { bash =
-      ./bash sha256:bcbcafa9b5bd171e6ad789ca659422fde9edc8565c9516cd74359c0b4f5acf63
-    ? ./bash
+      ./bash.dhall sha256:ea187c51f5cd991a2ac221519a1581e635049424e8c91696cd699d952f5c3555
+    ? ./bash.dhall
 , dhall =
-      ./dhall sha256:8a78d4a15f202a63d130b48c141c1c4e9898faba19a1a1e8495bafbd0d43133a
-    ? ./dhall
+      ./dhall.dhall sha256:077ad60117d391fc17bc0d374afaa0542be2bda112be1cba14a937981e097e99
+    ? ./dhall.dhall
 , haskell =
-      ./haskell sha256:834ed5c4fa401bebb113d082a88d1b6479041cc1573467b58b251ced86493d1d
-    ? ./haskell
+      ./haskell.dhall sha256:834ed5c4fa401bebb113d082a88d1b6479041cc1573467b58b251ced86493d1d
+    ? ./haskell.dhall
 }

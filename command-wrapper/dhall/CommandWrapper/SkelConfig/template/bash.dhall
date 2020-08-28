@@ -40,7 +40,7 @@ fi
 # Import Command Wrapper Bash library
 #
 # Environment variables `COMMAND_WRAPPER_NAME` and `COMMAND_WRAPPER_EXE` are
-# provided when by Command Wrapper when subcommand is executed.  For more
+# provided by Command Wrapper when subcommand is executed.  For more
 # information see `command-wrapper-subcommand-protocol(7)` manual page.
 #
 # shellcheck source=/dev/null
