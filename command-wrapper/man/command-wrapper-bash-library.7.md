@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-BASH-LIBRARY(7) Bash Library | v1.0.0
 % Peter Trsko
-% 19th March 2020
+% 29th August 2020
 
 
 # NAME
@@ -97,6 +97,13 @@ messages. They are printed to `stdout`, without any extra formatting or
 colours, but they are suppressed if verbosity is set to *silent*.
 
 out *FORMAT* \[*ARGUMENTS*]
+
+
+# ANSI ESCAPE SEQUENCES
+
+Translate symbolic name of ANSI code that can be used in ANSI escape sequence.
+
+ansiCode \[\--full|\--escape] \[NAME \[...]]
 
 
 # ERROR HANDLING

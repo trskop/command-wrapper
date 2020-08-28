@@ -87,7 +87,12 @@ function verbosityToNum() {
 #
 # Usage example:
 #
-#   useColours "${COMMAND_WRAPPER_COLOUR}" 1
+#   ```Bash
+#   # Check if we should use colours on stdout (file descriptor 1).
+#   if useColours "${COMMAND_WRAPPER_COLOUR:-auto}" 1 then
+#       : ...
+#   fi
+#   ```
 function useColours() {
     local when="$1"; shift
     local fd="$1"; shift
@@ -122,6 +127,12 @@ function useColours() {
 #
 #   MESSAGE_TYPE
 #     Can be one of 'info', 'notice', 'output', 'warning', and 'error'.
+#
+# Environment variables:
+#
+#   COMMAND_WRAPPER_COLOUR
+#     Used internally to determine if colour should be used on stdout of this
+#     function. If the variable is not set then 'auto' is assumed.
 function msgf() {
     local -r verbosity="$(verbosityToNum "$1")"; shift
     local -r type="$1"; shift
@@ -803,5 +814,224 @@ function haveConfiguration() {
         fi
     else
         return 1
+    fi
+}
+
+# Translate symbolic name of ANSI code that can be used in ANSI escape
+# sequence.
+#
+# Usage:
+#
+#   ansiCode [--full|--escape] [NAME [...]]
+#
+# Options:
+#
+#   --full
+#       Print full ANSI escape sequence in symbolic form refered ty be NAME.
+#       Normally 'ansiCode' prints only appropriate code:
+#
+#       ```
+#       user@machine:~ $ ansiCode red
+#       31
+#       ```
+#
+#       With this option we get:
+#
+#       ```
+#       user@machine:~ $ ansiCode --escape red
+#       \e[31m
+#       ```
+#
+#   --escape, -e
+#       Print full ANSI escape sequence in a form that understandable to
+#       terminal; implies '--full'. Normally 'ansiCode' prints only appropriate
+#       code:
+#
+#       ```
+#       user@machine:~ $ ansiCode red
+#       31
+#       ```
+#
+#       With this option we get (notice absence of new line too):
+#
+#       ```
+#       user@machine:~ $ ansiCode --escape red | hexdump -C
+#       00000000  1b 5b 33 31 6d                                    |.[31m|
+#       00000005
+#       ```
+#
+# Arguments:
+#
+#   NAME
+#       Symbolic name of ANSI code. Can be one of:
+#
+#       - 'bold', 'bright', 'reset-bold', or 'reset-bright'
+#       - 'underlined', 'reset-underlined'
+#       - 'dim' or 'reset-dim'
+#       - 'blink' or 'reset-blink'
+#       - 'reverse', 'invert', 'reset-reverse', or 'reset-invert'
+#       - 'hidden' or 'reset-hidden'
+#       - 'black' or 'black-background'
+#       - 'red' or 'red-background'
+#       - 'green' or 'green-background'
+#       - 'yellow' or 'yellow-background'
+#       - 'magenta' or 'magenta-background'
+#       - 'cyan' or 'cyan-background'
+#       - 'gray' or 'gray-background'
+#       - 'reset', 'reset-attributes', 'reset-foreground', or 'reset-background'
+#
+# Usage example:
+#
+#   Simple format (one without '--escape' or '--full') allows us to compose
+#   attributes like this:
+#
+#   ```Bash
+#   printf '%bSOME TEXT%b\n' "\e[$(ansiCode red);$(ansiCode gray-background)m" \
+#       "\e[$(ansiCode reset)m"
+#   ```
+#
+#   Same as above can be achieved by using:
+#
+#   ```Bash
+#   printf '%bSOME TEXT%b\n' "\e[$(ansiCode red gray-background)m" \
+#       "\e[$(ansiCode reset)m"
+#   ```
+#
+#   All following examples are equivalent:
+#
+#   ```Bash
+#   printf '%bSOME TEXT%b\n' "\e[$(ansiCode red)m" "\e[$(ansiCode reset)m"
+#   ```
+#
+#   ```Bash
+#   printf '%bSOME TEXT%b\n' "$(ansiCode --full red)" "$(ansiCode --full reset)"
+#   ```
+#
+#   ```Bash
+#   ansiCode --escape red
+#   printf 'SOME TEXT'
+#   ansiCode --escape reset
+#   echo
+#   ```
+function ansiCode() {
+    local -i full=0
+    local -i escape=0
+    local -a names=()
+    local code=
+    local codeSegment=
+
+    local arg=
+    while (( $# )); do
+        arg="$1"; shift
+        codeSegment=''
+        case "${arg}" in
+          --full|-f)
+              full=1
+              ;;
+          --escape|-e)
+              full=1
+              escape=1
+              ;;
+          -*)
+              # Invalid option
+              return 1
+              ;;
+          *)
+              # Symbolic NAMEs
+              names+=("${arg,,}")
+              ;;
+        esac
+    done
+
+    # Transform symbolic names into ANSI escape code segments, e.g. red -> 31
+    for name in "${names[@]}"; do
+        case "${name}" in
+          bold|bright)
+            codeSegment='1';;
+          dim)
+            codeSegment='2';;
+          underlined)
+            codeSegment='4';;
+          blink)
+            codeSegment='5';;
+          reverse|invert)
+            codeSegment='7';;
+          hidden)
+            codeSegment='8';;
+
+          black)
+            codeSegment='30' ;;
+          red)
+            codeSegment='31';;
+          green)
+            codeSegment='32';;
+          yellow)
+            codeSegment='33';;
+          blue)
+            codeSegment='34';;
+          magenta)
+            codeSegment='35';;
+          cyan)
+            codeSegment='36';;
+          gray)
+            codeSegment='37';;
+
+          # reset
+          # reset-{bold,bright,dim,underlined,reverse,invert,hidden}
+          # reset-{attributes,foreground,background}
+          reset)
+            codeSegment='0';;
+          reset-attributes)
+            codeSegment='20';;
+          reset-bold|reset-bright)
+            codeSegment='21';;
+          reset-dim)
+            codeSegment='22';;
+          reset-underlined)
+            codeSegment='24';;
+          reset-blink)
+            codeSegment='25';;
+          reset-reverse|reset-invert)
+            codeSegment='27';;
+          reset-hidden)
+            codeSegment='28';;
+          reset-foreground)
+            codeSegment='39';;
+          reset-background)
+            codeSegment='49';;
+
+          # {black,red,green,blue,magenta,cyan,gray}-background
+          black-background)
+            codeSegment='40' ;;
+          red-background)
+            codeSegment='41';;
+          green-background)
+            codeSegment='42';;
+          yellow-background)
+            codeSegment='43';;
+          blue-background)
+            codeSegment='44';;
+          magenta-background)
+            codeSegment='45';;
+          cyan-background)
+            codeSegment='46';;
+          gray-background)
+            codeSegment='47';;
+
+          *)
+            codeSegment='0';; # Reset seems like a sensible default.
+        esac
+
+        code="${code}${code:+;}${codeSegment}"
+    done
+
+    if (( full )); then
+        code="\e[${code}m"
+    fi
+
+    if (( escape )); then
+        printf '%b' "${code}"
+    else
+        echo "${code}"
     fi
 }

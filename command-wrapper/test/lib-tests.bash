@@ -31,11 +31,13 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# This code relies on absence of "set -e"
+
 function testMsg() {
     echo "$@" 1>&2
 }
 
-function test_testVersionMinBound () {
+function test_testVersionMinBound() {
     local -r message="$1"; shift
     local -r -i expectedExitCode="$1"; shift
 
@@ -50,6 +52,37 @@ function test_testVersionMinBound () {
             "but got ${ret}."
         return 1
     fi
+}
+
+function test_ansiCode() {
+    local -r message="$1"; shift
+    local -r expectedExitCode="$1"; shift
+
+    function doTest() {
+        local -r expectedResult="$1"; shift
+        local -r -a arguments=("$@"); shift # Must be at least one
+
+        local result=
+        result=$(ansiCode "${arguments[@]}")
+        local -r -i ret=$?
+        if (( ret == expectedExitCode && ret == 0 )); then
+            if [[ "${result}" = "${expectedResult}" ]]; then
+                testMsg "    PASS: ${message}"
+                return 0
+            else
+                testMsg "    FAIL: ${message}: Expected result ${expectedResult}," \
+                    "but got ${result}."
+                return 1
+            fi
+        elif (( ret == expectedExitCode && ret != 0 )); then
+            testMsg "    PASS: ${message}"
+        else
+            testMsg "    FAIL: ${message}: Expected exit code ${expectedExitCode}," \
+                "but got ${ret}."
+            return 1
+        fi
+    }
+    doTest "$@"
 }
 
 function main() {
@@ -275,6 +308,28 @@ function main() {
         mapfile -d ' ' -c 3 -t testArgs <<< "${testData} "
         if ! test_testVersionMinBound "${testData}" \
                 "${test_testVersionMinBound_data[${testData}]}" \
+                "${testArgs[@]}"
+        then
+            testFailed=1
+        fi
+    done
+
+    testMsg "  ansiCode():"
+
+    local -A test_ansiCode_data=(
+        ['_ --unknown-option']=1
+        ['31;47 red gray-background']=0
+        ['0 reset']=0
+        ['20 reset-attributes']=0
+        ['39 reset-foreground']=0
+        ['49 reset-background']=0
+        ['\e[31;47m --full red gray-background']=0
+        ['\e[4;34m --full underlined blue']=0
+    )
+    for testData in "${!test_ansiCode_data[@]}"; do
+        mapfile -d ' ' -c 10 -t testArgs < <(printf '%s' "${testData} ")
+        if ! test_ansiCode "${testData#* }" \
+                "${test_ansiCode_data[${testData}]}" \
                 "${testArgs[@]}"
         then
             testFailed=1
