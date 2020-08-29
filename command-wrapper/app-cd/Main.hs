@@ -51,8 +51,6 @@ import Data.Monoid.Endo.Fold (dualFoldEndo)
 import Data.Text (Text, isPrefixOf)
 import qualified Data.Text as Text (unpack)
 import qualified Data.Text.Encoding as Text (encodeUtf8)
-import Dhall (FromDhall, ToDhall)
-import qualified Dhall (auto)
 import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty (AnsiStyle)
@@ -113,7 +111,6 @@ import CommandWrapper.Subcommand.Prelude
     , Result
     , SubcommandProps(SubcommandProps)
     , dieWith
-    , inputConfig
     , noPreprocessing
     , runSubcommand
     , stderr
@@ -121,35 +118,17 @@ import CommandWrapper.Subcommand.Prelude
     )
 import CommandWrapper.Toolset.Config.Command (SimpleCommand(..))
 
-
-data Config = Config
-    { directories :: [Text]
-    , menuTool :: Maybe (Maybe Text -> SimpleCommand)
-    , shell :: Maybe Text
-    , terminalEmulator :: Maybe (Text -> Maybe ShellCommand -> SimpleCommand)
-    }
-  deriving stock (Generic)
-  deriving anyclass (Dhall.FromDhall)
-
--- | Empty 'Config' used when there is no configuration file available.
-defConfig :: Config
-defConfig = Config
-    { directories = []
-    , menuTool = Nothing
-    , shell = Nothing
-    , terminalEmulator = Nothing
-    }
-
-data ShellCommand = ShellCommand
-    { command :: Text
-    , arguments :: [Text]
-    }
-  deriving stock (Generic)
-  deriving anyclass (Dhall.ToDhall)
-
--- | Smart constructor for 'ShellCommand'.
-shellCommand :: Text -> ShellCommand
-shellCommand shell = ShellCommand shell []
+import Config
+    ( Config
+        ( Config
+        , directories
+        , menuTool
+        , shell
+        , terminalEmulator
+        )
+    , readConfig
+    , shellCommand
+    )
 
 data Env config = Env
     { config :: config
@@ -193,7 +172,7 @@ defMode = Mode
 
 mainAction :: Env void -> Mode -> IO ()
 mainAction ps@Env{params} Mode{..} = do
-    config@Config{..} <- fromMaybe defConfig <$> inputConfig Dhall.auto params
+    config@Config{..} <- readConfig params
     action <- evalStrategy (config <$ ps) strategy
 
     Turtle.sh do
