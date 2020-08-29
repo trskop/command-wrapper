@@ -21,10 +21,11 @@ import Prelude (Integer)
 import Control.Applicative (pure)
 import Control.Exception (Exception, throwIO)
 import Control.Monad ((>>=))
+import Data.Bifunctor (second)
 import Data.Either (Either, either)
 import Data.Foldable (asum, mapM_, traverse_)
 import Data.Function (($), (.), id)
-import Data.Functor ((<$>), (<&>))
+import Data.Functor ((<$>), (<&>), fmap)
 import Data.String (fromString)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe, maybe)
 import Data.Monoid (mempty)
@@ -64,6 +65,7 @@ import qualified Dhall.Core as Dhall
         , Text
         )
     , Import
+    , RecordField(RecordField, recordFieldSrc, recordFieldValue)
     , normalize
     )
 import qualified Dhall.Import as Dhall (emptyStatus, loadWith)
@@ -336,7 +338,14 @@ emptyRecord :: Dhall.Expr s a
 emptyRecord = Dhall.RecordLit mempty
 
 record :: [(Text, Dhall.Expr s a)] -> Dhall.Expr s a
-record = Dhall.RecordLit . Dhall.Map.fromList
+record = Dhall.RecordLit . Dhall.Map.fromList . fmap (second recordField)
 
 recordType :: [(Text, Dhall.Expr s a)] -> Dhall.Expr s a
-recordType = Dhall.Record . Dhall.Map.fromList
+recordType = Dhall.Record . Dhall.Map.fromList . fmap (second recordField)
+
+recordField :: Dhall.Expr s a -> Dhall.RecordField s a
+recordField recordFieldValue = Dhall.RecordField
+    { Dhall.recordFieldSrc = Nothing
+    , Dhall.recordFieldValue
+    }
+

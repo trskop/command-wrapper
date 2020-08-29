@@ -21,16 +21,16 @@ extra-deps:
   - fuzzy-0.1.0.0
   - lock-file-0.7.0.0
   - verbosity-0.4.0.0
-  - prettyprinter-1.6.2
+  - prettyprinter-1.7.0
 
   # Don't forget to upgrade Dhall Standard version in
   # ./src/CommandWrapper/Internal.hs when upgrading Dhall library.
-  - dhall-1.33.1
-  - dhall-bash-1.0.31
-  - dhall-json-1.7.0
+  - dhall-1.34.0
+  - dhall-bash-1.0.32
+  - dhall-json-1.7.1
   - aeson-yaml-1.1.0.0
   - repline-0.4.0.0
-  - haskeline-0.8.0.0
+  - haskeline-0.8.1.0
 
 # Keeping the following in case of new Dhall release:
   # Dhall dependencies:

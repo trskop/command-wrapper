@@ -133,6 +133,7 @@ testDhallLibraries = concat
 
     , [Content, Import] <&> testDhallLibrary LatestPrelude
     , [Content, Import] <&> testDhallLibrary PreludeV17_0_0
+    , [Content, Import] <&> testDhallLibrary PreludeV17_1_0
     ]
 
 dhallLibOption :: DhallLibrary -> String
@@ -151,23 +152,29 @@ testDhallLibrary lib importOrContent =
             ]
             ""
         expectedHash <- dhallHash [] expr
-        (actualHash <> "\n") @?= expectedHash
+        actualHash @?= expectedHash
   where
     libName = (\v -> unwords ["Prelude", v, show importOrContent]) case lib of
         PreludeV17_0_0     -> "v17.0.0"
-        LatestPrelude      -> "latest (v17.0.0)"
+        PreludeV17_1_0     -> "v17.1.0"
+        LatestPrelude      -> "latest (v17.1.0)"
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
     actualHash = case lib of
         PreludeV17_0_0     -> v17_0_0
-        LatestPrelude      -> v17_0_0
+        PreludeV17_1_0     -> v17_1_0
+        LatestPrelude      -> v17_1_0
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
     notTestable =  error ("Not designed to test this library " <> show lib)
 
     v17_0_0 =
+        "sha256:10db3c919c25e9046833df897a8ffe2701dc390fa0893d958c3430524be5a43e"
+
+    -- Yes, it's the same hash as v17_0_0
+    v17_1_0 =
         "sha256:10db3c919c25e9046833df897a8ffe2701dc390fa0893d958c3430524be5a43e"
 
 callCommandWrapper
