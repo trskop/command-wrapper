@@ -33,7 +33,7 @@ import qualified Data.List as List (filter, nub, isPrefixOf)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe, isJust, maybe)
 import Data.Monoid (Endo(Endo))
 import Data.Ord ((>))
-import Data.Semigroup (Semigroup(..))
+import Data.Semigroup (Semigroup((<>)))
 import Data.String (String, fromString)
 import Data.Void (Void)
 import Data.Word (Word)
@@ -242,6 +242,11 @@ data Strategy
     | TerminalEmulatorOnly
     | ShCommand
     | BashCommand
+    | SelfCommand Strategy
+
+instance Semigroup Strategy where
+    SelfCommand _ <> s@(SelfCommand _) = s
+    _             <> s                 = s
 
 evalStrategy
     :: Env Config
@@ -301,6 +306,28 @@ evalStrategy env@Env{config, inTmux, inKitty, inVimTerminal} = \case
     BashCommand ->
         pure (printCdCommand bash)
 
+    SelfCommand strategy -> do
+        let toOpt = \case
+                Auto ->
+                    ""
+                ShellOnly ->
+                    "--shell "
+                TmuxOnly ->
+                    "--tmux "
+                KittyOnly ->
+                    "--kitty "
+                TerminalEmulatorOnly ->
+                    "--terminal "
+                ShCommand ->
+                    "--sh-command "
+                BashCommand ->
+                    "--bash-command "
+                SelfCommand s ->
+                    toOpt s
+
+        pure $ PrintSelfCommand \dir ->
+            toOpt strategy <> bytes (bash (Text.encodeUtf8 dir))
+
   where
     Config{shell, terminalEmulator} = config
 
@@ -317,6 +344,7 @@ parseOptions = dualFoldEndo
     <*> many queryOption
     <*> many shCommand
     <*> many bashCommand
+    <*> many selfCommand
     <*> optional dirArgument
   where
     shellSwitch =
@@ -353,6 +381,11 @@ parseOptions = dualFoldEndo
             ( Options.long "bash-command"
             )
 
+    selfCommand =
+        Options.flag' (modifyStrategy SelfCommand)
+            ( Options.long "self-command"
+            )
+
     queryOption =
         setQuery <$> Options.strOption
             ( Options.long "query"
@@ -362,7 +395,13 @@ parseOptions = dualFoldEndo
       where
         setQuery q = Endo \mode -> mode{query = Just q}
 
-    setStrategy strategy = Endo \mode -> mode{strategy}
+    setStrategy newStrategy = Endo \mode@Mode{strategy} -> mode
+        { strategy = strategy <> newStrategy
+        }
+
+    modifyStrategy f = Endo \mode@Mode{strategy} -> mode
+        { strategy = strategy <> f strategy
+        }
 
     dirArgument =
         setDirectory <$> Options.strArgument
@@ -377,6 +416,7 @@ data Action
     | RunKitty (Maybe Text)
     | RunTerminalEmulator (Text -> SimpleCommand)
     | PrintCdCommand (Text -> ByteString)
+    | PrintSelfCommand (Text -> ByteString)
 
 -- TODO: These actions are very similar, especially 'RunTmux' and 'RunKitty'.
 -- We should consider generalising them so that the same code can be used in
@@ -441,6 +481,12 @@ executeAction env@Env{params} directory = \case
     PrintCdCommand escape -> do
         dir <- resolveDirectory
         liftIO (ByteString.putStrLn ("cd " <> escape dir))
+
+    PrintSelfCommand escape -> do
+        dir <- resolveDirectory
+        let Params{name} = params
+        liftIO (ByteString.putStrLn (fromString name <> " cd " <> escape dir))
+
   where
     directoryPath = Turtle.fromText directoryText
     directoryText = Turtle.lineToText directory
@@ -529,6 +575,7 @@ doCompletion Env{} index _shell words' = do
         , "-q", "--query="
         , "--bash-command"
         , "--sh-command"
+        , "--self-command"
         ]
 
 helpMsg :: Env a -> Pretty.Doc (Result Pretty.AnsiStyle)
@@ -546,6 +593,30 @@ helpMsg Env{params = Params{name, subcommand}} = Pretty.vsep
                     <> Help.longOption "kitty"
                     <> "|"
                     <> Help.longOption "terminal"
+                    <> "|"
+                    <> Help.longOption "{bash|sh}-command"
+                    <> Pretty.annotate Help.dullGreen "--"
+                        <> Pretty.brackets
+                            ( Pretty.annotate Help.dullGreen "bash"
+                            <> "|"
+                            <> Pretty.annotate Help.dullGreen "sh"
+                            )
+                        <> Pretty.annotate Help.dullGreen "-command"
+                    )
+            <+> Pretty.brackets (Help.longOptionWithArgument "query" "QUERY")
+            <+> Pretty.brackets (Help.metavar "DIRECTORY")
+        , subcommand'
+            <+> Help.longOption "self-command"
+            <+> Pretty.brackets
+                    ( Help.longOption "shell"
+                    <> "|"
+                    <> Help.longOption "tmux"
+                    <> "|"
+                    <> Help.longOption "kitty"
+                    <> "|"
+                    <> Help.longOption "terminal"
+                    <> "|"
+                    <> Help.longOption "{bash|sh}-command"
                     )
             <+> Pretty.brackets (Help.longOptionWithArgument "query" "QUERY")
             <+> Pretty.brackets (Help.metavar "DIRECTORY")
@@ -586,6 +657,12 @@ helpMsg Env{params = Params{name, subcommand}} = Pretty.vsep
             [ Pretty.reflow "Print a command to change directory. If escaping\
                 \ is required then Bourne Shell escaping is used. Useful for\
                 \ shells like Dash."
+            ]
+
+        , Help.optionDescription ["--self-command"]
+            [ Pretty.reflow "Print a command to execute this subcommand with\
+                \ selected directory inlined. Very useful for shell shortcut\
+                \ bindings."
             ]
 
         , Help.optionDescription ["--query=QUERY", "-q QUERY"]

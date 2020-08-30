@@ -438,9 +438,6 @@
     the parent die.  Make sure that stdin/stdout are detached, and killing
     original process where `TOOLSET cd` was invoked won't kill the terminal.)
 
--   Option to print a command that would be performed.  This is useful for
-    shell key-bindings.
-
 -   Support directory specific commands.  For example we may want a specific
     shell for a certain directory.
 
@@ -449,8 +446,23 @@
     from within a Vim/Neovim terminal as well as any other terminal if we pass
     Neovim listening socket/address to it.  See `yx jmp` for more information.
 
+-   Consider restructuring options to be more extensible, i.e. not needing to
+    introduce whole new option every time we support something new.
+
+    ```
+    TOOLSET [GLOBAL_OPTIONS] cd \
+        [--action={shell|tmux|kitty|terminal}|--command={bash|sh}] \
+        [--query=QUERY] \
+        [DIRECTORY]
+    ```
+
 
 ### Exec
+
+*   Expose toolset executable inside exec config. At the moment this is
+    possible via environment variable, but goes against caching.
+
+*   Consider making `exec` an internal command, but keep separate config.
 
 *   Documentation and HOW TOs for `exec` command completion.
 
