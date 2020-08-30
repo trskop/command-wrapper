@@ -130,6 +130,7 @@ import Config
     , shellCommand
     )
 
+
 data Env config = Env
     { config :: config
     , params :: Params
@@ -257,7 +258,7 @@ evalStrategy env@Env{config, inTmux, inKitty, inVimTerminal} = \case
       | inTmux && not inVimTerminal ->
             pure (RunTmux shell)
 
-      | inKitty  && not inVimTerminal ->
+      | inKitty && not inVimTerminal ->
             pure (RunKitty shell)
 
       | otherwise -> do
@@ -285,12 +286,13 @@ evalStrategy env@Env{config, inTmux, inKitty, inVimTerminal} = \case
     TmuxOnly
       | inTmux    -> pure (RunTmux shell)
       | otherwise ->
-        die env 3 "Not in a Tmux session and '--tmux' was specified."
+            die env 3 "Not in a Tmux session and '--tmux' was specified."
 
     KittyOnly
       | inKitty   -> pure (RunKitty shell)
       | otherwise ->
-        die env 3 "Not runing in Kitty terminal and '--kitty was specified."
+            die env 3 "Not runing in Kitty terminal and '--kitty' was\
+                \ specified."
 
     TerminalEmulatorOnly ->
         case terminalEmulator of
@@ -545,8 +547,8 @@ resolveShell env = maybe (Turtle.need "SHELL") (pure . Just) >=> \case
         -- `getent passwd $LOGIN` works, however, that's not the best
         -- idea when Kerberos/LDAP/etc. are used.
         die env 3
-            "'SHELL': Environment variable is undefined, unable to\
-            \ determine what shell to execute."
+            "'SHELL': Environment variable is undefined, unable to determine\
+            \ what shell to execute."
 
     Just shell ->
         pure (Text.unpack shell)
@@ -564,8 +566,10 @@ doCompletion Env{} index _shell words' = do
         , expandTilde = True
         }
   where
+    pat :: String
     pat = fromMaybe (lastDef "" words') (atMay words' (fromIntegral index))
 
+    allOptions :: [String]
     allOptions =
         [ "-s", "--shell"
         , "-t", "--tmux"
@@ -593,18 +597,19 @@ helpMsg Env{params = Params{name, subcommand}} = Pretty.vsep
                     <> Help.longOption "kitty"
                     <> "|"
                     <> Help.longOption "terminal"
-                    <> "|"
-                    <> Help.longOption "{bash|sh}-command"
-                    <> Pretty.annotate Help.dullGreen "--"
-                        <> Pretty.brackets
-                            ( Pretty.annotate Help.dullGreen "bash"
-                            <> "|"
-                            <> Pretty.annotate Help.dullGreen "sh"
-                            )
-                        <> Pretty.annotate Help.dullGreen "-command"
                     )
             <+> Pretty.brackets (Help.longOptionWithArgument "query" "QUERY")
             <+> Pretty.brackets (Help.metavar "DIRECTORY")
+
+        , subcommand'
+            <+> Pretty.braces
+                    ( Help.longOption "bash-command"
+                    <> "|"
+                    <> Help.longOption "sh-command"
+                    )
+            <+> Pretty.brackets (Help.longOptionWithArgument "query" "QUERY")
+            <+> Pretty.brackets (Help.metavar "DIRECTORY")
+
         , subcommand'
             <+> Help.longOption "self-command"
             <+> Pretty.brackets
@@ -616,7 +621,13 @@ helpMsg Env{params = Params{name, subcommand}} = Pretty.vsep
                     <> "|"
                     <> Help.longOption "terminal"
                     <> "|"
-                    <> Help.longOption "{bash|sh}-command"
+                    <> Pretty.annotate Help.dullGreen "--"
+                        <> Pretty.braces
+                            ( Pretty.annotate Help.dullGreen "bash"
+                            <> "|"
+                            <> Pretty.annotate Help.dullGreen "sh"
+                            )
+                        <> Pretty.annotate Help.dullGreen "-command"
                     )
             <+> Pretty.brackets (Help.longOptionWithArgument "query" "QUERY")
             <+> Pretty.brackets (Help.metavar "DIRECTORY")
@@ -626,7 +637,7 @@ helpMsg Env{params = Params{name, subcommand}} = Pretty.vsep
         , "help" <+> Pretty.brackets (Help.longOption "man") <+> subcommand'
         ]
 
-    , Help.section ("Options" <> ":")
+    , Help.section "Options:"
         [ Help.optionDescription ["--shell", "-s"]
             [ Pretty.reflow "Execute a subshell even if in a Tmux session or\
                 \ Kitty terminal."

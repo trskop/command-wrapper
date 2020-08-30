@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 12th January 2020
+% 30th August 2020
 
 
 # NAME
@@ -18,6 +18,11 @@ TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd
 
 TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd
 {\--bash-command|\--sh-command}
+\[\--query=QUERY|-q *QUERY*]
+\[\[\--] *DIRECTORY*]
+
+TOOLSET\_COMMAND \[GLOBAL\_OPTIONS] cd \--self-command
+\[\--shell|-s|\--tmux|-t|\--kitty|-k|\--terminal|-e|\--{bash|sh}-command]
 \[\--query=QUERY|-q *QUERY*]
 \[\[\--] *DIRECTORY*]
 
@@ -81,6 +86,10 @@ For more information consult Command Wrapper Dhall library.
 \--sh-command
 :   Print a command to change directory. If escaping is required then Bourne
     Shell escaping is used. Useful for shells like Dash.
+
+\--self-command
+:   Print a command to execute this subcommand with selected directory inlined.
+    Very useful for shell shortcut bindings.
 
 \--query=*QUERY*, \--query *QUERY*, -q *QUERY*
 :  Start the search for a directory with the given *QUERY*.  This option may be
