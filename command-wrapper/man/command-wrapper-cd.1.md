@@ -1,6 +1,6 @@
 % COMMAND-WRAPPER-CD(1) Command Wrapper 0.1.0 | Command Wrapper
 % Peter Trsko
-% 30th August 2020
+% 1st September 2020
 
 
 # NAME
@@ -124,16 +124,99 @@ are listed below.
 
 Example of binding `TOOLSET_COMMAND cd` to CTRL-f:
 
-```
+```Bash
 bind '"\C-f":"TOOLSET_COMMAND cd\n"'
 ```
 
 Please change `TOOLSET_COMMAND` to whatever you are using, or use full path to
 `command-wrapper` executable.  Usually:
 
-```
+```Bash
 ${HOME}/.local/lib/command-wrapper/command-wrapper
 ```
+
+## ADVANCED BASH KEY BINDINGS
+
+This is based on `fzf` bindings. They avoid using `\e` (escape) to avoid delays
+in terminal waiting for the next key. To get the same behaviour they bound
+`\C-x\C-a` (`CTRL-x CTRL-a`). Using the same bindings as `fzf` allows us to
+limit number of bindings that are in use, however, it also has a downside if
+`fzf` bindings decide to change something and we interfere.
+
+In the addition to the above `C-m` (`CTRL-m`) is used in the bindings below and
+it's just standard vi binding for `<CR>` AKA new line.
+
+Don't forget to expand `${TOOLSET}`, it won't work otherwise.
+
+```Bash
+bind '"\C-x\C-a":vi-movement-mode'
+bind '"\C-x\C-e":shell-expand-line'
+bind '"\C-x\C-r":redraw-current-line'
+bind '"\C-f":"`${TOOLSET} cd --self-command --shell`\C-x\C-e\C-x\C-r\C-m"'
+bind '"\C-\M-f":"`${TOOLSET} cd --bash-command`\C-x\C-e\C-x\C-r\C-m"'
+bind '"\C-k":"`${TOOLSET} cd --self-command`\C-x\C-e\C-x\C-r\C-m"'
+```
+
+When `CTRL+f` or `CTRL-ALT-f` is pressed in normal mode then switch to insert
+mode and call it there:
+
+```Bash
+bind -m vi-command '"\C-f":"i\C-f"'
+bind -m vi-command '"\C-\M-f":"i\C-\M-f"'
+```
+
+Following is the summary and description of keybindings introduced above:
+
+`CTRL+f`
+:   Calls and expands:
+
+    ```Bash
+    TOOLSET cd --self-command --shell
+    ```
+
+    Into following command which ends up being executed and stored in Bash
+    history:
+
+    ```Bash
+    TOOLSET cd --shell DIRECTORY
+    ```
+
+    Where `DIRECTORY` is what user selected during expansion of the original
+    command.
+
+`CTRL+ALT+f`
+:   Calls and expands
+
+    ```Bash
+    TOOLSET cd --bash-command
+    ```
+
+    Into following command which ends up being executed and stored in Bash
+    history:
+
+    ```Bash
+    cd DIRECTORY
+    ```
+
+    Where `DIRECTORY` is what user selected during expansion of the original
+    command.
+
+`CTRL+k`
+:   Calls and expands:
+
+    ```Bash
+    TOOLSET cd --self-command
+    ```
+
+    Into following command which ends up being executed and stored in Bash
+    history:
+
+    ```Bash
+    TOOLSET cd DIRECTORY
+    ```
+
+    Where `DIRECTORY` is what user selected during expansion of the original
+    command.
 
 
 # FILES
