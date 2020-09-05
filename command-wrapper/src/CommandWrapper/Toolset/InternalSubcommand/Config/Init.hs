@@ -78,6 +78,7 @@ import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     ( Freeze(input, output)
     , Input(InputFile)
     , Output(OutputBasedOnInput)
+    , OutputOrCheck(Write)
     , defFreeze
     , freeze
     )
@@ -261,7 +262,7 @@ init
         -- TODO: Freeze only when created.
         Dhall.freeze appNames config Dhall.defFreeze
             { Dhall.input = Dhall.InputFile libraryDhall
-            , Dhall.output = Dhall.OutputBasedOnInput
+            , Dhall.output = Dhall.Write Dhall.OutputBasedOnInput
             }
 
         checkFile execLibraryDhall
@@ -270,7 +271,7 @@ init
         -- TODO: Freeze only when created.
         Dhall.freeze appNames config Dhall.defFreeze
             { Dhall.input = Dhall.InputFile execLibraryDhall
-            , Dhall.output = Dhall.OutputBasedOnInput
+            , Dhall.output = Dhall.Write Dhall.OutputBasedOnInput
             }
   where
     dieWith :: Int -> (forall ann. Pretty.Doc ann) -> IO a

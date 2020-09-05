@@ -146,6 +146,7 @@ import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     , Interpreter(..)
     , Lint(..)
     , Output(..)
+    , OutputOrCheck
     , Repl(..)
     , Resolve(..)
     , ResolveMode(..)
@@ -336,7 +337,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (typeFlag <|> noTypeFlag)
                 <*> many letOption
                 <*> many (cacheFlag <|> noCacheFlag)
-                <*> optional outputOption
+                <*> optional (outputOption @Dhall.Output)
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
@@ -346,41 +347,41 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
         <*> Options.strArgument mempty
         <*> Options.strArgument mempty
         <*> ( dualFoldEndo
-                <$> optional outputOption
+                <$> optional (outputOption @Dhall.Output)
             )
 
     , dhallHashFlag
         <*> ( dualFoldEndo
                 <$> many (cacheFlag <|> noCacheFlag)
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
-                <*> optional outputOption
+                <*> optional (outputOption @Dhall.Output)
             )
 
     , dhallFreezeFlag
         <*> ( dualFoldEndo
                 <$> many (remoteOnlyFlag <|> noRemoteOnlyFlag)
                 <*> many (forSecurityFlag <|> forCachingFlag)
-                <*> optional outputOption
+                <*> optional (outputOption @Dhall.OutputOrCheck)
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
     , dhallFormatFlag
         <*> ( dualFoldEndo
 --              <$> many (checkFlag <|> noCheckFlag)
-                <$> optional outputOption
+                <$> optional (outputOption @Dhall.OutputOrCheck)
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
     , dhallLintFlag
         <*> ( dualFoldEndo
-                <$> optional outputOption
+                <$> optional (outputOption @Dhall.OutputOrCheck)
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
     , dhallResolveFlag
         <*> ( dualFoldEndo
                 <$> many (cacheFlag <|> noCacheFlag)
-                <*> optional outputOption
+                <*> optional (outputOption @Dhall.Output)
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
                 <*> optional listDependenciesOption
             )
@@ -395,7 +396,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> optional declareOption
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
-                <*> optional outputOption
+                <*> optional (outputOption @Dhall.Output)
             )
 
     , dhallExecFlag
@@ -429,7 +430,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                         (opts :: Dhall.ToText){Dhall.outputDelimiter = '\0'}
                     )
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
-                <*> optional outputOption
+                <*> optional (outputOption @Dhall.Output)
             )
 
     , dhallFilterFlag
@@ -445,7 +446,7 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                 <*> many (typeFlag <|> noTypeFlag)
                 <*> many (cacheFlag <|> noCacheFlag)
                 <*> many letOption
-                <*> optional outputOption
+                <*> optional (outputOption @Dhall.Output)
                 <*> optional (expressionOption <|> inputOption Dhall.setInput)
             )
 
@@ -651,7 +652,8 @@ parseOptions appNames@AppNames{usedName} globalConfig options = execParser
                     (Options.long "input" <> Options.short 'i')
 
     outputOption
-        :: (Output a ~ Dhall.Output, HasOutput a)
+        :: forall o a
+        . (Output a ~ o, HasOutput a)
         => Options.Parser (Endo a)
     outputOption = Endo . setOutput <$> Options.outputOption
 

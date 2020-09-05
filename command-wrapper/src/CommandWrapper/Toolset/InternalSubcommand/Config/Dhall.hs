@@ -87,6 +87,8 @@ module CommandWrapper.Toolset.InternalSubcommand.Config.Dhall
     , setInput
 
     , Output(..)
+    , OutputOrCheck(..)
+    , ReportOutput(..)
 
     -- * Cache
     , SemanticCacheMode(..)
@@ -453,20 +455,20 @@ resolve appNames config Resolve{mode, input, output, semanticCache} =
 
 data Lint = Lint
     { input :: Input
-    , output :: Output
+    , output :: OutputOrCheck
     , characterSet :: Dhall.CharacterSet
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
 
 instance HasOutput Lint where
-    type Output Lint = Output
+    type Output Lint = OutputOrCheck
     output = field' @"output"
 
 defLint :: Lint
 defLint = Lint
     { input = InputStdin
-    , output = OutputStdout
+    , output = Write OutputStdout
     , characterSet = Dhall.Unicode
     }
 
@@ -477,10 +479,15 @@ lint appNames config Lint{input, output, characterSet} =
 
         (Dhall.Header header, expression, _) <- readExpressionAndHeader input
 
-        withOutputHandle input output (renderDoc config)
-            (   pretty header
-            <>  Dhall.prettyCharacterSet characterSet (Dhall.lint expression)
-            )
+        case output of
+            Write o ->
+                withOutputHandle input o (renderDoc config)
+                    (   pretty header
+                    <>  Dhall.prettyCharacterSet characterSet
+                            (Dhall.lint expression)
+                    )
+            Check _ ->
+                pure () -- TODO: Implement
 
 -- }}} Lint -------------------------------------------------------------------
 
@@ -542,21 +549,21 @@ command Options{..} = do
 
 data Format = Format
     { input :: Input
-    , output :: Output
+    , output :: OutputOrCheck
     , characterSet :: Dhall.CharacterSet
     }
   deriving stock (Generic, Show)
   deriving anyclass (HasInput)
 
 instance HasOutput Format where
-    type Output Format = Output
+    type Output Format = OutputOrCheck
     output = field' @"output"
 
 defFormat :: Format
 defFormat = Format
     { input = InputStdin
     , characterSet = Dhall.Unicode
-    , output = OutputStdout
+    , output = Write OutputStdout
     }
 
 format :: AppNames -> Config -> Format -> IO ()
@@ -565,8 +572,14 @@ format appNames config Format{..} = handleExceptions appNames config do
 
     (Dhall.Header header, expression, _) <- readExpressionAndHeader input
 
-    withOutputHandle input output (renderDoc config)
-        (pretty header <> Dhall.prettyCharacterSet characterSet expression)
+    case output of
+        Write o ->
+            withOutputHandle input o (renderDoc config)
+                ( pretty header
+                <> Dhall.prettyCharacterSet characterSet expression
+                )
+        Check _ ->
+            pure () -- TODO: Implement
 
 -- }}} Format -----------------------------------------------------------------
 
@@ -577,10 +590,12 @@ data FreezePurpose
     | FreezeForCaching
   deriving stock (Generic, Show)
 
+
 data Freeze = Freeze
     { remoteOnly :: Bool
     , input :: Input
-    , output :: Output
+    , output :: OutputOrCheck
+    -- ^ 'Nothing' means that we are not producing any output, only checking.
     , characterSet :: Dhall.CharacterSet
     , purpose :: FreezePurpose
     }
@@ -588,14 +603,25 @@ data Freeze = Freeze
   deriving anyclass (HasInput)
 
 instance HasOutput Freeze where
-    type Output Freeze = Output
+    type Output Freeze = OutputOrCheck
     output = field' @"output"
 
+-- | Default 'freeze' options.
+--
+-- @
+-- 'defFreeze' = 'Freeze'
+--     { 'remoteOnly' = 'True'
+--     , 'input' = 'InputStdin'
+--     , 'output' = 'Write' 'OutputStdout'
+--     , 'characterSet' = 'Dhall.Unicode'
+--     , 'purpose' = 'FreezeForSecurity'
+--     }
+-- @
 defFreeze :: Freeze
 defFreeze = Freeze
     { remoteOnly = True
     , input = InputStdin
-    , output = OutputStdout
+    , output = Write OutputStdout
     , characterSet = Dhall.Unicode
     , purpose = FreezeForSecurity
     }
@@ -628,10 +654,14 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
                 (rewriteForCaching directory)
                 (Dhall.denote expression)
 
-    withOutputHandle input output (renderDoc config)
-        ( pretty header
-        <> Dhall.prettyCharacterSet characterSet frozenExpression
-        )
+    case output of
+        Write o ->
+            withOutputHandle input o (renderDoc config)
+                ( pretty header
+                <> Dhall.prettyCharacterSet characterSet frozenExpression
+                )
+        Check _ ->
+            pure () -- TODO: Implement
   where
     freezeFunction =
         if remoteOnly
@@ -1183,8 +1213,38 @@ data Output
     | OutputFile FilePath
   deriving stock (Show)
 
+-- | Constructs 'Output' using 'OutputFile' constructor.
 instance IsOutput Output where
     parseOutput s = OutputFile <$> Data.Output.parseOutput s
+
+data ReportOutput
+    = ReportStdout
+    -- ^ Print report to @stdout@.
+    | ReportFile FilePath
+    -- ^ Write report into a file.
+    | ReportNone
+    -- ^ Do not print\/write any reporting information. Command can still
+    -- indicate success or failure using exit code.
+  deriving stock (Show)
+
+-- | Constructs 'ReportOutput' using 'ReportFile' constructor.
+instance IsOutput ReportOutput where
+    parseOutput s = ReportFile <$> Data.Output.parseOutput s
+
+-- | Write 'Output' or report result of a check to 'ReportOutput'.
+data OutputOrCheck
+    = Write Output
+    -- ^ Write generated output.
+    | Check ReportOutput
+    -- ^ Instead of writing output perform a check and notify the user
+  deriving stock (Show)
+
+-- | Constructs 'OutputOrCheck' using @'Write' . 'OutputFile'@ constructor.
+--
+-- TODO: Consider removing this instance as making the choice beteween 'Write'
+-- and 'Check' should be explicit in the code.
+instance IsOutput OutputOrCheck where
+    parseOutput s = Write <$> Data.Output.parseOutput s
 
 data InputEncoding
     = InputCbor
