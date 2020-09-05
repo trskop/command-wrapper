@@ -126,7 +126,6 @@ import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Monoid ((<>), mconcat)
 import Data.Ord ((>))
 import Data.String (String)
-import Data.Traversable (traverse)
 import Data.Tuple (uncurry)
 import Data.Typeable (Typeable)
 import Data.Void (Void)
@@ -205,22 +204,21 @@ import qualified Dhall.Core as Dhall
         )
     , Expr
         ( Annot
-        , Embed
-        , ImportAlt
         , Let
         , Note
         )
     , Import(..)
-    , ImportHashed(..)
     , ImportType(Remote)
     , alphaNormalize
-    , denote
     , normalize
-    , subExpressions
     , throws
     )
 import qualified Dhall.Diff (Diff(Diff, doc), diffNormalized)
-import qualified Dhall.Freeze as Dhall (freezeImport, freezeRemoteImport)
+import qualified Dhall.Freeze as Dhall
+    ( Intent(Cache, Secure)
+    , Scope(AllImports, OnlyRemoteImports)
+    , freezeExpression
+    )
 import qualified Dhall.Import as Dhall
     ( Chained(chainedImport)
     , Imported(Imported)
@@ -235,7 +233,6 @@ import qualified Dhall.Import as Dhall
     )
 import qualified Dhall.Lint as Dhall (lint)
 import qualified Dhall.Map (keys)
-import qualified Dhall.Optics (transformMOf)
 import qualified Dhall.Parser as Dhall
     ( Header(Header)
     , ParseError
@@ -643,16 +640,8 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
 
     (Dhall.Header header, expression, directory)
         <- readExpressionAndHeader input
-
-    frozenExpression <- case purpose of
-        FreezeForSecurity ->
-            traverse (freezeFunction directory) expression
-
-        FreezeForCaching  ->
-            Dhall.Optics.transformMOf
-                Dhall.subExpressions
-                (rewriteForCaching directory)
-                (Dhall.denote expression)
+    frozenExpression
+        <- Dhall.freezeExpression directory scope intent expression
 
     case output of
         Write o ->
@@ -663,60 +652,14 @@ freeze appNames config Freeze{..} = handleExceptions appNames config do
         Check _ ->
             pure () -- TODO: Implement
   where
-    freezeFunction =
+    scope =
         if remoteOnly
-            then Dhall.freezeRemoteImport
-            else Dhall.freezeImport
+            then Dhall.OnlyRemoteImports
+            else Dhall.AllImports
 
-    -- Following code is mostly copy-paste-reformatt from `dhall` library
-    -- version 1.27.0.
-    rewriteForCaching directory = \case
-        Dhall.ImportAlt
-            ( Dhall.Embed Dhall.Import
-                { importHashed =
-                    Dhall.ImportHashed{hash = Just _expectedHash}
-                }
-            )
-            import_@(
-                Dhall.ImportAlt
-                    ( Dhall.Embed Dhall.Import
-                        { importHashed =
-                            Dhall.ImportHashed{hash = Just _actualHash}
-                        }
-                    )
-                _
-            )
-            -> do
-                -- Here we could actually compare the `_expectedHash` and
-                -- `_actualHash` to see if they differ, but we choose not to do
-                -- so and instead automatically accept the `_actualHash`.  This
-                -- is done for the same reason that the `freeze*` functions
-                -- ignore hash mismatches: the user intention when using `dhall
-                -- freeze` is to update the hash, which they expect to possibly
-                -- change.
-                pure import_
-
-        Dhall.Embed
-            import_@(
-                Dhall.Import
-                    { importHashed = Dhall.ImportHashed{hash = Nothing}
-                    }
-            )
-            -> do
-                frozenImport <- freezeFunction directory import_
-
-                -- The two imports can be the same if the import is local and
-                -- `freezeFunction` only freezes remote imports
-                pure if frozenImport /= import_
-                    then
-                        Dhall.ImportAlt
-                            (Dhall.Embed frozenImport)
-                            (Dhall.Embed import_)
-                    else
-                        Dhall.Embed import_
-
-        expression ->
-            pure expression
+    intent = case purpose of
+        FreezeForSecurity -> Dhall.Secure
+        FreezeForCaching  -> Dhall.Cache
 
 -- }}} Freeze -----------------------------------------------------------------
 
