@@ -8,20 +8,16 @@ let headAndTail =
         ../List/headAndTail sha256:06d3b92abb0790387092bf6db0ff9fc20299a898bb9e9a8e34373ad92b5ed86d
       ? ../List/headAndTail
 
-let optional =
-      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
-
 let fromList =
       λ(a : Type) →
       λ(list : List a) →
         let x = headAndTail a list : { head : Optional a, tail : List a }
         
-        in  optional
-              a
+        in  merge
+              { None = None (NonEmpty a)
+              , Some = λ(just : a) → Some { head = just, tail = x.tail }
+              }
               x.head
-              (Optional (NonEmpty a))
-              (λ(just : a) → Some { head = just, tail = x.tail })
-              (None (NonEmpty a))
 
 let example0 =
       assert : fromList Natural ([] : List Natural) ≡ None (NonEmpty Natural)

@@ -103,6 +103,7 @@ import qualified Dhall.Core as Dhall
         , TextLit
         , Union
         )
+    , FieldSelection(FieldSelection, fieldSelectionLabel)
     , Import(Import, importHashed)
     , ImportHashed(ImportHashed, hash, importType)
     , ImportType
@@ -227,11 +228,13 @@ extractUnionConstructor
     :: Dhall.Expr s a
     -> Maybe (Text, Dhall.Expr s a, Dhall.Map Text (Maybe (Dhall.Expr s a)))
 extractUnionConstructor = \case
-    Dhall.App (Dhall.Field (Dhall.Union kts) fld) e ->
-        pure (fld, e, Dhall.Map.delete fld kts)
+    Dhall.App (Dhall.Field (Dhall.Union kts) fieldSelection) e -> do
+        let Dhall.FieldSelection{fieldSelectionLabel = label} = fieldSelection
+        pure (label, e, Dhall.Map.delete label kts)
 
-    Dhall.Field (Dhall.Union kts) fld ->
-        pure (fld, Dhall.RecordLit mempty, Dhall.Map.delete fld kts)
+    Dhall.Field (Dhall.Union kts) fieldSelection -> do
+        let Dhall.FieldSelection{fieldSelectionLabel = label} = fieldSelection
+        pure (label, Dhall.RecordLit mempty, Dhall.Map.delete label kts)
 
     _ ->
         empty

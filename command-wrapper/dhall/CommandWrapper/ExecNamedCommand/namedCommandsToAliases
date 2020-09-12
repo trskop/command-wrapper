@@ -8,12 +8,13 @@ let SubcommandAlias =
         ../SubcommandAlias/Type sha256:da075695e700d78e164ef85d7f28d87b7a2e4c624b5bf62cd1e35c0191280d40
       ? ../SubcommandAlias/Type
 
-let List/map =
-      https://prelude.dhall-lang.org/v17.0.0/List/map sha256:dd845ffb4568d40327f2a817eb42d1c6138b929ca758d50bc33112ef3c885680
+let Prelude =
+        ../../Prelude/package.dhall sha256:2086c6a2e7ce8ee371858036ab60d24d045969defadb4bc9d87639921ec2e028
+      ? ../../Prelude/package.dhall
 
 let namedCommandToAlias =
         ./namedCommandToAlias sha256:b20a98d13a84f3866aee69661df9bc640c934260fcba6add4d0a1491ecc708fa
       ? ./namedCommandToAlias
 
-in    List/map ExecNamedCommand SubcommandAlias namedCommandToAlias
+in    Prelude.List.map ExecNamedCommand SubcommandAlias namedCommandToAlias
     : List ExecNamedCommand → List SubcommandAlias

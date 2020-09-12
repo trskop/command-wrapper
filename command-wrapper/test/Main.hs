@@ -34,6 +34,7 @@ import System.Process (runInteractiveProcess, waitForProcess)
 import CommandWrapper.Toolset.InternalSubcommand.Completion.Libraries
     ( DhallLibrary(..)
     , ImportOrContent(..)
+    , parseDhallLibrary
     , showDhallLibrary
     )
 
@@ -46,6 +47,7 @@ main = defaultMain $ testGroup "CommandWrapper.Tests"
     , testGroup "Subcommand"
         [ testGroup "Exec" testExecSubcommand
         ]
+    , testDhallLibraryEnum
     ]
   where
     -- Library `tasty-program` hides constructor, so this is the only way I
@@ -134,6 +136,7 @@ testDhallLibraries = concat
     , [Content, Import] <&> testDhallLibrary LatestPrelude
     , [Content, Import] <&> testDhallLibrary PreludeV17_0_0
     , [Content, Import] <&> testDhallLibrary PreludeV17_1_0
+    , [Content, Import] <&> testDhallLibrary PreludeV18_0_0
     ]
 
 dhallLibOption :: DhallLibrary -> String
@@ -157,14 +160,16 @@ testDhallLibrary lib importOrContent =
     libName = (\v -> unwords ["Prelude", v, show importOrContent]) case lib of
         PreludeV17_0_0     -> "v17.0.0"
         PreludeV17_1_0     -> "v17.1.0"
-        LatestPrelude      -> "latest (v17.1.0)"
+        PreludeV18_0_0     -> "v18.0.0"
+        LatestPrelude      -> "latest (v18.1.0)"
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
     actualHash = case lib of
         PreludeV17_0_0     -> v17_0_0
         PreludeV17_1_0     -> v17_1_0
-        LatestPrelude      -> v17_1_0
+        PreludeV18_0_0     -> v18_0_0
+        LatestPrelude      -> v18_0_0
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
@@ -176,6 +181,9 @@ testDhallLibrary lib importOrContent =
     -- Yes, it's the same hash as v17_0_0
     v17_1_0 =
         "sha256:10db3c919c25e9046833df897a8ffe2701dc390fa0893d958c3430524be5a43e"
+
+    v18_0_0 =
+        "sha256:2086c6a2e7ce8ee371858036ab60d24d045969defadb4bc9d87639921ec2e028"
 
 callCommandWrapper
     :: HasCallStack
@@ -295,3 +303,10 @@ testExecSubcommand =
             (["exec", "--expression=" <> expr] <> arguments)
             ""
         r @?= expectedOutput
+
+testDhallLibraryEnum :: TestTree
+testDhallLibraryEnum = testGroup "DhallLibrary"
+    [ testGroup "(parseDhallLibrary . showDhallLibrary) === Just" do
+        [minBound..maxBound] <&> \lib -> testCase (show lib) do
+            parseDhallLibrary (showDhallLibrary @String lib) @?= Just lib
+    ]

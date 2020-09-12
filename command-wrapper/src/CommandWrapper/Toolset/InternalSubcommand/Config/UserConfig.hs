@@ -65,7 +65,7 @@ import qualified Dhall.Core as Dhall
         , Text
         )
     , Import
-    , RecordField(RecordField, recordFieldSrc, recordFieldValue)
+    , makeRecordField
     , normalize
     )
 import qualified Dhall.Import as Dhall (emptyStatus, loadWith)
@@ -338,14 +338,9 @@ emptyRecord :: Dhall.Expr s a
 emptyRecord = Dhall.RecordLit mempty
 
 record :: [(Text, Dhall.Expr s a)] -> Dhall.Expr s a
-record = Dhall.RecordLit . Dhall.Map.fromList . fmap (second recordField)
+record =
+    Dhall.RecordLit . Dhall.Map.fromList . fmap (second Dhall.makeRecordField)
 
 recordType :: [(Text, Dhall.Expr s a)] -> Dhall.Expr s a
-recordType = Dhall.Record . Dhall.Map.fromList . fmap (second recordField)
-
-recordField :: Dhall.Expr s a -> Dhall.RecordField s a
-recordField recordFieldValue = Dhall.RecordField
-    { Dhall.recordFieldSrc = Nothing
-    , Dhall.recordFieldValue
-    }
-
+recordType =
+    Dhall.Record . Dhall.Map.fromList . fmap (second Dhall.makeRecordField)

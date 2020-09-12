@@ -1,27 +1,41 @@
 -- vim: filetype=dhall
 
-let fold =
-      https://prelude.dhall-lang.org/v17.0.0/List/fold sha256:10bb945c25ab3943bd9df5a32e633cbfae112b7d3af38591784687e436a8d814
-
-let optional =
-      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+let Prelude =
+        ../../Prelude/package.dhall sha256:2086c6a2e7ce8ee371858036ab60d24d045969defadb4bc9d87639921ec2e028
+      ? ../../Prelude/package.dhall
 
 let step =
       λ(a : Type) →
       λ(elem : a) →
       λ(input : { head : Optional a, tail : List a }) →
-        optional
-          a
+        merge
+          { None = { head = Some elem, tail = input.tail }
+          , Some =
+              λ(prev : a) → { head = Some elem, tail = [ prev ] # input.tail }
+          }
           input.head
-          { head : Optional a, tail : List a }
-          (λ(prev : a) → { head = Some elem, tail = [ prev ] # input.tail })
-          { head = Some elem, tail = input.tail }
 
-in  λ(a : Type) →
-    λ(list : List a) →
-      fold
-        a
-        list
-        { head : Optional a, tail : List a }
-        (step a)
-        { head = None a, tail = [] : List a }
+let headAndTail =
+      λ(a : Type) →
+      λ(list : List a) →
+        Prelude.List.fold
+          a
+          list
+          { head : Optional a, tail : List a }
+          (step a)
+          { head = None a, tail = [] : List a }
+
+let test0 =
+        assert
+      :   headAndTail Natural ([] : List Natural)
+        ≡ { head = None Natural, tail = [] : List Natural }
+
+let test1 =
+        assert
+      : headAndTail Natural [ 0 ] ≡ { head = Some 0, tail = [] : List Natural }
+
+let test2 =
+      assert : headAndTail Natural [ 0, 1 ] ≡ { head = Some 0, tail = [ 1 ] }
+
+in    headAndTail
+    : ∀(a : Type) → ∀(list : List a) → { head : Optional a, tail : List a }

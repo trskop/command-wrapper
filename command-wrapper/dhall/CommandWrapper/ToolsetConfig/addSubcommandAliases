@@ -8,28 +8,30 @@ let ToolsetConfig =
         ./Type sha256:d1221f8c7593ed4a475f470a35b91af8463dfd29548bbf90f0ff097fef8c4ef7
       ? ./Type
 
-let optionalFold =
-      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
-
 let mkPrefix =
-      λ(optionalText : Optional Text) →
-        optionalFold
-          Text
-          optionalText
-          Text
-          ( λ(t : Text) →
-              ''
-              ${t}
-              ''
-          )
-          ""
+      λ(_ : Optional Text) →
+        merge
+          { None = ""
+          , Some =
+              λ(t : Text) →
+                ''
+                ${t}
+                ''
+          }
+          _
 
-in  λ(aliases : List SubcommandAlias) →
-    λ(helpMessage : Text) →
-    λ(defaults : ToolsetConfig) →
+let addSubcommandAliases =
+      λ(aliases : List SubcommandAlias) →
+      λ(helpMessage : Text) →
+      λ(defaults : ToolsetConfig) →
           defaults
         ⫽ { aliases = defaults.aliases # aliases
           , extraHelpMessage = Some
               "${mkPrefix defaults.extraHelpMessage}${helpMessage}"
           }
-      : ToolsetConfig
+
+in    addSubcommandAliases
+    : ∀(aliases : List SubcommandAlias) →
+      ∀(helpMessage : Text) →
+      ∀(defaults : ToolsetConfig) →
+        ToolsetConfig

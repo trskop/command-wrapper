@@ -1,9 +1,13 @@
 -- vim: filetype=dhall
 
-let fold =
-      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
+let from =
+      λ(a : Type) →
+      λ(default : a) →
+      λ(optional : Optional a) →
+        merge { None = default, Some = λ(v : a) → v } optional
 
-in  λ(a : Type) →
-    λ(default : a) →
-    λ(optional : Optional a) →
-      fold a optional a (λ(_ : a) → _) default
+let test0 = assert : from Natural 0 (None Natural) ≡ 0
+
+let test1 = assert : from Natural 0 (Some 1) ≡ 1
+
+in  from : ∀(a : Type) → a → Optional a → a

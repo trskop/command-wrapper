@@ -14,8 +14,8 @@ let Forwarding =
       }
 
 let Prelude =
-        ../../prelude.dhall sha256:10db3c919c25e9046833df897a8ffe2701dc390fa0893d958c3430524be5a43e
-      ? ../../prelude.dhall
+        ../../../Prelude/package.dhall sha256:2086c6a2e7ce8ee371858036ab60d24d045969defadb4bc9d87639921ec2e028
+      ? ../../../Prelude/package.dhall
 
 let optionalOptions =
         ../../utils/optionalOptions.dhall sha256:51a1fbb37ceddab8f0ff0ef0fe2cd910af960bd447c6bcbc01b23426c0ee74f8

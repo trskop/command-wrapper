@@ -4,11 +4,14 @@ let NonEmpty =
         ./Type sha256:e2e247455a858317e470e0e4affca8ac07f9f130570ece9cb7ac1f4ea3deb87f
       ? ./Type
 
-let list-length =
-      https://prelude.dhall-lang.org/v17.0.0/List/length sha256:42c6812c7a9e3c6e6fad88f77c5b3849503964e071cb784e22c38c888a401461
+let Prelude =
+        ../../Prelude/package.dhall sha256:2086c6a2e7ce8ee371858036ab60d24d045969defadb4bc9d87639921ec2e028
+      ? ../../Prelude/package.dhall
 
 let length =
-      λ(a : Type) → λ(nonEmpty : NonEmpty a) → list-length a nonEmpty.tail + 1
+      λ(a : Type) →
+      λ(nonEmpty : NonEmpty a) →
+        Prelude.List.length a nonEmpty.tail + 1
 
 let example0 = assert : length Natural { head = 0, tail = [ 1, 2 ] } ≡ 3
 

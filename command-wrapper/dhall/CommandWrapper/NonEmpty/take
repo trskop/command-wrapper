@@ -4,14 +4,15 @@ let NonEmpty =
         ./Type sha256:e2e247455a858317e470e0e4affca8ac07f9f130570ece9cb7ac1f4ea3deb87f
       ? ./Type
 
-let List/take =
-      https://prelude.dhall-lang.org/v17.0.0/List/take sha256:b3e08ee8c3a5bf3d8ccee6b2b2008fbb8e51e7373aef6f1af67ad10078c9fbfa
+let Prelude =
+        ../../Prelude/package.dhall sha256:2086c6a2e7ce8ee371858036ab60d24d045969defadb4bc9d87639921ec2e028
+      ? ../../Prelude/package.dhall
 
 let take =
       λ(n : Natural) →
       λ(a : Type) →
       λ(nonEmpty : NonEmpty a) →
-        List/take n a ([ nonEmpty.head ] # nonEmpty.tail)
+        Prelude.List.take n a ([ nonEmpty.head ] # nonEmpty.tail)
 
 let example0 =
         assert

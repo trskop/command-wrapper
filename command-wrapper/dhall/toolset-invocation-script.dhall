@@ -29,19 +29,11 @@
 let export =
       λ(name : Text) → λ(value : Text) → "${name}='${value}'; export ${name}"
 
-let optionalFold =
-      https://prelude.dhall-lang.org/v17.0.0/Optional/fold sha256:c5b9d72f6f62bdaa0e196ac1c742cc175cd67a717b880fb8aec1333a5a4132cf
-
 let optionalExport =
-        λ(name : Text)
-      → λ(default : Text)
-      → λ(value : Optional Text)
-      → optionalFold
-          Text
-          value
-          Text
-          (export name)
-          ("# " ++ export name default)
+      λ(name : Text) →
+      λ(default : Text) →
+      λ(value : Optional Text) →
+        merge { None = "# " ++ export name default, Some = export name } value
 
 let Options =
       { Type =
@@ -62,16 +54,16 @@ let Options =
 let Options/consistency =
         assert
       :   Options::{ commandWrapperExecutable = "/some/executable" }
-        ≡ (Options.default ⫽ { commandWrapperExecutable = "/some/executable" })
+        ≡ Options.default ⫽ { commandWrapperExecutable = "/some/executable" }
 
 let defaultXdgConfigHome =
       env:XDG_CONFIG_HOME as Text ? "${env:HOME as Text}/.config"
 
 let template =
-        λ(options : Options.Type)
-      → ''
+      λ(options : Options.Type) →
+        ''
         #!/bin/sh
-        
+
         ${optionalExport "COMMAND_WRAPPER_FACADE" "" options.facadeExecutable}
         ${optionalExport
             "COMMAND_WRAPPER_SYSTEM_CONFIG_DIR"
@@ -86,52 +78,52 @@ let template =
         ''
 
 let example0 =
-assert :
-        template Options::{ commandWrapperExecutable = "/some/executable" }
-      ≡ ''
-        #!/bin/sh
-        
-        # COMMAND_WRAPPER_FACADE='''; export COMMAND_WRAPPER_FACADE
-        # COMMAND_WRAPPER_SYSTEM_CONFIG_DIR='''; export COMMAND_WRAPPER_SYSTEM_CONFIG_DIR
-        # COMMAND_WRAPPER_USER_CONFIG_DIR='${defaultXdgConfigHome}'; export COMMAND_WRAPPER_USER_CONFIG_DIR
-        # COMMAND_WRAPPER_INVOKE_AS='''; export COMMAND_WRAPPER_INVOKE_AS
-        exec '/some/executable' "$@"
-        ''
+        assert
+      :   template Options::{ commandWrapperExecutable = "/some/executable" }
+        ≡ ''
+          #!/bin/sh
+
+          # COMMAND_WRAPPER_FACADE='''; export COMMAND_WRAPPER_FACADE
+          # COMMAND_WRAPPER_SYSTEM_CONFIG_DIR='''; export COMMAND_WRAPPER_SYSTEM_CONFIG_DIR
+          # COMMAND_WRAPPER_USER_CONFIG_DIR='${defaultXdgConfigHome}'; export COMMAND_WRAPPER_USER_CONFIG_DIR
+          # COMMAND_WRAPPER_INVOKE_AS='''; export COMMAND_WRAPPER_INVOKE_AS
+          exec '/some/executable' "$@"
+          ''
 
 let example1 =
-assert :
-        template
-          Options::{
-          , commandWrapperExecutable = "/some/executable"
-          , facadeExecutable = Some "/some/facade"
-          , systemConfigDir = Some "/some/etc"
-          }
-      ≡ ''
-        #!/bin/sh
-        
-        COMMAND_WRAPPER_FACADE='/some/facade'; export COMMAND_WRAPPER_FACADE
-        COMMAND_WRAPPER_SYSTEM_CONFIG_DIR='/some/etc'; export COMMAND_WRAPPER_SYSTEM_CONFIG_DIR
-        # COMMAND_WRAPPER_USER_CONFIG_DIR='${defaultXdgConfigHome}'; export COMMAND_WRAPPER_USER_CONFIG_DIR
-        # COMMAND_WRAPPER_INVOKE_AS='''; export COMMAND_WRAPPER_INVOKE_AS
-        exec '/some/executable' "$@"
-        ''
+        assert
+      :   template
+            Options::{
+            , commandWrapperExecutable = "/some/executable"
+            , facadeExecutable = Some "/some/facade"
+            , systemConfigDir = Some "/some/etc"
+            }
+        ≡ ''
+          #!/bin/sh
+
+          COMMAND_WRAPPER_FACADE='/some/facade'; export COMMAND_WRAPPER_FACADE
+          COMMAND_WRAPPER_SYSTEM_CONFIG_DIR='/some/etc'; export COMMAND_WRAPPER_SYSTEM_CONFIG_DIR
+          # COMMAND_WRAPPER_USER_CONFIG_DIR='${defaultXdgConfigHome}'; export COMMAND_WRAPPER_USER_CONFIG_DIR
+          # COMMAND_WRAPPER_INVOKE_AS='''; export COMMAND_WRAPPER_INVOKE_AS
+          exec '/some/executable' "$@"
+          ''
 
 let example2 =
-assert :
-        template
-          Options::{
-          , commandWrapperExecutable = "/some/executable"
-          , facadeExecutable = Some "/some/facade"
-          , toolsetName = Some "toolset"
-          }
-      ≡ ''
-        #!/bin/sh
-        
-        COMMAND_WRAPPER_FACADE='/some/facade'; export COMMAND_WRAPPER_FACADE
-        # COMMAND_WRAPPER_SYSTEM_CONFIG_DIR='''; export COMMAND_WRAPPER_SYSTEM_CONFIG_DIR
-        # COMMAND_WRAPPER_USER_CONFIG_DIR='${defaultXdgConfigHome}'; export COMMAND_WRAPPER_USER_CONFIG_DIR
-        COMMAND_WRAPPER_INVOKE_AS='toolset'; export COMMAND_WRAPPER_INVOKE_AS
-        exec '/some/executable' "$@"
-        ''
+        assert
+      :   template
+            Options::{
+            , commandWrapperExecutable = "/some/executable"
+            , facadeExecutable = Some "/some/facade"
+            , toolsetName = Some "toolset"
+            }
+        ≡ ''
+          #!/bin/sh
+
+          COMMAND_WRAPPER_FACADE='/some/facade'; export COMMAND_WRAPPER_FACADE
+          # COMMAND_WRAPPER_SYSTEM_CONFIG_DIR='''; export COMMAND_WRAPPER_SYSTEM_CONFIG_DIR
+          # COMMAND_WRAPPER_USER_CONFIG_DIR='${defaultXdgConfigHome}'; export COMMAND_WRAPPER_USER_CONFIG_DIR
+          COMMAND_WRAPPER_INVOKE_AS='toolset'; export COMMAND_WRAPPER_INVOKE_AS
+          exec '/some/executable' "$@"
+          ''
 
 in  { Options, template }
