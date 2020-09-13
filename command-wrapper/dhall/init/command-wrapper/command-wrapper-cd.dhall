@@ -1,10 +1,8 @@
 -- vim: filetype=dhall
 
-  λ(library : { commandWrapper : Text, exec : Text })
-→ λ(runtimeDirectory : { libDir : Text, manDir : Text })
-→ ''
-  -- vim: filetype=dhall
-
+λ(library : { commandWrapper : Text, exec : Text }) →
+λ(runtimeDirectory : { libDir : Text, manDir : Text }) →
+  ''
   let CommandWrapper = ${library.commandWrapper}
 
   let emptyDirectories = CommandWrapper.CdConfig.emptyDirectories
@@ -15,57 +13,48 @@
         # (./cd/directories-local.dhall ? emptyDirectories)
         # (./cd/directories.dhall ? emptyDirectories)
 
-  --let fzf =
-  --        λ(query : Optional Text)
-  --      → CommandWrapper.CommandWithEnvironment::{
-  --        , command = "fzf"
-  --        , arguments =
-  --            Exec.fzf.Options.toArguments
-  --              Exec.fzf.Options::{
-  --              , query = query
-  --              , layout =
-  --                  Some
-  --                    < BottomOfTheScreen
-  --                    | TopOfTheScreen
-  --                    | TopOfTheScreenPromptAtTheBottom
-  --                    >.TopOfTheScreen
-  --              , height =
-  --                  Some
-  --                    ( < Lines : Natural | Percentage : Natural >.Percentage
-  --                        40
-  --                    )
-  --              }
-  --        }
+  let fzf =
+        λ(query : Optional Text) →
+          CommandWrapper.CommandWithEnvironment::{
+          , command = "fzf"
+          , arguments =
+              Exec.fzf.Options.toArguments
+                Exec.fzf.Options::{
+                , query
+                , layout = Some
+                    < BottomOfTheScreen
+                    | TopOfTheScreen
+                    | TopOfTheScreenPromptAtTheBottom
+                    >.TopOfTheScreen
+                , height = Some
+                    (< Lines : Natural | Percentage : Natural >.Percentage 40)
+                }
+          }
 
-  --let fzy =
-  --        λ(query : Optional Text)
-  --      → CommandWrapper.CommandWithEnvironment::{
-  --        , command = "fzy"
-  --        , arguments =
-  --            Exec.fzy.Options.toArguments Exec.fzy.Options::{ query = query }
-  --        }
+  let fzy =
+        λ(query : Optional Text) →
+          CommandWrapper.CommandWithEnvironment::{
+          , command = "fzy"
+          , arguments = Exec.fzy.Options.toArguments Exec.fzy.Options::{ query }
+          }
 
-  --let skim =
-  --        λ(query : Optional Text)
-  --      → CommandWrapper.CommandWithEnvironment::{
-  --        , command = "sk"
-  --        , arguments =
-  --            Exec.sk.Options.toArguments
-  --              Exec.sk.Options::{
-  --              , query = query
-  --              , layout =
-  --                  Some
-  --                    < BottomOfTheScreen
-  --                    | TopOfTheScreen
-  --                    | TopOfTheScreenPromptAtTheBottom
-  --                    >.TopOfTheScreen
-  --              , height =
-  --                  Some
-  --                    ( < Lines : Natural | Percentage : Natural >.Percentage
-  --                        40
-  --                    )
-  --              }
-  --        }
+  let skim =
+        λ(query : Optional Text) →
+          CommandWrapper.CommandWithEnvironment::{
+          , command = "sk"
+          , arguments =
+              Exec.sk.Options.toArguments
+                Exec.sk.Options::{
+                , query
+                , layout = Some
+                    < BottomOfTheScreen
+                    | TopOfTheScreen
+                    | TopOfTheScreenPromptAtTheBottom
+                    >.TopOfTheScreen
+                , height = Some
+                    (< Lines : Natural | Percentage : Natural >.Percentage 40)
+                }
+          }
 
   in  CommandWrapper.CdConfig::{
       , directories = directories
@@ -90,15 +79,15 @@
       -- following expression can be evaluated:
       --
       -- ```
-      -- (~/.config/command-wrapper/library.dhall).TerminalEmulator
+      -- (${library.commandWrapper}).TerminalEmulator
       -- ```
       --
       -- If terminal emulator is not specified then `cd` subcommand is unable
       -- to start one when requested on command line.
   --  , terminalEmulator =
   --      Some
-  --        (   λ(directory : Text)
-  --          → CommandWrapper.TerminalEmulator.urxvt (Some directory)
+  --        ( λ(directory : Text) →
+  --            CommandWrapper.TerminalEmulator.urxvt (Some directory)
   --        )
       }
   ''

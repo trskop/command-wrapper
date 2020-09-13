@@ -1,10 +1,8 @@
 -- vim: filetype=dhall
 
-  λ(library : { commandWrapper : Text, exec : Text })
-→ λ(runtimeDirectory : { libDir : Text, manDir : Text })
-→ ''
-  -- vim: filetype=dhall
-  --
+λ(library : { prelude : Text, commandWrapper : Text, exec : Text }) →
+λ(runtimeDirectory : { libDir : Text, manDir : Text }) →
+  ''
   -- This file is intended to be under version control and shared among multiple
   -- systems. It defines aliases that should be available everywhere and via all
   -- toolsets.
@@ -16,44 +14,54 @@
   -- is also `./aliases.dhall` which is intended to be used as a kind of staging
   -- environment, and it should not be under version control.
 
-  let CommandWrapper = ${library.commandWrapper}
+  let CommandWrapper =
+        ${library.commandWrapper}
+
+  --let Exec =
+  --      ${library.exec}
+
+  let Prelude =
+        ${library.prelude}
 
   let SubcommandAlias = CommandWrapper.SubcommandAlias
 
-  in  [ SubcommandAlias::{
-        , alias = "h"
-        , description = Some "Short hand for \"help\"."
-        , command = "help"
-        }
+  let dhallAliases =
+        Prelude.List.map
+          Text
+          CommandWrapper.SubcommandAlias.Type
+          ( λ(_ : Text) →
+              SubcommandAlias::{
+              , alias = "dhall''${_}"
+              , description = Some "Shorthand for \"config --dhall''${_}\"."
+              , command = "config"
+              , arguments = [ "--dhall''${_}" ]
+              }
+          )
+          [ ""
+          , "-bash"
+          , "-diff"
+          , "-exec"
+          , "-filter"
+          , "-format"
+          , "-freeze"
+          , "-hash"
+          , "-lint"
+          , "-repl"
+          , "-resolve"
+          , "-text"
+          ]
 
-      , SubcommandAlias::{
-        , alias = "man"
-        , description = Some "Short hand for \"help --man\"."
-        , command = "help"
-        , arguments = [ "--man" ]
-        }
-
-      -- The advantage of having `cfg` as an alias for `config` is that it
-      -- shares only one letter of its prefix with `completion`, which is
-      -- useful when using command line completion.
-      , SubcommandAlias::{
-        , alias = "cfg"
-        , description = Some "Short hand for \"config\"."
-        , command = "config"
-        }
-
-      , SubcommandAlias::{
-        , alias = "dhall"
-        , description = Some "Short hand for \"config --dhall\"."
-        , command = "config"
-        , arguments = [ "--dhall" ]
-        }
-
-      , SubcommandAlias::{
-        , alias = "dhall-repl"
-        , description = Some "Short hand for \"config --dhall-repl\"."
-        , command = "config"
-        , arguments = [ "--dhall-repl" ]
-        }
-      ]
+  in    [ SubcommandAlias::{
+          , alias = "h"
+          , description = Some "Shorthand for \"help\"."
+          , command = "help"
+          }
+        , SubcommandAlias::{
+          , alias = "man"
+          , description = Some "Shorthand for \"help --man\"."
+          , command = "help"
+          , arguments = [ "--man" ]
+          }
+        ]
+      # dhallAliases
   ''

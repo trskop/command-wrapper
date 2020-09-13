@@ -1,9 +1,16 @@
 -- vim: filetype=dhall
 
-  λ(library : { commandWrapper : Text, exec : Text })
+  λ(library : { prelude : Text, commandWrapper : Text, exec : Text })
 → λ(runtimeDirectory : { libDir : Text, manDir : Text })
 → ''
-  -- vim: filetype=dhall
+  --let CommandWrapper =
+  --      ${library.commandWrapper}
+
+  --let Exec =
+  --      ${library.exec}
+
+  --let Prelude =
+  --      ${library.prelude}
 
   let home = env:HOME as Text
 

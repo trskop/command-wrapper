@@ -88,25 +88,31 @@
     To include constructor `PreludeV<major>_<minor>_<patch>` and update
     functions `parseDhallLibrary` and `showDhallLibrary` accordingly.
 
-3.  Extend `putDhallLibrary` to handle new cases in `DhallLibrary`.  GHC will
+3.  Update reference to Dhall Prelude so that it points to latest version in:
+
+    ```
+    command-wrapper/src/CommandWrapper/Toolset/InternalSubcommand/Config/Init.hs
+    ```
+
+4.  Extend `putDhallLibrary` to handle new cases in `DhallLibrary`.  GHC will
     warn you abot this if the previous step is done.
 
-4.  Introduce a new test case in `command-wrapper/test/Main.hs` to make sure
+5.  Introduce a new test case in `command-wrapper/test/Main.hs` to make sure
     that the embedding of new Dhall Prelude library behaves correctly.
 
-5.  Rebuild and run tests:
+6.  Rebuild and run tests:
 
     ```
     stack test
     ```
 
-6.  Update documentation of `--dhall=LIBRARY` option in:
+7.  Update documentation of `--dhall=LIBRARY` option in:
 
     ```
     command-wrapper/man/command-wrapper-completion.1.md
     ```
 
-6.  Commit&push
+8.  Commit&push
 
 
 # Debugging Bash Completion

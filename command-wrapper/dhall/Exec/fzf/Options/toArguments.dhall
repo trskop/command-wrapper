@@ -226,4 +226,4 @@ let toArguments =
 
 let noArgumentsByDefault = assert : toArguments Options.default ≡ noArguments
 
-in  toArguments
+in  toArguments : Options.Type → List Text

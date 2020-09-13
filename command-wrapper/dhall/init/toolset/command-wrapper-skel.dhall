@@ -1,12 +1,17 @@
 -- vim: filetype=dhall
 
   λ(toolsetName : Text)
-→ λ(library : { commandWrapper : Text, exec : Text })
+→ λ(library : { prelude : Text, commandWrapper : Text, exec : Text })
 → λ(runtimeDirectory : { libDir : Text, manDir : Text })
 → ''
-  -- vim: filetype=dhall
+  --let CommandWrapper =
+  --      ${library.commandWrapper}
 
-  let CommandWrapper = ${library.commandWrapper}
+  --let Exec =
+  --      ${library.exec}
+
+  --let Prelude =
+  --      ${library.prelude}
 
   let mkGlobal = ../command-wrapper/command-wrapper-skel.dhall
 

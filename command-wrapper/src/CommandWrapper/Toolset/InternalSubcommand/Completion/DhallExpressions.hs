@@ -92,7 +92,7 @@ urlBase = "https://raw.githubusercontent.com/trskop/command-wrapper/"
 
 commandWrapperHash :: IsString s => s
 commandWrapperHash =
-    "sha256:d2c55c3c5b21c794b14f353463ede9c704e6168db45461c011efb5a65f75a9ff"
+    "sha256:0aa3bb490f6dfe88f082663fba4fb60246db5f290356e10cd6babc3d50376615"
 
 commandWrapperContent :: (IsString s, Monoid s) => s
 commandWrapperContent =
@@ -105,7 +105,7 @@ commandWrapperImport =
 
 execHash :: IsString s => s
 execHash =
-    "sha256:a8ed7ac9c1168602dbabd7f60dd9423c01e138122ef2b8b694a3ae1c496f7e7d"
+    "sha256:f9c440905b5587d34ce81e0dcb2edb495e5630fc489bbec76cacf8fb6cd6d3d0"
 
 execContent :: (IsString s, Monoid s) => s
 execContent =
@@ -113,7 +113,8 @@ execContent =
 
 execImport :: (IsString s, Monoid s) => s
 execImport =
-    urlBase <> commit <> "/command-wrapper/dhall/Exec/package.dhall " <> execHash
+    urlBase <> commit <> "/command-wrapper/dhall/Exec/package.dhall "
+    <> execHash
 
 -- }}} Command Wrapper and Exec Libraries -------------------------------------
 

@@ -25,7 +25,7 @@ module CommandWrapper.Toolset.InternalSubcommand.Config.Init
   where
 
 import Control.Applicative ((<*>), pure)
-import Control.Monad ((>>=), unless, when)
+import Control.Monad ((>>=), unless)
 import Data.Bool (Bool(True))
 import Data.Either (Either(Left, Right))
 import Data.Eq ((==))
@@ -44,7 +44,6 @@ import Text.Show (Show, show)
 
 import Data.Either.Validation (validationToEither)
 import Data.Text (Text)
-import qualified Data.Text as Text (unlines)
 import Data.Text.Prettyprint.Doc (pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty (Doc, hsep, line)
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
@@ -74,14 +73,7 @@ import CommandWrapper.Core.Message (errorMsg, out)
 import CommandWrapper.Toolset.Config.Global
     ( Config(Config, colourOutput, verbosity)
     )
-import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
-    ( Freeze(input, output)
-    , Input(InputFile)
-    , Output(OutputBasedOnInput)
-    , OutputOrCheck(Write)
-    , defFreeze
-    , freeze
-    )
+import qualified CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions as Dhall
 
 
 data InitOptions = InitOptions
@@ -250,29 +242,6 @@ init
 
     checkFile skelConfig
         >>= createOrSkipFile (configFileContent' (SkelConfig toolsetName))
-
-    when (toolsetName == "command-wrapper") do
-
-        let libraryDhall = configDir </> "library.dhall"
-            execLibraryDhall = configDir </> "exec" </> "library.dhall"
-
-        checkFile libraryDhall
-            >>= createOrSkipFile (configFileContent' Library)
-
-        -- TODO: Freeze only when created.
-        Dhall.freeze appNames config Dhall.defFreeze
-            { Dhall.input = Dhall.InputFile libraryDhall
-            , Dhall.output = Dhall.Write Dhall.OutputBasedOnInput
-            }
-
-        checkFile execLibraryDhall
-            >>= createOrSkipFile (configFileContent' ExecLibrary)
-
-        -- TODO: Freeze only when created.
-        Dhall.freeze appNames config Dhall.defFreeze
-            { Dhall.input = Dhall.InputFile execLibraryDhall
-            , Dhall.output = Dhall.Write Dhall.OutputBasedOnInput
-            }
   where
     dieWith :: Int -> (forall ann. Pretty.Doc ann) -> IO a
     dieWith exitCode msg = do
@@ -356,19 +325,26 @@ data ConfigFile
     | CommonHelpTxt String
     | CdConfig String
     | CommonDirectoriesConfig String
-    | ExecLibrary
     | ExecConfig String
     | CommonCommandsConfig String
     | SkelConfig String
-    | Library
     | ReadmeMd String
 
 data DhallLibraries = DhallLibraries
-    { commandWrapper :: FilePath
-    , exec :: FilePath
+    { prelude :: Text
+    , commandWrapper :: Text
+    , exec :: Text
     }
   deriving stock (Generic)
   deriving anyclass (ToDhall)
+
+-- TODO: Introduce options to override these values.
+defaultDhallLibraries :: DhallLibraries
+defaultDhallLibraries = DhallLibraries
+    { prelude = Dhall.preludeV18_0_0Import
+    , commandWrapper = Dhall.commandWrapperImport
+    , exec = Dhall.execImport
+    }
 
 data RuntimePaths = RuntimePaths
     { libDir :: FilePath
@@ -532,188 +508,116 @@ configFileContent runtimePaths ConfigTemplates{..} = \case
     -- ${CONFIG_DIR}/command-wrapper/default.dhall
     DefaultConfig "command-wrapper" ->
         defaultConfig
-            DhallLibraries
-                { commandWrapper = "./library.dhall"
-                , exec = "./exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/${toolsetName}/default.dhall
     DefaultConfig toolsetName ->
         defaultToolsetConfig
             (fromString toolsetName)
-            DhallLibraries
-                { commandWrapper = "../command-wrapper/library.dhall"
-                , exec = "../command-wrapper/exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/command-wrapper/default/aliases-common.dhall
     CommonAliasesConfig "command-wrapper" ->
         commonAliasesConfig
-            DhallLibraries
-                { commandWrapper = "../library.dhall"
-                , exec = "../exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/${toolsetName}/default/aliases-common.dhall
     CommonAliasesConfig toolsetName ->
         commonAliasesToolsetConfig
             (fromString toolsetName)
-            DhallLibraries
-                { commandWrapper = "../../command-wrapper/library.dhall"
-                , exec = "../../command-wrapper/exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/command-wrapper/comman-wrapper-cd.dhall
     CdConfig "command-wrapper" ->
         cdConfig
-            DhallLibraries
-                { commandWrapper = "./library.dhall"
-                , exec = "./exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/${toolsetName}/comman-wrapper-cd.dhall
     CdConfig toolsetName ->
         cdToolsetConfig
             (fromString toolsetName)
-            DhallLibraries
-                { commandWrapper = "../command-wrapper/library.dhall"
-                , exec = "../command-wrapper/exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/comman-wrapper/cd/directories-common.dhall
     CommonDirectoriesConfig "command-wrapper" ->
         commonDirectoriesConfig
-            DhallLibraries
-                { commandWrapper = "../library.dhall"
-                , exec = "../exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/${toolsetName}/cd/directories-common.dhall
     CommonDirectoriesConfig toolsetName ->
         commonDirectoriesToolsetConfig
             (fromString toolsetName)
-            DhallLibraries
-                { commandWrapper = "../../command-wrapper/library.dhall"
-                , exec = "../../command-wrapper/exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/comman-wrapper/default/help-common.dhall
     CommonHelpTxt "command-wrapper" ->
         commonHelp
-            DhallLibraries
-                { commandWrapper = "../library.dhall"
-                , exec = "../exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/${toolsetName}/default/help-common.dhall
     CommonHelpTxt toolsetName ->
         commonHelpToolset
             (fromString toolsetName)
-            DhallLibraries
-                { commandWrapper = "../../command-wrapper/library.dhall"
-                , exec = "../../command-wrapper/exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
-
-    -- ${CONFIG_DIR}/command-wrapper/exec/library.dhall
-    ExecLibrary -> Text.unlines
-        -- TODO: Use the same import as provided by:
-        -- ```
-        -- completion --library --dhall=exec --import
-        -- ```
-        [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/Exec/package.dhall"
-        ]
 
     -- ${CONFIG_DIR}/command-wrapper/command-wrapper-exec.dhall
     ExecConfig "command-wrapper" ->
         execConfig
-            DhallLibraries
-                { commandWrapper = "./library.dhall"
-                , exec = "./exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/${toolsetName}/command-wrapper-exec.dhall
     ExecConfig toolsetName ->
         execToolsetConfig
             (fromString toolsetName)
-            DhallLibraries
-                { commandWrapper = "../command-wrapper/library.dhall"
-                , exec = "../command-wrapper/exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/command-wrapper/exec/commands-common.dhall
     CommonCommandsConfig "command-wrapper" ->
         commonCommandsConfig
-            DhallLibraries
-                { commandWrapper = "../library.dhall"
-                , exec = "./library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/${toolsetName}/exec/commands-common.dhall
     CommonCommandsConfig toolsetName ->
         commonCommandsToolsetConfig
             (fromString toolsetName)
-            DhallLibraries
-                { commandWrapper = "../../command-wrapper/library.dhall"
-                , exec = "../../command-wrapper/exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/command-wrapper/command-wrapper-skel.dhall
     SkelConfig "command-wrapper" ->
         skelConfig
-            DhallLibraries
-                { commandWrapper = "./library.dhall"
-                , exec = "./exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/${toolsetName}/command-wrapper-skel.dhall
     SkelConfig toolsetName ->
         skelToolsetConfig
             (fromString toolsetName)
-            DhallLibraries
-                { commandWrapper = "../command-wrapper/library.dhall"
-                , exec = "../command-wrapper/exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
-
-    -- ${CONFIG_DIR}/command-wrapper/library.dhall
-    Library -> Text.unlines
-        -- TODO: Use the same import as provided by:
-        -- ```
-        -- completion --library --dhall=command-wrapper --import
-        -- ```
-        [ "https://raw.githubusercontent.com/trskop/command-wrapper/master/dhall/CommandWrapper/package.dhall"
-        ]
 
     -- ${CONFIG_DIR}/command-wrapper/README.md
     ReadmeMd "command-wrapper" ->
         readmeMd
-            DhallLibraries
-                { commandWrapper = "./library.dhall"
-                , exec = "./exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths
 
     -- ${CONFIG_DIR}/${toolsetName}/README.md
     ReadmeMd toolsetName ->
         readmeMdToolset
             (fromString toolsetName)
-            DhallLibraries
-                { commandWrapper = "./library.dhall"
-                , exec = "./exec/library.dhall"
-                }
+            defaultDhallLibraries
             runtimePaths

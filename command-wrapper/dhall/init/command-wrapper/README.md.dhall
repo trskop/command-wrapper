@@ -1,8 +1,8 @@
 -- vim: filetype=dhall
 
-  λ(library : { commandWrapper : Text, exec : Text })
-→ λ(runtimeDirectory : { libDir : Text, manDir : Text })
-→ ''
+λ(library : { commandWrapper : Text, exec : Text }) →
+λ(runtimeDirectory : { libDir : Text, manDir : Text }) →
+  ''
   # Command Wrapper configuration
 
   Tool for creating customised command-line toolsets.  This directory contains

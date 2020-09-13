@@ -1,9 +1,9 @@
 -- vim: filetype=dhall
 
-  λ(toolsetName : Text )
-→ λ(library : { commandWrapper : Text, exec : Text })
-→ λ(runtimeDirectory : { libDir : Text, manDir : Text })
-→ ''
+λ(toolsetName : Text) →
+λ(library : { prelude : Text, commandWrapper : Text, exec : Text }) →
+λ(runtimeDirectory : { libDir : Text, manDir : Text }) →
+  ''
   # Configuration for Command Wrapper toolset ${toolsetName}
 
   Custom toolset built using Command Wrapper.  Online documentation is available

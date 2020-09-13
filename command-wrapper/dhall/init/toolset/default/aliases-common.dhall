@@ -1,11 +1,9 @@
 -- vim: filetype=dhall
 
-  λ(toolsetName : Text )
-→ λ(library : { commandWrapper : Text, exec : Text })
-→ λ(runtimeDirectory : { libDir : Text, manDir : Text })
-→ ''
-  -- vim: filetype=dhall
-  --
+λ(toolsetName : Text) →
+λ(library : { prelude : Text, commandWrapper : Text, exec : Text }) →
+λ(runtimeDirectory : { libDir : Text, manDir : Text }) →
+  ''
   -- This file is intended to be under version control and shared among multiple
   -- systems.
   --
@@ -16,17 +14,24 @@
   -- is also `./aliases.dhall` which is intended to be used as a kind of staging
   -- environment, and it should not be under version control.
 
-  let CommandWrapper = ${library.commandWrapper}
+  let CommandWrapper =
+        ${library.commandWrapper}
+
+  --let Exec =
+  --      ${library.exec}
+
+  --let Prelude =
+  --      ${library.prelude}
 
   let execConfig = ../command-wrapper-exec.dhall
 
   let SubcommandAlias = CommandWrapper.SubcommandAlias
 
   in    CommandWrapper.ExecNamedCommand.namedCommandsToAliases execConfig.commands
-      # [ SubcommandAlias::{
-          , alias = "h"
-          , description = Some "Shorthand for \"help\"."
-          , command = "help"
-          }
-        ]
+  --  # [ SubcommandAlias::{
+  --      , alias = "cfg"
+  --      , description = Some "TODO: I hereby promise to describe this command."
+  --      , command = "config"
+  --      }
+  --    ]
   ''

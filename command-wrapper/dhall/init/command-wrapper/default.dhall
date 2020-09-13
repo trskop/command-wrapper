@@ -1,11 +1,16 @@
 -- vim: filetype=dhall
 
-  λ(library : { commandWrapper : Text, exec : Text })
-→ λ(runtimeDirectory : { libDir : Text, manDir : Text })
-→ ''
-  -- vim: filetype=dhall
+λ(library : { prelude : Text, commandWrapper : Text, exec : Text }) →
+λ(runtimeDirectory : { libDir : Text, manDir : Text }) →
+  ''
+  let CommandWrapper =
+        ${library.commandWrapper}
 
-  let CommandWrapper = ${library.commandWrapper}
+  --let Exec =
+  --      ${library.exec}
+
+  --let Prelude =
+  --      ${library.prelude}
 
   let emptyAliases = CommandWrapper.ToolsetConfig.emptyAliases
 
@@ -22,7 +27,7 @@
           ++  (./default/help.txt as Text ? "")
 
   in  CommandWrapper.ToolsetConfig::{
-      , aliases = aliases
+      , aliases
 
       -- Extra help message is printed at the bottom of help message.
       , extraHelpMessage = Some helpMessage
