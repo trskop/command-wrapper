@@ -13,15 +13,16 @@
   --let Prelude =
   --      ${library.prelude}
 
-  let global = ../command-wrapper/command-wrapper-exec.dhall
-
   let empty = [] : List CommandWrapper.ExecNamedCommand.Type
 
-  in    global
-      ⫽ { commands =
-              global.commands
-            # ./exec/commands-common.dhall
-            # (./exec/commands.dhall ? empty)
-            # (./exec/commands-local.dhall ? empty)
-        }
+  let commands =
+          ./exec/commands-common.dhall
+        # (./exec/commands.dhall ? empty)
+        # (./exec/commands-local.dhall ? empty)
+
+  let global =
+          ../command-wrapper/command-wrapper-exec.dhall
+        ? CommandWrapper.ExecConfig::{=}
+
+  in  global ⫽ { commands = global.commands # commands }
   ''

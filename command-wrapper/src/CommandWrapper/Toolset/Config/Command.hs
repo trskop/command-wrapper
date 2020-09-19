@@ -84,6 +84,34 @@ data NamedCommand = NamedCommand
     , command :: Verbosity -> ColourOutput -> [Text] -> Command
     , completion :: Maybe (Shell -> Natural -> [Text] -> Command)
     , notifyWhen :: Maybe NotifyWhen
+    , options :: ProcessOptions
+    }
+  deriving stock (Generic)
+  deriving anyclass (FromDhall)
+
+data ProcessOptions = ProcessOptions
+    { stdin :: StdStream
+    , stdout :: StdStream
+    , stderr :: StdStream
+    , detach :: Detach
+    }
+  deriving stock (Generic)
+  deriving anyclass (FromDhall)
+
+data StdStream = Inherit | NoStream | File FilePath
+  deriving stock (Generic)
+  deriving anyclass (FromDhall)
+
+data Detach
+    = DoNotDetach
+    -- ^ Do not detach from current parent process and terminal.
+    | Detach DetachOptions
+    -- ^ Detach from current process parent and terminal.
+  deriving stock (Generic)
+  deriving anyclass (FromDhall)
+
+data DetachOptions = DetachOptions
+    { pidFile :: Maybe FilePath
     }
   deriving stock (Generic)
   deriving anyclass (FromDhall)
