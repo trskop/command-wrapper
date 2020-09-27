@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2019, Peter Trsko
+# Copyright (c) 2019-2020, Peter Trsko
 #
 # All rights reserved.
 #
@@ -68,6 +68,19 @@ Usage:
 
   ${0##*/} [--index=NUM] [--shell=SHELL] [-- [WORD ...]]
   ${0##*/} {--help|-h}
+
+Environment variables:
+
+  BAZEL_COMPLETION_USE_QUERY
+      Possible values are 'false' and 'true'. If set to 'true' then
+      'bazel query' command will be used to provide completion, otherwise
+      'grep'-based heuristic will be used. Be aware that 'bazel query' is much
+      slower.
+
+  BAZEL_COMPLETION_ALLOW_TESTS_FOR_RUN
+      Possible values are 'false' and 'true'. If set to 'true' then 'bazel run'
+      completion will include test targets. Useful when running them manually
+      is part of your workflow.
 EOF
 }
 
@@ -133,6 +146,12 @@ function main() {
     function compgen() {
         command compgen "$@"
     }
+
+    # These variables need to be set to not create a havoc when running
+    # completion. The way they are defined allows them to be eoverriden by
+    # setting the environment variables
+    export BAZEL_COMPLETION_USE_QUERY="${BAZEL_COMPLETION_USE_QUERY:-false}"
+    export BAZEL_COMPLETION_ALLOW_TESTS_FOR_RUN="${BAZEL_COMPLETION_ALLOW_TESTS_FOR_RUN:-false}"
 
     # shellcheck source=/dev/null
     source <(findCompletion 'bazel' 'bazel')

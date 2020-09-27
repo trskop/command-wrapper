@@ -3,7 +3,7 @@
 -- Library of utilities for Command Wrapper's `exec` subcommand.
 
 { bazel =
-      ./bazel/package.dhall sha256:aefd7a388040711ffcc5e9f6f49de995d8517cd98686c03240ddce29eea92a1f
+      ./bazel/package.dhall sha256:4addce3a488a5bf3bd134416dd014ac5982ffa55e3c78f646fc5f81a942335cc
     ? ./bazel/package.dhall
 , buildifier =
       ./buildifier/package.dhall sha256:2db5e3723ff4a17092c826b9d9200eab106d720dd940c7b4024d5a847e68f404
