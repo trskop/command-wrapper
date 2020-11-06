@@ -40,26 +40,26 @@ packages:
   original:
     hackage: prettyprinter-1.7.0
 - completed:
-    hackage: dhall-1.35.0@sha256:f4b229380834623e5d71ddcb7fb30f75ed799c19938d6c7ec30bcbbeb48ebbea,34077
+    hackage: dhall-1.36.0@sha256:49d22019392c73a4d50d0f7741423d1c848215c2d0bfa118225940b2c234a550,34191
     pantry-tree:
-      size: 301264
-      sha256: 45a9d0987eeaee27bfd0f263f6c2c7346a6eed20428c62add440ca8cac911f17
+      size: 304480
+      sha256: 3371c489a0b2d387052b1895ea0ceeb28860f0763337b73d8d4e979ec712ee96
   original:
-    hackage: dhall-1.35.0
+    hackage: dhall-1.36.0
 - completed:
-    hackage: dhall-bash-1.0.33@sha256:1f3f5176da23631d9cb439059d65ce544086735f79234d9c871db20f45bdb271,1841
+    hackage: dhall-bash-1.0.34@sha256:768cee424cb06726a88e3d8d94c52789ba516014708814d4afedd4f68c7c46fd,1841
     pantry-tree:
       size: 266
-      sha256: 44d33c0803e83555cd051865fc7f38ca13da01c8566b5c5730c82ea5a14bc178
+      sha256: edf8c40ffbe098c3cf3b458aa0388e4cbfca4f1db81fda147420aa92f8794566
   original:
-    hackage: dhall-bash-1.0.33
+    hackage: dhall-bash-1.0.34
 - completed:
-    hackage: dhall-json-1.7.2@sha256:baefe2cf94a56891e194183ff5ee46fa47369f8b8198ac8172eff513c69b47a7,4419
+    hackage: dhall-json-1.7.3@sha256:59732b4ba77f0e09b560cd4ad1f77ed81aefae3e78de160a4abdac52d06a8093,4419
     pantry-tree:
       size: 5299
-      sha256: c83c42cb8b1b4b6b51716b80a80c213c1448f93259f88215f6c7dca1a77a4667
+      sha256: 49b1730957304d266a9dbfe1df112ef4f5b32272eefec5fdb26dc1c9b9424364
   original:
-    hackage: dhall-json-1.7.2
+    hackage: dhall-json-1.7.3
 - completed:
     hackage: aeson-yaml-1.1.0.0@sha256:36cfdda776a43b0aa0e108c4632e0f007fa5c651e7294c57cbe2a508191808c4,1975
     pantry-tree:
@@ -116,7 +116,8 @@ packages:
     commit: b8db3c09e1e05d4b61fa028c8d1a3ee8dc4b4ba8
 snapshots:
 - completed:
-    size: 532381
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/13.yaml
-    sha256: 6ee17f7996e5bc75ae4406250841f1362ad4196418a4d90a0615ff4f26ac98df
-  original: lts-16.13
+    size: 532177
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/20.yaml
+    sha256: 0e14ba5603f01e8496e8984fd84b545a012ca723f51a098c6c9d3694e404dc6d
+  original:
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/20.yaml

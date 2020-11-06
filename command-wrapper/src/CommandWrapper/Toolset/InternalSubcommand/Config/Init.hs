@@ -341,9 +341,9 @@ data DhallLibraries = DhallLibraries
 -- TODO: Introduce options to override these values.
 defaultDhallLibraries :: DhallLibraries
 defaultDhallLibraries = DhallLibraries
-    { prelude = Dhall.preludeV18_0_0Import
-    , commandWrapper = Dhall.commandWrapperImport
-    , exec = Dhall.execImport
+    { prelude = Dhall.mkPreludeImport "19.0.0" Dhall.preludeV19_0_0Hash
+    , commandWrapper = Dhall.commandWrapperRemoteImport
+    , exec = Dhall.execRemoteImport
     }
 
 data RuntimePaths = RuntimePaths

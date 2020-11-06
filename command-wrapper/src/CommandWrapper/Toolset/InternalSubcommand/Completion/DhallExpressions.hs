@@ -13,20 +13,20 @@
 module CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions
     (
     -- * Dhall Prelude Library
-      preludeV17_0_0Content
-    , preludeV17_0_0Import
-    , preludeV17_1_0Content
-    , preludeV17_1_0Import
-    , preludeV18_0_0Content
-    , preludeV18_0_0Import
+      preludeV17_0_0Hash
+    , preludeV17_1_0Hash
+    , preludeV18_0_0Hash
+    , preludeV19_0_0Hash
+    , mkPreludeImport
+    , mkPreludeRemoteImport
 
     -- * Command Wrapper Dhall Library
     , commandWrapperContent
-    , commandWrapperImport
+    , commandWrapperRemoteImport
 
     -- * Exec Dhall Library
     , execContent
-    , execImport
+    , execRemoteImport
 
     -- * Shell Completion Script Template
     , shellCompletionTemplate
@@ -43,42 +43,33 @@ import Data.String (IsString)
 -- that in Nix we will need to avoid fetching stuff from the internet,
 -- therefore content will have to be provided in a different way.
 
-preludeV17_0_0Content :: IsString s => s
-preludeV17_0_0Content =
-#ifdef DHALL_PRELUDE_V17_0_0
-    DHALL_PRELUDE_V17_0_0
-#else
-    preludeV17_0_0Import
-#endif
+preludeV17_0_0Hash :: IsString s => s
+preludeV17_0_0Hash =
+    "sha256:10db3c919c25e9046833df897a8ffe2701dc390fa0893d958c3430524be5a43e"
 
-preludeV17_0_0Import :: IsString s => s
-preludeV17_0_0Import =
-    "https://prelude.dhall-lang.org/v17.0.0/package.dhall sha256:10db3c919c25e9046833df897a8ffe2701dc390fa0893d958c3430524be5a43e"
-
-preludeV17_1_0Content :: IsString s => s
-preludeV17_1_0Content =
-#ifdef DHALL_PRELUDE_V17_1_0
-    DHALL_PRELUDE_V17_1_0
-#else
-    preludeV17_1_0Import
-#endif
-
-preludeV17_1_0Import :: IsString s => s
-preludeV17_1_0Import =
+preludeV17_1_0Hash :: IsString s => s
+preludeV17_1_0Hash = preludeV17_0_0Hash
     -- Yes, it's the same hash as v17.0.0 has.
-    "https://prelude.dhall-lang.org/v17.1.0/package.dhall sha256:10db3c919c25e9046833df897a8ffe2701dc390fa0893d958c3430524be5a43e"
 
-preludeV18_0_0Content :: IsString s => s
-preludeV18_0_0Content =
-#ifdef DHALL_PRELUDE_V18_0_0
-    DHALL_PRELUDE_V18_0_0
+preludeV18_0_0Hash :: IsString s => s
+preludeV18_0_0Hash =
+    "sha256:2086c6a2e7ce8ee371858036ab60d24d045969defadb4bc9d87639921ec2e028"
+
+preludeV19_0_0Hash :: IsString s => s
+preludeV19_0_0Hash =
+    "sha256:eb693342eb769f782174157eba9b5924cf8ac6793897fc36a31ccbd6f56dafe2"
+
+mkPreludeImport :: (IsString s, Monoid s) => s -> s -> s
+mkPreludeImport version hash =
+#ifdef NIX_DHALL_PRELUDE_DIR
+    NIX_DHALL_PRELUDE_DIR <> "/v" <> version <> "/package.dhall " <> hash
 #else
-    preludeV18_0_0Import
+    mkPreludeRemoteImport version hash
 #endif
 
-preludeV18_0_0Import :: IsString s => s
-preludeV18_0_0Import =
-    "https://prelude.dhall-lang.org/v18.0.0/package.dhall sha256:2086c6a2e7ce8ee371858036ab60d24d045969defadb4bc9d87639921ec2e028"
+mkPreludeRemoteImport :: (IsString s, Monoid s) => s -> s -> s
+mkPreludeRemoteImport version hash =
+    "https://prelude.dhall-lang.org/v" <> version <> "/package.dhall " <> hash
 
 -- }}} Dhall Prelude Library --------------------------------------------------
 
@@ -98,8 +89,8 @@ commandWrapperContent :: (IsString s, Monoid s) => s
 commandWrapperContent =
     "./dhall/CommandWrapper/package.dhall " <> commandWrapperHash
 
-commandWrapperImport :: (IsString s, Monoid s) => s
-commandWrapperImport =
+commandWrapperRemoteImport :: (IsString s, Monoid s) => s
+commandWrapperRemoteImport =
     urlBase <> commit <> "/command-wrapper/dhall/CommandWrapper/package.dhall "
     <> commandWrapperHash
 
@@ -111,8 +102,8 @@ execContent :: (IsString s, Monoid s) => s
 execContent =
     "./dhall/Exec/package.dhall " <> execHash
 
-execImport :: (IsString s, Monoid s) => s
-execImport =
+execRemoteImport :: (IsString s, Monoid s) => s
+execRemoteImport =
     urlBase <> commit <> "/command-wrapper/dhall/Exec/package.dhall "
     <> execHash
 

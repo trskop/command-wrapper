@@ -137,6 +137,7 @@ testDhallLibraries = concat
     , [Content, Import] <&> testDhallLibrary PreludeV17_0_0
     , [Content, Import] <&> testDhallLibrary PreludeV17_1_0
     , [Content, Import] <&> testDhallLibrary PreludeV18_0_0
+    , [Content, Import] <&> testDhallLibrary PreludeV19_0_0
     ]
 
 dhallLibOption :: DhallLibrary -> String
@@ -161,7 +162,8 @@ testDhallLibrary lib importOrContent =
         PreludeV17_0_0     -> "v17.0.0"
         PreludeV17_1_0     -> "v17.1.0"
         PreludeV18_0_0     -> "v18.0.0"
-        LatestPrelude      -> "latest (v18.1.0)"
+        PreludeV19_0_0     -> "v19.0.0"
+        LatestPrelude      -> "latest (v19.0.0)"
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
@@ -169,7 +171,8 @@ testDhallLibrary lib importOrContent =
         PreludeV17_0_0     -> v17_0_0
         PreludeV17_1_0     -> v17_1_0
         PreludeV18_0_0     -> v18_0_0
-        LatestPrelude      -> v18_0_0
+        PreludeV19_0_0     -> v19_0_0
+        LatestPrelude      -> v19_0_0
         CommandWrapper     -> notTestable
         CommandWrapperExec -> notTestable
 
@@ -184,6 +187,9 @@ testDhallLibrary lib importOrContent =
 
     v18_0_0 =
         "sha256:2086c6a2e7ce8ee371858036ab60d24d045969defadb4bc9d87639921ec2e028"
+
+    v19_0_0 =
+        "sha256:eb693342eb769f782174157eba9b5924cf8ac6793897fc36a31ccbd6f56dafe2"
 
 testBashSubcommandLibrary :: TestTree
 testBashSubcommandLibrary =

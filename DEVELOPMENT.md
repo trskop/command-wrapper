@@ -72,8 +72,7 @@
 
 # Adding a new version of Dhall Prelude
 
-1.  Introduce new definitions `preludeV<major>_<minor>_<patch>Import` and
-    `preludeV<major>_<minor>_<patch>Content` in:
+1.  Introduce new definitions `preludeV<major>_<minor>_<patch>Hash` in:
 
     ```
     command-wrapper/src/CommandWrapper/Toolset/InternalSubcommand/Completion/DhallExpressions.hs

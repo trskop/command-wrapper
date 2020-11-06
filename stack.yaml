@@ -5,10 +5,12 @@
 # that we are using. See `Shakefile.hs` for more information.
 #
 # GHC 8.6.5
-#resolver: lts-14.27
+#resolver:
+#  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/27.yaml
 
 # GHC 8.8.4
-resolver: lts-16.13
+resolver:
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/20.yaml
 
 packages:
   - './command-wrapper-core/'
@@ -25,9 +27,9 @@ extra-deps:
 
   # Don't forget to upgrade Dhall Standard version in
   # ./src/CommandWrapper/Internal.hs when upgrading Dhall library.
-  - dhall-1.35.0
-  - dhall-bash-1.0.33
-  - dhall-json-1.7.2
+  - dhall-1.36.0
+  - dhall-bash-1.0.34
+  - dhall-json-1.7.3
   - aeson-yaml-1.1.0.0
   - repline-0.4.0.0
   - haskeline-0.8.1.0

@@ -93,15 +93,14 @@ import qualified CommandWrapper.Toolset.InternalSubcommand.Config.Dhall as Dhall
     )
 import CommandWrapper.Toolset.InternalSubcommand.Completion.DhallExpressions
     ( commandWrapperContent
-    , commandWrapperImport
+    , commandWrapperRemoteImport
     , execContent
-    , execImport
-    , preludeV17_0_0Content
-    , preludeV17_0_0Import
-    , preludeV17_1_0Content
-    , preludeV17_1_0Import
-    , preludeV18_0_0Content
-    , preludeV18_0_0Import
+    , execRemoteImport
+    , mkPreludeImport
+    , preludeV17_0_0Hash
+    , preludeV17_1_0Hash
+    , preludeV18_0_0Hash
+    , preludeV19_0_0Hash
     , shellCompletionTemplate
     )
 
@@ -294,6 +293,7 @@ data DhallLibrary
     | PreludeV17_0_0
     | PreludeV17_1_0
     | PreludeV18_0_0
+    | PreludeV19_0_0
     | CommandWrapper
     | CommandWrapperExec
   deriving stock (Bounded, Enum, Eq, Generic, Show)
@@ -304,6 +304,7 @@ parseDhallLibrary = \case
     "prelude-v17.0.0" -> Just PreludeV17_0_0
     "prelude-v17.1.0" -> Just PreludeV17_1_0
     "prelude-v18.0.0" -> Just PreludeV18_0_0
+    "prelude-v19.0.0" -> Just PreludeV19_0_0
     "command-wrapper" -> Just CommandWrapper
     "exec"            -> Just CommandWrapperExec
     _                 -> Nothing
@@ -314,6 +315,7 @@ showDhallLibrary = \case
     PreludeV17_0_0     -> "prelude-v17.0.0"
     PreludeV17_1_0     -> "prelude-v17.1.0"
     PreludeV18_0_0     -> "prelude-v18.0.0"
+    PreludeV19_0_0     -> "prelude-v19.0.0"
     CommandWrapper     -> "command-wrapper"
     CommandWrapperExec -> "exec"
 
@@ -335,28 +337,49 @@ putDhallLibrary config dhallLib importOrContent = \case
 
     hPutDhallLibrary h = case (dhallLib, importOrContent) of
         (PreludeV17_0_0, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV17_0_0Content)
+            hPutExpr h $(
+                Dhall.TH.staticDhallExpression
+                    (mkPreludeImport "17.0.0" preludeV17_0_0Hash)
+            )
 
         (PreludeV17_0_0, Import) ->
-            Text.hPutStrLn h preludeV17_0_0Import
+            Text.hPutStrLn h (mkPreludeImport "17.0.0" preludeV17_0_0Hash)
 
         (PreludeV17_1_0, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV17_1_0Content)
+            hPutExpr h $(
+                Dhall.TH.staticDhallExpression
+                    (mkPreludeImport "17.1.0" preludeV17_1_0Hash)
+            )
 
         (PreludeV17_1_0, Import) ->
-            Text.hPutStrLn h preludeV17_1_0Import
+            Text.hPutStrLn h (mkPreludeImport "17.1.0" preludeV17_1_0Hash)
 
         (PreludeV18_0_0, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV18_0_0Content)
+            hPutExpr h $(
+                Dhall.TH.staticDhallExpression
+                    (mkPreludeImport "18.0.0" preludeV18_0_0Hash)
+            )
 
         (PreludeV18_0_0, Import) ->
-            Text.hPutStrLn h preludeV18_0_0Import
+            Text.hPutStrLn h (mkPreludeImport "18.0.0" preludeV18_0_0Hash)
+
+        (PreludeV19_0_0, Content) ->
+            hPutExpr h $(
+                Dhall.TH.staticDhallExpression
+                    (mkPreludeImport "19.0.0" preludeV19_0_0Hash)
+            )
+
+        (PreludeV19_0_0, Import) ->
+            Text.hPutStrLn h (mkPreludeImport "19.0.0" preludeV19_0_0Hash)
 
         (LatestPrelude, Content) ->
-            hPutExpr h $(Dhall.TH.staticDhallExpression preludeV18_0_0Content)
+            hPutExpr h $(
+                Dhall.TH.staticDhallExpression
+                    (mkPreludeImport "19.0.0" preludeV19_0_0Hash)
+            )
 
         (LatestPrelude, Import) ->
-            Text.hPutStrLn h preludeV18_0_0Import
+            Text.hPutStrLn h (mkPreludeImport "19.0.0" preludeV19_0_0Hash)
 
         -- IMPORTANT!
         --
@@ -371,13 +394,13 @@ putDhallLibrary config dhallLib importOrContent = \case
             hPutExpr h $(Dhall.TH.staticDhallExpression commandWrapperContent)
 
         (CommandWrapper, Import) ->
-            Text.hPutStrLn h commandWrapperImport
+            Text.hPutStrLn h commandWrapperRemoteImport
 
         (CommandWrapperExec, Content) ->
             hPutExpr h $(Dhall.TH.staticDhallExpression execContent)
 
         (CommandWrapperExec, Import) ->
-            Text.hPutStrLn h execImport
+            Text.hPutStrLn h execRemoteImport
 
 -- }}} Script and Dhall Libraries -- Dhall Libraries --------------------------
 
